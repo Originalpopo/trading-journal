@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal - Professional Dashboard</title>
+    <script src="./tailwind.js"></script>
+    <script src="./chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+        
+        .glass-card { background: white; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02); border-radius: 1.25rem; }
+        .page-btn.active { background-color: #f97316; color: white; border-color: #f97316; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
+        .stat-value { letter-spacing: -0.02em; }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border: 1px solid #e2e8f0; border-radius: 0.75rem; overflow: hidden; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
+
+    <nav class="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex flex-col xl:flex-row justify-between items-center gap-4 shrink-0">
+        <div class="flex items-center gap-8 w-full xl:w-auto justify-between xl:justify-start">
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Trade<span class="text-orange-500">Journal</span></h1>
+            
+            <div class="flex bg-slate-100 p-1 rounded-xl">
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white text-orange-500 shadow-sm">Dashboard</button>
+                <button onclick="switchView('performance')" id="nav-performance" class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">Performance</button>
+                <button onclick="switchView('history')" id="nav-history" class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">History</button>
+                <button onclick="switchView('calendar')" id="nav-calendar" class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">Calendar</button>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-center xl:justify-end">
+            <div class="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex items-center">
+                <span class="text-xs font-bold text-slate-400 uppercase mr-3">Capital ($)</span>
+                <input type="number" id="initialBalanceInput" value="1000" onchange="handleCapitalChange()" class="bg-transparent text-sm font-extrabold text-orange-600 focus:outline-none w-24">
+            </div>
+            
+            <input type="file" id="csvFileInput" class="hidden" accept=".csv" onchange="handleCSVUpload(event)">
+            <button id="btnImport" onclick="document.getElementById('csvFileInput').click()" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-bold transition shadow-lg shadow-orange-200 text-sm flex items-center gap-2 cursor-pointer h-[38px]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Import CSV
+            </button>
+
+            <button id="btnReset" onclick="resetDatabase()" class="bg-slate-50 border border-slate-200 hover:border-red-200 hover:text-red-500 text-slate-400 px-3 py-2 rounded-xl text-xs font-bold transition h-[38px] flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Reset DB
+            </button>
+
+            <div class="flex items-center bg-slate-50 p-1.5 pr-4 rounded-xl border border-slate-200 h-[38px]">
+                <button id="btnSync" onclick="syncFromGoogleSheets()" class="bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm mr-3 h-full">
+                    Sync Data
+                </button>
+                <div id="dbStatus" class="text-xs font-semibold flex items-center text-slate-600">
+                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-2"></span>
+                    <span id="statusText" class="truncate max-w-[150px]">Initializing DB...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full">
+        <div class="max-w-7xl mx-auto space-y-8">
+            
+            <div id="view-dashboard" class="space-y-8">
+                <section>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-card p-6">
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
+                            <p id="uiBalance" class="text-3xl font-extrabold stat-value text-slate-900">$0.00</p>
+                        </div>
+                        <div class="glass-card p-6">
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
+                            <p id="uiNetProfit" class="text-3xl font-extrabold stat-value text-orange-500">$0.00</p>
+                        </div>
+                        <div class="glass-card p-6">
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Win Rate</p>
+                            <p id="uiWinRate" class="text-3xl font-extrabold stat-value text-orange-500">0.0%</p>
+                        </div>
+                        <div class="glass-card p-6 bg-orange-500 border-none text-white shadow-lg shadow-orange-100">
+                            <p class="text-orange-100 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
+                            <p id="uiGrowth" class="text-3xl font-extrabold stat-value text-white">0.00%</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="glass-card p-6 h-[460px] flex flex-col">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Equity Curve</h3>
+                    <div class="flex-1 relative w-full h-full">
+                        <canvas id="equityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <div class="glass-card p-6 space-y-5">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Statistics
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-400">Total Trades</span>
+                                    <span id="uiTotalTrades" class="font-black text-slate-800 text-2xl">0</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mt-4">
+                                    <div class="bg-slate-50 p-3 rounded-lg text-center">
+                                        <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">TP</p>
+                                        <p id="uiTotalTP" class="text-sm font-black text-slate-800">0</p>
+                                    </div>
+                                    <div class="bg-orange-50 p-3 rounded-lg text-center">
+                                        <p class="text-[9px] font-bold text-orange-400 uppercase mb-1">BE</p>
+                                        <p id="uiTotalBE" class="text-sm font-black text-orange-600">0</p>
+                                    </div>
+                                    <div class="bg-red-50 p-3 rounded-lg text-center">
+                                        <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">SL</p>
+                                        <p id="uiTotalSL" class="text-sm font-black text-red-500">0</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg mt-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Net RR</span>
+                                    <span id="uiTotalNetRR" class="text-sm font-black text-slate-800">0.00R</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 space-y-5">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Performance Metrics
+                        </h3>
+                        <div class="space-y-4 pt-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400">Profit Factor</span>
+                                <span id="uiPF" class="font-black text-slate-800">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400">Expectancy</span>
+                                <span id="uiExpectancy" class="font-black text-slate-800">$0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400">Sharpe Ratio</span>
+                                <span id="uiSharpe" class="font-black text-slate-800">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400">Avg TP RR</span>
+                                <span id="uiAvgRR" class="font-black text-slate-800">0.00R</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400">Avg SL RR</span>
+                                <span id="uiAvgSLRR" class="font-black text-slate-800">0.00R</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 space-y-5">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Risk & Drawdown
+                        </h3>
+                        <div class="space-y-4 pt-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-bold text-slate-400">Consecutive Loss (Max)</span>
+                                <span id="uiMaxConsLoss" class="font-black text-red-500">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-bold text-slate-400">Consecutive Win (Max)</span>
+                                <span id="uiMaxConsWin" class="font-black text-slate-800">0</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center pt-2 border-t border-slate-50">
+                                <span class="text-xs font-bold text-slate-400">Max Drawdown</span>
+                                <div class="text-right">
+                                    <div id="uiDrawdown" class="font-black text-red-500">$0.00</div>
+                                    <div id="uiDrawdownPercent" class="text-[10px] font-bold text-red-400">0.00%</div>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-red-50 rounded-xl mt-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-black text-red-400 uppercase">Risk of Ruin</span>
+                                    <span id="uiRiskOfRuin" class="text-sm font-black text-red-600">0.00%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 flex flex-col h-full">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Assets & Bias
+                        </h3>
+                        
+                        <div class="space-y-4 flex-1">
+                            <div>
+                                <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Symbol</h4>
+                                <div id="uiSymbolBreakdown" class="space-y-2 max-h-[100px] overflow-y-auto pr-2"></div>
+                            </div>
+                            <div class="pt-4 border-t border-slate-100">
+                                <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">Buy vs Sell Bias</h4>
+                                <div id="uiSideBreakdown" class="space-y-4"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="view-performance" class="hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 h-[400px] flex flex-col">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Hour</h3>
+                        <div class="flex-1 relative w-full h-full">
+                            <canvas id="hourlyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 h-[400px] flex flex-col">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Day of Week</h3>
+                        <div class="flex-1 relative w-full h-full">
+                            <canvas id="dowChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 overflow-hidden flex flex-col">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Buy VS Sell Analysis</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap border-collapse">
+                            <thead>
+                                <tr class="text-slate-400 bg-slate-50/50 border-b border-slate-100">
+                                    <th class="py-3 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl align-bottom">Symbol</th>
+                                    <th colspan="4" class="py-2 px-4 font-black text-slate-600 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">Long (Buy)</th>
+                                    <th colspan="4" class="py-2 px-4 font-black text-orange-500 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">Short (Sell)</th>
+                                    <th class="py-3 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl border-l border-slate-200 align-bottom">Net P&L ($)</th>
+                                </tr>
+                                <tr class="text-slate-400 bg-slate-50/50 border-b border-slate-200">
+                                    <th class="py-2 px-4"></th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
+                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
+                                    <th class="py-2 px-4 border-l border-slate-200"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="uiMatrixTable" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-history" class="hidden space-y-6">
+                <div class="glass-card p-6 overflow-hidden flex flex-col">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <h3 class="text-lg font-extrabold text-slate-800 tracking-tight">Trade History</h3>
+                        <div id="paginationControls" class="flex flex-wrap gap-1"></div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-100 bg-slate-50/50">
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">Time</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">RR</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl">Net P&L ($)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uiTradeTable" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-calendar" class="hidden space-y-6">
+                <div class="glass-card p-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+                        <div class="flex items-center gap-4">
+                            <button onclick="changeMonth(-1)" class="p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            </button>
+                            <h2 id="calendarMonthLabel" class="text-3xl font-extrabold text-slate-800 min-w-[240px] text-center tracking-tight">Month Year</h2>
+                            <button onclick="changeMonth(1)" class="p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            </button>
+    
+                            <button onclick="goToToday()" class="ml-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition uppercase tracking-wider">
+                                Today
+                            </button>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+                                <span class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Monthly P&L</span>
+                                <span id="calMonthlyPnl" class="text-xl font-black text-slate-900">$0.00</span>
+                            </div>
+                            <div class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+                                <span class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Trading Days</span>
+                                <span id="calTradingDays" class="text-xl font-black text-slate-700">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Mon</div>
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Tue</div>
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Wed</div>
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Thu</div>
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Fri</div>
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Sat</div>
+                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200">Sun</div>
+                        <div id="calendarGrid" class="contents"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbykRBquO89CoXaQmqP0x_Fww5MXgI4Q1-hINS0W7SGrVZMVOS6xv5oeKqMJ7Zs7UQ19/exec";
+        
+        let globalTrades = [];
+        let chartInstance = null;
+        let hourlyChartInst = null;
+        let dowChartInst = null;
+        
+        let currentPage = 1;
+        const rowsPerPage = 20;
+        let currentCalDate = new Date();
+
+        // ==========================================
+        // INDEXEDDB CONFIGURATION
+        // ==========================================
+        const dbName = "TradeJournalDB";
+        let localDB;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onupgradeneeded = (e) => {
+                    localDB = e.target.result;
+                    if (!localDB.objectStoreNames.contains("trades")) {
+                        localDB.createObjectStore("trades", { keyPath: "id" });
+                    }
+                    if (!localDB.objectStoreNames.contains("config")) {
+                        localDB.createObjectStore("config", { keyPath: "key" });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    localDB = e.target.result;
+                    resolve();
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function loadData() {
+            return new Promise((resolve) => {
+                const transaction = localDB.transaction(["config", "trades"], "readonly");
+                const configStore = transaction.objectStore("config");
+                const tradesStore = transaction.objectStore("trades");
+
+                const configReq = configStore.get("capital");
+                const tradesReq = tradesStore.getAll();
+
+                configReq.onsuccess = () => {
+                    if (configReq.result) {
+                        document.getElementById('initialBalanceInput').value = configReq.result.value;
+                    }
+                };
+
+                tradesReq.onsuccess = () => {
+                    globalTrades = tradesReq.result || [];
+                    resolve();
+                };
+            });
+        }
+
+        async function saveConfig(capital) {
+            return new Promise((resolve) => {
+                const transaction = localDB.transaction(["config"], "readwrite");
+                transaction.objectStore("config").put({ key: "capital", value: capital });
+                transaction.oncomplete = () => resolve();
+            });
+        }
+
+        async function saveTradesToDB(trades) {
+            return new Promise((resolve) => {
+                const transaction = localDB.transaction(["trades"], "readwrite");
+                const store = transaction.objectStore("trades");
+                store.clear();
+                trades.forEach((t, i) => {
+                    if(!t.id) t.id = "T_" + new Date(t.time).getTime() + "_" + i;
+                    store.put(t);
+                });
+                transaction.oncomplete = () => resolve();
+            });
+        }
+
+        // ==========================================
+        // DATA SYNC & EVENT HANDLERS
+        // ==========================================
+
+        window.onload = async () => {
+            await initDB();
+            await loadData();
+            updateDashboard();
+            document.getElementById('statusText').innerText = "Local DB Active";
+            document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-green-500 mr-2 shadow-[0_0_8px_#22c55e]";
+        };
+
+        window.syncFromGoogleSheets = async function() {
+            if (!GAS_URL) return alert("GAS_URL not configured.");
+            document.getElementById('statusText').innerText = "Syncing...";
+            document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2";
+            
+            try {
+                const response = await fetch(GAS_URL);
+                const data = await response.json();
+                
+                globalTrades = processTrades(data);
+                await saveTradesToDB(globalTrades);
+                updateDashboard();
+                
+                document.getElementById('statusText').innerText = "Synced Successfully";
+                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-green-500 mr-2 shadow-[0_0_8px_#22c55e]";
+            } catch (err) {
+                console.error(err);
+                document.getElementById('statusText').innerText = "Sync Failed (Offline?)";
+                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2 shadow-[0_0_8px_#ef4444]";
+            }
+        };
+
+        window.switchView = function(view) {
+            const views = ['dashboard', 'performance', 'history', 'calendar'];
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`nav-${v}`);
+                if (el) {
+                    if (v === view) {
+                        el.classList.remove('hidden');
+                        if(btn) btn.className = "px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white text-orange-500 shadow-sm";
+                    } else {
+                        el.classList.add('hidden');
+                        if(btn) btn.className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700";
+                    }
+                }
+            });
+            
+            if (view === 'dashboard') renderChart();
+            if (view === 'performance') updatePerformanceDashboard();
+            if (view === 'calendar') renderCalendar();
+        };
+
+        window.resetDatabase = async function() {
+            const confirmed = window.confirm("Are you sure you want to RESET the local database? This will clear all local trades.");
+            if (confirmed) {
+                globalTrades = [];
+                await saveTradesToDB([]);
+                updateDashboard();
+            }
+        };
+
+        window.handleCapitalChange = async function() {
+            const cap = parseFloat(document.getElementById('initialBalanceInput').value) || 1000;
+            await saveConfig(cap);
+            updateDashboard();
+        };
+
+        window.handleCSVUpload = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const raw = e.target.result.replace(/\r/g, '').replace(/^\uFEFF/, '');
+                const lines = raw.split('\n');
+                const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+                const originalHeaders = lines[0].split(csvSplitRegex).map(h => h.replace(/^"|"$/g, '').trim());
+                const headers = originalHeaders.map(h => h.toLowerCase());
+                
+                const idxSymbol = headers.findIndex(h => h === 'symbol');
+                const idxTime = headers.findIndex(h => h === 'update time' || h === 'time');
+                const idxProfit = headers.findIndex(h => h === 'closed p&l ($)' || h === 'closed p&l' || h.includes('p&l'));
+                const idxRR = headers.findIndex(h => h === 'rr');
+                const idxSide = headers.findIndex(h => h === 'side');
+                const idxQty = headers.findIndex(h => h === 'qty' || h === 'filled qty');
+                const idxResultType = headers.findIndex(h => h === 'result type' || h === 'result');
+                const idxRisk = headers.findIndex(h => h.includes('risk'));
+                
+                if (idxSymbol === -1 || idxProfit === -1 || idxTime === -1) {
+                    return alert("Invalid CSV Format");
+                }
+
+                const parsed = [];
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    const row = lines[i].split(csvSplitRegex).map(v => v.replace(/^"|"$/g, '').trim());
+                    const profit = parseFloat(String(row[idxProfit]).replace(/,/g, '') || 'NaN');
+                    if (!isNaN(profit)) {
+                        let t = {};
+                        originalHeaders.forEach((header, index) => { t[header] = row[index] || ""; });
+                        t.id = "CSV_" + Date.now() + "_" + i;
+                        t.symbol = row[idxSymbol] || "";
+                        t.time = row[idxTime] || "";
+                        t.profit = profit;
+                        
+                        let parsedResultType = idxResultType !== -1 ? String(row[idxResultType]).toUpperCase().trim() : '';
+                        if (!parsedResultType) {
+                            parsedResultType = profit === 0 ? 'BE' : (profit > 0 ? 'TP' : 'SL');
+                        }
+                        t.resultType = parsedResultType;
+
+                        t.rr = parseFloat(row[idxRR]) || 0;
+                        t.side = String(row[idxSide]).toUpperCase();
+                        t.risk = idxRisk !== -1 ? (parseFloat(row[idxRisk]) || 0) : 0;
+                        parsed.push(t);
+                    }
+                }
+                
+                globalTrades = processTrades([...globalTrades, ...parsed]);
+                await saveTradesToDB(globalTrades);
+                updateDashboard();
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        };
+
+        window.changePage = (p) => { currentPage = p; renderTable(); };
+        window.changeMonth = (step) => { currentCalDate.setMonth(currentCalDate.getMonth() + step); renderCalendar(); };
+        window.goToToday = () => { currentCalDate = new Date(); renderCalendar(); };
+
+        // ==========================================
+        // UI COMPUTATION & RENDERING
+        // ==========================================
+
+        function processTrades(rawTrades) {
+            const seen = new Set();
+            return rawTrades.sort((a, b) => new Date(a.time) - new Date(b.time))
+                .filter(t => {
+                    if (isNaN(t.profit)) return false;
+                    const tradeNo = t['No.'] || t.id || '';
+                    const posId = t['Position ID'] || t['Order ID'] || '';
+                    const key = `${tradeNo}_${posId}_${t.symbol}_${t.time}_${t.profit.toFixed(2)}_${t.side}`;
+                    return seen.has(key) ? false : seen.add(key);
+                });
+        }
+
+        function calculateStandardDeviation(values, avg) {
+            if (values.length === 0) return 0;
+            const sqDiffs = values.map(v => Math.pow(v - avg, 2));
+            return Math.sqrt(sqDiffs.reduce((a, b) => a + b, 0) / values.length);
+        }
+
+        function updateDashboard() {
+            const initialBalance = parseFloat(document.getElementById('initialBalanceInput').value) || 0;
+            let net = 0, wins = 0, losses = 0, gProfit = 0, gLoss = 0, countTP = 0, countSL = 0, countBE = 0;
+            let peak = initialBalance, maxDD = 0, totalRR = 0, rrCount = 0;
+            let slTotalRR = 0, slRRCount = 0;
+            let streakL = 0, maxStreakL = 0, streakW = 0, maxStreakW = 0;
+            let netRR = 0;
+            const symStats = {}, sideStats = { BUY: { pnl: 0, w: 0, l: 0 }, SELL: { pnl: 0, w: 0, l: 0 } }, profits = [];
+
+            globalTrades.forEach(t => {
+                net += t.profit; profits.push(t.profit);
+                const equity = initialBalance + net;
+                if (equity > peak) peak = equity;
+                maxDD = Math.max(maxDD, peak - equity);
+                
+                if(!symStats[t.symbol]) symStats[t.symbol] = { pnl: 0, count: 0, win: 0, loss: 0 };
+                symStats[t.symbol].pnl += t.profit; symStats[t.symbol].count++;
+                
+                const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : 'OTHER';
+                if(sideStats[side]) sideStats[side].pnl += t.profit;
+
+                // เช็คจาก Result Type โดยตรงแทนการเช็ค Profit == 0
+                const isBE = (t.resultType === 'BE');
+
+                netRR += (t.rr || 0);
+
+                if (isBE) { 
+                    countBE++; streakL = 0; streakW = 0; 
+                }
+                else if (t.profit > 0 || t.resultType === 'TP') {
+                    wins++; gProfit += t.profit; countTP++; streakW++; streakL = 0;
+                    if (streakW > maxStreakW) maxStreakW = streakW;
+                    if (t.rr > 0) { totalRR += t.rr; rrCount++; }
+                    symStats[t.symbol].win++; if(sideStats[side]) sideStats[side].w++;
+                } 
+                else if (t.profit < 0 || t.resultType === 'SL') {
+                    losses++; gLoss += Math.abs(t.profit); countSL++; streakL++; streakW = 0;
+                    if (streakL > maxStreakL) maxStreakL = streakL;
+                    symStats[t.symbol].loss++; 
+                    if(sideStats[side]) sideStats[side].l++;
+                    if (t.rr < 0) { slTotalRR += t.rr; slRRCount++; }
+                }
+            });
+
+            const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) : 0;
+            const avgW = wins ? gProfit / wins : 0, avgL = losses ? gLoss / losses : 0;
+            const stdDev = calculateStandardDeviation(profits, globalTrades.length ? net / globalTrades.length : 0);
+            const ror = (winRate > 0 && winRate < 1) ? Math.pow((1 - winRate) / (1 + winRate), initialBalance / (avgL || 1)) * 100 : 0;
+
+            document.getElementById('uiBalance').innerText = `$${(initialBalance + net).toFixed(2)}`;
+            document.getElementById('uiNetProfit').innerText = `$${net.toFixed(2)}`;
+            document.getElementById('uiWinRate').innerText = `${(winRate * 100).toFixed(1)}%`;
+            document.getElementById('uiGrowth').innerText = initialBalance > 0 ? `${((net / initialBalance) * 100).toFixed(2)}%` : '0.00%';
+            document.getElementById('uiTotalTrades').innerText = globalTrades.length;
+            document.getElementById('uiTotalTP').innerText = countTP;
+            document.getElementById('uiTotalBE').innerText = countBE;
+            document.getElementById('uiTotalSL').innerText = countSL;
+
+            const uiTotalNetRREl = document.getElementById('uiTotalNetRR');
+            if (uiTotalNetRREl) {
+                uiTotalNetRREl.innerText = netRR.toFixed(2) + 'R';
+                uiTotalNetRREl.className = `text-sm font-black ${netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`;
+            }
+
+            document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toFixed(2);
+            document.getElementById('uiExpectancy').innerText = `$${((winRate * avgW) - ((1 - winRate) * avgL)).toFixed(2)}`;
+            document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ( (net/globalTrades.length) / stdDev ).toFixed(2) : '0.00';
+            document.getElementById('uiAvgRR').innerText = rrCount ? (totalRR / rrCount).toFixed(2) + 'R' : '0.00R';
+            document.getElementById('uiAvgSLRR').innerText = slRRCount ? (slTotalRR / slRRCount).toFixed(2) + 'R' : '0.00R';
+            document.getElementById('uiMaxConsLoss').innerText = maxStreakL;
+            document.getElementById('uiMaxConsWin').innerText = maxStreakW;
+            document.getElementById('uiDrawdown').innerText = `$${maxDD.toFixed(2)}`;
+            document.getElementById('uiDrawdownPercent').innerText = peak > 0 ? `${((maxDD / peak) * 100).toFixed(2)}%` : '0.00%';
+            document.getElementById('uiRiskOfRuin').innerText = `${ror.toFixed(2)}%`;
+
+            renderCategorical(symStats, sideStats);
+            renderTable();
+            renderChart();
+            updatePerformanceDashboard();
+        }
+
+        function updatePerformanceDashboard() {
+            const hours = Array.from({length: 24}, (_, i) => i);
+            const hourStats = {};
+            hours.forEach(h => hourStats[h] = { posRR: 0, negRR: 0 });
+
+            const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dowStats = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0};
+            const matrix = {};
+
+            globalTrades.forEach(t => {
+                let hr = 0;
+                let dObj = new Date();
+                try {
+                    const timePart = t.time.split(' ')[1];
+                    const datePart = t.time.split(' ')[0];
+                    hr = parseInt(timePart.split(':')[0], 10);
+                    dObj = new Date(datePart.replace(/-/g, '/')); 
+                } catch(e) {}
+
+                const rrVal = t.rr || 0;
+
+                if (!isNaN(hr)) {
+                    if (rrVal > 0) hourStats[hr].posRR += rrVal;
+                    else if (rrVal < 0) hourStats[hr].negRR += Math.abs(rrVal);
+                }
+
+                if (!isNaN(dObj.getTime())) {
+                    dowStats[dObj.getDay()] += rrVal;
+                }
+
+                if (!matrix[t.symbol]) {
+                    matrix[t.symbol] = {
+                        BUY: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 },
+                        SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
+                    };
+                }
+                const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : null;
+                if (side) {
+                    const m = matrix[t.symbol][side];
+                    // เช็คจาก Result Type
+                    const isBE = (t.resultType === 'BE');
+                    
+                    m.trades++;
+                    m.pnl += t.profit;
+                    
+                    if (!isBE) {
+                        if (t.profit > 0 || t.resultType === 'TP') m.win++;
+                        if (t.profit < 0 || t.resultType === 'SL') m.loss++;
+                    }
+                    if (t.rr) { m.rr += t.rr; m.rrCount++; }
+                }
+            });
+
+            if(typeof Chart !== 'undefined') {
+                const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
+                if (hourlyChartInst) hourlyChartInst.destroy();
+                hourlyChartInst = new Chart(ctxHourly, {
+                    type: 'bar',
+                    data: {
+                        labels: hours.map(h => `${h}:00`),
+                        datasets: [
+                            { label: 'Gross +RR', data: hours.map(h => hourStats[h].posRR), backgroundColor: '#1e293b', borderRadius: 4 },
+                            { label: 'Gross -RR', data: hours.map(h => hourStats[h].negRR), backgroundColor: '#f97316', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } },
+                        plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } }
+                    }
+                });
+
+                const ctxDow = document.getElementById('dowChart').getContext('2d');
+                if (dowChartInst) dowChartInst.destroy();
+                
+                const activeDowKeys = Object.keys(dowStats).filter(k => dowStats[k] !== 0);
+                const activeDowNames = activeDowKeys.map(k => dowNames[k]);
+                const activeDowData = activeDowKeys.map(k => dowStats[k]);
+                const dowColors = activeDowData.map(v => v >= 0 ? '#1e293b' : '#f97316');
+
+                dowChartInst = new Chart(ctxDow, {
+                    type: 'bar',
+                    data: {
+                        labels: activeDowNames,
+                        datasets: [{ label: 'Net RR', data: activeDowData, backgroundColor: dowColors, borderRadius: 6 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            const matrixHtml = Object.entries(matrix).sort((a,b) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl)).map(([sym, data]) => {
+                const b = data.BUY, s = data.SELL;
+                const bWR = (b.win + b.loss) > 0 ? (b.win / (b.win + b.loss) * 100).toFixed(1) + '%' : '-';
+                const sWR = (s.win + s.loss) > 0 ? (s.win / (s.win + s.loss) * 100).toFixed(1) + '%' : '-';
+                const bRR = b.rrCount ? (b.rr / b.rrCount).toFixed(2) + 'R' : '-';
+                const sRR = s.rrCount ? (s.rr / s.rrCount).toFixed(2) + 'R' : '-';
+                const total = b.pnl + s.pnl;
+
+                return `
+                <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+                    <td class="py-3 px-4 font-extrabold text-slate-800 text-[11px]">${sym}</td>
+                    
+                    <td class="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">${b.trades}</td>
+                    <td class="py-3 px-4 text-center font-bold text-slate-600">${bWR}</td>
+                    <td class="py-3 px-4 text-center font-semibold text-slate-500">${bRR}</td>
+                    <td class="py-3 px-4 text-right font-black ${b.pnl>=0?'text-slate-800':'text-orange-500'}">${b.pnl.toFixed(2)}</td>
+                    
+                    <td class="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">${s.trades}</td>
+                    <td class="py-3 px-4 text-center font-bold text-slate-600">${sWR}</td>
+                    <td class="py-3 px-4 text-center font-semibold text-slate-500">${sRR}</td>
+                    <td class="py-3 px-4 text-right font-black ${s.pnl>=0?'text-slate-800':'text-orange-500'}">${s.pnl.toFixed(2)}</td>
+                    
+                    <td class="py-3 px-4 text-right border-l border-slate-100 font-black ${total>=0?'text-slate-800':'text-orange-500'}">${total.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
+            
+            document.getElementById('uiMatrixTable').innerHTML = matrixHtml;
+        }
+
+        function renderCategorical(symbols, sides) {
+            document.getElementById('uiSymbolBreakdown').innerHTML = Object.entries(symbols).sort((a,b) => b[1].pnl - a[1].pnl).map(([name, stat]) => {
+                const totalWL = stat.win + stat.loss;
+                const wr = totalWL > 0 ? ((stat.win / totalWL) * 100).toFixed(0) : 0;
+                return `
+                <div class="flex justify-between items-center text-[11px] p-2 bg-slate-50 rounded-lg">
+                    <span class="font-black text-slate-800">${name}</span>
+                    <div class="text-right">
+                        <span class="font-bold ${stat.pnl>=0?'text-slate-900':'text-red-500'}">$${stat.pnl.toFixed(2)}</span>
+                        <span class="text-slate-400 ml-2">${wr}% WR</span>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('uiSideBreakdown').innerHTML = ['BUY', 'SELL'].map(side => {
+                const s = sides[side], wr = (s.w + s.l) > 0 ? (s.w / (s.w + s.l) * 100).toFixed(1) : 0;
+                return `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] font-black uppercase">
+                        <span class="${side==='BUY'?'text-slate-600':'text-red-400'}">${side}</span>
+                        <span>${wr}% WR</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div class="h-full ${side==='BUY'?'bg-slate-800':'bg-red-400'}" style="width: ${wr}%"></div>
+                    </div>
+                    <div class="text-right text-[11px] font-bold ${s.pnl>=0?'text-slate-900':'text-red-500'}">$${s.pnl.toFixed(2)}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderTable() {
+            const data = [...globalTrades].reverse(), start = (currentPage - 1) * rowsPerPage, paginated = data.slice(start, start + rowsPerPage);
+            document.getElementById('uiTradeTable').innerHTML = paginated.map(t => {
+                // เช็คจาก Result Type
+                const isBE = (t.resultType === 'BE');
+                
+                const badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.resultType === 'TP' || t.profit > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-red-50 text-red-600 border-red-200');
+                const badgeText = t.resultType || (t.profit > 0 ? 'TP' : 'SL');
+                
+                const rawRisk = parseFloat(t.risk || 0);
+                const riskText = rawRisk && rawRisk !== 0 ? '$' + Math.abs(rawRisk).toFixed(2) : '-';
+
+                let shortTime = t.time;
+                try {
+                    const d = new Date(t.time.replace(/-/g, '/'));
+                    if (!isNaN(d)) {
+                        shortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + 
+                                    d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    }
+                } catch(e) {}
+
+                return `
+                <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+                    <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold">${shortTime}</td>
+                    <td class="py-4 px-4 font-extrabold text-slate-800">${t.symbol}</td>
+                    <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side==='BUY'?'bg-slate-100':'bg-red-50'}">${t.side}</span></td>
+                    <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
+                    <td class="py-4 px-4 text-right font-bold text-slate-600">${riskText}</td>
+                    <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toFixed(2)+'R' : '-'}</td>
+                    <td class="py-4 px-4 text-right font-extrabold ${t.profit>=0&&!isBE?'text-slate-900':'text-red-500'}">${t.profit.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
+            renderPagination(Math.ceil(data.length / rowsPerPage));
+        }
+
+        function renderPagination(total) {
+            if (total === 0) {
+                document.getElementById('paginationControls').innerHTML = '';
+                return;
+            }
+            let btns = `<button onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''} class="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600">Prev</button>`;
+            for(let i=1; i<=total; i++) {
+                if(i===1 || i===total || (i >= currentPage-1 && i <= currentPage+1))
+                    btns += `<button onclick="changePage(${i})" class="page-btn px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold ${i===currentPage?'active':''}">${i}</button>`;
+                else if (i === currentPage-2 || i === currentPage+2) btns += `<span class="px-2 text-slate-300">...</span>`;
+            }
+            btns += `<button onclick="changePage(${currentPage+1})" ${currentPage===total?'disabled':''} class="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold">Next</button>`;
+            document.getElementById('paginationControls').innerHTML = btns;
+        }
+
+        function renderChart() {
+            if(typeof Chart === 'undefined') return;
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            let sum = 0; const data = globalTrades.map(t => sum += t.profit);
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line', data: { labels: globalTrades.map((_, i) => i + 1), datasets: [{ data: data, borderColor: '#f97316', borderWidth: 3, backgroundColor: 'rgba(249, 115, 22, 0.08)', fill: true, tension: 0.4, pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#f1f5f9' } } } }
+            });
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
+            const year = currentCalDate.getFullYear(), month = currentCalDate.getMonth();
+            document.getElementById('calendarMonthLabel').innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentCalDate);
+            const today = new Date(), isCurrentMonth = (year === today.getFullYear() && month === today.getMonth()), currentDay = today.getDate();
+            let firstDay = new Date(year, month, 1).getDay(); firstDay = firstDay === 0 ? 6 : firstDay - 1;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const statsMap = {};
+            globalTrades.forEach(t => {
+                const d = new Date(t.time.replace(/-/g, '/'));
+                if (d.getFullYear() === year && d.getMonth() === month) {
+                    const date = d.getDate(); if (!statsMap[date]) statsMap[date] = { pnl: 0, count: 0 };
+                    statsMap[date].pnl += t.profit; statsMap[date].count++;
+                }
+            });
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="bg-slate-50/50 min-h-[120px] border-b border-r border-slate-100"></div>`;
+            let mNet = 0, tDays = 0;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const s = statsMap[day]; let bgColor = "bg-white", pnlHtml = "";
+                let label = `<span class="text-xs font-bold text-slate-400">${day}</span>`;
+                if (isCurrentMonth && day === currentDay) label = `<span class="text-xs font-bold bg-orange-500 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">${day}</span>`;
+                if (s) {
+                    mNet += s.pnl; tDays++; bgColor = s.pnl >= 0 ? "bg-slate-50/80" : "bg-red-50/40";
+                    pnlHtml = `<div class="mt-auto"><div class="text-base font-black ${s.pnl>=0?'text-slate-900':'text-red-500'}">${s.pnl>=0?'$':'-$'}${Math.abs(s.pnl).toFixed(2)}</div><div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Trades: ${s.count}</div></div>`;
+                }
+                grid.innerHTML += `<div class="${bgColor} min-h-[120px] p-3 flex flex-col border-b border-r border-slate-100 hover:bg-slate-100 transition">${label}${pnlHtml}</div>`;
+            }
+            const pnlEl = document.getElementById('calMonthlyPnl');
+            pnlEl.innerText = `${mNet>=0?'$':'-$'}${Math.abs(mNet).toFixed(2)}`;
+            pnlEl.className = `text-xl font-black ${mNet>=0?'text-slate-900':'text-red-500'}`;
+            document.getElementById('calTradingDays').innerText = tDays;
+        }
+    </script>
+</body>
+</html>
