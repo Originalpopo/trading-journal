@@ -90,16 +90,6 @@
                     class="bg-transparent text-sm font-extrabold text-orange-600 w-24">$0.00</span>
             </div>
 
-            <input type="file" id="csvFileInput" class="hidden" accept=".csv" onchange="handleCSVUpload(event)">
-            <button id="btnImport" onclick="document.getElementById('csvFileInput').click()"
-                class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-bold transition shadow-lg shadow-orange-200 text-sm flex items-center gap-2 cursor-pointer h-[38px]">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                </svg>
-                Import CSV
-            </button>
-
             <button id="btnReset" onclick="resetDatabase()"
                 class="bg-slate-50 border border-slate-200 hover:border-red-200 hover:text-red-500 text-slate-400 px-3 py-2 rounded-xl text-xs font-bold transition h-[38px] flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,19 +184,19 @@
                         <div class="space-y-4 pt-2">
                             <div class="flex justify-between items-center">
                                 <span class="text-[11px] font-bold text-slate-400">Avg TP RR</span>
-                                <span id="uiAvgRR" class="font-black text-slate-800">0.00R</span>
+                                <span id="uiAvgRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-[11px] font-bold text-slate-400">Max TP RR</span>
-                                <span id="uiMaxTPRR" class="font-black text-slate-800">0.00R</span>
+                                <span id="uiMaxTPRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
                             <div class="flex justify-between items-center pt-2 border-t border-slate-50">
                                 <span class="text-[11px] font-bold text-slate-400">Avg SL RR</span>
-                                <span id="uiAvgSLRR" class="font-black text-slate-800">0.00R</span>
+                                <span id="uiAvgSLRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-[11px] font-bold text-slate-400">Max SL RR</span>
-                                <span id="uiMaxSLRR" class="font-black text-slate-800">0.00R</span>
+                                <span id="uiMaxSLRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
                         </div>
                     </div>
@@ -216,12 +206,6 @@
                             <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Risk & Drawdown
                         </h3>
                         <div class="space-y-4 pt-2">
-                            <div class="p-3 bg-red-50 rounded-xl mb-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[10px] font-black text-red-400 uppercase">Risk of Ruin</span>
-                                    <span id="uiRiskOfRuin" class="text-sm font-black text-red-600">0.00%</span>
-                                </div>
-                            </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-xs font-bold text-slate-400">Max Drawdown</span>
                                 <div class="text-right">
@@ -231,11 +215,17 @@
                             </div>
                             <div class="flex justify-between items-center pt-2 border-t border-slate-50">
                                 <span class="text-[11px] font-bold text-slate-400">Consecutive Loss (Max)</span>
-                                <span id="uiMaxConsLoss" class="font-black text-red-500">0</span>
+                                <span id="uiMaxConsLoss" class="text-[12px] font-black text-red-500">0</span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-[11px] font-bold text-slate-400">Consecutive Win (Max)</span>
-                                <span id="uiMaxConsWin" class="font-black text-slate-800">0</span>
+                                <span id="uiMaxConsWin" class="text-[12px] font-black text-slate-800">0</span>
+                            </div>
+                            <div class="p-3 bg-red-50 rounded-xl mb-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-black text-red-400 uppercase">Risk of Ruin</span>
+                                    <span id="uiRiskOfRuin" class="text-sm font-black text-red-600">0.00%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -328,7 +318,7 @@
                                     <th class="py-2 px-4 border-l border-slate-200"></th>
                                 </tr>
                             </thead>
-                            <tbody id="uiMatrixTable" class="divide-y divide-slate-50"></tbody>
+                            <tbody id="uiMatrixTable" class="text-[12px] divide-y divide-slate-50"></tbody>
                         </table>
                     </div>
                 </div>
@@ -682,125 +672,6 @@
             }
         };
 
-        window.handleCSVUpload = async function (event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const raw = e.target.result.replace(/\r/g, '').replace(/^\uFEFF/, '');
-                const lines = raw.split('\n');
-                const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-                const originalHeaders = lines[0].split(csvSplitRegex).map(h => h.replace(/^"|"$/g, '').trim());
-                const headers = originalHeaders.map(h => h.toLowerCase());
-
-                const idxDep = headers.findIndex(h => h === 'deposit');
-                const idxWit = headers.findIndex(h => h === 'withdraw');
-                
-                if (idxDep !== -1 && idxWit !== -1) {
-                    const idxDate = headers.findIndex(h => h === 'date');
-                    const idxTime = headers.findIndex(h => h === 'time');
-                    const parsedFunding = [];
-                    for (let i = 1; i < lines.length; i++) {
-                        if (!lines[i].trim()) continue;
-                        const row = lines[i].split(csvSplitRegex).map(v => v.replace(/^"|"$/g, '').trim());
-                        let rawDate = row[idxDate] || '';
-                        let rawTime = idxTime !== -1 ? (row[idxTime] || '00:00:00') : '00:00:00';
-                        
-                        let parts = rawDate.split('-');
-                        let formattedTime = rawDate;
-                        if (parts.length === 3 && parts[2].length === 4) {
-                            formattedTime = `${parts[2]}/${parts[1]}/${parts[0]} ${rawTime}`;
-                        } else if (parts.length === 3 && parts[0].length === 4) {
-                            formattedTime = `${parts[0]}/${parts[1]}/${parts[2]} ${rawTime}`;
-                        }
-                        
-                        let dep = parseFloat(String(row[idxDep] || '0').replace(/[$,]/g, '')) || 0;
-                        let wit = parseFloat(String(row[idxWit] || '0').replace(/[$,]/g, '')) || 0;
-                        
-                        if (dep > 0 || wit > 0) {
-                            parsedFunding.push({
-                                id: "CSV_F_" + Date.now() + "_" + i,
-                                time: formattedTime,
-                                deposit: dep,
-                                withdraw: wit
-                            });
-                        }
-                    }
-                    globalFunding = processFunding([...globalFunding, ...parsedFunding]);
-                    await saveFundingToDB(globalFunding);
-                    updateDashboard();
-                    return;
-                }
-
-                const idxSymbol = headers.findIndex(h => h === 'symbol');
-                const idxTime = headers.findIndex(h => h === 'update time' || h === 'time');
-                const idxProfit = headers.findIndex(h => h === 'closed p&l ($)' || h === 'closed p&l' || h.includes('p&l'));
-                const idxRR = headers.findIndex(h => h === 'rr');
-                const idxSide = headers.findIndex(h => h === 'side');
-                const idxQty = headers.findIndex(h => h === 'qty' || h === 'filled qty');
-                const idxResultType = headers.findIndex(h => h === 'result type' || h === 'result');
-                const idxRisk = headers.findIndex(h => h.includes('risk'));
-
-                if (idxSymbol === -1 || idxProfit === -1 || idxTime === -1) {
-                    return alert("Invalid CSV Format. Missing Symbol, P&L, or Time column.");
-                }
-
-                const parsedTrades = [];
-                const parsedFundingFromDB = [];
-                
-                for (let i = 1; i < lines.length; i++) {
-                    if (!lines[i].trim()) continue;
-                    const row = lines[i].split(csvSplitRegex).map(v => v.replace(/^"|"$/g, '').trim());
-                    const sym = String(row[idxSymbol] || "").toUpperCase().trim();
-                    const rawTime = row[idxTime] || "";
-                    const profitStr = String(row[idxProfit]).replace(/,/g, '') || 'NaN';
-                    const profit = parseFloat(profitStr);
-
-                    if (!isNaN(profit)) {
-                        if (sym === 'DEPOSIT' || sym === 'WITHDRAW' || sym === 'WITHDRAWAL') {
-                            let dep = sym === 'DEPOSIT' ? profit : 0;
-                            let wit = sym.includes('WITHDRAW') ? Math.abs(profit) : 0;
-                            parsedFundingFromDB.push({
-                                id: "CSV_DB_F_" + Date.now() + "_" + i,
-                                time: rawTime,
-                                deposit: dep,
-                                withdraw: wit
-                            });
-                        } else {
-                            let t = {};
-                            originalHeaders.forEach((header, index) => { t[header] = row[index] || ""; });
-                            t.id = "CSV_" + Date.now() + "_" + i;
-                            t.symbol = row[idxSymbol] || "";
-                            t.time = rawTime;
-                            t.profit = profit;
-
-                            let parsedResultType = idxResultType !== -1 ? String(row[idxResultType]).toUpperCase().trim() : '';
-                            if (!parsedResultType) {
-                                parsedResultType = profit === 0 ? 'BE' : (profit > 0 ? 'TP' : 'SL');
-                            }
-                            t.resultType = parsedResultType;
-
-                            t.rr = parseFloat(row[idxRR]) || 0;
-                            t.side = String(row[idxSide]).toUpperCase();
-                            t.risk = idxRisk !== -1 ? (parseFloat(row[idxRisk]) || 0) : 0;
-                            parsedTrades.push(t);
-                        }
-                    }
-                }
-
-                if (parsedFundingFromDB.length > 0) {
-                    globalFunding = processFunding([...globalFunding, ...parsedFundingFromDB]);
-                    await saveFundingToDB(globalFunding);
-                }
-
-                globalTrades = processTrades([...globalTrades, ...parsedTrades]);
-                await saveTradesToDB(globalTrades);
-                updateDashboard();
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        };
-
         window.changePage = (p) => { currentPage = p; renderTable(); };
         window.changeMonth = (step) => { currentCalDate.setMonth(currentCalDate.getMonth() + step); renderCalendar(); };
         window.goToToday = () => { currentCalDate = new Date(); renderCalendar(); };
@@ -811,12 +682,10 @@
                 .filter(t => {
                     if (isNaN(t.profit)) return false;
                     
-                    // --- ดักจับและเตะข้อมูล Deposit / Withdraw ที่อาจค้างในแคชทิ้ง ---
                     const sym = String(t.symbol || "").toUpperCase().trim();
                     if (sym === 'DEPOSIT' || sym === 'WITHDRAW' || sym === 'WITHDRAWAL') {
                         return false; 
                     }
-                    // ----------------------------------------------------------
 
                     const tradeNo = t['No.'] || t.id || '';
                     const posId = t['Position ID'] || t['Order ID'] || '';
@@ -841,7 +710,6 @@
         }
 
         function updateDashboard() {
-            // 1. คำนวณเงินทุนสุทธิ (ใช้แสดงผล UI ทั่วไป)
             let totalFunded = globalFunding.length > 0 ? 0 : (parseFloat(globalCapital) || 0);
             if(globalFunding.length > 0) {
                 globalFunding.forEach(f => {
@@ -860,18 +728,13 @@
             globalFunding.forEach(f => timelineEvents.push({ type: 'funding', timeObj: parseCustomDate(f.time), data: f }));
             timelineEvents.sort((a, b) => a.timeObj - b.timeObj);
 
-            // ยอด Balance จริงที่รวมฝาก-ถอน (ใช้แสดงผล UI ของบัญชีเท่านั้น)
             let runningBalance = globalFunding.length > 0 ? 0 : (parseFloat(globalCapital) || 0);
             
-            // ---------------------------------------------------------
-            // ตัวแปรสำหรับคำนวณ Drawdown บริสุทธิ์ (แยกขาดจากยอดฝากถอน)
-            // ---------------------------------------------------------
-            let tradeEquity = totalFunded; // สมมติฐานให้เงินทุนสุทธิเป็นจุดตั้งต้น
+            let tradeEquity = totalFunded; 
             let peakTradeEquity = tradeEquity;
             let maxDDValue = 0;
             let maxDDPercent = 0;
             
-            // ตัวแปรสำหรับวาด Equity Curve (แสดงเฉพาะกำไรขาดทุน)
             let cumulativePnL = 0;
             globalEquityData = [0]; 
             
@@ -885,7 +748,6 @@
 
             timelineEvents.forEach(evt => {
                 if (evt.type === 'funding') {
-                    // การฝากถอน มีผลแค่เงินในกระเป๋า แต่ **ข้ามการประเมิน Drawdown และกราฟ**
                     runningBalance += evt.data.deposit;
                     runningBalance -= evt.data.withdraw;
                 } else if (evt.type === 'trade') {
@@ -894,23 +756,19 @@
                     profits.push(t.profit);
                     runningBalance += t.profit;
                     
-                    // --- เก็บข้อมูล P&L บริสุทธิ์สำหรับ Equity Curve ---
                     cumulativePnL += t.profit;
                     globalEquityData.push(cumulativePnL);
 
-                    // --- ประเมิน Max Drawdown แบบ Dynamic Peak-to-Valley ---
                     tradeEquity += t.profit;
                     if (tradeEquity > peakTradeEquity) {
-                        peakTradeEquity = tradeEquity; // บันทึกจุดสูงสุดใหม่จากการเทรด
+                        peakTradeEquity = tradeEquity; 
                     }
                     
-                    let currentDDValue = peakTradeEquity - tradeEquity; // จำนวนเงินส่วนต่างที่ตกลงจากจุด Peak
+                    let currentDDValue = peakTradeEquity - tradeEquity; 
                     let currentDDPercent = peakTradeEquity > 0 ? (currentDDValue / peakTradeEquity) * 100 : 0;
                     
-                    // อัปเดตสถิติ Max Drawdown
                     if (currentDDValue > maxDDValue) maxDDValue = currentDDValue;
                     if (currentDDPercent > maxDDPercent) maxDDPercent = currentDDPercent;
-                    // ----------------------------------------------------
 
                     if (!symStats[t.symbol]) symStats[t.symbol] = { pnl: 0, count: 0, win: 0, loss: 0 };
                     symStats[t.symbol].pnl += t.profit; 
@@ -953,7 +811,6 @@
             const avgW = wins ? gProfit / wins : 0, avgL = losses ? gLoss / losses : 0;
             const stdDev = calculateStandardDeviation(profits, globalTrades.length ? net / globalTrades.length : 0);
             
-            // Risk of Ruin ใช้ base เป็น totalFunded 
             const ror = (winRate > 0 && winRate < 1 && totalFunded > 0) ? Math.pow((1 - winRate) / (1 + winRate), totalFunded / (avgL || 1)) * 100 : 0;
 
             document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
@@ -990,7 +847,6 @@
             document.getElementById('uiMaxConsLoss').innerText = maxStreakL;
             document.getElementById('uiMaxConsWin').innerText = maxStreakW;
             
-            // นำค่า Drawdown ที่เป็น Pure Trading Performance ไปแสดงผล
             document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toFixed(2)}`;
             document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toFixed(2)}%`;
             
@@ -1246,7 +1102,10 @@
         }
 
         function renderTable() {
-            const data = [...globalTrades].reverse(), start = (currentPage - 1) * rowsPerPage, paginated = data.slice(start, start + rowsPerPage);
+            const data = [...globalTrades].sort((a, b) => parseCustomDate(b.time) - parseCustomDate(a.time));
+            const start = (currentPage - 1) * rowsPerPage;
+            const paginated = data.slice(start, start + rowsPerPage);
+            
             document.getElementById('uiTradeTable').innerHTML = paginated.map(t => {
                 const isBE = (t.resultType === 'BE');
 
