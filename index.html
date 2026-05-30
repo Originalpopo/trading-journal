@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Journal - Professional Dashboard</title>
-    <script src="./tailwind.js"></script>
-    <script src="./chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -132,14 +132,16 @@
                             <p id="uiWinRate" class="text-3xl font-extrabold stat-value text-orange-500">0.0%</p>
                         </div>
                         <div class="glass-card p-6 bg-orange-500 border-none text-white shadow-lg shadow-orange-100">
-                            <p class="text-orange-100 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
+                            <p class="text-orange-100 text-[10px] font-bold uppercase tracking-wider mb-1">Account
+                                Growth</p>
                             <p id="uiGrowth" class="text-3xl font-extrabold stat-value text-white">0.00%</p>
                         </div>
                     </div>
                 </section>
 
                 <div class="glass-card p-6 h-[460px] flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Equity Curve</h3>
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Equity and Balance
+                    </h3>
                     <div class="flex-1 relative w-full h-full">
                         <canvas id="equityChart"></canvas>
                     </div>
@@ -148,7 +150,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                     <div class="glass-card p-6 space-y-5">
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <h3
+                            class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                             <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Statistics
                         </h3>
                         <div class="space-y-4">
@@ -170,15 +173,16 @@
                                     <p id="uiTotalSL" class="text-sm font-black text-red-500">0</p>
                                 </div>
                             </div>
-                            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg mt-2">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase">Net RR</span>
-                                <span id="uiTotalNetRR" class="text-sm font-black text-slate-800">0.00R</span>
+                            <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+                                <span class="text-xs font-bold text-slate-400">Net RR</span>
+                                <span id="uiTotalNetRR" class="font-black text-slate-800 text-xl">0.00R</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="glass-card p-6 space-y-5">
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <h3
+                            class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                             <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Reward to Risk
                         </h3>
                         <div class="space-y-4 pt-2">
@@ -190,7 +194,7 @@
                                 <span class="text-[11px] font-bold text-slate-400">Max TP RR</span>
                                 <span id="uiMaxTPRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
-                            <div class="flex justify-between items-center pt-2 border-t border-slate-50">
+                            <div class="flex justify-between items-center pt-2 border-t border-slate-200">
                                 <span class="text-[11px] font-bold text-slate-400">Avg SL RR</span>
                                 <span id="uiAvgSLRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
@@ -198,22 +202,7 @@
                                 <span class="text-[11px] font-bold text-slate-400">Max SL RR</span>
                                 <span id="uiMaxSLRR" class="text-[12px] font-black text-slate-800">0.00R</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-6 space-y-5">
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Risk & Drawdown
-                        </h3>
-                        <div class="space-y-4 pt-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold text-slate-400">Max Drawdown</span>
-                                <div class="text-right">
-                                    <div id="uiDrawdown" class="font-black text-red-500">$0.00</div>
-                                    <div id="uiDrawdownPercent" class="text-[10px] font-bold text-red-400">0.00%</div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center pt-2 border-t border-slate-50">
+                            <div class="flex justify-between items-center pt-2 border-t border-slate-200">
                                 <span class="text-[11px] font-bold text-slate-400">Consecutive Loss (Max)</span>
                                 <span id="uiMaxConsLoss" class="text-[12px] font-black text-red-500">0</span>
                             </div>
@@ -221,17 +210,41 @@
                                 <span class="text-[11px] font-bold text-slate-400">Consecutive Win (Max)</span>
                                 <span id="uiMaxConsWin" class="text-[12px] font-black text-slate-800">0</span>
                             </div>
-                            <div class="p-3 bg-red-50 rounded-xl mb-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[10px] font-black text-red-400 uppercase">Risk of Ruin</span>
-                                    <span id="uiRiskOfRuin" class="text-sm font-black text-red-600">0.00%</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 space-y-5">
+                        <h3
+                            class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Drawdown
+                        </h3>
+                        <div class="space-y-4 pt-2">
+                            <div class="flex flex-col gap-3 mb-4">
+                                <div class="p-3 bg-red-50/70 rounded-xl flex flex-col border border-red-100/50">
+                                    <p class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Active
+                                        Drawdown</p>
+                                    <p id="uiActiveDDPercent"
+                                        class="text-2xl font-extrabold stat-value text-red-500 mb-1">0.00%</p>
+                                    <p id="uiActiveDD" class="text-[10px] font-bold text-red-400">$0.00</p>
                                 </div>
+                                <div class="p-3 bg-red-50/70 rounded-xl flex flex-col border border-red-100/50">
+                                    <p class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Max
+                                        Drawdown</p>
+                                    <p id="uiDrawdownPercent"
+                                        class="text-2xl font-extrabold stat-value text-red-500 mb-1">0.00%</p>
+                                    <p id="uiDrawdown" class="text-[10px] font-bold text-red-400">$0.00</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-bold text-slate-400">Risk of Ruin</span>
+                                <span id="uiRiskOfRuin" class="text-[12px] font-black text-red-500">0.00%</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="glass-card p-6 flex flex-col space-y-5 h-full">
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <h3
+                            class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                             <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Performance
                         </h3>
                         <div class="space-y-4 pt-2">
@@ -248,7 +261,7 @@
                                 <span id="uiSharpe" class="font-black text-slate-800">0.00</span>
                             </div>
                         </div>
-                        <div class="pt-4 border-t border-slate-100 flex-1">
+                        <div class="pt-4 border-t border-slate-200 flex-1">
                             <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Symbol</h4>
                             <div id="uiSymbolBreakdown" class="space-y-2 max-h-[150px] overflow-y-auto pr-2"></div>
                         </div>
@@ -260,7 +273,7 @@
             <div id="view-performance" class="hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="glass-card p-6 h-[400px] flex flex-col">
-                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Hour</h3>
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Hour of Day</h3>
                         <div class="flex-1 relative w-full h-full">
                             <canvas id="hourlyChart"></canvas>
                         </div>
@@ -275,7 +288,8 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="glass-card p-6 h-[400px] flex flex-col">
-                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Month of Year</h3>
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Month of Year
+                        </h3>
                         <div class="flex-1 relative w-full h-full">
                             <canvas id="moyChart"></canvas>
                         </div>
@@ -289,29 +303,42 @@
                 </div>
 
                 <div class="glass-card p-6 overflow-hidden flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Buy VS Sell Analysis</h3>
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Buy VS Sell Analysis
+                    </h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm whitespace-nowrap border-collapse">
                             <thead>
                                 <tr class="text-slate-400 bg-slate-50/50 border-b border-slate-100">
-                                    <th class="py-3 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl align-bottom">Symbol</th>
-                                    <th colspan="4" class="py-2 px-4 font-black text-slate-600 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">
+                                    <th
+                                        class="py-3 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl align-bottom">
+                                        Symbol</th>
+                                    <th colspan="4"
+                                        class="py-2 px-4 font-black text-slate-600 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">
                                         Buy
-                                        <div id="uiSideBreakdownBuy" class="mt-2 text-left font-normal normal-case"></div>
+                                        <div id="uiSideBreakdownBuy" class="mt-2 text-left font-normal normal-case">
+                                        </div>
                                     </th>
-                                    <th colspan="4" class="py-2 px-4 font-black text-orange-500 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">
+                                    <th colspan="4"
+                                        class="py-2 px-4 font-black text-orange-500 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">
                                         Sell
-                                        <div id="uiSideBreakdownSell" class="mt-2 text-left font-normal normal-case"></div>
+                                        <div id="uiSideBreakdownSell" class="mt-2 text-left font-normal normal-case">
+                                        </div>
                                     </th>
-                                    <th class="py-3 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl border-l border-slate-200 align-bottom">Net P&L</th>
+                                    <th
+                                        class="py-3 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl border-l border-slate-200 align-bottom">
+                                        Net P&L</th>
                                 </tr>
                                 <tr class="text-slate-400 bg-slate-50/50 border-b border-slate-200">
                                     <th class="py-2 px-4"></th>
-                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                                    <th
+                                        class="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">
+                                        Trades</th>
                                     <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
                                     <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
                                     <th class="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
-                                    <th class="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                                    <th
+                                        class="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">
+                                        Trades</th>
                                     <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
                                     <th class="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
                                     <th class="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
@@ -334,16 +361,20 @@
                         <table class="w-full text-left text-sm whitespace-nowrap">
                             <thead>
                                 <tr class="text-slate-400 border-b border-slate-100 bg-slate-50/50">
-                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">Time</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">
+                                        Time</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
-                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
-                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">
+                                        Side</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">
+                                        Result</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">RR</th>
-                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl">Net P&L ($)</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl">Net
+                                        P&L ($)</th>
                                 </tr>
                             </thead>
-                            <tbody id="uiTradeTable" class="divide-y divide-slate-50"></tbody>
+                            <tbody id="uiTradeTable" class="text-[11px] divide-y divide-slate-50"></tbody>
                         </table>
                     </div>
                 </div>
@@ -353,38 +384,65 @@
                 <div class="glass-card p-8">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
                         <div class="flex items-center gap-4">
-                            <button onclick="changeMonth(-1)" class="p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
+                            <button onclick="changeMonth(-1)"
+                                class="p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round"></path>
                                 </svg>
                             </button>
-                            <h2 id="calendarMonthLabel" class="text-3xl font-extrabold text-slate-800 min-w-[240px] text-center tracking-tight">Month Year</h2>
-                            <button onclick="changeMonth(1)" class="p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
+                            <h2 id="calendarMonthLabel"
+                                class="text-3xl font-extrabold text-slate-800 min-w-[240px] text-center tracking-tight">
+                                Month Year</h2>
+                            <button onclick="changeMonth(1)"
+                                class="p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path d="M9 5l7 7-7 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M9 5l7 7-7 7" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round"></path>
                                 </svg>
                             </button>
-                            <button onclick="goToToday()" class="ml-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition uppercase tracking-wider">Today</button>
+                            <button onclick="goToToday()"
+                                class="ml-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition uppercase tracking-wider">Today</button>
                         </div>
                         <div class="flex gap-4">
-                            <div class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <span class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Monthly P&L</span>
+                            <div
+                                class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+                                <span
+                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Monthly
+                                    P&L</span>
                                 <span id="calMonthlyPnl" class="text-xl font-black text-slate-900">$0.00</span>
                             </div>
-                            <div class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <span class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Trading Days</span>
+                            <div
+                                class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+                                <span
+                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Trading
+                                    Days</span>
                                 <span id="calTradingDays" class="text-xl font-black text-slate-700">0</span>
                             </div>
                         </div>
                     </div>
                     <div class="calendar-grid">
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Mon</div>
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Tue</div>
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Wed</div>
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Thu</div>
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Fri</div>
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">Sat</div>
-                        <div class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200">Sun</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+                            Mon</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+                            Tue</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+                            Wed</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+                            Thu</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+                            Fri</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+                            Sat</div>
+                        <div
+                            class="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200">
+                            Sun</div>
                         <div id="calendarGrid" class="contents"></div>
                     </div>
                 </div>
@@ -404,6 +462,7 @@
         let moyChartInst = null;
         let perfBalanceChartInst = null;
         let globalEquityData = [];
+        let globalDashboardBalanceData = [];
 
         let currentPage = 1;
         const rowsPerPage = 20;
@@ -414,29 +473,29 @@
 
         function parseCustomDate(dateStr) {
             if (!dateStr) return new Date(0);
-            
+
             let d = new Date(dateStr);
             if (!isNaN(d.getTime())) return d;
-            
+
             d = new Date(dateStr.replace(/-/g, '/'));
             if (!isNaN(d.getTime())) return d;
-            
+
             const parts = dateStr.trim().split(/[\sT]+/);
             const datePart = parts[0];
             const timePart = parts[1] || '00:00:00';
-            
+
             const dateTokens = datePart.split(/[-/]/);
             if (dateTokens.length === 3) {
-                if (dateTokens[2].length === 4) { 
+                if (dateTokens[2].length === 4) {
                     d = new Date(`${dateTokens[2]}/${dateTokens[1]}/${dateTokens[0]} ${timePart}`);
                     if (!isNaN(d.getTime())) return d;
-                } else if (dateTokens[0].length === 4) { 
+                } else if (dateTokens[0].length === 4) {
                     d = new Date(`${dateTokens[0]}/${dateTokens[1]}/${dateTokens[2]} ${timePart}`);
                     if (!isNaN(d.getTime())) return d;
                 }
             }
-            
-            return new Date(0); 
+
+            return new Date(0);
         }
 
         function initDB() {
@@ -555,8 +614,8 @@
                         let rawTime = row['Time'] || '00:00:00';
                         let parts = rawDate.split('-');
                         let formattedTime = rawDate;
-                        if(parts.length === 3) {
-                            if(parts[2].length === 4) {
+                        if (parts.length === 3) {
+                            if (parts[2].length === 4) {
                                 formattedTime = `${parts[2]}/${parts[1]}/${parts[0]} ${rawTime}`;
                             } else if (parts[0].length === 4) {
                                 formattedTime = `${parts[0]}/${parts[1]}/${parts[2]} ${rawTime}`;
@@ -589,9 +648,9 @@
                     if (symbolStr === 'DEPOSIT' || symbolStr === 'WITHDRAW' || symbolStr === 'WITHDRAWAL') {
                         let amountStr = String(row['Closed P&L ($)'] || row['Closed P&L'] || row['profit'] || row['Amount'] || 0);
                         let amountVal = parseFloat(amountStr.replace(/[$,]/g, '')) || 0;
-                        
+
                         let dep = symbolStr === 'DEPOSIT' ? amountVal : 0;
-                        let wit = symbolStr.includes('WITHDRAW') ? Math.abs(amountVal) : 0; 
+                        let wit = symbolStr.includes('WITHDRAW') ? Math.abs(amountVal) : 0;
 
                         newFundingFromDB.push({
                             id: row['No.'] || "GAS_DB_F_" + Date.now() + "_" + i,
@@ -681,10 +740,10 @@
             return rawTrades.sort((a, b) => parseCustomDate(a.time) - parseCustomDate(b.time))
                 .filter(t => {
                     if (isNaN(t.profit)) return false;
-                    
+
                     const sym = String(t.symbol || "").toUpperCase().trim();
                     if (sym === 'DEPOSIT' || sym === 'WITHDRAW' || sym === 'WITHDRAWAL') {
-                        return false; 
+                        return false;
                     }
 
                     const tradeNo = t['No.'] || t.id || '';
@@ -711,13 +770,13 @@
 
         function updateDashboard() {
             let totalFunded = globalFunding.length > 0 ? 0 : (parseFloat(globalCapital) || 0);
-            if(globalFunding.length > 0) {
+            if (globalFunding.length > 0) {
                 globalFunding.forEach(f => {
                     totalFunded += f.deposit;
                     totalFunded -= f.withdraw;
                 });
             }
-            
+
             const initialBalanceEl = document.getElementById('initialBalanceDisplay');
             if (initialBalanceEl) {
                 initialBalanceEl.innerText = `$${totalFunded.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -729,15 +788,30 @@
             timelineEvents.sort((a, b) => a.timeObj - b.timeObj);
 
             let runningBalance = globalFunding.length > 0 ? 0 : (parseFloat(globalCapital) || 0);
-            
-            let tradeEquity = totalFunded; 
+
+            // ทุนเริ่มต้นสำหรับเป็นฐานของ Active Drawdown
+            let startingCapital = parseFloat(globalCapital) || 0;
+            if (startingCapital === 0 && globalFunding.length > 0) {
+                const firstDeposit = globalFunding.find(f => f.deposit > 0);
+                if (firstDeposit) startingCapital = firstDeposit.deposit;
+            }
+            if (startingCapital === 0) startingCapital = 1;
+
+            // ตัวแปรสำหรับ Max Drawdown (ดั้งเดิม - Balance Based)
+            let tradeEquity = totalFunded;
             let peakTradeEquity = tradeEquity;
             let maxDDValue = 0;
             let maxDDPercent = 0;
-            
+
+            // ตัวแปรสำหรับ Active Drawdown (ใหม่ - Equity Based + Reset on New High)
             let cumulativePnL = 0;
-            globalEquityData = [0]; 
-            
+            let peakCumulativePnL = 0;
+            let activeDDValue = 0;
+            let activeDDPercent = 0;
+
+            globalEquityData = [0];
+            globalDashboardBalanceData = [runningBalance];
+
             let net = 0, wins = 0, losses = 0, gProfit = 0, gLoss = 0, countTP = 0, countSL = 0, countBE = 0;
             let totalRR = 0, rrCount = 0;
             let slTotalRR = 0, slRRCount = 0;
@@ -750,28 +824,50 @@
                 if (evt.type === 'funding') {
                     runningBalance += evt.data.deposit;
                     runningBalance -= evt.data.withdraw;
+
+                    // อัปเดตกราฟ Balance ตามเงินทุนฝากถอน
+                    tradeEquity += evt.data.deposit;
+                    tradeEquity -= evt.data.withdraw;
+                    if (tradeEquity > peakTradeEquity) peakTradeEquity = tradeEquity;
+
+                    globalEquityData.push(cumulativePnL);
+                    globalDashboardBalanceData.push(runningBalance);
                 } else if (evt.type === 'trade') {
                     const t = evt.data;
-                    net += t.profit; 
+                    net += t.profit;
                     profits.push(t.profit);
                     runningBalance += t.profit;
-                    
+
                     cumulativePnL += t.profit;
                     globalEquityData.push(cumulativePnL);
+                    globalDashboardBalanceData.push(runningBalance);
 
+                    // 1. คำนวณ Max Drawdown แบบดั้งเดิม (Balance Based - ตลอดกาล)
                     tradeEquity += t.profit;
                     if (tradeEquity > peakTradeEquity) {
-                        peakTradeEquity = tradeEquity; 
+                        peakTradeEquity = tradeEquity;
                     }
-                    
-                    let currentDDValue = peakTradeEquity - tradeEquity; 
-                    let currentDDPercent = peakTradeEquity > 0 ? (currentDDValue / peakTradeEquity) * 100 : 0;
-                    
-                    if (currentDDValue > maxDDValue) maxDDValue = currentDDValue;
-                    if (currentDDPercent > maxDDPercent) maxDDPercent = currentDDPercent;
+                    let currentMaxDDValue = peakTradeEquity - tradeEquity;
+                    let currentMaxDDPercent = peakTradeEquity > 0 ? (currentMaxDDValue / peakTradeEquity) * 100 : 0;
+
+                    if (currentMaxDDValue > maxDDValue) maxDDValue = currentMaxDDValue;
+                    if (currentMaxDDPercent > maxDDPercent) maxDDPercent = currentMaxDDPercent;
+
+                    // 2. คำนวณ Active Drawdown แบบใหม่ (Equity Based - รีเซ็ตเมื่อทำ New High)
+                    if (cumulativePnL > peakCumulativePnL) {
+                        peakCumulativePnL = cumulativePnL;
+                        activeDDValue = 0;
+                        activeDDPercent = 0;
+                    } else {
+                        let currentActiveVal = peakCumulativePnL - cumulativePnL;
+                        let currentActivePct = (currentActiveVal / (startingCapital + peakCumulativePnL)) * 100;
+
+                        if (currentActiveVal > activeDDValue) activeDDValue = currentActiveVal;
+                        if (currentActivePct > activeDDPercent) activeDDPercent = currentActivePct;
+                    }
 
                     if (!symStats[t.symbol]) symStats[t.symbol] = { pnl: 0, count: 0, win: 0, loss: 0 };
-                    symStats[t.symbol].pnl += t.profit; 
+                    symStats[t.symbol].pnl += t.profit;
                     symStats[t.symbol].count++;
 
                     const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : 'OTHER';
@@ -810,7 +906,7 @@
             const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) : 0;
             const avgW = wins ? gProfit / wins : 0, avgL = losses ? gLoss / losses : 0;
             const stdDev = calculateStandardDeviation(profits, globalTrades.length ? net / globalTrades.length : 0);
-            
+
             const ror = (winRate > 0 && winRate < 1 && totalFunded > 0) ? Math.pow((1 - winRate) / (1 + winRate), totalFunded / (avgL || 1)) * 100 : 0;
 
             document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
@@ -824,8 +920,8 @@
 
             const uiTotalNetRREl = document.getElementById('uiTotalNetRR');
             if (uiTotalNetRREl) {
-                uiTotalNetRREl.innerText = netRR.toFixed(2) + 'R';
-                uiTotalNetRREl.className = `text-sm font-black ${netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`;
+                uiTotalNetRREl.innerText = netRR.toFixed(2);
+                uiTotalNetRREl.className = `font-black text-xl ${netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`;
             }
 
             document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toFixed(2);
@@ -833,29 +929,33 @@
             document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ((net / globalTrades.length) / stdDev).toFixed(2) : '0.00';
 
             const uiAvgRREl = document.getElementById('uiAvgRR');
-            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toFixed(2) + 'R' : '0.00R';
+            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toFixed(2) + ' R' : '0.00 R';
 
             const uiMaxTPRREl = document.getElementById('uiMaxTPRR');
-            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toFixed(2) + 'R' : '0.00R';
+            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toFixed(2) + ' R' : '0.00 R';
 
             const uiAvgSLRREl = document.getElementById('uiAvgSLRR');
-            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toFixed(2) + 'R' : '0.00R';
+            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toFixed(2) + ' R' : '0.00 R';
 
             const uiMaxSLRREl = document.getElementById('uiMaxSLRR');
-            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toFixed(2) + 'R' : '0.00R';
+            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toFixed(2) + ' R' : '0.00 R';
 
             document.getElementById('uiMaxConsLoss').innerText = maxStreakL;
             document.getElementById('uiMaxConsWin').innerText = maxStreakW;
-            
+
+            // อัปเดตข้อมูล Drawdown ทั้ง 2 รูปแบบ
             document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toFixed(2)}`;
             document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toFixed(2)}%`;
-            
+
+            document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toFixed(2)}`;
+            document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toFixed(2)}%`;
+
             document.getElementById('uiRiskOfRuin').innerText = `${ror.toFixed(2)}%`;
 
             renderCategorical(symStats, sideStats);
             renderTable();
             renderChart();
-            
+
             if (!document.getElementById('view-performance').classList.contains('hidden')) {
                 updatePerformanceDashboard();
             }
@@ -868,10 +968,10 @@
 
             const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const dowStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-            
+
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const moyStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
-            
+
             const matrix = {};
 
             let timelineEvents = [];
@@ -890,10 +990,10 @@
                     runningBalance += evt.data.deposit;
                     runningBalance -= evt.data.withdraw;
                     perfBalanceData.push(runningBalance);
-                    
+
                     let dateStr = "Funding";
                     if (evt.data.time) {
-                        try { dateStr = evt.data.time.split(' ')[0]; } catch(e){}
+                        try { dateStr = evt.data.time.split(' ')[0]; } catch (e) { }
                     }
                     perfBalanceLabels.push(dateStr);
                 } else if (evt.type === 'trade') {
@@ -934,11 +1034,11 @@
 
                     runningBalance += (t.profit || 0);
                     perfBalanceData.push(runningBalance);
-                    
+
                     tradeCount++;
                     let dateStr = "Trade " + tradeCount;
                     if (t.time) {
-                        try { dateStr = t.time.split(' ')[0]; } catch(e){}
+                        try { dateStr = t.time.split(' ')[0]; } catch (e) { }
                     }
                     perfBalanceLabels.push(dateStr);
                 }
@@ -1019,7 +1119,7 @@
                             backgroundColor: 'rgba(250, 90, 21, 0.08)',
                             fill: true,
                             tension: 0.4,
-                            pointRadius: perfBalanceData.length > 50 ? 0 : 2
+                            pointRadius: 0
                         }]
                     },
                     options: {
@@ -1027,10 +1127,10 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { 
+                            x: {
                                 display: false
                             },
-                            y: { 
+                            y: {
                                 grid: { color: '#f1f5f9' },
                                 ticks: { font: { size: 10 } }
                             }
@@ -1050,21 +1150,21 @@
                 const total = b.pnl + s.pnl;
 
                 return `
-                <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
-                    <td class="py-3 px-4 font-extrabold text-slate-800 text-[11px]">${sym}</td>
-                    
-                    <td class="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">${b.trades}</td>
-                    <td class="py-3 px-4 text-center font-bold text-slate-600">${bWR}</td>
-                    <td class="py-3 px-4 text-center font-semibold text-slate-500">${bRR}</td>
-                    <td class="py-3 px-4 text-right font-black ${b.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}">${formatCurrency(b.pnl)}</td>
-                    
-                    <td class="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">${s.trades}</td>
-                    <td class="py-3 px-4 text-center font-bold text-slate-600">${sWR}</td>
-                    <td class="py-3 px-4 text-center font-semibold text-slate-500">${sRR}</td>
-                    <td class="py-3 px-4 text-right font-black ${s.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}">${formatCurrency(s.pnl)}</td>
-                    
-                    <td class="py-3 px-4 text-right border-l border-slate-100 font-black ${total >= 0 ? 'text-slate-800' : 'text-orange-500'}">${formatCurrency(total)}</td>
-                </tr>`;
+        <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+            <td class="py-3 px-4 font-extrabold text-slate-800 text-[11px]">${sym}</td>
+            
+            <td class="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">${b.trades}</td>
+            <td class="py-3 px-4 text-center font-bold text-slate-600">${bWR}</td>
+            <td class="py-3 px-4 text-center font-semibold text-slate-500">${bRR}</td>
+            <td class="py-3 px-4 text-right font-black ${b.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}">${formatCurrency(b.pnl)}</td>
+            
+            <td class="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">${s.trades}</td>
+            <td class="py-3 px-4 text-center font-bold text-slate-600">${sWR}</td>
+            <td class="py-3 px-4 text-center font-semibold text-slate-500">${sRR}</td>
+            <td class="py-3 px-4 text-right font-black ${s.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}">${formatCurrency(s.pnl)}</td>
+            
+            <td class="py-3 px-4 text-right border-l border-slate-100 font-black ${total >= 0 ? 'text-slate-800' : 'text-orange-500'}">${formatCurrency(total)}</td>
+        </tr>`;
             }).join('');
 
             document.getElementById('uiMatrixTable').innerHTML = matrixHtml;
@@ -1075,23 +1175,23 @@
                 const totalWL = stat.win + stat.loss;
                 const wr = totalWL > 0 ? ((stat.win / totalWL) * 100).toFixed(0) : 0;
                 return `
-                <div class="flex justify-between items-center text-[11px] p-2 bg-slate-50 rounded-lg">
-                    <span class="font-black text-slate-800">${name}</span>
-                    <div class="text-right">
-                        <span class="font-bold ${stat.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">$${stat.pnl.toFixed(2)}</span>
-                        <span class="text-slate-400 ml-2">${wr}% WR</span>
-                    </div>
-                </div>`;
+        <div class="flex justify-between items-center text-[11px] p-2 bg-slate-50 rounded-lg">
+            <span class="font-black text-slate-800">${name}</span>
+            <div class="text-right">
+                <span class="font-bold ${stat.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">$${stat.pnl.toFixed(2)}</span>
+                <span class="text-slate-400 ml-2">${wr}% WR</span>
+            </div>
+        </div>`;
             }).join('');
 
             const buildSideHtml = (side, s) => {
                 const wr = (s.w + s.l) > 0 ? (s.w / (s.w + s.l) * 100).toFixed(1) : 0;
                 return `
-                <div class="mx-4 mt-2">
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div class="h-full ${side === 'BUY' ? 'bg-slate-800' : 'bg-orange-500'}" style="width: ${wr}%"></div>
-                    </div>
-                </div>`;
+        <div class="mx-4 mt-2">
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="h-full ${side === 'BUY' ? 'bg-slate-800' : 'bg-orange-500'}" style="width: ${wr}%"></div>
+            </div>
+        </div>`;
             };
 
             const uiBuy = document.getElementById('uiSideBreakdownBuy');
@@ -1105,7 +1205,7 @@
             const data = [...globalTrades].sort((a, b) => parseCustomDate(b.time) - parseCustomDate(a.time));
             const start = (currentPage - 1) * rowsPerPage;
             const paginated = data.slice(start, start + rowsPerPage);
-            
+
             document.getElementById('uiTradeTable').innerHTML = paginated.map(t => {
                 const isBE = (t.resultType === 'BE');
 
@@ -1125,15 +1225,15 @@
                 } catch (e) { }
 
                 return `
-                <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
-                    <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold">${shortTime}</td>
-                    <td class="py-4 px-4 font-extrabold text-slate-800">${t.symbol}</td>
-                    <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side === 'BUY' ? 'bg-slate-100' : 'bg-red-50'}">${t.side}</span></td>
-                    <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
-                    <td class="py-4 px-4 text-right font-bold text-slate-600">${riskText}</td>
-                    <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toFixed(2) + 'R' : '-'}</td>
-                    <td class="py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}">${t.profit.toFixed(2)}</td>
-                </tr>`;
+        <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+            <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold">${shortTime}</td>
+            <td class="py-4 px-4 font-extrabold text-slate-800">${t.symbol}</td>
+            <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side === 'BUY' ? 'bg-slate-100' : 'bg-red-50'}">${t.side}</span></td>
+            <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
+            <td class="py-4 px-4 text-right font-bold text-slate-600">${riskText}</td>
+            <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toFixed(2) + 'R' : '-'}</td>
+            <td class="py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}">${t.profit.toFixed(2)}</td>
+        </tr>`;
             }).join('');
             renderPagination(Math.ceil(data.length / rowsPerPage));
         }
@@ -1157,21 +1257,56 @@
             if (typeof Chart === 'undefined') return;
             const ctx = document.getElementById('equityChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
+
             chartInstance = new Chart(ctx, {
-                type: 'line', 
-                data: { 
-                    labels: globalEquityData.map((_, i) => i), 
-                    datasets: [{ 
-                        data: globalEquityData, 
-                        borderColor: '#f97316', 
-                        borderWidth: 3, 
-                        backgroundColor: 'rgba(249, 115, 22, 0.08)', 
-                        fill: true, 
-                        tension: 0.4, 
-                        pointRadius: 0 
-                    }] 
+                type: 'line',
+                data: {
+                    labels: globalEquityData.map((_, i) => i),
+                    datasets: [
+                        {
+                            label: 'Equity (PnL)',
+                            data: globalEquityData,
+                            borderColor: '#f97316',
+                            borderWidth: 3,
+                            backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Balance',
+                            data: globalDashboardBalanceData,
+                            borderColor: 'transparent',
+                            borderWidth: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y1'
+                        }
+                    ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#f1f5f9' } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: '#f1f5f9' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
             });
         }
 
