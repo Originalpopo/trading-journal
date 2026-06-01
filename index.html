@@ -1108,7 +1108,8 @@
                     netRR += (t.rr || 0);
 
                     if (isBE) {
-                        countBE++; streakL = 0; streakW = 0;
+                        // มองข้ามการนับ Streak (ไม่ reset) เพื่อให้ Streak นับข้ามไม้ BE ได้
+                        countBE++;
                     }
                     else if (t.profit > 0 || t.resultType === 'TP') {
                         wins++; gProfit += t.profit; countTP++; streakW++; streakL = 0;
@@ -1334,8 +1335,7 @@
                         sumBE += pnl;
                         if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
                         beTradesCount++;
-                        if (currentWinCount > 0) { totalWinStreaksCount++; sumOfWinStreaks += currentWinCount; currentWinCount = 0; currentWinAmt = 0; }
-                        if (currentLossCount > 0) { totalLossStreaksCount++; sumOfLossStreaks += currentLossCount; currentLossCount = 0; currentLossAmt = 0; }
+                        // มองข้ามการนับ Streak ในฟังก์ชัน Performance (ไม่ reset ตัวแปรใดๆ)
                     } else if (pnl > 0 || t.resultType === 'TP') {
                         grossProfit += pnl;
                         profitTradesCount++;
@@ -1567,7 +1567,6 @@
                         scales: {
                             x: { display: false },
                             y: { display: false },
-                            // เปิดใช้งาน Grid Line แนวนอนสำหรับ y1
                             y1: { display: true, position: 'left', grid: { color: '#f1f5f9', drawOnChartArea: true }, ticks: { font: { size: 10 } } }
                         }
                     },
