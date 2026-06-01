@@ -1138,7 +1138,25 @@
             const avgW = wins ? gProfit / wins : 0, avgL = losses ? gLoss / losses : 0;
             const stdDev = calculateStandardDeviation(profits, globalTrades.length ? net / globalTrades.length : 0);
 
-            const ror = (winRate > 0 && winRate < 1 && totalFunded > 0) ? Math.pow((1 - winRate) / (1 + winRate), totalFunded / (avgL || 1)) * 100 : 0;
+            const expectedValue = (winRate * avgW) - ((1 - winRate) * avgL);
+            let ror = 0;
+
+            if ((wins + losses) > 0) {
+                if (expectedValue <= 0) {
+                    ror = 100.0;
+                } else {
+                    const unitsToRuin = (totalFunded > 0 && avgL > 0) ? (totalFunded / avgL) : 1;
+                    if (winRate > 0.5) {
+                        ror = Math.pow((1 - winRate) / winRate, unitsToRuin) * 100;
+                    } else {
+                        const edge = expectedValue / (avgL > 0 ? avgL : 1);
+                        const base = Math.max((1 - edge) / (1 + edge), 0.0001);
+                        ror = Math.pow(base, unitsToRuin) * 100;
+                    }
+                    if (isNaN(ror)) ror = 0;
+                    ror = Math.min(Math.max(ror, 0), 100);
+                }
+            }
 
             document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
             document.getElementById('uiNetProfit').innerText = `$${net.toFixed(2)}`;
