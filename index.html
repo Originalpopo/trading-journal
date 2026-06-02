@@ -1098,23 +1098,12 @@
             timelineEvents.sort((a, b) => a.timeObj - b.timeObj);
 
             let runningBalance = globalFunding.length > 0 ? 0 : (parseFloat(globalCapital) || 0);
+            let highestBalance = runningBalance;
 
-            let startingCapital = parseFloat(globalCapital) || 0;
-            if (startingCapital === 0 && globalFunding.length > 0) {
-                const firstDeposit = globalFunding.find(f => f.deposit > 0);
-                if (firstDeposit) startingCapital = firstDeposit.deposit;
-            }
-            if (startingCapital === 0) startingCapital = 1;
-
-            let tradeEquity = totalFunded;
-            let peakTradeEquity = tradeEquity;
             let maxDDValue = 0;
             let maxDDPercent = 0;
 
             let cumulativePnL = 0;
-            let peakCumulativePnL = 0;
-            let activeDDValue = 0;
-            let activeDDPercent = 0;
 
             globalEquityData = [0];
             globalDashboardBalanceData = [runningBalance];
@@ -1127,14 +1116,19 @@
             let netRR = 0;
             const symStats = {}, sideStats = { BUY: { pnl: 0, w: 0, l: 0 }, SELL: { pnl: 0, w: 0, l: 0 } }, profits = [];
 
+            // คำนวณรวบยอดโดยใช้ runningBalance เป็นศูนย์กลางทั้งหมด
             timelineEvents.forEach(evt => {
                 if (evt.type === 'funding') {
                     runningBalance += evt.data.deposit;
                     runningBalance -= evt.data.withdraw;
 
-                    tradeEquity += evt.data.deposit;
-                    tradeEquity -= evt.data.withdraw;
-                    if (tradeEquity > peakTradeEquity) peakTradeEquity = tradeEquity;
+                    if (runningBalance > highestBalance) highestBalance = runningBalance;
+
+                    // อัปเดต Max Drawdown ทันทีเมื่อมีการเคลื่อนไหว
+                    let currentDD = highestBalance - runningBalance;
+                    let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
+                    if (currentDD > maxDDValue) maxDDValue = currentDD;
+                    if (currentDDPct > maxDDPercent) maxDDPercent = currentDDPct;
 
                     globalEquityData.push(cumulativePnL);
                     globalDashboardBalanceData.push(runningBalance);
@@ -1142,33 +1136,20 @@
                     const t = evt.data;
                     net += t.profit;
                     profits.push(t.profit);
+
                     runningBalance += t.profit;
+
+                    if (runningBalance > highestBalance) highestBalance = runningBalance;
+
+                    // อัปเดต Max Drawdown ทันทีเมื่อมีการเคลื่อนไหว
+                    let currentDD = highestBalance - runningBalance;
+                    let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
+                    if (currentDD > maxDDValue) maxDDValue = currentDD;
+                    if (currentDDPct > maxDDPercent) maxDDPercent = currentDDPct;
 
                     cumulativePnL += t.profit;
                     globalEquityData.push(cumulativePnL);
                     globalDashboardBalanceData.push(runningBalance);
-
-                    tradeEquity += t.profit;
-                    if (tradeEquity > peakTradeEquity) {
-                        peakTradeEquity = tradeEquity;
-                    }
-                    let currentMaxDDValue = peakTradeEquity - tradeEquity;
-                    let currentMaxDDPercent = peakTradeEquity > 0 ? (currentMaxDDValue / peakTradeEquity) * 100 : 0;
-
-                    if (currentMaxDDValue > maxDDValue) maxDDValue = currentMaxDDValue;
-                    if (currentMaxDDPercent > maxDDPercent) maxDDPercent = currentMaxDDPercent;
-
-                    if (cumulativePnL > peakCumulativePnL) {
-                        peakCumulativePnL = cumulativePnL;
-                        activeDDValue = 0;
-                        activeDDPercent = 0;
-                    } else {
-                        let currentActiveVal = peakCumulativePnL - cumulativePnL;
-                        let currentActivePct = (currentActiveVal / (startingCapital + peakCumulativePnL)) * 100;
-
-                        if (currentActiveVal > activeDDValue) activeDDValue = currentActiveVal;
-                        if (currentActivePct > activeDDPercent) activeDDPercent = currentActivePct;
-                    }
 
                     if (!symStats[t.symbol]) symStats[t.symbol] = { pnl: 0, count: 0, win: 0, loss: 0 };
                     symStats[t.symbol].pnl += t.profit;
@@ -1207,9 +1188,224 @@
                 }
             });
 
+            // คำนวณ Active Drawdown ล่าสุดแบบเรียลไทม์
+            let activeDDValue = highestBalance - runningBalance;
+            let activeDDPercent = highestBalance > 0 ? (activeDDValue / highestBalance) * 100 : 0;
+
             const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) : 0;
             const avgW = wins ? gProfit / wins : 0, avgL = losses ? gLoss / losses : 0;
             const stdDev = calculateStandardDeviation(profits, globalTrades.length ? net / globalTrades.length : 0);
+
+            // --- Extract data for Simulation ---
+            let sumRisk = 0, countRisk = 0;
+            globalTrades.forEach(t => {
+                if (t.risk && t.risk > 0) { sumRisk += t.risk; countRisk++; }
+            });
+            globalSimAvgRisk = countRisk > 0 ? (sumRisk / countRisk) : (runningBalance * 0.01);
+            globalSimWinRate = winRate * 100;
+            globalSimAvgRR = rrCount ? (totalRR / rrCount) : (avgW / (avgL === 0 ? 1 : Math.abs(avgL)));
+            // -----------------------------------
+
+            document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
+            document.getElementById('uiNetProfit').innerText = `$${net.toFixed(2)}`;
+            document.getElementById('uiWinRate').innerText = `${(winRate * 100).toFixed(1)}%`;
+            document.getElementById('uiGrowth').innerText = totalFunded > 0 ? `${((net / totalFunded) * 100).toFixed(2)}%` : '0.00%';
+            document.getElementById('uiTotalTrades').innerText = globalTrades.length;
+            document.getElementById('uiTotalTP').innerText = countTP;
+            document.getElementById('uiTotalBE').innerText = countBE;
+            document.getElementById('uiTotalSL').innerText = countSL;
+
+            const uiTotalDep = document.getElementById('uiTotalDeposit');
+            if (uiTotalDep) uiTotalDep.innerText = `$${totalDeposit.toFixed(2)}`;
+            const uiTotalWit = document.getElementById('uiTotalWithdraw');
+            if (uiTotalWit) uiTotalWit.innerText = `$${totalWithdraw.toFixed(2)}`;
+
+            const uiTotalNetRREl = document.getElementById('uiTotalNetRR');
+            if (uiTotalNetRREl) {
+                uiTotalNetRREl.innerHTML = netRR.toFixed(2) + ' <span class="text-[10px] font-bold text-slate-400">R</span>';
+                uiTotalNetRREl.className = `font-black text-xl ${netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`;
+            }
+
+            document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toFixed(2);
+            document.getElementById('uiExpectancy').innerText = `$${globalTrades.length > 0 ? (net / globalTrades.length).toFixed(2) : '0.00'}`;
+            document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ((net / globalTrades.length) / stdDev).toFixed(2) : '0.00';
+
+            const uiAvgRREl = document.getElementById('uiAvgRR');
+            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toFixed(2) + ' R' : '0.00 R';
+
+            const uiMaxTPRREl = document.getElementById('uiMaxTPRR');
+            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toFixed(2) + ' R' : '0.00 R';
+
+            const uiAvgSLRREl = document.getElementById('uiAvgSLRR');
+            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toFixed(2) + ' R' : '0.00 R';
+
+            const uiMaxSLRREl = document.getElementById('uiMaxSLRR');
+            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toFixed(2) + ' R' : '0.00 R';
+
+            document.getElementById('uiMaxConsLoss').innerText = maxStreakL;
+            document.getElementById('uiMaxConsWin').innerText = maxStreakW;
+
+            // แสดงผล Max Drawdown
+            document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toFixed(2)}`;
+            document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toFixed(2)}%`;
+
+            // แสดงผล Active Drawdown
+            document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toFixed(2)}`;
+            document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toFixed(2)}%`;
+
+            renderCategorical(symStats, sideStats);
+            renderTable();
+            renderChart();
+
+            populateYearFilter();
+            if (!document.getElementById('view-performance').classList.contains('hidden')) {
+                updatePerformanceDashboard();
+            }
+        }
+
+        function updateDashboard() {
+            let totalFunded = 0;
+            let totalDeposit = parseFloat(globalCapital) || 0;
+            let totalWithdraw = 0;
+
+            if (globalFunding.length > 0) {
+                totalDeposit = 0;
+                globalFunding.forEach(f => {
+                    totalDeposit += f.deposit;
+                    totalWithdraw += f.withdraw;
+                });
+                totalFunded = totalDeposit - totalWithdraw;
+            } else {
+                totalFunded = totalDeposit;
+            }
+
+            const initialBalanceEl = document.getElementById('initialBalanceDisplay');
+            if (initialBalanceEl) {
+                initialBalanceEl.innerText = `$${totalFunded.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            }
+
+            let timelineEvents = [];
+            globalTrades.forEach(t => timelineEvents.push({ type: 'trade', timeObj: parseCustomDate(t.time), data: t }));
+            globalFunding.forEach(f => timelineEvents.push({ type: 'funding', timeObj: parseCustomDate(f.time), data: f }));
+            timelineEvents.sort((a, b) => a.timeObj - b.timeObj);
+
+            // เซ็ตทุกอย่างให้เริ่มที่ 0 และให้ Funding ไม้แรกเป็นตัวกำหนด Capital จริงๆ
+            let runningBalance = 0;
+            let highestBalance = 0;
+
+            let maxDDValue = 0;
+            let maxDDPercent = 0;
+
+            let cumulativePnL = 0;
+
+            globalEquityData = [0];
+            globalDashboardBalanceData = [runningBalance];
+
+            let net = 0, wins = 0, losses = 0, gProfit = 0, gLoss = 0, countTP = 0, countSL = 0, countBE = 0;
+            let totalRR = 0, rrCount = 0;
+            let slTotalRR = 0, slRRCount = 0;
+            let maxTPRR = 0, maxSLRR = 0;
+            let streakL = 0, maxStreakL = 0, streakW = 0, maxStreakW = 0;
+            let netRR = 0;
+            const symStats = {}, sideStats = { BUY: { pnl: 0, w: 0, l: 0 }, SELL: { pnl: 0, w: 0, l: 0 } }, profits = [];
+
+            timelineEvents.forEach(evt => {
+                if (evt.type === 'funding') {
+                    runningBalance += evt.data.deposit;
+                    runningBalance -= evt.data.withdraw;
+
+                    if (runningBalance > highestBalance) highestBalance = runningBalance;
+
+                    let currentDD = highestBalance - runningBalance;
+                    let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
+
+                    if (currentDD > maxDDValue) {
+                        maxDDValue = currentDD;
+                        maxDDPercent = currentDDPct;
+                    }
+
+                    globalEquityData.push(cumulativePnL);
+                    globalDashboardBalanceData.push(runningBalance);
+                } else if (evt.type === 'trade') {
+                    const t = evt.data;
+                    net += t.profit;
+                    profits.push(t.profit);
+
+                    runningBalance += t.profit;
+
+                    if (runningBalance > highestBalance) highestBalance = runningBalance;
+
+                    let currentDD = highestBalance - runningBalance;
+                    let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
+
+                    // บังคับให้ % และ Value ผูกติดกันเสมอ
+                    if (currentDD > maxDDValue) {
+                        maxDDValue = currentDD;
+                        maxDDPercent = currentDDPct;
+                    }
+
+                    cumulativePnL += t.profit;
+                    globalEquityData.push(cumulativePnL);
+                    globalDashboardBalanceData.push(runningBalance);
+
+                    if (!symStats[t.symbol]) symStats[t.symbol] = { pnl: 0, count: 0, win: 0, loss: 0 };
+                    symStats[t.symbol].pnl += t.profit;
+                    symStats[t.symbol].count++;
+
+                    const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : 'OTHER';
+                    if (sideStats[side]) sideStats[side].pnl += t.profit;
+
+                    const isBE = (t.resultType === 'BE');
+                    netRR += (t.rr || 0);
+
+                    if (isBE) {
+                        countBE++;
+                    }
+                    else if (t.profit > 0 || t.resultType === 'TP') {
+                        wins++; gProfit += t.profit; countTP++; streakW++; streakL = 0;
+                        if (streakW > maxStreakW) maxStreakW = streakW;
+                        if (t.rr > 0) {
+                            totalRR += t.rr;
+                            rrCount++;
+                            if (t.rr > maxTPRR) maxTPRR = t.rr;
+                        }
+                        symStats[t.symbol].win++; if (sideStats[side]) sideStats[side].w++;
+                    }
+                    else if (t.profit < 0 || t.resultType === 'SL') {
+                        losses++; gLoss += Math.abs(t.profit); countSL++; streakL++; streakW = 0;
+                        if (streakL > maxStreakL) maxStreakL = streakL;
+                        symStats[t.symbol].loss++;
+                        if (sideStats[side]) sideStats[side].l++;
+                        if (t.rr < 0) {
+                            slTotalRR += t.rr;
+                            slRRCount++;
+                            if (t.rr < maxSLRR) maxSLRR = t.rr;
+                        }
+                    }
+                }
+            });
+
+            // ค่าเริ่มต้นของกราฟจุดแรกให้ชี้ไปที่ยอดฝากแรกสุด (ถ้ามี)
+            if (globalDashboardBalanceData.length > 0 && globalDashboardBalanceData[0] === 0 && runningBalance > 0) {
+                globalDashboardBalanceData[0] = globalDashboardBalanceData[1] || runningBalance;
+            }
+
+            let activeDDValue = highestBalance - runningBalance;
+            let activeDDPercent = highestBalance > 0 ? (activeDDValue / highestBalance) * 100 : 0;
+
+            const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) : 0;
+            const avgW = wins ? gProfit / wins : 0, avgL = losses ? gLoss / losses : 0;
+            const stdDev = calculateStandardDeviation(profits, globalTrades.length ? net / globalTrades.length : 0);
+
+            // --- Extract data for Simulation ---
+            let sumRisk = 0, countRisk = 0;
+            globalTrades.forEach(t => {
+                if (t.risk && t.risk > 0) { sumRisk += t.risk; countRisk++; }
+            });
+            globalSimAvgRisk = countRisk > 0 ? (sumRisk / countRisk) : (runningBalance * 0.01);
+            globalSimWinRate = winRate * 100;
+            globalSimAvgRR = rrCount ? (totalRR / rrCount) : (avgW / (avgL === 0 ? 1 : Math.abs(avgL)));
+            // -----------------------------------
 
             document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
             document.getElementById('uiNetProfit').innerText = `$${net.toFixed(2)}`;
@@ -1256,16 +1452,6 @@
             document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toFixed(2)}`;
             document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toFixed(2)}%`;
 
-            // --- Extract data for Simulation ---
-            let sumRisk = 0, countRisk = 0;
-            globalTrades.forEach(t => {
-                if (t.risk && t.risk > 0) { sumRisk += t.risk; countRisk++; }
-            });
-            globalSimAvgRisk = countRisk > 0 ? (sumRisk / countRisk) : (runningBalance * 0.01);
-            globalSimWinRate = winRate * 100;
-            globalSimAvgRR = rrCount ? (totalRR / rrCount) : (avgW / (avgL === 0 ? 1 : avgL));
-            // -----------------------------------
-
             renderCategorical(symStats, sideStats);
             renderTable();
             renderChart();
@@ -1276,7 +1462,7 @@
             }
         }
 
-        function updatePerformanceDashboard() {
+                function updatePerformanceDashboard() {
             const yearFilterEl = document.getElementById('perfYearFilter');
             const selectedYear = yearFilterEl ? yearFilterEl.value : 'ALL';
 
