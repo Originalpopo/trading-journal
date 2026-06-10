@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Journal - Professional Dashboard</title>
+    <title>TradeJournal</title>
 
     <link rel="apple-touch-icon" href="Icon-TradeJournal.png">
     <meta name="apple-mobile-web-app-title" content="TradeJournal">
@@ -13,6 +13,34 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, writeBatch, doc, getDoc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Placeholder config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdTWVtcP0-YHV9nQLxzK79aU4lVBhLpnE",
+            authDomain: "tradejournal-df173.firebaseapp.com",
+            projectId: "tradejournal-df173",
+            storageBucket: "tradejournal-df173.firebasestorage.app",
+            messagingSenderId: "738812583165",
+            appId: "1:738812583165:web:2ca559c03edeea16953294"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDb = db;
+        window.firebaseCollection = collection;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseWriteBatch = writeBatch;
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseSetDoc = setDoc;
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -94,30 +122,27 @@
 
         <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-center xl:justify-end">
             <div class="flex items-center bg-slate-50 p-1.5 pr-4 rounded-xl border border-slate-200 h-[38px]">
-                <button id="btnSync" onclick="syncFromGoogleSheets()"
-                    class="bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm mr-3 h-full">
-                    Sync Data
+                <label for="csvUpload"
+                    class="cursor-pointer bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm mr-2 h-full flex items-center justify-center">
+                    Upload CSV
+                    <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                </label>
+                <button onclick="openPasteModal()" class="bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm mr-3 h-full flex items-center justify-center">
+                    Paste Text
                 </button>
                 <div id="dbStatus" class="text-xs font-semibold flex items-center text-slate-600">
                     <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-2"></span>
                     <span id="statusText" class="truncate max-w-[150px]">Initializing...</span>
                 </div>
             </div>
-
-            <button id="btnReset" onclick="resetDatabase()"
-                class="bg-slate-50 border border-slate-200 hover:border-red-200 hover:text-red-500 text-slate-400 px-3 py-2 rounded-xl text-xs font-bold transition h-[38px] flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                    </path>
-                </svg>
-                DB
+            <button onclick="resetDatabase()" class="flex items-center justify-center w-[38px] h-[38px] bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 hover:border-red-500 rounded-lg transition shadow-sm" title="Clear Database">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
         </div>
     </nav>
 
     <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full">
-        <div class="max-w-7xl mx-auto space-y-8">
+        <div class="max-w-7xl mx-auto">
 
             <div id="view-dashboard" class="space-y-8">
                 <section>
@@ -306,146 +331,131 @@
                         <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Results
                     </h3>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-
-                        <div class="bg-[#FFFFFF] p-5 rounded-xl border border-[#5E5E5E]/20 space-y-3">
-                            <h4
-                                class="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-[#5E5E5E]/10 pb-2 mb-3">
-                                Overall Performance</h4>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Total Net Profit</span><span
-                                    id="resNetProfit" class="text-[12px] font-black text-slate-800">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Gross Profit</span><span
-                                    id="resGrossProfit" class="text-[12px] font-black text-slate-800">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Gross Loss</span><span
-                                    id="resGrossLoss" class="text-[12px] font-black text-red-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Gross BE</span><span id="resGrossBE"
-                                    class="text-[12px] font-black text-orange-500">$0.00</span></div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5 mt-4">
+                        <div class="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Profit</span>
+                            <span id="resNetProfit" class="text-xl font-black text-slate-800">$0.00</span>
                         </div>
-
-                        <div class="bg-[#FFFFFF] p-5 rounded-xl border border-[#5E5E5E]/20 space-y-3">
-                            <h4
-                                class="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-[#5E5E5E]/10 pb-2 mb-3">
-                                Performance Ratios</h4>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Profit Factor</span><span
-                                    id="resProfitFactor" class="text-[12px] font-black text-slate-800">0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Expected Payoff</span><span
-                                    id="resExpectedPayoff" class="text-[12px] font-black text-slate-800">$0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Recovery Factor</span><span
-                                    id="resRecoveryFactor" class="text-[12px] font-black text-slate-800">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Sharpe Ratio</span><span id="resSharpe"
-                                    class="text-[12px] font-black text-slate-800">0.00</span></div>
+                        <div class="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Win Rate</span>
+                            <span id="resWinRate" class="text-xl font-black text-slate-800">0.00%</span>
                         </div>
-
-                        <div class="bg-[#FFFFFF] p-5 rounded-xl border border-[#5E5E5E]/20 space-y-3">
-                            <h4
-                                class="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-[#5E5E5E]/10 pb-2 mb-3">
-                                Drawdown Analysis</h4>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Balance Drawdown</span><span
-                                    id="resBalDD" class="text-[12px] font-black text-red-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Absolute Drawdown</span><span
-                                    id="resAbsDD" class="text-[12px] font-black text-red-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Maximal Drawdown</span><span
-                                    id="resMaxDD" class="text-[12px] font-black text-red-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Relative Drawdown</span><span
-                                    id="resRelDD" class="text-[12px] font-black text-red-500">0.00%</span></div>
+                        <div class="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Profit Factor</span>
+                            <span id="resProfitFactor" class="text-xl font-black text-slate-800">0.00</span>
                         </div>
+                        <div class="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Expectancy</span>
+                            <span id="resExpectedPayoff" class="text-xl font-black text-slate-800">$0.00</span>
+                        </div>
+                    </div>
 
-                        <div class="bg-[#FFFFFF] p-5 rounded-xl border border-[#5E5E5E]/20 space-y-3">
-                            <h4
-                                class="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-[#5E5E5E]/10 pb-2 mb-3">
-                                Trade Metrics</h4>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Total Trades</span><span
-                                    id="resTotalTrades" class="text-[12px] font-black text-slate-800">0</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Profit Trades (% of total)</span><span
-                                    id="resProfitTrades" class="text-[12px] font-black text-slate-800">0 (0.00%)</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Outcomes</span>
+                                <span id="resTotalTrades" class="text-[11px] font-bold text-slate-800">0 Trades</span>
                             </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Loss Trades (% of total)</span><span
-                                    id="resLossTrades" class="text-[12px] font-black text-red-500">0 (0.00%)</span>
+                            <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex">
+                                <div id="resBarWin" class="h-full bg-slate-800 transition-all duration-500" style="width:0%"></div>
+                                <div id="resBarBE" class="h-full bg-orange-500 transition-all duration-500" style="width:0%"></div>
+                                <div id="resBarLoss" class="h-full bg-red-500 transition-all duration-500" style="width:0%"></div>
                             </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">BE Trades (% of total)</span><span
-                                    id="resBETrades" class="text-[12px] font-black text-orange-500">0 (0.00%)</span>
-                            </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Buy Trades (won %)</span><span
-                                    id="resLongWon" class="text-[12px] font-black text-slate-800">0 (0.00%)</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Sell Trades (won %)</span><span
-                                    id="resShortWon" class="text-[12px] font-black text-slate-800">0 (0.00%)</span>
+                            <div class="flex justify-between text-[10px] font-bold">
+                                <span class="text-slate-800 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-800"></span><span id="resProfitTrades">0%</span></span>
+                                <span class="text-orange-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span><span id="resBETrades">0%</span></span>
+                                <span class="text-red-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span><span id="resLossTrades">0%</span></span>
                             </div>
                         </div>
 
-                        <div class="bg-[#FFFFFF] p-5 rounded-xl border border-[#5E5E5E]/20 space-y-3">
-                            <h4
-                                class="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-[#5E5E5E]/10 pb-2 mb-3">
-                                Averages & Extremes</h4>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Largest profit trade</span><span
-                                    id="resLargestProfit" class="text-[12px] font-black text-slate-800">$0.00</span>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Direction Win %</span>
                             </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Largest loss trade</span><span
-                                    id="resLargestLoss" class="text-[12px] font-black text-red-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Largest BE trade</span><span
-                                    id="resLargestBE" class="text-[12px] font-black text-orange-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Average profit trade</span><span
-                                    id="resAvgProfit" class="text-[12px] font-black text-slate-800">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Average loss trade</span><span
-                                    id="resAvgLoss" class="text-[12px] font-black text-red-500">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Average BE trade</span><span
-                                    id="resAvgBE" class="text-[12px] font-black text-orange-500">$0.00</span></div>
+                            <div class="space-y-3 mt-2">
+                                <div>
+                                    <div class="flex justify-between text-[10px] font-bold mb-1">
+                                        <span class="text-slate-600">Buy</span>
+                                        <span id="resLongWon" class="text-slate-800">0%</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div id="resBarBuy" class="h-full bg-slate-800 transition-all duration-500" style="width:0%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] font-bold mb-1">
+                                        <span class="text-slate-600">Sell</span>
+                                        <span id="resShortWon" class="text-slate-800">0%</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div id="resBarSell" class="h-full bg-slate-400 transition-all duration-500" style="width:0%"></div></div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="bg-[#FFFFFF] p-5 rounded-xl border border-[#5E5E5E]/20 space-y-3">
-                            <h4
-                                class="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b border-[#5E5E5E]/10 pb-2 mb-3">
-                                Consecutive Streaks</h4>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Max consecutive wins ($)</span><span
-                                    id="resMaxConsWinAmt" class="text-[12px] font-black text-slate-800">0 ($0.00)</span>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Discipline</span>
                             </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Max consecutive losses ($)</span><span
-                                    id="resMaxConsLossAmt" class="text-[12px] font-black text-red-500">0 ($0.00)</span>
+                            <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex mt-2">
+                                <div id="resBarOnPlan" class="h-full bg-slate-800 transition-all duration-500" style="width:0%"></div>
+                                <div id="resBarOffPlan" class="h-full bg-slate-300 transition-all duration-500" style="width:0%"></div>
                             </div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Maximal cons profit (count)</span><span
-                                    id="resMaxConsWinCount" class="text-[12px] font-black text-slate-800">$0.00
-                                    (0)</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Maximal cons loss (count)</span><span
-                                    id="resMaxConsLossCount" class="text-[12px] font-black text-red-500">$0.00
-                                    (0)</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Average consecutive wins</span><span
-                                    id="resAvgConsWin" class="text-[12px] font-black text-slate-800">0</span></div>
-                            <div class="flex justify-between items-center"><span
-                                    class="text-[11px] font-bold text-slate-500">Average consecutive losses</span><span
-                                    id="resAvgConsLoss" class="text-[12px] font-black text-red-500">0</span></div>
+                            <div class="flex justify-between text-[10px] font-bold mt-3">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-slate-800 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-800"></span>On Plan</span>
+                                    <span id="resOnPlanWinRate" class="text-slate-800">0% WR</span>
+                                    <span id="resOnPlanPnL" class="text-slate-800">$0.00</span>
+                                </div>
+                                <div class="flex flex-col gap-1 items-end text-right">
+                                    <span class="text-slate-400 flex items-center gap-1 justify-end">Off Plan<span class="w-2 h-2 rounded-full bg-slate-300"></span></span>
+                                    <span id="resOffPlanWinRate" class="text-slate-800">0% WR</span>
+                                    <span id="resOffPlanPnL" class="text-slate-800">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Averages & Time</div>
+                            <div class="flex justify-between"><span class="text-slate-500">Avg Win</span><span id="resAvgProfit" class="font-bold text-slate-800">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Avg Loss</span><span id="resAvgLoss" class="font-bold text-red-500">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Avg BE</span><span id="resAvgBE" class="font-bold text-orange-500">$0.00</span></div>
+                            <div class="flex justify-between pt-1"><span class="text-slate-500">Hold (Win)</span><span id="resHoldWin" class="font-bold text-slate-700">0s</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Hold (Loss)</span><span id="resHoldLoss" class="font-bold text-slate-700">0s</span></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Extremes</div>
+                            <div class="flex justify-between"><span class="text-slate-500">Largest Win</span><span id="resLargestProfit" class="font-bold text-slate-800">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Largest Loss</span><span id="resLargestLoss" class="font-bold text-red-500">$0.00</span></div>
+                            <div class="flex justify-between pt-1"><span class="text-slate-500">Gross Profit</span><span id="resGrossProfit" class="font-bold text-slate-800">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Gross Loss</span><span id="resGrossLoss" class="font-bold text-red-500">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Sharpe Ratio</span><span id="resSharpe" class="font-bold text-slate-700">0.00</span></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Drawdown</div>
+                            <div class="flex justify-between"><span class="text-slate-500">Balance DD</span><span id="resBalDD" class="font-bold text-red-500">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Absolute DD</span><span id="resAbsDD" class="font-bold text-red-500">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Maximal DD</span><span id="resMaxDD" class="font-bold text-red-500">$0.00</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Relative DD</span><span id="resRelDD" class="font-bold text-red-500">0.00%</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Recovery</span><span id="resRecoveryFactor" class="font-bold text-slate-700">0.00</span></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Streaks</div>
+                            <div class="flex justify-between"><span class="text-slate-500">Max Cons Win</span><span id="resMaxConsWinAmt" class="font-bold text-slate-800">0</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Max Cons Loss</span><span id="resMaxConsLossAmt" class="font-bold text-red-500">0</span></div>
+                            <div class="flex justify-between pt-1"><span class="text-slate-500">Avg Cons Win</span><span id="resAvgConsWin" class="font-bold text-slate-700">0</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Avg Cons Loss</span><span id="resAvgConsLoss" class="font-bold text-slate-700">0</span></div>
                         </div>
 
                     </div>
+                </div>
+
+                <div class="flex justify-end items-center gap-3 mt-4 mb-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Chart Metric</span>
+                    <select id="perfChartMetric" onchange="updatePerformanceDashboard()"
+                        class="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+                        <option value="RR">Risk/Reward (RR)</option>
+                        <option value="PNL">Net P&L ($)</option>
+                    </select>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -529,9 +539,19 @@
             </div>
 
             <div id="view-history" class="hidden space-y-6">
-                <div class="glass-card p-6 overflow-hidden flex flex-col">
+                <div class="glass-card p-6 overflow-hidden flex flex-col min-h-[750px]">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <h3 class="text-lg font-extrabold text-slate-800 tracking-tight">Trade History</h3>
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-lg font-extrabold text-slate-800 tracking-tight">Trade History</h3>
+                            <button onclick="openManualTradeModal()"
+                                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Add Manual
+                            </button>
+                        </div>
                         <div id="paginationControls" class="flex flex-wrap gap-1"></div>
                     </div>
                     <div class="overflow-x-auto">
@@ -547,8 +567,9 @@
                                         Result</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">RR</th>
-                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl">Net
-                                        P&L ($)</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-right">Net P&L ($)</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">
+                                        Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="uiTradeTable" class="text-[11px] divide-y divide-slate-50"></tbody>
@@ -682,7 +703,7 @@
                             <label
                                 class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Number
                                 of Trades</label>
-                            <input type="number" id="simTrades" value="100"
+                            <input type="number" id="simTrades" value="1000"
                                 class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
                         </div>
 
@@ -702,7 +723,7 @@
                         </div>
                     </div>
 
-                    <div class="glass-card p-6 h-[500px] flex flex-col lg:col-span-3">
+                    <div class="glass-card p-6 flex flex-col lg:col-span-3">
                         <h3
                             class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                             <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Simulation
@@ -712,12 +733,126 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="glass-card p-6 flex flex-col space-y-4">
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Simulation Report
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="simReportCards">
+                        <div class="text-center text-slate-400 text-xs py-4 md:col-span-3 font-bold">Press Start to run simulation</div>
+                    </div>
+                </div>
             </div>
-        </div>
     </main>
 
+    <!-- Trade Modal -->
+    <div id="tradeModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl relative">
+            <h3 id="tradeModalTitle" class="text-xl font-extrabold text-slate-800 mb-6 tracking-tight">Add Manual Trade
+            </h3>
+            <div class="space-y-4">
+                <input type="hidden" id="modalTradeId" value="">
+
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Entry Type</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="entryType" value="TRADE" checked onchange="toggleModalFields()" class="text-orange-500 focus:ring-orange-500 w-4 h-4">
+                            <span class="text-sm font-bold text-slate-700">Trade</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="entryType" value="DEPOSIT" onchange="toggleModalFields()" class="text-orange-500 focus:ring-orange-500 w-4 h-4">
+                            <span class="text-sm font-bold text-slate-700">Deposit</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="entryType" value="WITHDRAW" onchange="toggleModalFields()" class="text-orange-500 focus:ring-orange-500 w-4 h-4">
+                            <span class="text-sm font-bold text-slate-700">Withdraw</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="tradeSpecificFields" class="mb-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Symbol</label>
+                            <input type="text" id="modalSymbol" placeholder="e.g. BTCUSDT"
+                                class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Side</label>
+                            <select id="modalSide"
+                                class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                                <option value="BUY">BUY</option>
+                                <option value="SELL">SELL</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer mt-3 w-max">
+                        <input type="checkbox" id="modalIsOnPlan" checked class="text-orange-500 focus:ring-orange-500 w-4 h-4 rounded border-slate-300">
+                        <span class="text-xs font-bold text-slate-600">On Plan (เทรดตามแผน)</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label id="amountLabel" class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">P&L / Amount ($)</label>
+                        <input type="number" step="0.01" id="modalAmount" oninput="updateLiveRR()"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date & Time</label>
+                        <input type="datetime-local" id="modalTime"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Strategy / Notes</label>
+                        <input type="text" id="modalStrategy" placeholder="Optional"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                    </div>
+                    <div id="riskField">
+                        <label class="flex justify-between items-end text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                            <span>Risk ($)</span>
+                            <span id="modalLiveRR" class="text-orange-500 normal-case tracking-normal">RR: 0.00R</span>
+                        </label>
+                        <input type="number" step="0.01" id="modalRisk" placeholder="Optional" oninput="updateLiveRR()"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end mt-8">
+                <button onclick="closeTradeModal()"
+                    class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition">Cancel</button>
+                <button onclick="saveTradeModal()"
+                    class="px-5 py-2 rounded-xl text-xs font-bold bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-200 transition">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paste Modal -->
+    <div id="pasteModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl relative flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-extrabold text-slate-800 mb-2 tracking-tight">Paste Trading Data</h3>
+            <p class="text-xs text-slate-500 mb-4">Paste the text directly copied from your broker terminal.</p>
+            
+            <div class="flex-1 overflow-hidden flex flex-col min-h-[300px]">
+                <textarea id="pasteInput" class="w-full h-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-slate-500 transition resize-none font-mono whitespace-pre" placeholder="XAUUSD\nBuy\nLimit..."></textarea>
+            </div>
+
+            <div class="flex gap-3 justify-end mt-6">
+                <button onclick="closePasteModal()"
+                    class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition">Cancel</button>
+                <button onclick="handlePasteSubmit()"
+                    class="px-5 py-2 rounded-xl text-xs font-bold bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-200 transition">Import Data</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzNQzT1jcDNBkdWLvHIi34jGQ1IPjGE3_ZDkr63CVcfE0vwPyOxYQZfbKwUCTCaq6Oh/exec";
+        // No GAS_URL needed anymore
 
         let globalTrades = [];
         let globalFunding = [];
@@ -737,9 +872,6 @@
         let currentPage = 1;
         const rowsPerPage = 10;
         let currentCalDate = new Date();
-
-        const dbName = "TradeJournalDB";
-        let localDB;
 
         function parseCustomDate(dateStr) {
             if (!dateStr) return new Date(0);
@@ -768,204 +900,276 @@
             return new Date(0);
         }
 
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(dbName, 2);
-                request.onupgradeneeded = (e) => {
-                    localDB = e.target.result;
-                    if (!localDB.objectStoreNames.contains("trades")) {
-                        localDB.createObjectStore("trades", { keyPath: "id" });
-                    }
-                    if (!localDB.objectStoreNames.contains("config")) {
-                        localDB.createObjectStore("config", { keyPath: "key" });
-                    }
-                    if (!localDB.objectStoreNames.contains("funding")) {
-                        localDB.createObjectStore("funding", { keyPath: "id" });
-                    }
-                };
-                request.onsuccess = (e) => {
-                    localDB = e.target.result;
-                    resolve();
-                };
-                request.onerror = (e) => reject(e.target.error);
-            });
-        }
+        window.onload = () => {
+            document.getElementById('statusText').innerText = "Connecting...";
+            document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2 shadow-[0_0_8px_#eab308]";
 
-        async function loadData() {
-            return new Promise((resolve) => {
-                const transaction = localDB.transaction(["config", "trades", "funding"], "readonly");
-                const configStore = transaction.objectStore("config");
-                const tradesStore = transaction.objectStore("trades");
-                const fundingStore = transaction.objectStore("funding");
+            const tradesRef = window.firebaseCollection(window.firebaseDb, "trades");
+            const fundingRef = window.firebaseCollection(window.firebaseDb, "funding");
 
-                const configReq = configStore.get("capital");
-                const tradesReq = tradesStore.getAll();
-                const fundingReq = fundingStore.getAll();
-
-                let pending = 3;
-                const checkDone = () => { if (--pending === 0) resolve(); };
-
-                configReq.onsuccess = () => {
-                    if (configReq.result) {
-                        globalCapital = configReq.result.value || 0;
-                    }
-                    checkDone();
-                };
-                tradesReq.onsuccess = () => {
-                    globalTrades = tradesReq.result || [];
-                    checkDone();
-                };
-                fundingReq.onsuccess = () => {
-                    globalFunding = fundingReq.result || [];
-                    checkDone();
-                };
-            });
-        }
-
-        async function saveConfig(capital) {
-            return new Promise((resolve) => {
-                const transaction = localDB.transaction(["config"], "readwrite");
-                transaction.objectStore("config").put({ key: "capital", value: capital });
-                transaction.oncomplete = () => resolve();
-            });
-        }
-
-        async function saveTradesToDB(trades) {
-            return new Promise((resolve) => {
-                const transaction = localDB.transaction(["trades"], "readwrite");
-                const store = transaction.objectStore("trades");
-                store.clear();
-                trades.forEach((t, i) => {
-                    if (!t.id) t.id = "T_" + new Date(t.time).getTime() + "_" + i;
-                    store.put(t);
+            window.firebaseOnSnapshot(tradesRef, (snapshot) => {
+                const newTrades = [];
+                snapshot.forEach(doc => {
+                    newTrades.push({ id: doc.id, ...doc.data() });
                 });
-                transaction.oncomplete = () => resolve();
-            });
-        }
+                globalTrades = newTrades.sort((a, b) => parseCustomDate(a.time) - parseCustomDate(b.time));
+                updateDashboard();
 
-        async function saveFundingToDB(funding) {
-            return new Promise((resolve) => {
-                const transaction = localDB.transaction(["funding"], "readwrite");
-                const store = transaction.objectStore("funding");
-                store.clear();
-                funding.forEach((f, i) => {
-                    if (!f.id) f.id = "F_" + new Date(f.time).getTime() + "_" + i;
-                    store.put(f);
+                document.getElementById('statusText').innerText = "Live";
+                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-orange-500 mr-2 shadow-[0_0_8px_#f97316]";
+            }, (error) => {
+                console.error("Trades listener error:", error);
+            });
+
+            window.firebaseOnSnapshot(fundingRef, (snapshot) => {
+                const newFunding = [];
+                snapshot.forEach(doc => {
+                    newFunding.push({ id: doc.id, ...doc.data() });
                 });
-                transaction.oncomplete = () => resolve();
+                globalFunding = newFunding.sort((a, b) => parseCustomDate(a.time) - parseCustomDate(b.time));
+                updateDashboard();
+            }, (error) => {
+                console.error("Funding listener error:", error);
             });
-        }
+        };
 
-        window.onload = async () => {
-            await initDB();
-            await loadData();
-            updateDashboard();
-            document.getElementById('statusText').innerText = "Active";
+        window.processTradeImportData = async function(data) {
+            document.getElementById('statusText').innerText = "Importing...";
+            document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2";
+            
+            const batch = window.firebaseWriteBatch(window.firebaseDb);
+            let importCount = 0;
+            let skipCount = 0;
+
+            const positions = {};
+            for (let row of data) {
+                if (!row['Status'] || (row['Status'].toLowerCase() !== 'filled')) continue;
+                const posId = row['Position ID'] || row['Order ID'];
+                if (!posId) continue;
+
+                if (!positions[posId]) positions[posId] = [];
+                positions[posId].push(row);
+            }
+
+            for (let posId in positions) {
+                const rows = positions[posId];
+                
+                let entryRow = null;
+                let exitRows = [];
+
+                rows.forEach(r => {
+                    const pnlStr = String(r['Closed P&L'] || r['Closed P&L ($)'] || '').trim();
+                    if (pnlStr === '') {
+                        if (!entryRow) entryRow = r;
+                    } else {
+                        exitRows.push(r);
+                    }
+                });
+
+                if (exitRows.length === 0) continue; 
+
+                let totalProfit = 0;
+                let totalCommission = 0;
+                exitRows.forEach(r => {
+                    totalProfit += parseFloat(String(r['Closed P&L'] || r['Closed P&L ($)'] || 0).replace(/[$,]/g, '')) || 0;
+                    totalCommission += parseFloat(r['Commission'] || 0);
+                });
+                if (entryRow) totalCommission += parseFloat(entryRow['Commission'] || 0);
+
+                const lastExitRow = exitRows[exitRows.length - 1]; 
+
+                const docRef = window.firebaseDoc(window.firebaseDb, "trades", posId);
+                const docSnap = await window.firebaseGetDoc(docRef);
+
+                if (docSnap.exists()) {
+                    skipCount++;
+                } else {
+                    let entryTimeStr = entryRow ? (entryRow['Update Time'] || entryRow['Date']) : (lastExitRow['Update Time'] || lastExitRow['Date']);
+                    let exitTimeStr = lastExitRow['Update Time'] || lastExitRow['Date'] || new Date().toISOString();
+                    
+                    let duration = 0;
+                    try {
+                        const tEntry = parseCustomDate(entryTimeStr);
+                        const tExit = parseCustomDate(exitTimeStr);
+                        if (!isNaN(tEntry) && !isNaN(tExit) && tExit >= tEntry) {
+                            duration = Math.floor((tExit - tEntry) / 1000);
+                        }
+                    } catch(e) {}
+
+                    let resType = totalProfit === 0 ? 'BE' : (totalProfit > 0 ? 'TP' : 'SL');
+
+                    let side = String(entryRow ? entryRow['Side'] : '').toUpperCase();
+                    if (!side && lastExitRow) {
+                        const exitSide = String(lastExitRow['Side'] || '').toUpperCase();
+                        side = exitSide === 'BUY' ? 'SELL' : (exitSide === 'SELL' ? 'BUY' : exitSide);
+                    }
+
+                    const tradeData = {
+                        position_id: posId,
+                        symbol: String(lastExitRow['Symbol'] || '').toUpperCase().trim(),
+                        side: side,
+                        time: exitTimeStr,
+                        entryTime: entryTimeStr,
+                        duration: duration,
+                        isOnPlan: true,
+                        qty: parseFloat(entryRow ? entryRow['Filled Qty'] : lastExitRow['Filled Qty']) || 0,
+                        price: parseFloat(entryRow ? entryRow['Avg Fill Price'] : lastExitRow['Avg Fill Price']) || 0,
+                        commission: totalCommission,
+                        profit: totalProfit,
+                        type: entryRow ? entryRow['Type'] : lastExitRow['Type'],
+                        resultType: resType,
+                        risk: 0,
+                        rr: 0
+                    };
+
+                    batch.set(docRef, tradeData);
+                    importCount++;
+                }
+            }
+
+            if (importCount > 0) {
+                await batch.commit();
+            }
+
+            alert(`Successfully imported ${importCount} new trades; Skipped ${skipCount} duplicate entries.`);
+            document.getElementById('statusText').innerText = "Live";
             document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-orange-500 mr-2 shadow-[0_0_8px_#f97316]";
         };
 
-        window.syncFromGoogleSheets = async function () {
-            if (!GAS_URL) return alert("GAS_URL not configured.");
-            document.getElementById('statusText').innerText = "Syncing...";
+        window.handleCSVUpload = function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('statusText').innerText = "Parsing...";
+            document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2";
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async function (results) {
+                    await window.processTradeImportData(results.data);
+                    event.target.value = '';
+                },
+                error: function (err) {
+                    console.error("CSV Parse Error", err);
+                    alert("Error parsing CSV.");
+                    document.getElementById('statusText').innerText = "Error";
+                    document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2";
+                }
+            });
+        };
+
+        window.openPasteModal = function() {
+            document.getElementById('pasteInput').value = '';
+            document.getElementById('pasteModal').classList.remove('hidden');
+        };
+
+        window.closePasteModal = function() {
+            document.getElementById('pasteModal').classList.add('hidden');
+        };
+
+        window.handlePasteSubmit = async function() {
+            const text = document.getElementById('pasteInput').value;
+            if (!text.trim()) {
+                alert("Please paste some text first.");
+                return;
+            }
+
+            closePasteModal();
+            document.getElementById('statusText').innerText = "Parsing Paste...";
             document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2";
 
             try {
-                const response = await fetch(GAS_URL);
-                const data = await response.json();
+                const parsedData = [];
+                const rawBlocks = text.split(/\n\s*\n/);
+                for (let block of rawBlocks) {
+                    const lines = block.split('\n').map(l => l.trim()).filter(l => l !== '');
+                    if (lines.length < 5) continue;
 
-                if (data.capital !== undefined) {
-                    globalCapital = data.capital;
-                    await saveConfig(globalCapital);
-                }
+                    const statusLine = lines[lines.length - 2].toLowerCase();
+                    if (statusLine !== 'filled') continue;
 
-                if (data.funding && Array.isArray(data.funding)) {
-                    let formattedFunding = data.funding.map((row, i) => {
-                        let rawDate = row['Date'] || '';
-                        let rawTime = row['Time'] || '00:00:00';
-                        let parts = rawDate.split('-');
-                        let formattedTime = rawDate;
-                        if (parts.length === 3) {
-                            if (parts[2].length === 4) {
-                                formattedTime = `${parts[2]}/${parts[1]}/${parts[0]} ${rawTime}`;
-                            } else if (parts[0].length === 4) {
-                                formattedTime = `${parts[0]}/${parts[1]}/${parts[2]} ${rawTime}`;
-                            }
-                        }
-                        let dep = parseFloat(String(row['Deposit'] || '0').replace(/[$,]/g, '')) || 0;
-                        let wit = parseFloat(String(row['Withdraw'] || '0').replace(/[$,]/g, '')) || 0;
-                        return {
-                            id: row['No.'] || "GAS_F_" + Date.now() + "_" + i,
-                            time: formattedTime,
-                            deposit: dep,
-                            withdraw: wit
-                        };
+                    const lastTokens = lines[lines.length - 1].split('\t');
+                    const posId = lastTokens[1];
+                    if (!posId) continue;
+
+                    const typeQty = lines[2].split('\t');
+
+                    parsedData.push({
+                        'Status': 'Filled',
+                        'Position ID': posId,
+                        'Symbol': lines[0],
+                        'Side': lines[1],
+                        'Type': typeQty[0] || '',
+                        'Qty': typeQty[1] || '0',
+                        'Filled Qty': typeQty[2] || '0',
+                        'Avg Fill Price': lines[lines.length - 3] || '0',
+                        'Update Time': lastTokens[0] || '',
+                        'Commission': lastTokens[2] || '0',
+                        'Closed P&L': lastTokens[3] || ''
                     });
-                    globalFunding = processFunding([...globalFunding, ...formattedFunding]);
-                    await saveFundingToDB(globalFunding);
                 }
-
-                let rawTrades = Array.isArray(data.trades) ? data.trades : (Array.isArray(data) ? data : []);
-                let newFundingFromDB = [];
-                let newTradesFromDB = [];
-
-                rawTrades.forEach((row, i) => {
-                    let symbolStr = String(row['Symbol'] || row['symbol'] || '').toUpperCase().trim();
-                    let rawTime = row['Update Time'] || row['time'] || '';
-                    if (!rawTime && row['Date'] && row['Time']) {
-                        rawTime = String(row['Date']).trim() + ' ' + String(row['Time']).trim();
-                    }
-
-                    if (symbolStr === 'DEPOSIT' || symbolStr === 'WITHDRAW' || symbolStr === 'WITHDRAWAL') {
-                        let amountStr = String(row['Closed P&L ($)'] || row['Closed P&L'] || row['profit'] || row['Amount'] || 0);
-                        let amountVal = parseFloat(amountStr.replace(/[$,]/g, '')) || 0;
-
-                        let dep = symbolStr === 'DEPOSIT' ? amountVal : 0;
-                        let wit = symbolStr.includes('WITHDRAW') ? Math.abs(amountVal) : 0;
-
-                        newFundingFromDB.push({
-                            id: row['No.'] || "GAS_DB_F_" + Date.now() + "_" + i,
-                            time: rawTime,
-                            deposit: dep,
-                            withdraw: wit
-                        });
-                    } else {
-                        let profitStr = String(row['Closed P&L ($)'] || row['Closed P&L'] || row['profit'] || 0);
-                        let profitVal = parseFloat(profitStr.replace(/[$,]/g, '')) || 0;
-
-                        let resType = row['Result Type'] || row['resultType'] || '';
-                        if (!resType) resType = profitVal === 0 ? 'BE' : (profitVal > 0 ? 'TP' : 'SL');
-
-                        newTradesFromDB.push({
-                            id: row['No.'] || "GAS_" + Date.now() + "_" + i,
-                            symbol: row['Symbol'] || '',
-                            time: rawTime,
-                            profit: profitVal,
-                            side: String(row['Side'] || '').toUpperCase(),
-                            resultType: resType.toUpperCase(),
-                            rr: parseFloat(row['RR'] || 0),
-                            risk: parseFloat(row['Risk ($)'] || row['Risk'] || 0),
-                            'No.': row['No.'],
-                            'Position ID': row['Position ID'] || row['Order ID'] || ''
-                        });
-                    }
-                });
-
-                if (newFundingFromDB.length > 0) {
-                    globalFunding = processFunding([...globalFunding, ...newFundingFromDB]);
-                    await saveFundingToDB(globalFunding);
-                }
-
-                globalTrades = processTrades(newTradesFromDB);
-                await saveTradesToDB(globalTrades);
-
-                updateDashboard();
-
-                document.getElementById('statusText').innerText = "Synced";
-                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-orange-500 mr-2 shadow-[0_0_8px_#f97316]";
+                
+                await window.processTradeImportData(parsedData);
             } catch (err) {
-                console.error(err);
-                document.getElementById('statusText').innerText = "Failed";
-                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2 shadow-[0_0_8px_#ef4444]";
+                console.error("Paste Parse Error", err);
+                alert("Error parsing pasted data.");
+                document.getElementById('statusText').innerText = "Error";
+                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2";
+            }
+        };
+        window.resetDatabase = async function () {
+            if (!confirm("Are you SURE you want to clear the entire database?\nThis will delete all trades and funding data!")) return;
+            
+            const answer = prompt("WARNING: This action is permanent and cannot be undone.\nType 'DELETE' to confirm:");
+            if (answer !== "DELETE") {
+                alert("Database reset cancelled.");
+                return;
+            }
+
+            document.getElementById('statusText').innerText = "Clearing DB...";
+            document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2 animate-pulse";
+
+            try {
+                let batch = window.firebaseWriteBatch(window.firebaseDb);
+                let count = 0;
+                
+                // Trades
+                for (let t of globalTrades) {
+                    const docRef = window.firebaseDoc(window.firebaseDb, "trades", t.id);
+                    batch.delete(docRef);
+                    count++;
+                    if (count === 500) {
+                        await batch.commit();
+                        batch = window.firebaseWriteBatch(window.firebaseDb);
+                        count = 0;
+                    }
+                }
+                if (count > 0) {
+                    await batch.commit();
+                    batch = window.firebaseWriteBatch(window.firebaseDb);
+                    count = 0;
+                }
+
+                // Funding
+                for (let f of globalFunding) {
+                    const docRef = window.firebaseDoc(window.firebaseDb, "funding", f.id);
+                    batch.delete(docRef);
+                    count++;
+                    if (count === 500) {
+                        await batch.commit();
+                        batch = window.firebaseWriteBatch(window.firebaseDb);
+                        count = 0;
+                    }
+                }
+                if (count > 0) await batch.commit();
+
+                alert("Database successfully cleared.");
+                document.getElementById('statusText').innerText = "Live";
+                document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-orange-500 mr-2 shadow-[0_0_8px_#f97316]";
+            } catch (e) {
+                console.error("Error clearing DB:", e);
+                alert("An error occurred while clearing the database.");
             }
         };
 
@@ -991,17 +1195,6 @@
             if (view === 'simulation') initSimulation();
         };
 
-        window.resetDatabase = async function () {
-            const confirmed = window.confirm("Are you sure you want to RESET the local database? This will clear all local trades and funding.");
-            if (confirmed) {
-                globalTrades = [];
-                globalFunding = [];
-                await saveTradesToDB([]);
-                await saveFundingToDB([]);
-                updateDashboard();
-            }
-        };
-
         window.changePage = (p) => { currentPage = p; renderTable(); };
         window.changeMonth = (step) => { currentCalDate.setMonth(currentCalDate.getMonth() + step); renderCalendar(); };
         window.goToToday = () => { currentCalDate = new Date(); renderCalendar(); };
@@ -1012,33 +1205,6 @@
                 renderCalendar();
             }
         };
-
-        function processTrades(rawTrades) {
-            const seen = new Set();
-            return rawTrades.sort((a, b) => parseCustomDate(a.time) - parseCustomDate(b.time))
-                .filter(t => {
-                    if (isNaN(t.profit)) return false;
-
-                    const sym = String(t.symbol || "").toUpperCase().trim();
-                    if (sym === 'DEPOSIT' || sym === 'WITHDRAW' || sym === 'WITHDRAWAL') {
-                        return false;
-                    }
-
-                    const tradeNo = t['No.'] || t.id || '';
-                    const posId = t['Position ID'] || t['Order ID'] || '';
-                    const key = `${tradeNo}_${posId}_${t.symbol}_${t.time}_${t.profit.toFixed(2)}_${t.side}`;
-                    return seen.has(key) ? false : seen.add(key);
-                });
-        }
-
-        function processFunding(rawFunding) {
-            const seen = new Set();
-            return rawFunding.sort((a, b) => parseCustomDate(a.time) - parseCustomDate(b.time))
-                .filter(f => {
-                    const key = `${f.time}_${f.deposit}_${f.withdraw}`;
-                    return seen.has(key) ? false : seen.add(key);
-                });
-        }
 
         function calculateStandardDeviation(values, avg) {
             if (values.length === 0) return 0;
@@ -1164,7 +1330,14 @@
                     const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : 'OTHER';
                     if (sideStats[side]) sideStats[side].pnl += t.profit;
 
-                    const isBE = (t.resultType === 'BE');
+                    let isBE = false;
+                    const rawRisk = parseFloat(t.risk || 0);
+                    if (rawRisk > 0) {
+                        const calculatedRR = (t.profit || 0) / rawRisk;
+                        isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
+                    } else {
+                        isBE = (t.resultType === 'BE' || (t.profit || 0) === 0);
+                    }
                     netRR += (t.rr || 0);
 
                     if (isBE) {
@@ -1361,7 +1534,14 @@
                     const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : 'OTHER';
                     if (sideStats[side]) sideStats[side].pnl += t.profit;
 
-                    const isBE = (t.resultType === 'BE');
+                    let isBE = false;
+                    const rawRisk = parseFloat(t.risk || 0);
+                    if (rawRisk > 0) {
+                        const calculatedRR = (t.profit || 0) / rawRisk;
+                        isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
+                    } else {
+                        isBE = (t.resultType === 'BE' || (t.profit || 0) === 0);
+                    }
                     netRR += (t.rr || 0);
 
                     if (isBE) {
@@ -1471,16 +1651,20 @@
         function updatePerformanceDashboard() {
             const yearFilterEl = document.getElementById('perfYearFilter');
             const selectedYear = yearFilterEl ? yearFilterEl.value : 'ALL';
+            const metricFilterEl = document.getElementById('perfChartMetric');
+            const selectedMetric = metricFilterEl ? metricFilterEl.value : 'RR';
 
             const hours = Array.from({ length: 24 }, (_, i) => i);
-            const hourStats = {};
-            hours.forEach(h => hourStats[h] = 0);
+            const hourStats = {}; const hourStatsPnL = {};
+            hours.forEach(h => { hourStats[h] = 0; hourStatsPnL[h] = 0; });
 
             const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const dowStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            const dowStatsPnL = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
 
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const moyStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+            const moyStatsPnL = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
             const moyStartBalance = {};
             const moyPnL = {};
             for (let i = 0; i < 12; i++) { moyStartBalance[i] = null; moyPnL[i] = 0; }
@@ -1551,6 +1735,11 @@
 
             let allProfits = [];
 
+            let onPlanTrades = 0, onPlanWins = 0, onPlanLosses = 0, onPlanBE = 0, onPlanPnL = 0;
+            let offPlanTrades = 0, offPlanWins = 0, offPlanLosses = 0, offPlanBE = 0, offPlanPnL = 0;
+            let sumDurationWins = 0, countDurationWins = 0;
+            let sumDurationLosses = 0, countDurationLosses = 0;
+
             currentEvents.forEach((evt) => {
                 if (evt.type === 'funding') {
                     if (initialDeposit === 0 && evt.data.deposit > 0) {
@@ -1576,18 +1765,53 @@
                     let hr = evt.timeObj.getHours();
                     const rrVal = t.rr || 0;
                     const pnl = t.profit || 0;
-                    const isBE = (t.resultType === 'BE');
+                    
+                    let isBE = false;
+                    const rawRisk = parseFloat(t.risk || 0);
+                    if (rawRisk > 0) {
+                        const calculatedRR = pnl / rawRisk;
+                        isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
+                    } else {
+                        isBE = (t.resultType === 'BE' || pnl === 0);
+                    }
 
                     runningNetProfit += pnl;
                     totalTrades++;
                     allProfits.push(pnl);
+
+                    const planStatus = t.isOnPlan !== false;
+                    if (planStatus) {
+                        onPlanTrades++;
+                        onPlanPnL += pnl;
+                        if (isBE) onPlanBE++;
+                        else if (pnl > 0 || (!isBE && t.resultType === 'TP')) onPlanWins++;
+                        else onPlanLosses++;
+                    } else {
+                        offPlanTrades++;
+                        offPlanPnL += pnl;
+                        if (isBE) offPlanBE++;
+                        else if (pnl > 0 || (!isBE && t.resultType === 'TP')) offPlanWins++;
+                        else offPlanLosses++;
+                    }
+
+                    if (t.duration && t.duration > 0) {
+                        if (!isBE) {
+                            if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+                                sumDurationWins += t.duration;
+                                countDurationWins++;
+                            } else if (pnl < 0 || (!isBE && t.resultType === 'SL')) {
+                                sumDurationLosses += t.duration;
+                                countDurationLosses++;
+                            }
+                        }
+                    }
 
                     if (isBE) {
                         grossBE += pnl;
                         sumBE += pnl;
                         if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
                         beTradesCount++;
-                    } else if (pnl > 0 || t.resultType === 'TP') {
+                    } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
                         grossProfit += pnl;
                         profitTradesCount++;
                         if (pnl > largestProfit) largestProfit = pnl;
@@ -1610,7 +1834,7 @@
                             countAtMaxWinAmt = currentWinCount;
                         }
 
-                    } else if (pnl < 0 || t.resultType === 'SL') {
+                    } else if (pnl < 0 || (!isBE && t.resultType === 'SL')) {
                         grossLoss += Math.abs(pnl);
                         lossTradesCount++;
                         if (pnl < largestLoss) largestLoss = pnl;
@@ -1644,6 +1868,7 @@
 
                     if (!isNaN(hr)) {
                         hourStats[hr] += rrVal;
+                        hourStatsPnL[hr] += pnl;
                     }
 
                     if (!isNaN(evt.timeObj.getTime())) {
@@ -1652,7 +1877,9 @@
                         moyPnL[mMonth] += pnl;
 
                         dowStats[evt.timeObj.getDay()] += rrVal;
+                        dowStatsPnL[evt.timeObj.getDay()] += pnl;
                         moyStats[mMonth] += rrVal;
+                        moyStatsPnL[mMonth] += pnl;
                     }
 
                     if (!matrix[t.symbol]) {
@@ -1717,43 +1944,86 @@
             const getEl = id => document.getElementById(id);
 
             if (getEl('resNetProfit')) {
-                getEl('resNetProfit').innerText = formatCurrency(netProfit);
-                getEl('resNetProfit').className = `text-[12px] font-black ${netProfit >= 0 ? 'text-slate-800' : 'text-red-500'}`;
-                getEl('resGrossProfit').innerText = formatCurrency(grossProfit);
-                getEl('resGrossLoss').innerText = formatCurrency(-grossLoss);
-                getEl('resGrossBE').innerText = formatCurrency(grossBE);
+                // Calculate percentages for bars
+                const winPct = totalTrades > 0 ? (profitTradesCount / totalTrades) * 100 : 0;
+                const lossPct = totalTrades > 0 ? (lossTradesCount / totalTrades) * 100 : 0;
+                const bePct = totalTrades > 0 ? (beTradesCount / totalTrades) * 100 : 0;
+                
+                const resolvedTrades = profitTradesCount + lossTradesCount;
+                const mainWinRate = resolvedTrades > 0 ? (profitTradesCount / resolvedTrades) * 100 : 0;
+                
+                const longWinPct = longTrades > 0 ? (longWon / longTrades) * 100 : 0;
+                const shortWinPct = shortTrades > 0 ? (shortWon / shortTrades) * 100 : 0;
+                
+                const totalPlanTrades = onPlanTrades + offPlanTrades;
+                const onPlanPct = totalPlanTrades > 0 ? (onPlanTrades / totalPlanTrades) * 100 : 0;
+                const offPlanPct = totalPlanTrades > 0 ? (offPlanTrades / totalPlanTrades) * 100 : 0;
 
+                // Big 4
+                getEl('resNetProfit').innerText = formatCurrency(netProfit);
+                getEl('resNetProfit').className = `text-2xl font-black ${netProfit >= 0 ? 'text-slate-800' : 'text-red-500'}`;
+                getEl('resWinRate').innerText = `${mainWinRate.toFixed(2)}%`;
                 getEl('resProfitFactor').innerText = profitFactor.toFixed(2);
                 getEl('resExpectedPayoff').innerText = formatCurrency(expectedPayoff);
-                getEl('resRecoveryFactor').innerText = recoveryFactor.toFixed(2);
+
+                // Progress Bars Data
+                getEl('resTotalTrades').innerText = `${totalTrades} Trades`;
+                getEl('resBarWin').style.width = `${winPct}%`;
+                getEl('resBarLoss').style.width = `${lossPct}%`;
+                getEl('resBarBE').style.width = `${bePct}%`;
+                getEl('resProfitTrades').innerText = `${winPct.toFixed(1)}%`;
+                getEl('resLossTrades').innerText = `${lossPct.toFixed(1)}%`;
+                getEl('resBETrades').innerText = `${bePct.toFixed(1)}%`;
+
+                getEl('resLongWon').innerText = `${longWinPct.toFixed(1)}%`;
+                getEl('resShortWon').innerText = `${shortWinPct.toFixed(1)}%`;
+                getEl('resBarBuy').style.width = `${longWinPct}%`;
+                getEl('resBarSell').style.width = `${shortWinPct}%`;
+
+                getEl('resBarOnPlan').style.width = `${onPlanPct}%`;
+                getEl('resBarOffPlan').style.width = `${offPlanPct}%`;
+                
+                const onPlanWR = (onPlanWins + onPlanLosses) > 0 ? ((onPlanWins / (onPlanWins + onPlanLosses)) * 100).toFixed(1) : '0.0';
+                const offPlanWR = (offPlanWins + offPlanLosses) > 0 ? ((offPlanWins / (offPlanWins + offPlanLosses)) * 100).toFixed(1) : '0.0';
+                getEl('resOnPlanWinRate').innerText = `${onPlanWR}% WR`;
+                getEl('resOffPlanWinRate').innerText = `${offPlanWR}% WR`;
+                getEl('resOnPlanPnL').innerText = formatCurrency(onPlanPnL);
+                getEl('resOffPlanPnL').innerText = formatCurrency(offPlanPnL);
+
+                // Averages & Extremes & Drawdown & Streaks
+                getEl('resAvgProfit').innerText = formatCurrency(avgWin);
+                getEl('resAvgLoss').innerText = formatCurrency(-avgLoss);
+                getEl('resAvgBE').innerText = formatCurrency(avgBE);
+                getEl('resLargestProfit').innerText = formatCurrency(largestProfit);
+                getEl('resLargestLoss').innerText = formatCurrency(largestLoss);
+                getEl('resGrossProfit').innerText = formatCurrency(grossProfit);
+                getEl('resGrossLoss').innerText = formatCurrency(-grossLoss);
                 getEl('resSharpe').innerText = sharpeRatio.toFixed(2);
 
                 getEl('resBalDD').innerText = formatCurrency(maxDrawdownAmt);
                 getEl('resAbsDD').innerText = formatCurrency(absoluteDD);
                 getEl('resMaxDD').innerText = formatCurrency(maxDrawdownAmt);
                 getEl('resRelDD').innerText = `${maxDrawdownPct.toFixed(2)}%`;
-
-                getEl('resTotalTrades').innerText = totalTrades;
-                getEl('resLongWon').innerText = `${longTrades} (${longTrades > 0 ? ((longWon / longTrades) * 100).toFixed(2) : '0.00'}%)`;
-                getEl('resShortWon').innerText = `${shortTrades} (${shortTrades > 0 ? ((shortWon / shortTrades) * 100).toFixed(2) : '0.00'}%)`;
-                getEl('resProfitTrades').innerText = `${profitTradesCount} (${totalTrades > 0 ? ((profitTradesCount / totalTrades) * 100).toFixed(2) : '0.00'}%)`;
-                getEl('resLossTrades').innerText = `${lossTradesCount} (${totalTrades > 0 ? ((lossTradesCount / totalTrades) * 100).toFixed(2) : '0.00'}%)`;
-                getEl('resBETrades').innerText = `${beTradesCount} (${totalTrades > 0 ? ((beTradesCount / totalTrades) * 100).toFixed(2) : '0.00'}%)`;
-
-                getEl('resLargestProfit').innerText = formatCurrency(largestProfit);
-                getEl('resLargestLoss').innerText = formatCurrency(largestLoss);
-                getEl('resLargestBE').innerText = formatCurrency(largestBE);
-                getEl('resAvgProfit').innerText = formatCurrency(avgWin);
-                getEl('resAvgLoss').innerText = formatCurrency(-avgLoss);
-                getEl('resAvgBE').innerText = formatCurrency(avgBE);
+                getEl('resRecoveryFactor').innerText = recoveryFactor.toFixed(2);
 
                 getEl('resMaxConsWinAmt').innerText = `${countAtMaxWinAmt} (${formatCurrency(maxConsWinAmt)})`;
                 getEl('resMaxConsLossAmt').innerText = `${countAtMaxLossAmt} (${formatCurrency(-maxConsLossAmt)})`;
-                getEl('resMaxConsWinCount').innerText = `${formatCurrency(amtAtMaxWinCount)} (${maxConsWinCount})`;
-                getEl('resMaxConsLossCount').innerText = `${formatCurrency(-amtAtMaxLossCount)} (${maxConsLossCount})`;
-
                 getEl('resAvgConsWin').innerText = totalWinStreaksCount > 0 ? Math.round(sumOfWinStreaks / totalWinStreaksCount) : 0;
                 getEl('resAvgConsLoss').innerText = totalLossStreaksCount > 0 ? Math.round(sumOfLossStreaks / totalLossStreaksCount) : 0;
+
+                function formatDuration(sec) {
+                    if (!sec || sec <= 0) return '0s';
+                    const d = Math.floor(sec / (24 * 3600)); sec %= (24 * 3600);
+                    const h = Math.floor(sec / 3600); sec %= 3600;
+                    const m = Math.floor(sec / 60); const s = Math.floor(sec % 60);
+                    if (d > 0) return `${d}d ${h}h`;
+                    if (h > 0) return `${h}h ${m}m`;
+                    if (m > 0) return `${m}m ${s}s`;
+                    return `${s}s`;
+                }
+
+                getEl('resHoldWin').innerText = countDurationWins > 0 ? formatDuration(sumDurationWins / countDurationWins) : '-';
+                getEl('resHoldLoss').innerText = countDurationLosses > 0 ? formatDuration(sumDurationLosses / countDurationLosses) : '-';
             }
 
             if (typeof Chart !== 'undefined') {
@@ -1827,14 +2097,14 @@
                 const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
                 if (hourlyChartInst) hourlyChartInst.destroy();
 
-                const hourlyData = hours.map(h => hourStats[h]);
+                const hourlyData = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : hourStatsPnL[h]);
                 const hourlyColors = hourlyData.map(v => v >= 0 ? '#5E5E5E' : '#f97316');
 
                 hourlyChartInst = new Chart(ctxHourly, {
                     type: 'bar',
                     data: {
                         labels: hours.map(h => `${h}:00`),
-                        datasets: [{ label: 'Net RR', data: hourlyData, backgroundColor: hourlyColors, borderRadius: 6 }]
+                        datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)', data: hourlyData, backgroundColor: hourlyColors, borderRadius: 6 }]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
@@ -1857,7 +2127,7 @@
                                     ctx.textBaseline = 'middle';
 
                                     const val = dataset.data[index];
-                                    const text = val.toFixed(1) + 'R';
+                                    const text = selectedMetric === 'RR' ? val.toFixed(1) + 'R' : '$' + val.toFixed(2);
 
                                     const position = element.tooltipPosition();
                                     const yOffset = val >= 0 ? -12 : 14;
@@ -1870,15 +2140,15 @@
 
                 const ctxDow = document.getElementById('dowChart').getContext('2d');
                 if (dowChartInst) dowChartInst.destroy();
-                const activeDowKeys = Object.keys(dowStats).filter(k => dowStats[k] !== 0);
+                const activeDowKeys = Object.keys(dowStats).filter(k => selectedMetric === 'RR' ? dowStats[k] !== 0 : dowStatsPnL[k] !== 0);
                 const activeDowNames = activeDowKeys.map(k => dowNames[k]);
-                const activeDowData = activeDowKeys.map(k => dowStats[k]);
+                const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : dowStatsPnL[k]);
                 const dowColors = activeDowData.map(v => v >= 0 ? '#5E5E5E' : '#f97316');
                 dowChartInst = new Chart(ctxDow, {
                     type: 'bar',
                     data: {
                         labels: activeDowNames,
-                        datasets: [{ label: 'Net RR', data: activeDowData, backgroundColor: dowColors, borderRadius: 6 }]
+                        datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)', data: activeDowData, backgroundColor: dowColors, borderRadius: 6 }]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
@@ -1897,10 +2167,10 @@
 
                 const ctxMoy = document.getElementById('moyChart').getContext('2d');
                 if (moyChartInst) moyChartInst.destroy();
-                const activeMoyKeys = Object.keys(moyStats).filter(k => moyStats[k] !== 0 || moyPnL[k] !== 0);
+                const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k] !== 0 : moyStatsPnL[k] !== 0) || moyPnL[k] !== 0);
                 const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
 
-                const moyRRData = activeMoyKeys.map(k => moyStats[k]);
+                const moyRRData = activeMoyKeys.map(k => selectedMetric === 'RR' ? moyStats[k] : moyStatsPnL[k]);
                 const moyRRColors = moyRRData.map(v => v >= 0 ? '#5E5E5E' : '#f97316');
 
                 const moyGainData = activeMoyKeys.map(k => {
@@ -1924,7 +2194,7 @@
 
                                     const val = dataset.data[index];
                                     let text = val.toFixed(1);
-                                    if (i === 0) text += 'R';
+                                    if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + val.toFixed(2);
                                     else text += '%';
 
                                     const position = element.tooltipPosition();
@@ -1942,7 +2212,7 @@
                         labels: activeMoyNames,
                         datasets: [
                             {
-                                label: 'Net RR',
+                                label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)',
                                 data: moyRRData,
                                 backgroundColor: moyRRColors,
                                 borderRadius: 6,
@@ -2016,19 +2286,24 @@
         }
 
         function renderTable() {
-            const data = [...globalTrades].sort((a, b) => parseCustomDate(b.time) - parseCustomDate(a.time));
+            const combinedData = [];
+            globalTrades.forEach(t => combinedData.push({...t, isFunding: false}));
+            globalFunding.forEach(f => {
+                combinedData.push({
+                    id: f.id,
+                    time: f.time,
+                    symbol: f.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW',
+                    profit: f.deposit > 0 ? f.deposit : -f.withdraw,
+                    notes: f.notes,
+                    isFunding: true
+                });
+            });
+
+            const data = combinedData.sort((a, b) => parseCustomDate(b.time) - parseCustomDate(a.time));
             const start = (currentPage - 1) * rowsPerPage;
             const paginated = data.slice(start, start + rowsPerPage);
 
             document.getElementById('uiTradeTable').innerHTML = paginated.map(t => {
-                const isBE = (t.resultType === 'BE');
-
-                const badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.resultType === 'TP' || t.profit > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-red-50 text-red-600 border-red-200');
-                const badgeText = t.resultType || (t.profit > 0 ? 'TP' : 'SL');
-
-                const rawRisk = parseFloat(t.risk || 0);
-                const riskText = rawRisk && rawRisk !== 0 ? '$' + Math.abs(rawRisk).toFixed(2) : '-';
-
                 let shortTime = t.time;
                 try {
                     const d = parseCustomDate(t.time);
@@ -2038,19 +2313,281 @@
                     }
                 } catch (e) { }
 
+                if (t.isFunding) {
+                    const badge = t.profit > 0 ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
+                    const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
+                    return `
+        <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+            <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold leading-tight">${shortTime}</td>
+            <td class="py-4 px-4 font-extrabold text-slate-800">${badgeText}</td>
+            <td class="py-4 px-4 text-center">-</td>
+            <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
+            <td class="py-4 px-4 text-right font-bold text-slate-600">-</td>
+            <td class="py-4 px-4 text-right font-bold text-slate-600">-</td>
+            <td class="py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-slate-900' : 'text-red-500'}">${Math.abs(t.profit).toFixed(2)}</td>
+            <td class="py-4 px-4 text-center flex justify-center gap-3">
+                <button onclick="editTrade('${t.id}', true)" class="text-slate-400 hover:text-blue-500 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button onclick="deleteTrade('${t.id}', true)" class="text-slate-400 hover:text-red-500 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </td>
+        </tr>`;
+                }
+
+                let isBE = false;
+                const rawRisk = parseFloat(t.risk || 0);
+                if (rawRisk > 0) {
+                    const rr = t.profit / rawRisk;
+                    isBE = (rr >= -0.4 && rr <= 0.4);
+                } else {
+                    isBE = (t.resultType === 'BE' || t.profit === 0);
+                }
+
+                const badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-red-50 text-red-600 border-red-200');
+                const badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
+
+                const riskText = rawRisk && rawRisk !== 0 ? '$' + Math.abs(rawRisk).toFixed(2) : '-';
+
+                let durationStr = '';
+                let sec = (t.duration && t.duration > 0) ? t.duration : 1;
+                const d = Math.floor(sec / (24 * 3600)); sec %= (24 * 3600);
+                const h = Math.floor(sec / 3600); sec %= 3600;
+                const m = Math.floor(sec / 60); sec %= 60;
+                const s = Math.floor(sec);
+                if (d > 0) durationStr = `<br><span class="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: ${d}d ${h}h</span>`;
+                else if (h > 0) durationStr = `<br><span class="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: ${h}h ${m}m</span>`;
+                else if (m > 0) durationStr = `<br><span class="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: ${m}m ${s}s</span>`;
+                else durationStr = `<br><span class="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: ${s < 1 ? 1 : s}s</span>`;
+
+                let planIcon = t.isOnPlan === false 
+                    ? `<span title="Off Plan" class="text-red-400 ml-1"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span>`
+                    : `<span title="On Plan" class="text-green-500 ml-1"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>`;
+
                 return `
         <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
-            <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold">${shortTime}</td>
-            <td class="py-4 px-4 font-extrabold text-slate-800">${t.symbol}</td>
+            <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold leading-tight">${shortTime}${durationStr}</td>
+            <td class="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap">${t.symbol}${planIcon}</td>
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side === 'BUY' ? 'bg-slate-100' : 'bg-red-50'}">${t.side}</span></td>
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">${riskText}</td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toFixed(2) + 'R' : '-'}</td>
             <td class="py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}">${t.profit.toFixed(2)}</td>
+            <td class="py-4 px-4 text-center flex justify-center gap-3">
+                <button onclick="editTrade('${t.id}')" class="text-slate-400 hover:text-blue-500 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button onclick="deleteTrade('${t.id}')" class="text-slate-400 hover:text-red-500 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </td>
         </tr>`;
             }).join('');
             renderPagination(Math.ceil(data.length / rowsPerPage));
         }
+
+        // CRUD Modal functions
+        window.toggleModalFields = function () {
+            const type = document.querySelector('input[name="entryType"]:checked').value;
+            const tradeFields = document.getElementById('tradeSpecificFields');
+            const riskField = document.getElementById('riskField');
+            const amountLabel = document.getElementById('amountLabel');
+
+            if (type === 'TRADE') {
+                tradeFields.classList.remove('hidden');
+                riskField.classList.remove('hidden');
+                amountLabel.innerText = "P&L / Amount ($)";
+            } else {
+                tradeFields.classList.add('hidden');
+                riskField.classList.add('hidden');
+                amountLabel.innerText = "Amount ($)";
+            }
+        };
+
+        window.updateLiveRR = function() {
+            const amount = parseFloat(document.getElementById('modalAmount').value) || 0;
+            const risk = parseFloat(document.getElementById('modalRisk').value) || 0;
+            const rrLabel = document.getElementById('modalLiveRR');
+            if (risk > 0) {
+                const rr = amount / risk;
+                rrLabel.innerText = `RR: ${rr.toFixed(2)}R`;
+                rrLabel.className = rr >= 0 ? "text-orange-500 normal-case tracking-normal" : "text-red-500 normal-case tracking-normal";
+            } else {
+                rrLabel.innerText = `RR: 0.00R`;
+                rrLabel.className = "text-slate-400 normal-case tracking-normal";
+            }
+        };
+
+        window.openManualTradeModal = function () {
+            document.getElementById('tradeModalTitle').innerText = "Add Manual Entry";
+            document.getElementById('modalTradeId').value = "";
+            document.getElementById('modalSymbol').value = "";
+            document.getElementById('modalSide').value = "BUY";
+            document.getElementById('modalAmount').value = "";
+            document.getElementById('modalStrategy').value = "";
+            
+            let defaultRisk = "";
+            if (globalTrades.length > 0) {
+                const sortedTrades = [...globalTrades].sort((a, b) => parseCustomDate(b.time) - parseCustomDate(a.time));
+                for(let t of sortedTrades) {
+                    if (t.risk && t.risk > 0) {
+                        defaultRisk = t.risk;
+                        break;
+                    }
+                }
+            }
+            document.getElementById('modalRisk').value = defaultRisk;
+            document.getElementById('modalIsOnPlan').checked = true;
+            
+            document.querySelector('input[name="entryType"][value="TRADE"]').checked = true;
+            toggleModalFields();
+            updateLiveRR();
+
+            // local time
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('modalTime').value = now.toISOString().slice(0, 16);
+
+            document.getElementById('tradeModal').classList.remove('hidden');
+        };
+
+        window.closeTradeModal = function () {
+            document.getElementById('tradeModal').classList.add('hidden');
+        };
+
+        window.editTrade = function (id, isFunding = false) {
+            if (isFunding) {
+                const funding = globalFunding.find(f => f.id === id);
+                if (!funding) return;
+                
+                document.getElementById('tradeModalTitle').innerText = "Edit Funding";
+                document.getElementById('modalTradeId').value = funding.id;
+                document.getElementById('modalAmount').value = funding.deposit > 0 ? funding.deposit : funding.withdraw;
+                document.getElementById('modalStrategy').value = funding.notes || '';
+                
+                if (funding.deposit > 0) {
+                    document.querySelector('input[name="entryType"][value="DEPOSIT"]').checked = true;
+                } else {
+                    document.querySelector('input[name="entryType"][value="WITHDRAW"]').checked = true;
+                }
+                toggleModalFields();
+                updateLiveRR();
+
+                try {
+                    const d = parseCustomDate(funding.time);
+                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                    document.getElementById('modalTime').value = d.toISOString().slice(0, 16);
+                } catch (e) { }
+
+                document.getElementById('tradeModal').classList.remove('hidden');
+                return;
+            }
+
+            const trade = globalTrades.find(t => t.id === id);
+            if (!trade) return;
+
+            document.getElementById('tradeModalTitle').innerText = "Edit Trade";
+            document.getElementById('modalTradeId').value = trade.id;
+            document.getElementById('modalSymbol').value = trade.symbol;
+            document.getElementById('modalSide').value = trade.side || 'BUY';
+            document.getElementById('modalAmount').value = trade.profit;
+            document.getElementById('modalStrategy').value = trade.strategy || trade.notes || '';
+            document.getElementById('modalRisk').value = trade.risk || '';
+            document.getElementById('modalIsOnPlan').checked = trade.isOnPlan !== false;
+
+            document.querySelector('input[name="entryType"][value="TRADE"]').checked = true;
+            toggleModalFields();
+            updateLiveRR();
+
+            try {
+                const d = parseCustomDate(trade.time);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                document.getElementById('modalTime').value = d.toISOString().slice(0, 16);
+            } catch (e) { }
+
+            document.getElementById('tradeModal').classList.remove('hidden');
+        };
+
+        window.deleteTrade = async function (id, isFunding = false) {
+            if (!confirm(`Are you sure you want to delete this ${isFunding ? 'funding entry' : 'trade'}?`)) return;
+            try {
+                const collectionName = isFunding ? "funding" : "trades";
+                const docRef = window.firebaseDoc(window.firebaseDb, collectionName, id);
+                await window.firebaseDeleteDoc(docRef);
+            } catch (e) {
+                console.error("Delete Error", e);
+                alert("Failed to delete.");
+            }
+        };
+
+        window.saveTradeModal = async function () {
+            const id = document.getElementById('modalTradeId').value;
+            const entryType = document.querySelector('input[name="entryType"]:checked').value;
+            
+            const symbol = document.getElementById('modalSymbol').value.toUpperCase().trim();
+            const side = document.getElementById('modalSide').value;
+            const amount = parseFloat(document.getElementById('modalAmount').value) || 0;
+            const timeVal = document.getElementById('modalTime').value;
+            const strategy = document.getElementById('modalStrategy').value;
+            const risk = parseFloat(document.getElementById('modalRisk').value) || 0;
+            const isOnPlan = document.getElementById('modalIsOnPlan').checked;
+
+            // Funding check
+            if (entryType === 'DEPOSIT' || entryType === 'WITHDRAW') {
+                const isDeposit = entryType === 'DEPOSIT';
+                const fId = id || "M_F_" + Date.now();
+                const data = {
+                    id: fId,
+                    time: timeVal.replace('T', ' '),
+                    deposit: isDeposit ? Math.abs(amount) : 0,
+                    withdraw: isDeposit ? 0 : Math.abs(amount),
+                    notes: strategy
+                };
+                try {
+                    const docRef = window.firebaseDoc(window.firebaseDb, "funding", fId);
+                    await window.firebaseSetDoc(docRef, data);
+                    closeTradeModal();
+                } catch (e) { console.error(e); }
+                return;
+            }
+
+            // Normal trade
+            const tId = id || "M_T_" + Date.now();
+            let rr = risk > 0 ? amount / risk : 0;
+            
+            let resType = '';
+            if (risk > 0) {
+                if (rr >= -0.4 && rr <= 0.4) resType = 'BE';
+                else if (rr > 0.4) resType = 'TP';
+                else resType = 'SL';
+            } else {
+                resType = amount === 0 ? 'BE' : (amount > 0 ? 'TP' : 'SL');
+            }
+
+            const tradeData = {
+                id: tId,
+                position_id: tId,
+                symbol: symbol,
+                side: side,
+                time: timeVal.replace('T', ' '),
+                profit: amount,
+                risk: risk,
+                rr: rr,
+                resultType: resType,
+                strategy: strategy,
+                isOnPlan: isOnPlan
+            };
+
+            try {
+                const docRef = window.firebaseDoc(window.firebaseDb, "trades", tId);
+                await window.firebaseSetDoc(docRef, tradeData, { merge: true });
+                closeTradeModal();
+            } catch (e) {
+                console.error("Save Error", e);
+                alert("Failed to save.");
+            }
+        };
 
         function renderPagination(total) {
             if (total === 0) {
@@ -2229,7 +2766,14 @@
 
                     mTotalTradesAll++;
 
-                    const isBE = (t.resultType === 'BE');
+                    let isBE = false;
+                    const rawRisk = parseFloat(t.risk || 0);
+                    if (rawRisk > 0) {
+                        const calculatedRR = (t.profit || 0) / rawRisk;
+                        isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
+                    } else {
+                        isBE = (t.resultType === 'BE' || (t.profit || 0) === 0);
+                    }
                     if (!isBE) {
                         if (t.profit > 0 || t.resultType === 'TP') mWins++;
                         else if (t.profit < 0 || t.resultType === 'SL') mLosses++;
@@ -2237,7 +2781,7 @@
                 }
             });
 
-            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="bg-slate-50/50 min-h-[85px] border-b border-r border-slate-100"></div>`;
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="bg-slate-50/50 min-h-[110px] border-b border-r border-slate-100"></div>`;
 
             let mNet = 0;
             for (let day = 1; day <= daysInMonth; day++) {
@@ -2248,7 +2792,7 @@
                     mNet += s.pnl; bgColor = s.pnl >= 0 ? "bg-slate-50/80" : "bg-red-50/40";
                     pnlHtml = `<div class="mt-auto"><div class="text-base font-black ${s.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">${s.pnl >= 0 ? '$' : '-$'}${Math.abs(s.pnl).toFixed(2)}</div><div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Trades: ${s.count}</div></div>`;
                 }
-                grid.innerHTML += `<div class="${bgColor} min-h-[85px] p-3 flex flex-col border-b border-r border-slate-100 hover:bg-slate-100 transition">${label}${pnlHtml}</div>`;
+                grid.innerHTML += `<div class="${bgColor} min-h-[110px] p-3 flex flex-col border-b border-r border-slate-100 hover:bg-slate-100 transition">${label}${pnlHtml}</div>`;
             }
 
             const pnlEl = document.getElementById('calMonthlyPnl');
@@ -2277,22 +2821,26 @@
         function resetSimulationDefaults() {
             const currentBalStr = document.getElementById('uiBalance').innerText.replace(/[^0-9.-]+/g, "");
             document.getElementById('simBalance').value = parseFloat(currentBalStr) || 0;
-            document.getElementById('simRisk').value = globalSimAvgRisk.toFixed(2);
-            document.getElementById('simWR').value = globalSimWinRate.toFixed(2);
-            document.getElementById('simRR').value = globalSimAvgRR.toFixed(2);
-            document.getElementById('simTrades').value = 100;
+            document.getElementById('simRisk').value = globalSimAvgRisk > 0 ? globalSimAvgRisk.toFixed(2) : 10;
+            document.getElementById('simWR').value = globalSimWinRate > 0 ? globalSimWinRate.toFixed(2) : 50;
+            document.getElementById('simRR').value = globalSimAvgRR > 0 ? globalSimAvgRR.toFixed(2) : 1;
+            document.getElementById('simTrades').value = 1000;
         }
 
         function initSimulation() {
             const simBal = document.getElementById('simBalance');
-            if (!simBal.value) {
+            if (!simBal.value || simBal.value === "0") {
                 resetSimulationDefaults();
+            } else {
+                // Dynamically update metrics based on new data
+                document.getElementById('simWR').value = globalSimWinRate > 0 ? globalSimWinRate.toFixed(2) : 50;
+                document.getElementById('simRR').value = globalSimAvgRR > 0 ? globalSimAvgRR.toFixed(2) : 1;
             }
             runSimulation();
         }
 
         function runSimulation() {
-            const trades = parseInt(document.getElementById('simTrades').value) || 100;
+            const trades = parseInt(document.getElementById('simTrades').value) || 1000;
             const bal = parseFloat(document.getElementById('simBalance').value) || 0;
             const risk = parseFloat(document.getElementById('simRisk').value) || 0;
             const wr = parseFloat(document.getElementById('simWR').value) / 100 || 0;
@@ -2303,17 +2851,50 @@
             const labels = ['Start'];
             for (let i = 1; i <= trades; i++) labels.push('T' + i);
 
+            let reportHTML = '';
             for (let i = 0; i < 3; i++) {
                 let currentBal = bal;
+                let peakBal = bal;
+                let maxDD = 0;
                 let data = [currentBal];
+                let simWins = 0;
                 for (let t = 0; t < trades; t++) {
                     if (Math.random() <= wr) {
                         currentBal += (risk * rr);
+                        simWins++;
                     } else {
                         currentBal -= risk;
                     }
+                    if (currentBal > peakBal) peakBal = currentBal;
+                    const dd = peakBal - currentBal;
+                    if (dd > maxDD) maxDD = dd;
                     data.push(currentBal);
                 }
+
+                const simWinRate = (simWins / trades) * 100;
+                const netProfit = currentBal - bal;
+                const netClass = netProfit >= 0 ? 'text-slate-800' : 'text-red-500';
+
+                reportHTML += `
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${shades[i]}"></span>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Sim ${i + 1}</span>
+                    </div>
+                    <div class="text-2xl font-black ${netClass} mb-1">$${currentBal.toFixed(2)}</div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">Net: $${netProfit.toFixed(2)}</div>
+                    <div class="grid grid-cols-2 gap-4 w-full mt-auto border-t border-slate-100 pt-4">
+                        <div>
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Win Rate</div>
+                            <div class="text-sm font-bold text-slate-700">${simWinRate.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Max DD</div>
+                            <div class="text-sm font-bold text-red-500">$${maxDD.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+                `;
 
                 datasets.push({
                     label: `Sim ${i + 1}`,
@@ -2327,6 +2908,7 @@
                     fill: false
                 });
             }
+            document.getElementById('simReportCards').innerHTML = reportHTML;
 
             if (typeof Chart !== 'undefined') {
                 const ctx = document.getElementById('simChart').getContext('2d');
