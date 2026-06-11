@@ -2886,6 +2886,8 @@
                 const simWinRate = (simWins / trades) * 100;
                 const netProfit = currentBal - bal;
                 const netClass = netProfit >= 0 ? 'text-slate-800' : 'text-red-500';
+                const growthClass = netProfit >= 0 ? 'text-orange-500' : 'text-red-500';
+                const growth = bal > 0 ? ((netProfit / bal) * 100).toFixed(2) : '0.00';
 
                 reportHTML += `
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
@@ -2895,7 +2897,11 @@
                     </div>
                     <div class="text-2xl font-black ${netClass} mb-1">$${currentBal.toFixed(2)}</div>
                     <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">Net: $${netProfit.toFixed(2)}</div>
-                    <div class="grid grid-cols-2 gap-4 w-full mt-auto border-t border-slate-100 pt-4">
+                    <div class="grid grid-cols-3 gap-2 w-full mt-auto border-t border-slate-100 pt-4">
+                        <div>
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Growth</div>
+                            <div class="text-sm font-bold ${growthClass}">${growth}%</div>
+                        </div>
                         <div>
                             <div class="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Win Rate</div>
                             <div class="text-sm font-bold text-slate-700">${simWinRate.toFixed(1)}%</div>
