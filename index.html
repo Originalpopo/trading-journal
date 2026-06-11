@@ -562,6 +562,8 @@
                                         Time</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">
+                                        On Plan</th>
+                                    <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">
                                         Side</th>
                                     <th class="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">
                                         Result</th>
@@ -807,11 +809,6 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Strategy / Notes</label>
-                        <input type="text" id="modalStrategy" placeholder="Optional"
-                            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
-                    </div>
                     <div id="riskField">
                         <label class="flex justify-between items-end text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                             <span>Risk ($)</span>
@@ -820,6 +817,12 @@
                         <input type="number" step="0.01" id="modalRisk" placeholder="Optional" oninput="updateLiveRR()"
                             class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
                     </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Notes</label>
+                    <textarea id="modalStrategy" placeholder="Add your notes here..." rows="4"
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition resize-y"></textarea>
                 </div>
             </div>
 
@@ -2048,9 +2051,9 @@
 
                             ctx.fillStyle = '#5E5E5E';
                             ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'bottom';
-                            ctx.fillText(lastVal.toFixed(2), position.x, position.y - 8);
+                            ctx.textAlign = 'right';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(lastVal.toFixed(2), position.x - 10, position.y);
                             ctx.restore();
                         }
                     }
@@ -2084,11 +2087,12 @@
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
+                        layout: { padding: { top: 20 } },
                         plugins: { legend: { display: false } },
                         scales: {
                             x: { display: false },
-                            y: { display: false },
-                            y1: { display: true, position: 'left', grid: { color: '#f1f5f9', drawOnChartArea: true }, ticks: { font: { size: 10 } } }
+                            y: { display: false, grace: '10%' },
+                            y1: { display: true, position: 'left', grid: { color: '#f1f5f9', drawOnChartArea: true }, ticks: { font: { size: 10 } }, grace: '10%' }
                         }
                     },
                     plugins: [lastBalancePointPlugin]
@@ -2314,19 +2318,22 @@
                 } catch (e) { }
 
                 if (t.isFunding) {
+                    const notesText = t.notes ? String(t.notes).replace(/"/g, '&quot;').replace(/>/g, '&gt;').replace(/</g, '&lt;') : '';
+                    const noteIcon = notesText ? `<span title="${notesText}" class="text-slate-400 hover:text-orange-500 transition-colors ml-1 cursor-help"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></span>` : '';
                     const badge = t.profit > 0 ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
                     const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                     return `
         <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
             <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold leading-tight">${shortTime}</td>
-            <td class="py-4 px-4 font-extrabold text-slate-800">${badgeText}</td>
+            <td class="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap">${badgeText}${noteIcon}</td>
+            <td class="py-4 px-4 text-center">-</td>
             <td class="py-4 px-4 text-center">-</td>
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">-</td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">-</td>
             <td class="py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-slate-900' : 'text-red-500'}">${Math.abs(t.profit).toFixed(2)}</td>
             <td class="py-4 px-4 text-center flex justify-center gap-3">
-                <button onclick="editTrade('${t.id}', true)" class="text-slate-400 hover:text-blue-500 transition">
+                <button onclick="editTrade('${t.id}', true)" class="text-slate-400 hover:text-slate-800 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                 </button>
                 <button onclick="deleteTrade('${t.id}', true)" class="text-slate-400 hover:text-red-500 transition">
@@ -2362,20 +2369,25 @@
                 else durationStr = `<br><span class="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: ${s < 1 ? 1 : s}s</span>`;
 
                 let planIcon = t.isOnPlan === false 
-                    ? `<span title="Off Plan" class="text-red-400 ml-1"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span>`
-                    : `<span title="On Plan" class="text-green-500 ml-1"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>`;
+                    ? `<span title="Off Plan" class="text-red-400"><svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span>`
+                    : `<span title="On Plan" class="text-slate-400"><svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>`;
+
+                const noteContent = t.strategy || t.notes || '';
+                const notesText = noteContent ? String(noteContent).replace(/"/g, '&quot;').replace(/>/g, '&gt;').replace(/</g, '&lt;') : '';
+                const noteIcon = notesText ? `<span title="${notesText}" class="text-slate-400 hover:text-orange-500 transition-colors ml-1 cursor-help"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></span>` : '';
 
                 return `
         <tr class="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
             <td class="py-4 px-4 text-slate-500 text-[11px] font-semibold leading-tight">${shortTime}${durationStr}</td>
-            <td class="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap">${t.symbol}${planIcon}</td>
+            <td class="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap">${t.symbol}${noteIcon}</td>
+            <td class="py-4 px-4 text-center">${planIcon}</td>
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side === 'BUY' ? 'bg-slate-100' : 'bg-red-50'}">${t.side}</span></td>
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">${riskText}</td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toFixed(2) + 'R' : '-'}</td>
             <td class="py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}">${t.profit.toFixed(2)}</td>
             <td class="py-4 px-4 text-center flex justify-center gap-3">
-                <button onclick="editTrade('${t.id}')" class="text-slate-400 hover:text-blue-500 transition">
+                <button onclick="editTrade('${t.id}')" class="text-slate-400 hover:text-slate-800 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                 </button>
                 <button onclick="deleteTrade('${t.id}')" class="text-slate-400 hover:text-red-500 transition">
