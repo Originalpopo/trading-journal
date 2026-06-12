@@ -2772,9 +2772,10 @@
             globalTrades.forEach(t => {
                 const d = parseCustomDate(t.time);
                 if (!isNaN(d.getTime()) && d.getTime() !== 0 && d.getFullYear() === year && d.getMonth() === month) {
-                    const date = d.getDate(); if (!statsMap[date]) statsMap[date] = { pnl: 0, count: 0 };
+                    const date = d.getDate(); if (!statsMap[date]) statsMap[date] = { pnl: 0, count: 0, rr: 0 };
                     statsMap[date].pnl += t.profit;
                     statsMap[date].count++;
+                    statsMap[date].rr += (t.rr || 0);
 
                     mTotalTradesAll++;
 
@@ -2802,7 +2803,9 @@
                 if (isCurrentMonth && day === currentDay) label = `<span class="text-xs font-bold bg-orange-500 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">${day}</span>`;
                 if (s) {
                     mNet += s.pnl; bgColor = s.pnl >= 0 ? "bg-slate-50/80" : "bg-red-50/40";
-                    pnlHtml = `<div class="mt-auto"><div class="text-base font-black ${s.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">${s.pnl >= 0 ? '$' : '-$'}${Math.abs(s.pnl).toFixed(2)}</div><div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Trades: ${s.count}</div></div>`;
+                    let rrClass = s.rr >= 0 ? 'text-slate-600' : 'text-red-500';
+                    let rrSign = s.rr > 0 ? '+' : '';
+                    pnlHtml = `<div class="mt-auto"><div class="text-base font-black ${s.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">${s.pnl >= 0 ? '$' : '-$'}${Math.abs(s.pnl).toFixed(2)}</div><div class="text-[10px] font-bold ${rrClass} tracking-tight mt-0.5">${rrSign}${s.rr.toFixed(2)}R</div><div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Trades: ${s.count}</div></div>`;
                 }
                 grid.innerHTML += `<div class="${bgColor} min-h-[110px] p-3 flex flex-col border-b border-r border-slate-100 hover:bg-slate-100 transition">${label}${pnlHtml}</div>`;
             }
