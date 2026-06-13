@@ -97,49 +97,71 @@
     </style>
 </head>
 
-<body class="text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
+<body class="text-slate-800 h-screen flex overflow-hidden bg-slate-50">
 
-    <nav
-        class="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex flex-col xl:flex-row justify-between items-center gap-4 shrink-0">
-        <div class="flex items-center gap-8 w-full xl:w-auto justify-between xl:justify-start">
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto z-10">
+        <div class="p-6 pb-8">
             <h1 onclick="switchView('dashboard')"
-                class="text-3xl font-extrabold text-slate-900 tracking-tight cursor-pointer hover:opacity-80 transition">
+                class="text-2xl font-extrabold text-slate-900 tracking-tight cursor-pointer hover:opacity-80 transition">
                 Trade<span class="text-orange-500">Journal</span></h1>
-
-            <div class="flex bg-slate-100 p-1 rounded-xl flex-wrap">
-                <button onclick="switchView('dashboard')" id="nav-dashboard"
-                    class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white text-orange-500 shadow-sm">Dashboard</button>
-                <button onclick="switchView('performance')" id="nav-performance"
-                    class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">Performance</button>
-                <button onclick="switchView('calendar')" id="nav-calendar"
-                    class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">Calendar</button>
-                <button onclick="switchView('history')" id="nav-history"
-                    class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">History</button>
-                <button onclick="switchView('simulation')" id="nav-simulation"
-                    class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700">Simulation</button>
-            </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-center xl:justify-end">
-            <div class="flex items-center bg-slate-50 p-1.5 pr-4 rounded-xl border border-slate-200 h-[38px]">
-                <label for="csvUpload"
-                    class="cursor-pointer bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm mr-2 h-full flex items-center justify-center">
-                    Upload CSV
-                    <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
-                </label>
-                <button onclick="openPasteModal()" class="bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm mr-3 h-full flex items-center justify-center">
-                    Paste Text
-                </button>
-                <div id="dbStatus" class="text-xs font-semibold flex items-center text-slate-600">
-                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-2"></span>
-                    <span id="statusText" class="truncate max-w-[150px]">Initializing...</span>
-                </div>
-            </div>
-            <button onclick="resetDatabase()" class="flex items-center justify-center w-[38px] h-[38px] bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 hover:border-red-500 rounded-lg transition shadow-sm" title="Clear Database">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        <nav class="flex-1 px-4 space-y-2">
+            <button onclick="switchView('dashboard')" id="nav-dashboard"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-50 text-orange-600 font-bold transition-all w-full text-left">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Dashboard
             </button>
+            <button onclick="switchView('performance')" id="nav-performance"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold transition-all w-full text-left">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Performance
+            </button>
+            <button onclick="switchView('calendar')" id="nav-calendar"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold transition-all w-full text-left">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Calendar
+            </button>
+            <button onclick="switchView('history')" id="nav-history"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold transition-all w-full text-left">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                History
+            </button>
+            <button onclick="switchView('simulation')" id="nav-simulation"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold transition-all w-full text-left">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Simulation
+            </button>
+            <button onclick="switchView('notes')" id="nav-notes"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold transition-all w-full text-left">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Notes
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100 flex flex-col gap-2 mt-auto">
+            <label for="csvUpload"
+                class="cursor-pointer bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm w-full flex items-center justify-center">
+                Upload CSV
+                <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+            </label>
+            <button onclick="openPasteModal()" class="bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm w-full flex items-center justify-center">
+                Paste Text
+            </button>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="resetDatabase()" class="shrink-0 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 hover:border-red-500 rounded-lg transition shadow-sm w-[38px] h-[38px]" title="Clear Database">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+                <div id="dbStatus" class="flex-1 text-xs font-semibold flex items-center justify-center text-slate-600 bg-slate-50 py-2 rounded-lg border border-slate-100">
+                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-2 shrink-0"></span>
+                    <span id="statusText" class="truncate max-w-[120px]">Initializing...</span>
+                </div>
+                  <button id="downloadDbBtn" class="text-slate-400 hover:text-blue-500 transition cursor-pointer p-2 rounded-lg hover:bg-blue-50" onclick="downloadDatabase()" title="Download Database">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
+                  </button>
+            </div>
         </div>
-    </nav>
+    </aside>
 
     <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full">
         <div class="max-w-7xl mx-auto">
@@ -618,22 +640,25 @@
                             <div
                                 class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
                                 <span
-                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Monthly
-                                    Trades</span>
+                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Trades</span>
                                 <span id="calMonthlyTrades" class="text-xl font-black text-slate-900">0</span>
                             </div>
                             <div
                                 class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
                                 <span
-                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Monthly
-                                    P&L</span>
+                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">P&L</span>
                                 <span id="calMonthlyPnl" class="text-xl font-black text-slate-900">$0.00</span>
                             </div>
                             <div
                                 class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
                                 <span
-                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Monthly
-                                    Win Rate</span>
+                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">RR</span>
+                                <span id="calMonthlyRR" class="text-xl font-black text-slate-700">0.00R</span>
+                            </div>
+                            <div
+                                class="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
+                                <span
+                                    class="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Win Rate</span>
                                 <span id="calWinRate" class="text-xl font-black text-slate-700">0.00%</span>
                             </div>
                         </div>
@@ -745,7 +770,109 @@
                     </div>
                 </div>
             </div>
+            <div id="view-notes" class="hidden space-y-6">
+                <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">Notes</h2>
+                        <button onclick="openNoteModal()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-xl shadow-sm transition text-sm">
+                            Add Note
+                        </button>
+                    </div>
+                    <div id="notePaginationControls" class="flex items-center gap-1.5">
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 overflow-hidden">
+                    <div id="notesContainer" class="flex flex-col divide-y divide-slate-100">
+                        <!-- Notes will be rendered here -->
+                    </div>
+                </div>
+            </div>
     </main>
+
+    <!-- Add/Edit Note Modal -->
+    <div id="noteFormModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl relative">
+            <h3 id="noteFormTitle" class="text-xl font-extrabold text-slate-800 mb-6 tracking-tight">Add Note</h3>
+            <input type="hidden" id="noteId">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Title</label>
+                    <input type="text" id="noteTitle" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-orange-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                    <input type="datetime-local" id="noteDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-orange-500 transition">
+                </div>
+                                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Icon</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="selectNoteIcon('note')" id="icon-btn-note" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn ring-2 ring-orange-500 bg-orange-50 text-orange-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('smile')" id="icon-btn-smile" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z"></path></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('frown')" id="icon-btn-frown" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z"></path></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('heart')" id="icon-btn-heart" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('fire')" id="icon-btn-fire" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48ZM12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"></path></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('chat')" id="icon-btn-chat" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('bulb')" id="icon-btn-bulb" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('up')" id="icon-btn-up" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z"/></svg>
+                        </button>
+                        <button type="button" onclick="selectNoteIcon('down')" id="icon-btn-down" class="w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384m-10.253 1.5H9.7m8.075-9.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 0 0 .303-.54"/></svg>
+                        </button>
+                    </div>
+                    <input type="hidden" id="noteIcon" value="note">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
+                    <textarea id="noteContent" rows="8" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-orange-500 transition resize-y"></textarea>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeNoteFormModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition">Cancel</button>
+                    <button onclick="saveNote()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-orange-200">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Read Note Modal -->
+    <div id="readNoteModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 shadow-xl relative">
+            <div class="flex justify-between items-start mb-4 shrink-0">
+                <div>
+                    <h3 id="readNoteTitle" class="text-xl font-extrabold text-slate-800 tracking-tight leading-tight">Note Title</h3>
+                    <div id="readNoteDate" class="text-sm font-semibold text-slate-400 mt-1">Date</div>
+                </div>
+                <button onclick="closeReadNoteModal()" class="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-lg transition shrink-0 ml-4">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="readNoteContent" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] mb-4 pr-2">
+                Note content here...
+            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
+                <button id="btnEditNote" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Edit
+                </button>
+                <button id="btnDeleteNote" class="px-5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Delete
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Trade Modal -->
     <div id="tradeModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
@@ -859,6 +986,7 @@
 
         let globalTrades = [];
         let globalFunding = [];
+        let globalNotes = [];
         let globalCapital = 0;
         let chartInstance = null;
         let hourlyChartInst = null;
@@ -909,6 +1037,20 @@
 
             const tradesRef = window.firebaseCollection(window.firebaseDb, "trades");
             const fundingRef = window.firebaseCollection(window.firebaseDb, "funding");
+            const notesRef = window.firebaseCollection(window.firebaseDb, "notes");
+
+            window.firebaseOnSnapshot(notesRef, (snapshot) => {
+                const newNotes = [];
+                snapshot.forEach(doc => {
+                    newNotes.push({ id: doc.id, ...doc.data() });
+                });
+                globalNotes = newNotes;
+                if (document.getElementById('view-notes') && !document.getElementById('view-notes').classList.contains('hidden')) {
+                    renderNotes();
+                }
+            }, (error) => {
+                console.error("Notes listener error:", error);
+            });
 
             window.firebaseOnSnapshot(tradesRef, (snapshot) => {
                 const newTrades = [];
@@ -1121,6 +1263,22 @@
                 document.getElementById('statusDot').className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2";
             }
         };
+        window.downloadDatabase = function() {
+            const data = {
+                trades: globalTrades,
+                notes: globalNotes
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tradejournal_db_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
         window.resetDatabase = async function () {
             if (!confirm("Are you SURE you want to clear the entire database?\nThis will delete all trades and funding data!")) return;
             
@@ -1177,17 +1335,17 @@
         };
 
         window.switchView = function (view) {
-            const views = ['dashboard', 'performance', 'history', 'calendar', 'simulation'];
+            const views = ['dashboard', 'performance', 'history', 'calendar', 'simulation', 'notes'];
             views.forEach(v => {
                 const el = document.getElementById(`view-${v}`);
                 const btn = document.getElementById(`nav-${v}`);
                 if (el) {
                     if (v === view) {
                         el.classList.remove('hidden');
-                        if (btn) btn.className = "px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white text-orange-500 shadow-sm";
+                        if (btn) btn.className = "flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-50 text-orange-600 font-bold transition-all w-full text-left";
                     } else {
                         el.classList.add('hidden');
-                        if (btn) btn.className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700";
+                        if (btn) btn.className = "flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold transition-all w-full text-left";
                     }
                 }
             });
@@ -1196,6 +1354,7 @@
             if (view === 'performance') updatePerformanceDashboard();
             if (view === 'calendar') renderCalendar();
             if (view === 'simulation') initSimulation();
+            if (view === 'notes') renderNotes();
         };
 
         window.changePage = (p) => { currentPage = p; renderTable(); };
@@ -1388,52 +1547,52 @@
             globalSimAvgRR = rrCount ? (totalRR / rrCount) : (avgW / (avgL === 0 ? 1 : Math.abs(avgL)));
             // -----------------------------------
 
-            document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
-            document.getElementById('uiNetProfit').innerText = `$${net.toFixed(2)}`;
+            document.getElementById('uiBalance').innerText = `$${runningBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('uiNetProfit').innerText = `$${net.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('uiWinRate').innerText = `${(winRate * 100).toFixed(1)}%`;
-            document.getElementById('uiGrowth').innerText = totalFunded > 0 ? `${((net / totalFunded) * 100).toFixed(2)}%` : '0.00%';
+            document.getElementById('uiGrowth').innerText = totalFunded > 0 ? `${((net / totalFunded) * 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '0.00%';
             document.getElementById('uiTotalTrades').innerText = globalTrades.length;
             document.getElementById('uiTotalTP').innerText = countTP;
             document.getElementById('uiTotalBE').innerText = countBE;
             document.getElementById('uiTotalSL').innerText = countSL;
 
             const uiTotalDep = document.getElementById('uiTotalDeposit');
-            if (uiTotalDep) uiTotalDep.innerText = `$${totalDeposit.toFixed(2)}`;
+            if (uiTotalDep) uiTotalDep.innerText = `$${totalDeposit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             const uiTotalWit = document.getElementById('uiTotalWithdraw');
-            if (uiTotalWit) uiTotalWit.innerText = `$${totalWithdraw.toFixed(2)}`;
+            if (uiTotalWit) uiTotalWit.innerText = `$${totalWithdraw.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             const uiTotalNetRREl = document.getElementById('uiTotalNetRR');
             if (uiTotalNetRREl) {
-                uiTotalNetRREl.innerHTML = netRR.toFixed(2) + ' <span class="text-[10px] font-bold text-slate-400">R</span>';
+                uiTotalNetRREl.innerHTML = netRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-[10px] font-bold text-slate-400">R</span>';
                 uiTotalNetRREl.className = `font-black text-xl ${netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`;
             }
 
-            document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toFixed(2);
-            document.getElementById('uiExpectancy').innerText = `$${globalTrades.length > 0 ? (net / globalTrades.length).toFixed(2) : '0.00'}`;
-            document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ((net / globalTrades.length) / stdDev).toFixed(2) : '0.00';
+            document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('uiExpectancy').innerText = `$${globalTrades.length > 0 ? (net / globalTrades.length).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}`;
+            document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ((net / globalTrades.length) / stdDev).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00';
 
             const uiAvgRREl = document.getElementById('uiAvgRR');
-            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toFixed(2) + ' R' : '0.00 R';
+            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             const uiMaxTPRREl = document.getElementById('uiMaxTPRR');
-            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toFixed(2) + ' R' : '0.00 R';
+            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             const uiAvgSLRREl = document.getElementById('uiAvgSLRR');
-            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toFixed(2) + ' R' : '0.00 R';
+            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             const uiMaxSLRREl = document.getElementById('uiMaxSLRR');
-            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toFixed(2) + ' R' : '0.00 R';
+            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             document.getElementById('uiMaxConsLoss').innerText = maxStreakL;
             document.getElementById('uiMaxConsWin').innerText = maxStreakW;
 
             // แสดงผล Max Drawdown
-            document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toFixed(2)}`;
-            document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toFixed(2)}%`;
+            document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
 
             // แสดงผล Active Drawdown
-            document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toFixed(2)}`;
-            document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toFixed(2)}%`;
+            document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
 
             renderCategorical(symStats, sideStats);
             renderTable();
@@ -1596,50 +1755,50 @@
             globalSimAvgRR = rrCount ? (totalRR / rrCount) : (avgW / (avgL === 0 ? 1 : Math.abs(avgL)));
             // -----------------------------------
 
-            document.getElementById('uiBalance').innerText = `$${runningBalance.toFixed(2)}`;
-            document.getElementById('uiNetProfit').innerText = `$${net.toFixed(2)}`;
+            document.getElementById('uiBalance').innerText = `$${runningBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('uiNetProfit').innerText = `$${net.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('uiWinRate').innerText = `${(winRate * 100).toFixed(1)}%`;
-            document.getElementById('uiGrowth').innerText = totalFunded > 0 ? `${((net / totalFunded) * 100).toFixed(2)}%` : '0.00%';
+            document.getElementById('uiGrowth').innerText = totalFunded > 0 ? `${((net / totalFunded) * 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '0.00%';
             document.getElementById('uiTotalTrades').innerText = globalTrades.length;
             document.getElementById('uiTotalTP').innerText = countTP;
             document.getElementById('uiTotalBE').innerText = countBE;
             document.getElementById('uiTotalSL').innerText = countSL;
 
             const uiTotalDep = document.getElementById('uiTotalDeposit');
-            if (uiTotalDep) uiTotalDep.innerText = `$${totalDeposit.toFixed(2)}`;
+            if (uiTotalDep) uiTotalDep.innerText = `$${totalDeposit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             const uiTotalWit = document.getElementById('uiTotalWithdraw');
-            if (uiTotalWit) uiTotalWit.innerText = `$${totalWithdraw.toFixed(2)}`;
+            if (uiTotalWit) uiTotalWit.innerText = `$${totalWithdraw.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             const uiTotalNetRREl = document.getElementById('uiTotalNetRR');
             if (uiTotalNetRREl) {
-                uiTotalNetRREl.innerHTML = netRR.toFixed(2) + ' <span class="text-[10px] font-bold text-slate-400">R</span>';
+                uiTotalNetRREl.innerHTML = netRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-[10px] font-bold text-slate-400">R</span>';
                 uiTotalNetRREl.className = `font-black text-xl ${netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`;
             }
 
-            document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toFixed(2);
-            document.getElementById('uiExpectancy').innerText = `$${globalTrades.length > 0 ? (net / globalTrades.length).toFixed(2) : '0.00'}`;
-            document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ((net / globalTrades.length) / stdDev).toFixed(2) : '0.00';
+            document.getElementById('uiPF').innerText = (gLoss === 0 ? gProfit : gProfit / gLoss).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('uiExpectancy').innerText = `$${globalTrades.length > 0 ? (net / globalTrades.length).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}`;
+            document.getElementById('uiSharpe').innerText = stdDev !== 0 ? ((net / globalTrades.length) / stdDev).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00';
 
             const uiAvgRREl = document.getElementById('uiAvgRR');
-            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toFixed(2) + ' R' : '0.00 R';
+            if (uiAvgRREl) uiAvgRREl.innerText = rrCount ? (totalRR / rrCount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             const uiMaxTPRREl = document.getElementById('uiMaxTPRR');
-            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toFixed(2) + ' R' : '0.00 R';
+            if (uiMaxTPRREl) uiMaxTPRREl.innerText = maxTPRR > 0 ? maxTPRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             const uiAvgSLRREl = document.getElementById('uiAvgSLRR');
-            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toFixed(2) + ' R' : '0.00 R';
+            if (uiAvgSLRREl) uiAvgSLRREl.innerText = slRRCount ? (slTotalRR / slRRCount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             const uiMaxSLRREl = document.getElementById('uiMaxSLRR');
-            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toFixed(2) + ' R' : '0.00 R';
+            if (uiMaxSLRREl) uiMaxSLRREl.innerText = maxSLRR < 0 ? maxSLRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' R' : '0.00 R';
 
             document.getElementById('uiMaxConsLoss').innerText = maxStreakL;
             document.getElementById('uiMaxConsWin').innerText = maxStreakW;
 
-            document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toFixed(2)}`;
-            document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toFixed(2)}%`;
+            document.getElementById('uiDrawdown').innerText = `$${maxDDValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('uiDrawdownPercent').innerText = `${maxDDPercent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
 
-            document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toFixed(2)}`;
-            document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toFixed(2)}%`;
+            document.getElementById('uiActiveDD').innerText = `$${activeDDValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('uiActiveDDPercent').innerText = `${activeDDPercent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
 
             renderCategorical(symStats, sideStats);
             renderTable();
@@ -1943,7 +2102,7 @@
             const stdDev = calculateStandardDeviation(allProfits, totalTrades > 0 ? (netProfit / totalTrades) : 0);
             const sharpeRatio = stdDev !== 0 ? ((netProfit / totalTrades) / stdDev) : 0;
 
-            const formatCurrency = (val) => val < 0 ? `-$${Math.abs(val).toFixed(2)}` : `$${val.toFixed(2)}`;
+            const formatCurrency = (val) => val < 0 ? `-$${Math.abs(val).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : `$${val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             const getEl = id => document.getElementById(id);
 
             if (getEl('resNetProfit')) {
@@ -1965,8 +2124,8 @@
                 // Big 4
                 getEl('resNetProfit').innerText = formatCurrency(netProfit);
                 getEl('resNetProfit').className = `text-2xl font-black ${netProfit >= 0 ? 'text-slate-800' : 'text-red-500'}`;
-                getEl('resWinRate').innerText = `${mainWinRate.toFixed(2)}%`;
-                getEl('resProfitFactor').innerText = profitFactor.toFixed(2);
+                getEl('resWinRate').innerText = `${mainWinRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
+                getEl('resProfitFactor').innerText = profitFactor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 getEl('resExpectedPayoff').innerText = formatCurrency(expectedPayoff);
 
                 // Progress Bars Data
@@ -2001,13 +2160,13 @@
                 getEl('resLargestLoss').innerText = formatCurrency(largestLoss);
                 getEl('resGrossProfit').innerText = formatCurrency(grossProfit);
                 getEl('resGrossLoss').innerText = formatCurrency(-grossLoss);
-                getEl('resSharpe').innerText = sharpeRatio.toFixed(2);
+                getEl('resSharpe').innerText = sharpeRatio.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
                 getEl('resBalDD').innerText = formatCurrency(maxDrawdownAmt);
                 getEl('resAbsDD').innerText = formatCurrency(absoluteDD);
                 getEl('resMaxDD').innerText = formatCurrency(maxDrawdownAmt);
-                getEl('resRelDD').innerText = `${maxDrawdownPct.toFixed(2)}%`;
-                getEl('resRecoveryFactor').innerText = recoveryFactor.toFixed(2);
+                getEl('resRelDD').innerText = `${maxDrawdownPct.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
+                getEl('resRecoveryFactor').innerText = recoveryFactor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
                 getEl('resMaxConsWinAmt').innerText = `${countAtMaxWinAmt} (${formatCurrency(maxConsWinAmt)})`;
                 getEl('resMaxConsLossAmt').innerText = `${countAtMaxLossAmt} (${formatCurrency(-maxConsLossAmt)})`;
@@ -2053,7 +2212,7 @@
                             ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
                             ctx.textAlign = 'right';
                             ctx.textBaseline = 'middle';
-                            ctx.fillText(lastVal.toFixed(2), position.x - 10, position.y);
+                            ctx.fillText(lastVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), position.x - 10, position.y);
                             ctx.restore();
                         }
                     }
@@ -2131,7 +2290,7 @@
                                     ctx.textBaseline = 'middle';
 
                                     const val = dataset.data[index];
-                                    const text = selectedMetric === 'RR' ? val.toFixed(1) + 'R' : '$' + val.toFixed(2);
+                                    const text = selectedMetric === 'RR' ? val.toFixed(1) + 'R' : '$' + val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
                                     const position = element.tooltipPosition();
                                     const yOffset = val >= 0 ? -12 : 14;
@@ -2198,7 +2357,7 @@
 
                                     const val = dataset.data[index];
                                     let text = val.toFixed(1);
-                                    if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + val.toFixed(2);
+                                    if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                                     else text += '%';
 
                                     const position = element.tooltipPosition();
@@ -2249,8 +2408,8 @@
                 const b = data.BUY, s = data.SELL;
                 const bWR = (b.win + b.loss) > 0 ? (b.win / (b.win + b.loss) * 100).toFixed(1) + '%' : '-';
                 const sWR = (s.win + s.loss) > 0 ? (s.win / (s.win + s.loss) * 100).toFixed(1) + '%' : '-';
-                const bRR = b.rrCount ? (b.rr / b.rrCount).toFixed(2) + 'R' : '-';
-                const sRR = s.rrCount ? (s.rr / s.rrCount).toFixed(2) + 'R' : '-';
+                const bRR = b.rrCount ? (b.rr / b.rrCount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'R' : '-';
+                const sRR = s.rrCount ? (s.rr / s.rrCount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return `
@@ -2331,7 +2490,7 @@
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">-</td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">-</td>
-            <td class="py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-slate-900' : 'text-red-500'}">${Math.abs(t.profit).toFixed(2)}</td>
+            <td class="py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-slate-900' : 'text-red-500'}">${Math.abs(t.profit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             <td class="py-4 px-4 text-center flex justify-center gap-3">
                 <button onclick="editTrade('${t.id}', true)" class="text-slate-400 hover:text-slate-800 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -2355,7 +2514,7 @@
                 const badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-red-50 text-red-600 border-red-200');
                 const badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
 
-                const riskText = rawRisk && rawRisk !== 0 ? '$' + Math.abs(rawRisk).toFixed(2) : '-';
+                const riskText = rawRisk && rawRisk !== 0 ? '$' + Math.abs(rawRisk).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
 
                 let durationStr = '';
                 let sec = (t.duration && t.duration > 0) ? t.duration : 1;
@@ -2384,8 +2543,8 @@
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side === 'BUY' ? 'bg-slate-100' : 'bg-red-50'}">${t.side}</span></td>
             <td class="py-4 px-4 text-center"><span class="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}">${badgeText}</span></td>
             <td class="py-4 px-4 text-right font-bold text-slate-600">${riskText}</td>
-            <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toFixed(2) + 'R' : '-'}</td>
-            <td class="py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}">${t.profit.toFixed(2)}</td>
+            <td class="py-4 px-4 text-right font-bold text-slate-600">${t.rr ? t.rr.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'R' : '-'}</td>
+            <td class="py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}">${t.profit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             <td class="py-4 px-4 text-center flex justify-center gap-3">
                 <button onclick="editTrade('${t.id}')" class="text-slate-400 hover:text-slate-800 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -2423,7 +2582,7 @@
             const rrLabel = document.getElementById('modalLiveRR');
             if (risk > 0) {
                 const rr = amount / risk;
-                rrLabel.innerText = `RR: ${rr.toFixed(2)}R`;
+                rrLabel.innerText = `RR: ${rr.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}R`;
                 rrLabel.className = rr >= 0 ? "text-orange-500 normal-case tracking-normal" : "text-red-500 normal-case tracking-normal";
             } else {
                 rrLabel.innerText = `RR: 0.00R`;
@@ -2674,7 +2833,7 @@
                         ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom'; // วางด้านบนวงกลม
-                        ctx.fillText(val0.toFixed(2), pos0.x, pos0.y - offset0);
+                        ctx.fillText(val0.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), pos0.x, pos0.y - offset0);
                         ctx.restore();
                     }
 
@@ -2690,7 +2849,7 @@
                         ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom'; // วางด้านบนวงกลม
-                        ctx.fillText(val1.toFixed(2), pos1.x, pos1.y - offset1);
+                        ctx.fillText(val1.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), pos1.x, pos1.y - offset1);
                         ctx.restore();
                     }
                 }
@@ -2797,29 +2956,37 @@
             for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="bg-slate-50/50 min-h-[110px] border-b border-r border-slate-100"></div>`;
 
             let mNet = 0;
+            let mRR = 0;
             for (let day = 1; day <= daysInMonth; day++) {
                 const s = statsMap[day]; let bgColor = "bg-white", pnlHtml = "";
                 let label = `<span class="text-xs font-bold text-slate-400">${day}</span>`;
                 if (isCurrentMonth && day === currentDay) label = `<span class="text-xs font-bold bg-orange-500 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">${day}</span>`;
                 if (s) {
                     mNet += s.pnl; bgColor = s.pnl >= 0 ? "bg-slate-50/80" : "bg-red-50/40";
+                    mRR += s.rr;
                     let rrClass = s.rr >= 0 ? 'text-slate-600' : 'text-red-500';
                     let rrSign = s.rr > 0 ? '+' : '';
-                    pnlHtml = `<div class="mt-auto"><div class="text-base font-black ${s.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">${s.pnl >= 0 ? '$' : '-$'}${Math.abs(s.pnl).toFixed(2)}</div><div class="text-[10px] font-bold ${rrClass} tracking-tight mt-0.5">${rrSign}${s.rr.toFixed(2)}R</div><div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Trades: ${s.count}</div></div>`;
+                    pnlHtml = `<div class="mt-auto"><div class="text-base font-black ${s.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}">${s.pnl >= 0 ? '$' : '-$'}${Math.abs(s.pnl).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div><div class="flex justify-between items-center w-full mt-2"><div class="text-[10px] font-bold ${rrClass} tracking-tight">${rrSign}${s.rr.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}R</div><div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Trades : ${s.count}</div></div></div>`;
                 }
                 grid.innerHTML += `<div class="${bgColor} min-h-[110px] p-3 flex flex-col border-b border-r border-slate-100 hover:bg-slate-100 transition">${label}${pnlHtml}</div>`;
             }
 
             const pnlEl = document.getElementById('calMonthlyPnl');
             if (pnlEl) {
-                pnlEl.innerText = `${mNet >= 0 ? '$' : '-$'}${Math.abs(mNet).toFixed(2)}`;
+                pnlEl.innerText = `${mNet >= 0 ? '$' : '-$'}${Math.abs(mNet).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 pnlEl.className = `text-xl font-black ${mNet >= 0 ? 'text-slate-900' : 'text-red-500'}`;
+            }
+
+            const rrEl = document.getElementById('calMonthlyRR');
+            if (rrEl) {
+                rrEl.innerText = `${mRR > 0 ? '+' : ''}${mRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}R`;
+                rrEl.className = `text-xl font-black ${mRR >= 0 ? 'text-slate-900' : 'text-red-500'}`;
             }
 
             const winRateEl = document.getElementById('calWinRate');
             if (winRateEl) {
                 const mTotalTrades = mWins + mLosses;
-                winRateEl.innerText = mTotalTrades > 0 ? ((mWins / mTotalTrades) * 100).toFixed(2) + '%' : '-';
+                winRateEl.innerText = mTotalTrades > 0 ? ((mWins / mTotalTrades) * 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '%' : '-';
             }
 
             const tradesEl = document.getElementById('calMonthlyTrades');
@@ -2836,9 +3003,9 @@
         function resetSimulationDefaults() {
             const currentBalStr = document.getElementById('uiBalance').innerText.replace(/[^0-9.-]+/g, "");
             document.getElementById('simBalance').value = parseFloat(currentBalStr) || 0;
-            document.getElementById('simRisk').value = globalSimAvgRisk > 0 ? globalSimAvgRisk.toFixed(2) : 10;
-            document.getElementById('simWR').value = globalSimWinRate > 0 ? globalSimWinRate.toFixed(2) : 50;
-            document.getElementById('simRR').value = globalSimAvgRR > 0 ? globalSimAvgRR.toFixed(2) : 1;
+            document.getElementById('simRisk').value = globalSimAvgRisk > 0 ? globalSimAvgRisk.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 10;
+            document.getElementById('simWR').value = globalSimWinRate > 0 ? globalSimWinRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 50;
+            document.getElementById('simRR').value = globalSimAvgRR > 0 ? globalSimAvgRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 1;
             document.getElementById('simTrades').value = 1000;
         }
 
@@ -2848,8 +3015,8 @@
                 resetSimulationDefaults();
             } else {
                 // Dynamically update metrics based on new data
-                document.getElementById('simWR').value = globalSimWinRate > 0 ? globalSimWinRate.toFixed(2) : 50;
-                document.getElementById('simRR').value = globalSimAvgRR > 0 ? globalSimAvgRR.toFixed(2) : 1;
+                document.getElementById('simWR').value = globalSimWinRate > 0 ? globalSimWinRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 50;
+                document.getElementById('simRR').value = globalSimAvgRR > 0 ? globalSimAvgRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 1;
             }
             runSimulation();
         }
@@ -2890,7 +3057,7 @@
                 const netProfit = currentBal - bal;
                 const netClass = netProfit >= 0 ? 'text-slate-800' : 'text-red-500';
                 const growthClass = netProfit >= 0 ? 'text-orange-500' : 'text-red-500';
-                const growth = bal > 0 ? ((netProfit / bal) * 100).toFixed(2) : '0.00';
+                const growth = bal > 0 ? ((netProfit / bal) * 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00';
 
                 reportHTML += `
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
@@ -2898,8 +3065,8 @@
                         <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${shades[i]}"></span>
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Sim ${i + 1}</span>
                     </div>
-                    <div class="text-2xl font-black ${netClass} mb-1">$${currentBal.toFixed(2)}</div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">Net: $${netProfit.toFixed(2)}</div>
+                    <div class="text-2xl font-black ${netClass} mb-1">$${currentBal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">Net: $${netProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                     <div class="grid grid-cols-3 gap-2 w-full mt-auto border-t border-slate-100 pt-4">
                         <div>
                             <div class="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Growth</div>
@@ -2911,7 +3078,7 @@
                         </div>
                         <div>
                             <div class="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Max DD</div>
-                            <div class="text-sm font-bold text-red-500">$${maxDD.toFixed(2)}</div>
+                            <div class="text-sm font-bold text-red-500">$${maxDD.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                         </div>
                     </div>
                 </div>
@@ -2961,7 +3128,280 @@
             }
         }
 
+
+
+
+            let currentNotePage = 1;
+
+        window.changeNotePage = function(p) {
+            currentNotePage = p;
+            renderNotes();
+        };
+
+        window.getNoteIconSvg = function(iconName) {
+            if (iconName === 'smile') return `<path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z"/>`;
+            if (iconName === 'frown') return `<path stroke-linecap="round" stroke-linejoin="round" d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z"/>`;
+            if (iconName === 'heart') return `<path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>`;
+            if (iconName === 'fire') return `<path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48ZM12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>`;
+            return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>`;
+        };
+
+        window.selectNoteIcon = function(iconName) {
+            document.getElementById('noteIcon').value = iconName;
+            const btns = document.querySelectorAll('.note-icon-btn');
+            btns.forEach(btn => {
+                btn.className = "w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn text-slate-400 bg-slate-50 hover:bg-slate-100";
+            });
+            const selectedBtn = document.getElementById('icon-btn-' + iconName);
+            if (selectedBtn) {
+                selectedBtn.className = "w-10 h-10 rounded-full flex items-center justify-center transition note-icon-btn ring-2 ring-orange-500 bg-orange-50 text-orange-500";
+            }
+        };
+
+        function renderNotePagination(total) {
+            const container = document.getElementById('notePaginationControls');
+            if (!container) return;
+            if (total <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            let btns = `<button onclick="changeNotePage(${currentNotePage - 1})" ${currentNotePage === 1 ? 'disabled' : ''} class="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 disabled:opacity-50">Prev</button>`;
+            for (let i = 1; i <= total; i++) {
+                if (i === 1 || i === total || (i >= currentNotePage - 1 && i <= currentNotePage + 1))
+                    btns += `<button onclick="changeNotePage(${i})" class="page-btn px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold ${i === currentNotePage ? 'active' : ''}">${i}</button>`;
+                else if (i === currentNotePage - 2 || i === currentNotePage + 2) btns += `<span class="px-2 text-slate-300">...</span>`;
+            }
+            btns += `<button onclick="changeNotePage(${currentNotePage + 1})" ${currentNotePage === total ? 'disabled' : ''} class="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 disabled:opacity-50">Next</button>`;
+            container.innerHTML = btns;
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            if (!container) return;
+            
+            if (globalNotes.length === 0) {
+                container.innerHTML = '<div class="py-8 text-center text-slate-400 font-semibold">No notes found. Click "Add Note" to create one.</div>';
+                if (document.getElementById('notePaginationControls')) {
+                    document.getElementById('notePaginationControls').innerHTML = '';
+                }
+                return;
+            }
+
+            const sortedNotes = [...globalNotes].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const notesPerPage = 8;
+            const totalPages = Math.ceil(sortedNotes.length / notesPerPage) || 1;
+            if (currentNotePage > totalPages) currentNotePage = totalPages;
+            if (currentNotePage < 1) currentNotePage = 1;
+
+            renderNotePagination(totalPages);
+
+            const startIndex = (currentNotePage - 1) * notesPerPage;
+            const paginatedNotes = sortedNotes.slice(startIndex, startIndex + notesPerPage);
+
+            let html = '';
+            paginatedNotes.forEach(note => {
+                const dateText = formatNoteDate(note.date);
+                const safeTitle = (note.title || 'Untitled').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                const safeContent = (note.content || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                
+                html += `
+                <div class="py-4 px-2 hover:bg-slate-50 transition cursor-pointer flex gap-4 items-start" onclick="openReadNoteModal('${note.id}')">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-400 mt-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">${window.getNoteIconSvg(note.icon || 'note')}</svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline mb-1">
+                            <h4 class="text-sm font-bold text-slate-900 truncate pr-4">${safeTitle}</h4>
+                            <span class="text-xs font-semibold text-slate-400 shrink-0">${dateText}</span>
+                        </div>
+                        <p class="text-sm text-slate-500 truncate">${safeContent}</p>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+        function formatNoteDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const now = new Date();
+            const diffMs = now - d;
+            
+            // To prevent showing 'in the future' if time diff is slightly negative due to clock skew
+            if (diffMs < 0) return 'Just now';
+
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                if (diffHours === 0) {
+                    const diffMins = Math.floor(diffMs / (1000 * 60));
+                    return diffMins <= 0 ? 'Just now' : `${diffMins}m ago`;
+                }
+                return `${diffHours}h ago`;
+            } else if (diffDays < 7 && diffDays > 0) {
+                return `${diffDays}d ago`;
+            } else {
+                const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                return d.toLocaleDateString('en-GB', options);
+            }
+        }
+
+        function openNoteModal(id = null) {
+            const titleInput = document.getElementById('noteTitle');
+            const dateInput = document.getElementById('noteDate');
+            const contentInput = document.getElementById('noteContent');
+            const idInput = document.getElementById('noteId');
+            
+            if (id) {
+                const note = globalNotes.find(n => n.id === id);
+                if (note) {
+                    titleInput.value = note.title || '';
+                    if (note.date) {
+                        const d = new Date(note.date);
+                        // Convert to local datetime-local format: YYYY-MM-DDTHH:mm
+                        if (!isNaN(d.getTime())) {
+                            const tzOffset = d.getTimezoneOffset() * 60000;
+                            const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, 16);
+                            dateInput.value = localISOTime;
+                        }
+                    } else {
+                        dateInput.value = '';
+                    }
+                    contentInput.value = note.content || '';
+                    idInput.value = note.id;
+                    document.getElementById('noteFormTitle').innerText = 'Edit Note';
+                    window.selectNoteIcon(note.icon || 'note');
+                }
+            } else {
+                titleInput.value = '';
+                // Current local time
+                const now = new Date();
+                const tzOffset = now.getTimezoneOffset() * 60000;
+                const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0, 16);
+                dateInput.value = localISOTime;
+                contentInput.value = '';
+                idInput.value = '';
+                document.getElementById('noteFormTitle').innerText = 'Add Note';
+                window.selectNoteIcon('note');
+            }
+            
+            document.getElementById('noteFormModal').classList.remove('hidden');
+        }
+
+        function closeNoteFormModal() {
+            document.getElementById('noteFormModal').classList.add('hidden');
+        }
+
+        async function saveNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const dateLocal = document.getElementById('noteDate').value;
+            const content = document.getElementById('noteContent').value.trim();
+            const id = document.getElementById('noteId').value;
+            const icon = document.getElementById('noteIcon').value;
+            
+            if (!title) {
+                alert('Please enter a note title.');
+                return;
+            }
+
+            // Convert local datetime string to ISO string for saving universally
+            const dateISO = new Date(dateLocal).toISOString();
+
+            const noteData = {
+                title,
+                date: dateISO,
+                content,
+                icon,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                if (id) {
+                    const docRef = window.firebaseDoc(window.firebaseDb, "notes", id);
+                    await window.firebaseSetDoc(docRef, noteData, { merge: true });
+                } else {
+                    noteData.createdAt = new Date().toISOString();
+                    const docRef = window.firebaseDoc(window.firebaseCollection(window.firebaseDb, "notes"));
+                    await window.firebaseSetDoc(docRef, noteData);
+                }
+                closeNoteFormModal();
+            } catch (error) {
+                console.error("Error saving note: ", error);
+                alert("Failed to save note.");
+            }
+        }
+
+        function openReadNoteModal(id) {
+            const note = globalNotes.find(n => n.id === id);
+            if (!note) return;
+            
+            document.getElementById('readNoteTitle').innerText = note.title || 'Untitled';
+            
+            let dateStr = '';
+            if (note.date) {
+                const d = new Date(note.date);
+                if (!isNaN(d.getTime())) {
+                    dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                }
+            }
+            document.getElementById('readNoteDate').innerText = dateStr;
+            document.getElementById('readNoteContent').innerText = note.content || '';
+            
+            const btnEdit = document.getElementById('btnEditNote');
+            const btnDelete = document.getElementById('btnDeleteNote');
+            
+            btnEdit.onclick = () => {
+                closeReadNoteModal();
+                openNoteModal(id);
+            };
+            
+            btnDelete.onclick = () => {
+                if (confirm('Are you sure you want to delete this note?')) {
+                    deleteNote(id);
+                    closeReadNoteModal();
+                }
+            };
+            
+            document.getElementById('readNoteModal').classList.remove('hidden');
+        }
+
+        function closeReadNoteModal() {
+            document.getElementById('readNoteModal').classList.add('hidden');
+        }
+
+        async function deleteNote(id) {
+            try {
+                const docRef = window.firebaseDoc(window.firebaseDb, "notes", id);
+                await window.firebaseDeleteDoc(docRef);
+            } catch (error) {
+                console.error("Error deleting note: ", error);
+                alert("Failed to delete note.");
+            }
+        }
     </script>
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
