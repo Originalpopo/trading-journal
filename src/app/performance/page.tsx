@@ -1,0 +1,836 @@
+"use client";
+
+import { useJournalStore } from "@/store/useJournalStore";
+import { useState, useMemo } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  Plugin
+} from 'chart.js';
+import { Line, Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+function calculateStandardDeviation(values: number[], mean: number) {
+  if (values.length === 0) return 0;
+  const squareDiffs = values.map(val => {
+    const diff = val - mean;
+    return diff * diff;
+  });
+  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+  return Math.sqrt(avgSquareDiff);
+}
+
+const formatCurrency = (val: number) => val < 0 ? `-$${Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export default function PerformancePage() {
+  const { trades, funding, isLoading } = useJournalStore();
+  const [selectedYear, setSelectedYear] = useState('ALL');
+  const [selectedMetric, setSelectedMetric] = useState('RR');
+
+  const data = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const hourStats: Record<number, number> = {}; const hourStatsPnL: Record<number, number> = {};
+    hours.forEach(h => { hourStats[h] = 0; hourStatsPnL[h] = 0; });
+
+    const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dowStats: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const dowStatsPnL: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const moyStats: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+    const moyStatsPnL: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+    const moyStartBalance: Record<number, number | null> = {};
+    const moyPnL: Record<number, number> = {};
+    for (let i = 0; i < 12; i++) { moyStartBalance[i] = null; moyPnL[i] = 0; }
+
+    const matrix: any = {};
+
+    let allTimelineEvents: any[] = [];
+    trades.forEach(t => allTimelineEvents.push({ type: 'trade', timeObj: new Date(t.time.replace(' ', 'T')), data: t }));
+    funding.forEach(f => allTimelineEvents.push({ type: 'funding', timeObj: new Date(f.time.replace(' ', 'T')), data: f }));
+    allTimelineEvents.sort((a, b) => a.timeObj.getTime() - b.timeObj.getTime());
+
+    let pastEvents: any[] = [];
+    let currentEvents: any[] = [];
+
+    allTimelineEvents.forEach(evt => {
+      if (!isNaN(evt.timeObj.getTime()) && evt.timeObj.getTime() > 0) {
+        const y = evt.timeObj.getFullYear();
+        if (selectedYear !== 'ALL' && y < parseInt(selectedYear)) {
+          pastEvents.push(evt);
+        } else if (selectedYear === 'ALL' || y === parseInt(selectedYear)) {
+          currentEvents.push(evt);
+        }
+      }
+    });
+
+    let carriedOverBalance = 0; // globalCapital is usually 0 here if not explicitly set
+    pastEvents.forEach(evt => {
+      if (evt.type === 'funding') {
+        carriedOverBalance += evt.data.deposit - (evt.data.withdraw || 0);
+      } else if (evt.type === 'trade') {
+        carriedOverBalance += evt.data.profit;
+      }
+    });
+
+    let runningBalance = carriedOverBalance;
+    let initialDeposit = runningBalance;
+    let minBalance = runningBalance;
+    let peakBalance = runningBalance;
+    let maxDrawdownAmt = 0;
+    let maxDrawdownPct = 0;
+
+    const perfBalanceData = [runningBalance];
+    const perfBalanceLabels = ["Start"];
+    const perfPnlData = [0];
+    const perfPnlColors = ['transparent'];
+
+    let tradeCount = 0;
+    let grossProfit = 0, grossLoss = 0, grossBE = 0;
+    let runningNetProfit = 0;
+    let totalTrades = 0;
+    let profitTradesCount = 0, lossTradesCount = 0, beTradesCount = 0;
+    let longTrades = 0, longWon = 0;
+    let shortTrades = 0, shortWon = 0;
+    let largestProfit = 0, largestLoss = 0;
+    let sumBE = 0, largestBE = 0;
+
+    let currentWinCount = 0, currentLossCount = 0;
+    let currentWinAmt = 0, currentLossAmt = 0;
+
+    let maxConsWinCount = 0, maxConsLossCount = 0;
+    let maxConsWinAmt = 0, maxConsLossAmt = 0;
+    let countAtMaxWinAmt = 0, countAtMaxLossAmt = 0;
+    let amtAtMaxWinCount = 0, amtAtMaxLossCount = 0;
+
+    let totalWinStreaksCount = 0, sumOfWinStreaks = 0;
+    let totalLossStreaksCount = 0, sumOfLossStreaks = 0;
+
+    let allProfits: number[] = [];
+
+    let onPlanTrades = 0, onPlanWins = 0, onPlanLosses = 0, onPlanBE = 0, onPlanPnL = 0;
+    let offPlanTrades = 0, offPlanWins = 0, offPlanLosses = 0, offPlanBE = 0, offPlanPnL = 0;
+    let sumDurationWins = 0, countDurationWins = 0;
+    let sumDurationLosses = 0, countDurationLosses = 0;
+
+    currentEvents.forEach((evt) => {
+      if (evt.type === 'funding') {
+        if (initialDeposit === 0 && evt.data.deposit > 0) {
+          initialDeposit = evt.data.deposit;
+        }
+        runningBalance += evt.data.deposit;
+        runningBalance -= (evt.data.withdraw || 0);
+
+        if (runningBalance > peakBalance) peakBalance = runningBalance;
+        if (runningBalance < minBalance) minBalance = runningBalance;
+
+        perfBalanceData.push(runningBalance);
+        perfPnlData.push(0);
+        perfPnlColors.push('transparent');
+
+        let dateStr = "Funding";
+        if (evt.data.time) {
+          try { dateStr = evt.data.time.split(' ')[0]; } catch (e) { }
+        }
+        perfBalanceLabels.push(dateStr);
+      } else if (evt.type === 'trade') {
+        const t = evt.data;
+        let hr = evt.timeObj.getHours();
+        const rrVal = t.rr || 0;
+        const pnl = t.profit || 0;
+        
+        let isBE = false;
+        const rawRisk = parseFloat(t.risk || 0);
+        if (rawRisk > 0) {
+          const calculatedRR = pnl / rawRisk;
+          isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
+        } else {
+          isBE = (t.resultType === 'BE' || pnl === 0);
+        }
+
+        runningNetProfit += pnl;
+        totalTrades++;
+        allProfits.push(pnl);
+
+        const planStatus = t.isOnPlan !== false;
+        if (planStatus) {
+          onPlanTrades++;
+          onPlanPnL += pnl;
+          if (isBE) onPlanBE++;
+          else if (pnl > 0 || (!isBE && t.resultType === 'TP')) onPlanWins++;
+          else onPlanLosses++;
+        } else {
+          offPlanTrades++;
+          offPlanPnL += pnl;
+          if (isBE) offPlanBE++;
+          else if (pnl > 0 || (!isBE && t.resultType === 'TP')) offPlanWins++;
+          else offPlanLosses++;
+        }
+
+        if (t.duration && t.duration > 0) {
+          if (!isBE) {
+            if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+              sumDurationWins += t.duration;
+              countDurationWins++;
+            } else if (pnl < 0 || (!isBE && t.resultType === 'SL')) {
+              sumDurationLosses += t.duration;
+              countDurationLosses++;
+            }
+          }
+        }
+
+        if (isBE) {
+          grossBE += pnl;
+          sumBE += pnl;
+          if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
+          beTradesCount++;
+        } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+          grossProfit += pnl;
+          profitTradesCount++;
+          if (pnl > largestProfit) largestProfit = pnl;
+
+          currentWinCount++;
+          currentWinAmt += pnl;
+          if (currentLossCount > 0) {
+            totalLossStreaksCount++;
+            sumOfLossStreaks += currentLossCount;
+            currentLossCount = 0;
+            currentLossAmt = 0;
+          }
+
+          if (currentWinCount > maxConsWinCount) {
+            maxConsWinCount = currentWinCount;
+            amtAtMaxWinCount = currentWinAmt;
+          }
+          if (currentWinAmt > maxConsWinAmt) {
+            maxConsWinAmt = currentWinAmt;
+            countAtMaxWinAmt = currentWinCount;
+          }
+
+        } else if (pnl < 0 || (!isBE && t.resultType === 'SL')) {
+          grossLoss += Math.abs(pnl);
+          lossTradesCount++;
+          if (pnl < largestLoss) largestLoss = pnl;
+
+          currentLossCount++;
+          currentLossAmt += Math.abs(pnl);
+          if (currentWinCount > 0) {
+            totalWinStreaksCount++;
+            sumOfWinStreaks += currentWinCount;
+            currentWinCount = 0;
+            currentWinAmt = 0;
+          }
+
+          if (currentLossCount > maxConsLossCount) {
+            maxConsLossCount = currentLossCount;
+            amtAtMaxLossCount = currentLossAmt;
+          }
+          if (currentLossAmt > maxConsLossAmt) {
+            maxConsLossAmt = currentLossAmt;
+            countAtMaxLossAmt = currentLossCount;
+          }
+        }
+
+        if (t.side === 'BUY') {
+          longTrades++;
+          if (!isBE && (pnl > 0 || t.resultType === 'TP')) longWon++;
+        } else if (t.side === 'SELL') {
+          shortTrades++;
+          if (!isBE && (pnl > 0 || t.resultType === 'TP')) shortWon++;
+        }
+
+        if (!isNaN(hr)) {
+          hourStats[hr] += rrVal;
+          hourStatsPnL[hr] += pnl;
+        }
+
+        if (!isNaN(evt.timeObj.getTime())) {
+          const mMonth = evt.timeObj.getMonth();
+          if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = runningBalance - pnl;
+          moyPnL[mMonth] += pnl;
+
+          dowStats[evt.timeObj.getDay()] += rrVal;
+          dowStatsPnL[evt.timeObj.getDay()] += pnl;
+          moyStats[mMonth] += rrVal;
+          moyStatsPnL[mMonth] += pnl;
+        }
+
+        if (!matrix[t.symbol]) {
+          matrix[t.symbol] = {
+            BUY: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 },
+            SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
+          };
+        }
+        const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : null;
+        if (side) {
+          const m = matrix[t.symbol][side];
+          m.trades++;
+          m.pnl += pnl;
+          if (!isBE) {
+            if (pnl > 0 || t.resultType === 'TP') m.win++;
+            if (pnl < 0 || t.resultType === 'SL') m.loss++;
+          }
+          if (t.rr) { m.rr += t.rr; m.rrCount++; }
+        }
+
+        runningBalance += pnl;
+        if (runningBalance < minBalance) minBalance = runningBalance;
+        if (runningBalance > peakBalance) peakBalance = runningBalance;
+
+        let currentDD = peakBalance - runningBalance;
+        let currentDDPct = peakBalance > 0 ? (currentDD / peakBalance) * 100 : 0;
+
+        if (currentDD > maxDrawdownAmt) maxDrawdownAmt = currentDD;
+        if (currentDDPct > maxDrawdownPct) maxDrawdownPct = currentDDPct;
+
+        perfBalanceData.push(runningBalance);
+        perfPnlData.push(pnl);
+        perfPnlColors.push(pnl >= 0 ? '#5E5E5E' : '#f97316');
+
+        tradeCount++;
+        let dateStr = "Trade " + tradeCount;
+        if (t.time) {
+          try { dateStr = t.time.split(' ')[0]; } catch (e) { }
+        }
+        perfBalanceLabels.push(dateStr);
+      }
+    });
+
+    if (currentWinCount > 0) { totalWinStreaksCount++; sumOfWinStreaks += currentWinCount; }
+    if (currentLossCount > 0) { totalLossStreaksCount++; sumOfLossStreaks += currentLossCount; }
+
+    if (initialDeposit === 0) initialDeposit = carriedOverBalance > 0 ? carriedOverBalance : 1;
+
+    const netProfit = runningNetProfit;
+    const profitFactor = grossLoss === 0 ? grossProfit : (grossProfit / grossLoss);
+    const expectedPayoff = totalTrades > 0 ? (netProfit / totalTrades) : 0;
+    const absoluteDD = (initialDeposit - minBalance) > 0 ? (initialDeposit - minBalance) : 0;
+    const recoveryFactor = maxDrawdownAmt > 0 ? (netProfit / maxDrawdownAmt) : 0;
+    const avgWin = profitTradesCount > 0 ? (grossProfit / profitTradesCount) : 0;
+    const avgLoss = lossTradesCount > 0 ? (grossLoss / lossTradesCount) : 0;
+    const avgBE = beTradesCount > 0 ? (sumBE / beTradesCount) : 0;
+
+    const stdDev = calculateStandardDeviation(allProfits, totalTrades > 0 ? (netProfit / totalTrades) : 0);
+    const sharpeRatio = stdDev !== 0 ? ((netProfit / totalTrades) / stdDev) : 0;
+
+    const winPct = totalTrades > 0 ? (profitTradesCount / totalTrades) * 100 : 0;
+    const lossPct = totalTrades > 0 ? (lossTradesCount / totalTrades) * 100 : 0;
+    const bePct = totalTrades > 0 ? (beTradesCount / totalTrades) * 100 : 0;
+    
+    const resolvedTrades = profitTradesCount + lossTradesCount;
+    const mainWinRate = resolvedTrades > 0 ? (profitTradesCount / resolvedTrades) * 100 : 0;
+    
+    const longWinPct = longTrades > 0 ? (longWon / longTrades) * 100 : 0;
+    const shortWinPct = shortTrades > 0 ? (shortWon / shortTrades) * 100 : 0;
+    
+    const totalPlanTrades = onPlanTrades + offPlanTrades;
+    const onPlanPct = totalPlanTrades > 0 ? (onPlanTrades / totalPlanTrades) * 100 : 0;
+    const offPlanPct = totalPlanTrades > 0 ? (offPlanTrades / totalPlanTrades) * 100 : 0;
+
+    const onPlanWR = (onPlanWins + onPlanLosses) > 0 ? ((onPlanWins / (onPlanWins + onPlanLosses)) * 100).toFixed(1) : '0.0';
+    const offPlanWR = (offPlanWins + offPlanLosses) > 0 ? ((offPlanWins / (offPlanWins + offPlanLosses)) * 100).toFixed(1) : '0.0';
+
+    function formatDuration(sec: number) {
+      if (!sec || sec <= 0) return '0s';
+      const d = Math.floor(sec / (24 * 3600)); sec %= (24 * 3600);
+      const h = Math.floor(sec / 3600); sec %= 3600;
+      const m = Math.floor(sec / 60); const s = Math.floor(sec % 60);
+      if (d > 0) return `${d}d ${h}h`;
+      if (h > 0) return `${h}h ${m}m`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
+    }
+
+    const holdWin = countDurationWins > 0 ? formatDuration(sumDurationWins / countDurationWins) : '-';
+    const holdLoss = countDurationLosses > 0 ? formatDuration(sumDurationLosses / countDurationLosses) : '-';
+
+    // Chart Data Generation
+    const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : hourStatsPnL[h]);
+    const hourlyColors = hourlyDataArr.map(v => v >= 0 ? '#5E5E5E' : '#f97316');
+
+    const activeDowKeys = Object.keys(dowStats).filter(k => selectedMetric === 'RR' ? dowStats[k as any as number] !== 0 : dowStatsPnL[k as any as number] !== 0).map(Number);
+    const activeDowNames = activeDowKeys.map(k => dowNames[k]);
+    const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : dowStatsPnL[k]);
+    const dowColors = activeDowData.map(v => v >= 0 ? '#5E5E5E' : '#f97316');
+
+    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k as any as number] !== 0 : moyStatsPnL[k as any as number] !== 0) || moyPnL[k as any as number] !== 0).map(Number);
+    const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
+    const moyRRData = activeMoyKeys.map(k => selectedMetric === 'RR' ? moyStats[k] : moyStatsPnL[k]);
+    const moyRRColors = moyRRData.map(v => v >= 0 ? '#5E5E5E' : '#f97316');
+    const moyGainData = activeMoyKeys.map(k => {
+      let sb = moyStartBalance[k] || 1;
+      return (moyPnL[k] / sb) * 100;
+    });
+    const moyGainColors = moyGainData.map(v => v >= 0 ? 'rgba(94, 94, 94, 0.4)' : 'rgba(249, 115, 22, 0.4)');
+
+    const matrixSorted = Object.entries(matrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
+
+    return {
+      netProfit, profitFactor, expectedPayoff, mainWinRate,
+      totalTrades, winPct, lossPct, bePct, profitTradesCount, lossTradesCount, beTradesCount,
+      longWinPct, shortWinPct,
+      onPlanPct, offPlanPct, onPlanWR, offPlanWR, onPlanPnL, offPlanPnL,
+      avgWin, avgLoss, avgBE, holdWin, holdLoss,
+      largestProfit, largestLoss, grossProfit, grossLoss, sharpeRatio,
+      maxDrawdownAmt, absoluteDD, maxDrawdownPct, recoveryFactor,
+      maxConsWinAmt, maxConsLossAmt, countAtMaxWinAmt, countAtMaxLossAmt,
+      avgConsWin: totalWinStreaksCount > 0 ? Math.round(sumOfWinStreaks / totalWinStreaksCount) : 0,
+      avgConsLoss: totalLossStreaksCount > 0 ? Math.round(sumOfLossStreaks / totalLossStreaksCount) : 0,
+      perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
+      hourlyDataArr, hourlyColors, activeDowNames, activeDowData, dowColors,
+      activeMoyNames, moyRRData, moyRRColors, moyGainData, moyGainColors,
+      matrixSorted
+    };
+  }, [trades, funding, selectedYear, selectedMetric]);
+
+  const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
+    id: 'lastBalancePointPlugin',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta.hidden && meta.data.length > 0) {
+        const lastElement = meta.data[meta.data.length - 1];
+        const lastVal = chart.data.datasets[0].data[meta.data.length - 1] as number;
+        const position = (lastElement as any).tooltipPosition();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#5E5E5E';
+        ctx.fill();
+
+        ctx.fillStyle = '#5E5E5E';
+        ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(lastVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), position.x - 10, position.y);
+        ctx.restore();
+      }
+    }
+  }), []);
+
+  const customDowLabels: Plugin<'bar'> = useMemo(() => ({
+    id: 'customDowLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.datasets.forEach((dataset, i) => {
+        const meta = chart.getDatasetMeta(i);
+        if (!meta.hidden) {
+          meta.data.forEach((element, index) => {
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const val = dataset.data[index] as number;
+            const text = selectedMetric === 'RR' ? val.toFixed(1) + 'R' : '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const position = (element as any).tooltipPosition();
+            const yOffset = val >= 0 ? -12 : 14;
+            ctx.fillText(text, position.x, position.y + yOffset);
+          });
+        }
+      });
+    }
+  }), [selectedMetric]);
+
+  const customMoyLabels: Plugin<'bar'> = useMemo(() => ({
+    id: 'customMoyLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.datasets.forEach((dataset, i) => {
+        const meta = chart.getDatasetMeta(i);
+        if (!meta.hidden) {
+          meta.data.forEach((element, index) => {
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const val = dataset.data[index] as number;
+            let text = val.toFixed(1);
+            if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            else text += '%';
+
+            const position = (element as any).tooltipPosition();
+            const yOffset = val >= 0 ? -12 : 14;
+            ctx.fillText(text, position.x, position.y + yOffset);
+          });
+        }
+      });
+    }
+  }), [selectedMetric]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-slate-500 font-semibold animate-pulse">Loading performance...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end items-center gap-3">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Filter by Year</span>
+        <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
+          className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+          <option value="ALL">All Time</option>
+          {Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).map(y => (
+             <option key={y} value={y.toString()}>{y}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="glass-card p-6 h-[400px] flex flex-col w-full">
+        <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Profit and Balance
+        </h3>
+        <div className="flex-1 relative w-full h-full">
+          <Line
+            data={{
+              labels: data.perfBalanceLabels,
+              datasets: [
+                {
+                  label: 'Account Balance',
+                  data: data.perfBalanceData,
+                  borderColor: 'transparent',
+                  borderWidth: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 0,
+                  yAxisID: 'y'
+                },
+                {
+                  type: 'bar',
+                  label: 'Net P&L',
+                  data: data.perfPnlData,
+                  backgroundColor: data.perfPnlColors,
+                  borderRadius: 4,
+                  yAxisID: 'y1'
+                }
+              ] as any
+            }}
+            options={{
+              responsive: true, maintainAspectRatio: false,
+              layout: { padding: { top: 20 } },
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { display: false },
+                y: { display: false, grace: '10%' },
+                y1: { display: true, position: 'left', grid: { color: '#f1f5f9', drawOnChartArea: true }, ticks: { font: { size: 10 } }, grace: '10%' }
+              }
+            }}
+            plugins={[lastBalancePointPlugin]}
+          />
+        </div>
+      </div>
+
+      <div className="bg-[#5E5E5E]/5 border border-[#5E5E5E]/1 rounded-[1.25rem] p-6 flex flex-col w-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)]">
+        <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+          <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Results
+        </h3>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5 mt-4">
+          <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Profit</span>
+            <span className={`text-xl font-black ${data.netProfit >= 0 ? 'text-slate-800' : 'text-red-500'}`}>{formatCurrency(data.netProfit)}</span>
+          </div>
+          <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Win Rate</span>
+            <span className="text-xl font-black text-slate-800">{data.mainWinRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span>
+          </div>
+          <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Profit Factor</span>
+            <span className="text-xl font-black text-slate-800">{data.profitFactor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Expectancy</span>
+            <span className="text-xl font-black text-slate-800">{formatCurrency(data.expectedPayoff)}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-end">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Outcomes</span>
+              <span className="text-[11px] font-bold text-slate-800">{data.totalTrades} Trades</span>
+            </div>
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex">
+              <div className="h-full bg-slate-800 transition-all duration-500" style={{ width: `${data.winPct}%` }}></div>
+              <div className="h-full bg-orange-500 transition-all duration-500" style={{ width: `${data.bePct}%` }}></div>
+              <div className="h-full bg-red-500 transition-all duration-500" style={{ width: `${data.lossPct}%` }}></div>
+            </div>
+            <div className="flex justify-between text-[10px] font-bold">
+              <span className="text-slate-800 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-800"></span><span>{data.winPct.toFixed(1)}%</span></span>
+              <span className="text-orange-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span><span>{data.bePct.toFixed(1)}%</span></span>
+              <span className="text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span><span>{data.lossPct.toFixed(1)}%</span></span>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-end">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Direction Win %</span>
+            </div>
+            <div className="space-y-3 mt-2">
+              <div>
+                <div className="flex justify-between text-[10px] font-bold mb-1">
+                  <span className="text-slate-600">Buy</span>
+                  <span className="text-slate-800">{data.longWinPct.toFixed(1)}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-slate-800 transition-all duration-500" style={{ width: `${data.longWinPct}%` }}></div></div>
+              </div>
+              <div>
+                <div className="flex justify-between text-[10px] font-bold mb-1">
+                  <span className="text-slate-600">Sell</span>
+                  <span className="text-slate-800">{data.shortWinPct.toFixed(1)}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-slate-400 transition-all duration-500" style={{ width: `${data.shortWinPct}%` }}></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-end">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Discipline</span>
+            </div>
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex mt-2">
+              <div className="h-full bg-slate-800 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
+              <div className="h-full bg-slate-300 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
+            </div>
+            <div className="flex justify-between text-[10px] font-bold mt-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-800 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-800"></span>On Plan</span>
+                <span className="text-slate-800">{data.onPlanWR}% WR</span>
+                <span className="text-slate-800">{formatCurrency(data.onPlanPnL)}</span>
+              </div>
+              <div className="flex flex-col gap-1 items-end text-right">
+                <span className="text-slate-400 flex items-center gap-1 justify-end">Off Plan<span className="w-2 h-2 rounded-full bg-slate-300"></span></span>
+                <span className="text-slate-800">{data.offPlanWR}% WR</span>
+                <span className="text-slate-800">{formatCurrency(data.offPlanPnL)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Averages & Time</div>
+            <div className="flex justify-between"><span className="text-slate-500">Avg Win</span><span className="font-bold text-slate-800">{formatCurrency(data.avgWin)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Avg Loss</span><span className="font-bold text-red-500">{formatCurrency(-data.avgLoss)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Avg BE</span><span className="font-bold text-orange-500">{formatCurrency(data.avgBE)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-slate-500">Hold (Win)</span><span className="font-bold text-slate-700">{data.holdWin}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Hold (Loss)</span><span className="font-bold text-slate-700">{data.holdLoss}</span></div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Extremes</div>
+            <div className="flex justify-between"><span className="text-slate-500">Largest Win</span><span className="font-bold text-slate-800">{formatCurrency(data.largestProfit)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Largest Loss</span><span className="font-bold text-red-500">{formatCurrency(data.largestLoss)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-slate-500">Gross Profit</span><span className="font-bold text-slate-800">{formatCurrency(data.grossProfit)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Gross Loss</span><span className="font-bold text-red-500">{formatCurrency(-data.grossLoss)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Sharpe Ratio</span><span className="font-bold text-slate-700">{data.sharpeRatio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Drawdown</div>
+            <div className="flex justify-between"><span className="text-slate-500">Balance DD</span><span className="font-bold text-red-500">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Absolute DD</span><span className="font-bold text-red-500">{formatCurrency(data.absoluteDD)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Maximal DD</span><span className="font-bold text-red-500">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Relative DD</span><span className="font-bold text-red-500">{data.maxDrawdownPct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Recovery</span><span className="font-bold text-slate-700">{data.recoveryFactor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Streaks</div>
+            <div className="flex justify-between"><span className="text-slate-500">Max Cons Win</span><span className="font-bold text-slate-800">{data.countAtMaxWinAmt} ({formatCurrency(data.maxConsWinAmt)})</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Max Cons Loss</span><span className="font-bold text-red-500">{data.countAtMaxLossAmt} ({formatCurrency(-data.maxConsLossAmt)})</span></div>
+            <div className="flex justify-between pt-1"><span className="text-slate-500">Avg Cons Win</span><span className="font-bold text-slate-700">{data.avgConsWin}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Avg Cons Loss</span><span className="font-bold text-slate-700">{data.avgConsLoss}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end items-center gap-3 mt-4 mb-2">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Chart Metric</span>
+        <select value={selectedMetric} onChange={(e) => setSelectedMetric(e.target.value)}
+          className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+          <option value="RR">Risk/Reward (RR)</option>
+          <option value="PNL">Net P&L ($)</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-card p-6 h-[400px] flex flex-col">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Hour of Day
+          </h3>
+          <div className="flex-1 relative w-full h-full">
+            <Bar
+              data={{
+                labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6 }]
+              }}
+              options={{
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } },
+                plugins: { legend: { display: false } }
+              }}
+            />
+          </div>
+        </div>
+        <div className="glass-card p-6 h-[400px] flex flex-col">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Day of Week
+          </h3>
+          <div className="flex-1 relative w-full h-full">
+            <Bar
+              key={`dow-${selectedMetric}`}
+              data={{
+                labels: data.activeDowNames,
+                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6 }]
+              }}
+              options={{
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 20, bottom: 20 } },
+                scales: {
+                  y: { grid: { color: '#f1f5f9' }, grace: '20%' },
+                  x: { grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+              }}
+              plugins={[customDowLabels]}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-card p-6 h-[400px] flex flex-col w-full">
+        <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Month of Year
+        </h3>
+        <div className="flex-1 relative w-full h-full">
+          <Bar
+            key={`moy-${selectedMetric}`}
+            data={{
+              labels: data.activeMoyNames,
+              datasets: [
+                {
+                  label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)',
+                  data: data.moyRRData,
+                  backgroundColor: data.moyRRColors,
+                  borderRadius: 6,
+                  yAxisID: 'y'
+                },
+                {
+                  label: 'Gain',
+                  data: data.moyGainData,
+                  backgroundColor: data.moyGainColors,
+                  borderRadius: 6,
+                  yAxisID: 'y1'
+                }
+              ] as any
+            }}
+            options={{
+              responsive: true, maintainAspectRatio: false,
+              layout: { padding: { top: 20, bottom: 20 } },
+              scales: {
+                y: { display: false, grid: { color: '#f1f5f9' }, grace: '20%' },
+                y1: { display: false, grid: { drawOnChartArea: false }, grace: '20%' },
+                x: { grid: { display: false } }
+              },
+              plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } }
+            }}
+            plugins={[customMoyLabels]}
+          />
+        </div>
+      </div>
+
+      <div className="glass-card p-6 overflow-hidden flex flex-col">
+        <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Buy VS Sell Analysis
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+            <thead>
+              <tr className="text-slate-400 bg-slate-50/50">
+                <th className="py-3 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl align-bottom">Symbol</th>
+                <th colSpan={4} className="py-2 px-4 font-black text-slate-600 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">
+                  Buy
+                  <div className="mt-2 text-left font-normal normal-case mx-4">
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div className="h-full bg-slate-800" style={{ width: `${data.longWinPct}%` }}></div>
+                    </div>
+                  </div>
+                </th>
+                <th colSpan={4} className="py-2 px-4 font-black text-orange-500 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">
+                  Sell
+                  <div className="mt-2 text-left font-normal normal-case mx-4">
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div className="h-full bg-orange-500" style={{ width: `${data.shortWinPct}%` }}></div>
+                    </div>
+                  </div>
+                </th>
+                <th className="py-3 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl border-l border-slate-200 align-bottom">Net P&L</th>
+              </tr>
+              <tr className="text-slate-400 bg-slate-50/50 border-b border-slate-200">
+                <th className="py-2 px-4"></th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
+                <th className="py-2 px-4 border-l border-slate-200"></th>
+              </tr>
+            </thead>
+            <tbody className="text-[12px] divide-y divide-slate-50">
+              {data.matrixSorted.map(([sym, mData]: [string, any]) => {
+                const b = mData.BUY, s = mData.SELL;
+                const bWR = (b.win + b.loss) > 0 ? (b.win / (b.win + b.loss) * 100).toFixed(1) + '%' : '-';
+                const sWR = (s.win + s.loss) > 0 ? (s.win / (s.win + s.loss) * 100).toFixed(1) + '%' : '-';
+                const bRR = b.rrCount ? (b.rr / b.rrCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'R' : '-';
+                const sRR = s.rrCount ? (s.rr / s.rrCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'R' : '-';
+                const total = b.pnl + s.pnl;
+
+                return (
+                  <tr key={sym} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+                    <td className="py-3 px-4 font-extrabold text-slate-800 text-[11px]">{sym}</td>
+                    <td className="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">{b.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-600">{bWR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-slate-500">{bRR}</td>
+                    <td className={`py-3 px-4 text-right font-black ${b.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}`}>{formatCurrency(b.pnl)}</td>
+                    <td className="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">{s.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-600">{sWR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-slate-500">{sRR}</td>
+                    <td className={`py-3 px-4 text-right font-black ${s.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}`}>{formatCurrency(s.pnl)}</td>
+                    <td className={`py-3 px-4 text-right border-l border-slate-100 font-black ${total >= 0 ? 'text-slate-800' : 'text-orange-500'}`}>{formatCurrency(total)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
