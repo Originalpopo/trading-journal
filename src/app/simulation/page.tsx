@@ -14,6 +14,7 @@ import {
   Legend
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { formatNumber } from "@/lib/utils";
 
 ChartJS.register(
   CategoryScale,
@@ -338,23 +339,23 @@ export default function SimulationPage() {
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sim {report.index + 1}</span>
               </div>
               <div className={`text-2xl font-black ${netClass} mb-1`}>
-                ${report.currentBal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${formatNumber(report.currentBal)}
               </div>
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">
-                Net: ${report.netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Net: ${formatNumber(report.netProfit)}
               </div>
               <div className="grid grid-cols-3 gap-2 w-full mt-auto border-t border-slate-100 pt-4">
                 <div>
                   <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Growth</div>
-                  <div className={`text-sm font-bold ${growthClass}`}>{report.growth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>
+                  <div className={`text-sm font-bold ${growthClass}`}>{formatNumber(report.growth)}%</div>
                 </div>
                 <div>
                   <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Win Rate</div>
-                  <div className="text-sm font-bold text-slate-700">{report.simWinRate.toFixed(1)}%</div>
+                  <div className="text-sm font-bold text-slate-700">{formatNumber(report.simWinRate)}%</div>
                 </div>
                 <div>
                   <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Max DD</div>
-                  <div className="text-sm font-bold text-red-500">${report.maxDD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div className="text-sm font-bold text-red-500">${formatNumber(report.maxDD)}</div>
                 </div>
               </div>
             </div>

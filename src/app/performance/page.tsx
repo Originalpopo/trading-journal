@@ -16,6 +16,7 @@ import {
   Plugin
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
+import { formatNumber } from "@/lib/utils";
 
 ChartJS.register(
   CategoryScale,
@@ -39,7 +40,7 @@ function calculateStandardDeviation(values: number[], mean: number) {
   return Math.sqrt(avgSquareDiff);
 }
 
-const formatCurrency = (val: number) => val < 0 ? `-$${Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const formatCurrency = (val: number) => val < 0 ? `-$${formatNumber(Math.abs(val))}` : `$${formatNumber(val)}`;
 
 export default function PerformancePage() {
   const { trades, funding, isLoading } = useJournalStore();
@@ -346,8 +347,8 @@ export default function PerformancePage() {
     const onPlanPct = totalPlanTrades > 0 ? (onPlanTrades / totalPlanTrades) * 100 : 0;
     const offPlanPct = totalPlanTrades > 0 ? (offPlanTrades / totalPlanTrades) * 100 : 0;
 
-    const onPlanWR = (onPlanWins + onPlanLosses) > 0 ? ((onPlanWins / (onPlanWins + onPlanLosses)) * 100).toFixed(1) : '0.0';
-    const offPlanWR = (offPlanWins + offPlanLosses) > 0 ? ((offPlanWins / (offPlanWins + offPlanLosses)) * 100).toFixed(1) : '0.0';
+    const onPlanWR = (onPlanWins + onPlanLosses) > 0 ? formatNumber((onPlanWins / (onPlanWins + onPlanLosses)) * 100) : '0.0';
+    const offPlanWR = (offPlanWins + offPlanLosses) > 0 ? formatNumber((offPlanWins / (offPlanWins + offPlanLosses)) * 100) : '0.0';
 
     function formatDuration(sec: number) {
       if (!sec || sec <= 0) return '0s';
@@ -422,7 +423,7 @@ export default function PerformancePage() {
         ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText(lastVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), position.x - 10, position.y);
+        ctx.fillText(formatNumber(lastVal), position.x - 10, position.y);
         ctx.restore();
       }
     }
@@ -442,7 +443,7 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             const val = dataset.data[index] as number;
-            const text = selectedMetric === 'RR' ? val.toFixed(1) + 'R' : '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : '$' + formatNumber(val);
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -467,8 +468,8 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             const val = dataset.data[index] as number;
-            let text = val.toFixed(1);
-            if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            let text = formatNumber(val);
+            if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + formatNumber(val);
             else text += '%';
 
             const position = (element as any).tooltipPosition();
@@ -558,11 +559,11 @@ export default function PerformancePage() {
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Win Rate</span>
-            <span className="text-xl font-black text-slate-800">{data.mainWinRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span>
+            <span className="text-xl font-black text-slate-800">{formatNumber(data.mainWinRate)}%</span>
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Profit Factor</span>
-            <span className="text-xl font-black text-slate-800">{data.profitFactor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="text-xl font-black text-slate-800">{formatNumber(data.profitFactor)}</span>
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Expectancy</span>
@@ -582,9 +583,9 @@ export default function PerformancePage() {
               <div className="h-full bg-red-500 transition-all duration-500" style={{ width: `${data.lossPct}%` }}></div>
             </div>
             <div className="flex justify-between text-[10px] font-bold">
-              <span className="text-slate-800 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-800"></span><span>{data.winPct.toFixed(1)}%</span></span>
-              <span className="text-orange-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span><span>{data.bePct.toFixed(1)}%</span></span>
-              <span className="text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span><span>{data.lossPct.toFixed(1)}%</span></span>
+              <span className="text-slate-800 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-800"></span><span>{formatNumber(data.winPct)}%</span></span>
+              <span className="text-orange-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span><span>{formatNumber(data.bePct)}%</span></span>
+              <span className="text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span><span>{formatNumber(data.lossPct)}%</span></span>
             </div>
           </div>
 
@@ -596,14 +597,14 @@ export default function PerformancePage() {
               <div>
                 <div className="flex justify-between text-[10px] font-bold mb-1">
                   <span className="text-slate-600">Buy</span>
-                  <span className="text-slate-800">{data.longWinPct.toFixed(1)}%</span>
+                  <span className="text-slate-800">{formatNumber(data.longWinPct)}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-slate-800 transition-all duration-500" style={{ width: `${data.longWinPct}%` }}></div></div>
               </div>
               <div>
                 <div className="flex justify-between text-[10px] font-bold mb-1">
                   <span className="text-slate-600">Sell</span>
-                  <span className="text-slate-800">{data.shortWinPct.toFixed(1)}%</span>
+                  <span className="text-slate-800">{formatNumber(data.shortWinPct)}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-slate-400 transition-all duration-500" style={{ width: `${data.shortWinPct}%` }}></div></div>
               </div>
@@ -648,15 +649,15 @@ export default function PerformancePage() {
             <div className="flex justify-between"><span className="text-slate-500">Largest Loss</span><span className="font-bold text-red-500">{formatCurrency(data.largestLoss)}</span></div>
             <div className="flex justify-between pt-1"><span className="text-slate-500">Gross Profit</span><span className="font-bold text-slate-800">{formatCurrency(data.grossProfit)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Gross Loss</span><span className="font-bold text-red-500">{formatCurrency(-data.grossLoss)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Sharpe Ratio</span><span className="font-bold text-slate-700">{data.sharpeRatio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Sharpe Ratio</span><span className="font-bold text-slate-700">{formatNumber(data.sharpeRatio)}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Drawdown</div>
             <div className="flex justify-between"><span className="text-slate-500">Balance DD</span><span className="font-bold text-red-500">{formatCurrency(data.maxDrawdownAmt)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Absolute DD</span><span className="font-bold text-red-500">{formatCurrency(data.absoluteDD)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Maximal DD</span><span className="font-bold text-red-500">{formatCurrency(data.maxDrawdownAmt)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Relative DD</span><span className="font-bold text-red-500">{data.maxDrawdownPct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Recovery</span><span className="font-bold text-slate-700">{data.recoveryFactor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Relative DD</span><span className="font-bold text-red-500">{formatNumber(data.maxDrawdownPct)}%</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Recovery</span><span className="font-bold text-slate-700">{formatNumber(data.recoveryFactor)}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Streaks</div>
@@ -806,10 +807,10 @@ export default function PerformancePage() {
             <tbody className="text-[12px] divide-y divide-slate-50">
               {data.matrixSorted.map(([sym, mData]: [string, any]) => {
                 const b = mData.BUY, s = mData.SELL;
-                const bWR = (b.win + b.loss) > 0 ? (b.win / (b.win + b.loss) * 100).toFixed(1) + '%' : '-';
-                const sWR = (s.win + s.loss) > 0 ? (s.win / (s.win + s.loss) * 100).toFixed(1) + '%' : '-';
-                const bRR = b.rrCount ? (b.rr / b.rrCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'R' : '-';
-                const sRR = s.rrCount ? (s.rr / s.rrCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'R' : '-';
+                const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
+                const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
+                const bRR = b.rrCount ? formatNumber((b.rr / b.rrCount)) + 'R' : '-';
+                const sRR = s.rrCount ? formatNumber((s.rr / s.rrCount)) + 'R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (

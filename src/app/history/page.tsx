@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { Plus, HelpCircle, Edit2, Trash2 } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import { Trade } from "@/store/useJournalStore";
+import { formatNumber } from "@/lib/utils";
 
 export default function HistoryPage() {
   const { trades, funding, isLoading, deleteTrade } = useJournalStore();
@@ -155,7 +156,7 @@ export default function HistoryPage() {
                       <td className="py-4 px-4 text-right font-bold text-slate-600">-</td>
                       <td className="py-4 px-4 text-right font-bold text-slate-600">-</td>
                       <td className={`py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-slate-900' : 'text-red-500'}`}>
-                        {Math.abs(t.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatNumber(Math.abs(t.profit))}
                       </td>
                       <td className="py-4 px-4 text-center flex justify-center gap-3">
                         <button onClick={() => handleEdit(t)} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
@@ -176,7 +177,7 @@ export default function HistoryPage() {
 
                 const badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-red-50 text-red-600 border-red-200');
                 const badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
-                const riskText = rawRisk && rawRisk !== 0 ? '$' + Math.abs(rawRisk).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+                const riskText = rawRisk && rawRisk !== 0 ? '$' + formatNumber(Math.abs(rawRisk)) : '-';
 
                 let durationStr = null;
                 let sec = (t.duration && t.duration > 0) ? t.duration : 1;
@@ -213,10 +214,10 @@ export default function HistoryPage() {
                     </td>
                     <td className="py-4 px-4 text-right font-bold text-slate-600">{riskText}</td>
                     <td className="py-4 px-4 text-right font-bold text-slate-600">
-                      {t.rr ? t.rr.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'R' : '-'}
+                      {t.rr ? formatNumber(t.rr) + 'R' : '-'}
                     </td>
                     <td className={`py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}`}>
-                      {t.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatNumber(t.profit)}
                     </td>
                     <td className="py-4 px-4 text-center flex justify-center gap-3">
                       <button onClick={() => handleEdit(t)} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>

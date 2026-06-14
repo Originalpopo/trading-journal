@@ -15,6 +15,7 @@ import {
   Plugin
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { formatNumber } from "@/lib/utils";
 
 const dashboardLastPointsPlugin: Plugin<'line'> = {
   id: 'dashboardLastPointsPlugin',
@@ -64,7 +65,7 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(val0.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), pos0.x, pos0.y - offset0);
+      ctx.fillText(formatNumber(val0), pos0.x, pos0.y - offset0);
       ctx.restore();
     }
 
@@ -79,7 +80,7 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(val1.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), pos1.x, pos1.y - offset1);
+      ctx.fillText(formatNumber(val1), pos1.x, pos1.y - offset1);
       ctx.restore();
     }
   }
@@ -316,25 +317,25 @@ export default function Dashboard() {
           <div className="glass-card p-6">
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
             <p className="text-3xl font-extrabold stat-value text-slate-900">
-              ${data.runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${formatNumber(data.runningBalance)}
             </p>
           </div>
           <div className="glass-card p-6">
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
             <p className="text-3xl font-extrabold stat-value text-orange-500">
-              ${data.net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${formatNumber(data.net)}
             </p>
           </div>
           <div className="glass-card p-6">
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Win Rate</p>
             <p className="text-3xl font-extrabold stat-value text-orange-500">
-              {(data.winRate * 100).toFixed(1)}%
+              {formatNumber(data.winRate * 100)}%
             </p>
           </div>
           <div className="glass-card p-6 border-none text-white shadow-lg shadow-orange-100" style={{ background: '#f97316' }}>
             <p className="text-orange-100 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
             <p className="text-3xl font-extrabold stat-value text-white">
-              {data.totalFunded > 0 ? ((data.net / data.totalFunded) * 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}%
+              {data.totalFunded > 0 ? formatNumber((data.net / data.totalFunded) * 100) : '0.00'}%
             </p>
           </div>
         </div>
@@ -373,15 +374,15 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <span className="text-xs font-bold text-slate-400">Total Deposit</span>
-              <span className="font-black text-red-500 text-sm">${data.totalDeposit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-black text-red-500 text-sm">${formatNumber(data.totalDeposit)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-400">Total Withdraw</span>
-              <span className="font-black text-slate-700 text-sm">${data.totalWithdraw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-black text-slate-700 text-sm">${formatNumber(data.totalWithdraw)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <span className="text-xs font-bold text-slate-400">Capital</span>
-              <span className="font-black text-orange-600 text-sm">${data.totalFunded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-black text-orange-600 text-sm">${formatNumber(data.totalFunded)}</span>
             </div>
           </div>
         </div>
@@ -393,19 +394,19 @@ export default function Dashboard() {
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
               <span className="text-[11px] font-bold text-slate-400">Avg TP RR</span>
-              <span className="text-[12px] font-black text-slate-800">{data.avgTPRR.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})} R</span>
+              <span className="text-[12px] font-black text-slate-800">{formatNumber(data.avgTPRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[11px] font-bold text-slate-400">Max TP RR</span>
-              <span className="text-[12px] font-black text-slate-800">{data.maxTPRR > 0 ? data.maxTPRR.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00'} R</span>
+              <span className="text-[12px] font-black text-slate-800">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <span className="text-[11px] font-bold text-slate-400">Avg SL RR</span>
-              <span className="text-[12px] font-black text-red-500">{data.avgSLRR.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})} R</span>
+              <span className="text-[12px] font-black text-red-500">{formatNumber(data.avgSLRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[11px] font-bold text-slate-400">Max SL RR</span>
-              <span className="text-[12px] font-black text-red-500">{data.maxSLRR < 0 ? data.maxSLRR.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00'} R</span>
+              <span className="text-[12px] font-black text-red-500">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <span className="text-[11px] font-bold text-slate-400">Consecutive Loss (Max)</span>
@@ -426,13 +427,13 @@ export default function Dashboard() {
             <div className="flex flex-col gap-3 mb-4">
               <div className="p-3 bg-slate-50/70 rounded-xl flex flex-col border border-slate-200">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Drawdown</p>
-                <p className="text-2xl font-extrabold stat-value text-slate-800 mb-1">{data.activeDDPercent.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}%</p>
-                <p className="text-[10px] font-bold text-slate-500">${data.activeDDValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+                <p className="text-2xl font-extrabold stat-value text-slate-800 mb-1">{formatNumber(data.activeDDPercent)}%</p>
+                <p className="text-[10px] font-bold text-slate-500">${formatNumber(data.activeDDValue)}</p>
               </div>
               <div className="p-3 bg-red-50/70 rounded-xl flex flex-col border border-red-100">
                 <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Max Drawdown</p>
-                <p className="text-2xl font-extrabold stat-value text-red-500 mb-1">{data.maxDDPercent.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}%</p>
-                <p className="text-[10px] font-bold text-red-400">${data.maxDDValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+                <p className="text-2xl font-extrabold stat-value text-red-500 mb-1">{formatNumber(data.maxDDPercent)}%</p>
+                <p className="text-[10px] font-bold text-red-400">${formatNumber(data.maxDDValue)}</p>
               </div>
             </div>
           </div>
@@ -445,22 +446,22 @@ export default function Dashboard() {
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-400">Profit Factor</span>
-              <span className="font-black text-slate-800">{(data.gLoss === 0 ? data.gProfit : data.gProfit / data.gLoss).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              <span className="font-black text-slate-800">{(data.gLoss === 0 ? data.gProfit : formatNumber(data.gProfit / data.gLoss))}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-400">Expected Payoff</span>
-              <span className="font-black text-slate-800">${data.totalTrades > 0 ? (data.net / data.totalTrades).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</span>
+              <span className="font-black text-slate-800">${data.totalTrades > 0 ? formatNumber((data.net / data.totalTrades)) : '0.00'}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-400">Sharpe Ratio</span>
-              <span className="font-black text-slate-800">{data.stdDev !== 0 ? ((data.net / data.totalTrades) / data.stdDev).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</span>
+              <span className="font-black text-slate-800">{data.stdDev !== 0 ? formatNumber((data.net / data.totalTrades) / data.stdDev) : '0.00'}</span>
             </div>
           </div>
           <div className="pt-4 border-t border-slate-200 flex-1">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net RR</span>
               <span className={`font-black text-xl ${data.netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`}>
-                {data.netRR.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-[10px] font-bold text-slate-400">R</span>
+                {formatNumber(data.netRR)} <span className="text-[10px] font-bold text-slate-400">R</span>
               </span>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { formatNumber } from "@/lib/utils";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -152,7 +153,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   let liveRRClass = "text-slate-400 normal-case tracking-normal";
   if (parsedRisk > 0) {
     const rr = parsedAmount / parsedRisk;
-    liveRRStr = `${rr.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}R`;
+    liveRRStr = `${formatNumber(rr)}R`;
     liveRRClass = rr >= 0 ? "text-orange-500 normal-case tracking-normal" : "text-red-500 normal-case tracking-normal";
   }
 

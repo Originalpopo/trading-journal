@@ -3,6 +3,7 @@
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { formatNumber } from "@/lib/utils";
 
 export default function CalendarPage() {
   const { trades, isLoading } = useJournalStore();
@@ -147,18 +148,18 @@ export default function CalendarPage() {
             <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
               <span className="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">P&L</span>
               <span className={`text-xl font-black ${data.mNet >= 0 ? 'text-slate-900' : 'text-red-500'}`}>
-                {data.mNet >= 0 ? '$' : '-$'}{Math.abs(data.mNet).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {data.mNet >= 0 ? '$' : '-$'}{formatNumber(Math.abs(data.mNet))}
               </span>
             </div>
             <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
               <span className="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">RR</span>
               <span className={`text-xl font-black ${data.mRR >= 0 ? 'text-slate-700' : 'text-red-500'}`}>
-                {data.mRR > 0 ? '+' : ''}{data.mRR.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}R
+                {data.mRR > 0 ? '+' : ''}{formatNumber(data.mRR)}R
               </span>
             </div>
             <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
               <span className="text-[10px] font-black text-slate-400 uppercase block tracking-widest mb-1">Win Rate</span>
-              <span className="text-xl font-black text-slate-700">{data.winRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span>
+              <span className="text-xl font-black text-slate-700">{formatNumber(data.winRate)}%</span>
             </div>
           </div>
         </div>
@@ -191,11 +192,11 @@ export default function CalendarPage() {
                 {stats && (
                   <div className="mt-auto">
                     <div className={`text-base font-black ${stats.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}`}>
-                      {stats.pnl >= 0 ? '$' : '-$'}{Math.abs(stats.pnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {stats.pnl >= 0 ? '$' : '-$'}{formatNumber(Math.abs(stats.pnl))}
                     </div>
                     <div className="flex justify-between items-center w-full mt-2">
                       <div className={`text-[10px] font-bold ${stats.rr >= 0 ? 'text-slate-600' : 'text-red-500'} tracking-tight`}>
-                        {stats.rr > 0 ? '+' : ''}{stats.rr.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}R
+                        {stats.rr > 0 ? '+' : ''}{formatNumber(stats.rr)}R
                       </div>
                       <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
                         Trades : {stats.count}
