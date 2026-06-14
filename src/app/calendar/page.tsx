@@ -48,7 +48,7 @@ export default function CalendarPage() {
         mTotalTradesAll++;
 
         let isBE = false;
-        const rawRisk = parseFloat(t.risk || 0);
+        const rawRisk = t.risk || 0;
         if (rawRisk > 0) {
           const calculatedRR = (t.profit || 0) / rawRisk;
           isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
