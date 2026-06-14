@@ -12,7 +12,7 @@ import {
   StickyNote,
   Upload,
   ClipboardPaste,
-  RefreshCw,
+  Trash2,
   Download,
   Flame,
   Settings
@@ -194,7 +194,7 @@ export default function Sidebar() {
             title="Clear Database"
             onClick={onClearDatabase}
           >
-            <RefreshCw className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" />
           </button>
           <div className="flex-1 text-xs font-semibold flex items-center justify-center text-slate-600 bg-slate-50 py-2 rounded-lg border border-slate-100">
             <span className={`w-2.5 h-2.5 rounded-full mr-2 shrink-0 ${statusColor}`}></span>
