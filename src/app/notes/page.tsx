@@ -23,6 +23,25 @@ function formatNoteDate(dateStr: string) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function truncateThaiText(text: string, maxLength: number) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter('th', { granularity: 'word' });
+    const segments = segmenter.segment(text);
+    let result = '';
+    for (const { segment } of segments) {
+      if (result.length + segment.length > maxLength) break;
+      result += segment;
+    }
+    if (result.length === 0) return text.substring(0, maxLength) + '...';
+    return result + '...';
+  }
+  
+  return text.substring(0, maxLength) + '...';
+}
+
 export default function NotesPage() {
   const { notes, isLoading, deleteNote } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
@@ -122,7 +141,7 @@ export default function NotesPage() {
                       <h4 className="text-sm font-bold text-slate-900 truncate pr-4">{safeTitle}</h4>
                       <span className="text-xs font-semibold text-slate-400 shrink-0">{formatNoteDate(note.date)}</span>
                     </div>
-                    <p className="text-sm text-slate-500 truncate">{safeContent}</p>
+                    <p className="text-sm text-slate-500 truncate">{truncateThaiText(safeContent, 100)}</p>
                   </div>
                 </div>
               );
