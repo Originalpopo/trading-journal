@@ -557,9 +557,9 @@ export default function PerformancePage() {
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Profit</span>
             <span className={`text-xl font-black ${data.netProfit >= 0 ? 'text-slate-800' : 'text-red-500'}`}>{formatCurrency(data.netProfit)}</span>
           </div>
-          <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Win Rate</span>
-            <span className="text-xl font-black text-slate-800">{formatNumber(data.mainWinRate)}%</span>
+          <div className="bg-orange-500 p-5 rounded-[1.25rem] border border-orange-400 shadow-lg shadow-orange-500/20 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
+            <span className="text-xl font-black text-white">{formatNumber(data.mainWinRate)}%</span>
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Profit Factor</span>
@@ -644,20 +644,19 @@ export default function PerformancePage() {
             <div className="flex justify-between"><span className="text-slate-500">Hold (Loss)</span><span className="font-bold text-slate-700">{data.holdLoss}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Extremes</div>
-            <div className="flex justify-between"><span className="text-slate-500">Largest Win</span><span className="font-bold text-slate-800">{formatCurrency(data.largestProfit)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Largest Loss</span><span className="font-bold text-red-500">{formatCurrency(data.largestLoss)}</span></div>
-            <div className="flex justify-between pt-1"><span className="text-slate-500">Gross Profit</span><span className="font-bold text-slate-800">{formatCurrency(data.grossProfit)}</span></div>
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Totals & Extremes</div>
+            <div className="flex justify-between"><span className="text-slate-500">Gross Profit</span><span className="font-bold text-slate-800">{formatCurrency(data.grossProfit)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Gross Loss</span><span className="font-bold text-red-500">{formatCurrency(-data.grossLoss)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Sharpe Ratio</span><span className="font-bold text-slate-700">{formatNumber(data.sharpeRatio)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-slate-500">Largest Win</span><span className="font-bold text-slate-800">{formatCurrency(data.largestProfit)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Largest Loss</span><span className="font-bold text-red-500">{formatCurrency(data.largestLoss)}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Drawdown</div>
-            <div className="flex justify-between"><span className="text-slate-500">Balance DD</span><span className="font-bold text-red-500">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Risk & Drawdowns</div>
             <div className="flex justify-between"><span className="text-slate-500">Absolute DD</span><span className="font-bold text-red-500">{formatCurrency(data.absoluteDD)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Maximal DD</span><span className="font-bold text-red-500">{formatCurrency(data.maxDrawdownAmt)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Relative DD</span><span className="font-bold text-red-500">{formatNumber(data.maxDrawdownPct)}%</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Recovery</span><span className="font-bold text-slate-700">{formatNumber(data.recoveryFactor)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-slate-500">Recovery</span><span className="font-bold text-slate-700">{formatNumber(data.recoveryFactor)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Sharpe Ratio</span><span className="font-bold text-slate-700">{formatNumber(data.sharpeRatio)}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-xs space-y-2">
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Streaks</div>

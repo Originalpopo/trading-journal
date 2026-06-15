@@ -119,25 +119,45 @@ export default function SimulationPage() {
     for (let i = 0; i < 3; i++) {
       let currentBal = bal;
       let peakBal = bal;
+      let lowestBal = bal;
       let maxDD = 0;
+      let maxDDPct = 0;
       let data = [currentBal];
       let simWins = 0;
+      let currentConsWins = 0;
+      let currentConsLosses = 0;
+      let maxConsWins = 0;
+      let maxConsLosses = 0;
+
       for (let t = 0; t < tradesCount; t++) {
         if (Math.random() <= wr) {
           currentBal += (risk * rr);
           simWins++;
+          currentConsWins++;
+          currentConsLosses = 0;
+          if (currentConsWins > maxConsWins) maxConsWins = currentConsWins;
         } else {
           currentBal -= risk;
+          currentConsLosses++;
+          currentConsWins = 0;
+          if (currentConsLosses > maxConsLosses) maxConsLosses = currentConsLosses;
         }
         if (currentBal > peakBal) peakBal = currentBal;
+        if (currentBal < lowestBal) lowestBal = currentBal;
+
         const dd = peakBal - currentBal;
         if (dd > maxDD) maxDD = dd;
+        
+        const ddPct = peakBal > 0 ? (dd / peakBal) * 100 : 0;
+        if (ddPct > maxDDPct) maxDDPct = ddPct;
+
         data.push(currentBal);
       }
 
       const simWinRate = (simWins / tradesCount) * 100;
       const netProfit = currentBal - bal;
       const growth = bal > 0 ? ((netProfit / bal) * 100) : 0;
+      const recoveryFactor = maxDD > 0 ? (netProfit / maxDD) : 0;
 
       reports.push({
         id: `sim-${i}`,
@@ -147,7 +167,12 @@ export default function SimulationPage() {
         netProfit,
         growth,
         simWinRate,
-        maxDD
+        maxDD,
+        maxDDPct,
+        lowestBal,
+        recoveryFactor,
+        maxConsWins,
+        maxConsLosses
       });
 
       datasets.push({
@@ -189,25 +214,45 @@ export default function SimulationPage() {
         for (let i = 0; i < 3; i++) {
           let currentBal = bal;
           let peakBal = bal;
+          let lowestBal = bal;
           let maxDD = 0;
+          let maxDDPct = 0;
           let data = [currentBal];
           let simWins = 0;
+          let currentConsWins = 0;
+          let currentConsLosses = 0;
+          let maxConsWins = 0;
+          let maxConsLosses = 0;
+
           for (let t = 0; t < tradesCount; t++) {
             if (Math.random() <= wr) {
               currentBal += (risk * rr);
               simWins++;
+              currentConsWins++;
+              currentConsLosses = 0;
+              if (currentConsWins > maxConsWins) maxConsWins = currentConsWins;
             } else {
               currentBal -= risk;
+              currentConsLosses++;
+              currentConsWins = 0;
+              if (currentConsLosses > maxConsLosses) maxConsLosses = currentConsLosses;
             }
             if (currentBal > peakBal) peakBal = currentBal;
+            if (currentBal < lowestBal) lowestBal = currentBal;
+
             const dd = peakBal - currentBal;
             if (dd > maxDD) maxDD = dd;
+            
+            const ddPct = peakBal > 0 ? (dd / peakBal) * 100 : 0;
+            if (ddPct > maxDDPct) maxDDPct = ddPct;
+
             data.push(currentBal);
           }
 
           const simWinRate = (simWins / tradesCount) * 100;
           const netProfit = currentBal - bal;
           const growth = bal > 0 ? ((netProfit / bal) * 100) : 0;
+          const recoveryFactor = maxDD > 0 ? (netProfit / maxDD) : 0;
 
           reports.push({
             id: `sim-${i}`,
@@ -217,7 +262,12 @@ export default function SimulationPage() {
             netProfit,
             growth,
             simWinRate,
-            maxDD
+            maxDD,
+            maxDDPct,
+            lowestBal,
+            recoveryFactor,
+            maxConsWins,
+            maxConsLosses
           });
 
           datasets.push({
@@ -344,18 +394,43 @@ export default function SimulationPage() {
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">
                 Net: ${formatNumber(report.netProfit)}
               </div>
-              <div className="grid grid-cols-3 gap-2 w-full mt-auto border-t border-slate-100 pt-4">
-                <div>
-                  <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Growth</div>
-                  <div className={`text-sm font-bold ${growthClass}`}>{formatNumber(report.growth)}%</div>
+              <div className="w-full mt-auto flex flex-col">
+                <div className="grid grid-cols-3 gap-y-3 gap-x-2 w-full border-t border-slate-100 pt-4 text-center pb-4">
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Growth</div>
+                    <div className={`text-sm font-bold ${growthClass}`}>{formatNumber(report.growth)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Win Rate</div>
+                    <div className="text-sm font-bold text-slate-700">{formatNumber(report.simWinRate)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Max DD (%)</div>
+                    <div className="text-sm font-bold text-red-500">{formatNumber(report.maxDDPct)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Recovery</div>
+                    <div className="text-sm font-bold text-slate-700">{formatNumber(report.recoveryFactor)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Lowest Bal</div>
+                    <div className="text-sm font-bold text-slate-700">${formatNumber(report.lowestBal)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Max DD</div>
+                    <div className="text-sm font-bold text-red-500">${formatNumber(report.maxDD)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Win Rate</div>
-                  <div className="text-sm font-bold text-slate-700">{formatNumber(report.simWinRate)}%</div>
-                </div>
-                <div>
-                  <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Max DD</div>
-                  <div className="text-sm font-bold text-red-500">${formatNumber(report.maxDD)}</div>
+
+                <div className="grid grid-cols-2 gap-2 w-full border-t border-slate-100 pt-4 text-center">
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Max Cons Win</div>
+                    <div className="text-sm font-bold text-slate-800">{report.maxConsWins}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-0.5">Max Cons Loss</div>
+                    <div className="text-sm font-bold text-red-500">{report.maxConsLosses}</div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -27,7 +27,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white border border-white outline-none rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-extrabold text-slate-800 mb-4 tracking-tight">Upload Database</h3>
         
         {/* Paste Text Section */}

@@ -141,8 +141,8 @@ export default function Sidebar() {
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Performance", href: "/performance", icon: TrendingUp },
-    { name: "Calendar", href: "/calendar", icon: Calendar },
     { name: "History", href: "/history", icon: History },
+    { name: "Calendar", href: "/calendar", icon: Calendar },
     { name: "Simulation", href: "/simulation", icon: FlaskConical },
     { name: "Notes", href: "/notes", icon: StickyNote },
     { name: "Settings", href: "/settings", icon: Settings },
