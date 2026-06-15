@@ -95,7 +95,7 @@ export default function SimulationPage() {
   const isInitialized = useRef(false);
 
   const resetDefaults = useCallback(() => {
-    setSimBalance(defaultStats.balance.toString());
+    setSimBalance(defaultStats.balance.toFixed(2));
     setSimRisk(defaultStats.avgRisk > 0 ? defaultStats.avgRisk.toFixed(2) : "10");
     setSimWR(defaultStats.winRate > 0 ? defaultStats.winRate.toFixed(2) : "50");
     setSimRR(defaultStats.avgRR > 0 ? defaultStats.avgRR.toFixed(2) : "1");

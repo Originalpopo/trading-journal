@@ -305,7 +305,7 @@ export default function PerformancePage() {
 
         perfBalanceData.push(runningBalance);
         perfPnlData.push(pnl);
-        perfPnlColors.push(pnl >= 0 ? '#5E5E5E' : '#f97316');
+        perfPnlColors.push(isBE ? '#cbd5e1' : (pnl >= 0 ? '#5E5E5E' : '#f97316'));
 
         tradeCount++;
         let dateStr = "Trade " + tradeCount;
