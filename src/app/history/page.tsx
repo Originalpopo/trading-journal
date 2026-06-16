@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Plus, HelpCircle, Edit2, Trash2, Upload } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -13,7 +13,39 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 export default function HistoryPage() {
   const { trades, funding, isLoading, deleteTrade } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateRows = (height: number) => {
+      const headerHeight = 46; // Approximate height of the table header
+      const availableHeight = height - headerHeight;
+      const rowHeight = 62; // Approximate height of a row
+      let calculatedRows = Math.floor(availableHeight / rowHeight);
+      if (calculatedRows < 5) calculatedRows = 5;
+      if (calculatedRows > 50) calculatedRows = 50;
+      setRowsPerPage(calculatedRows);
+    };
+
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.target === container) {
+          updateRows(entry.contentRect.height);
+        }
+      }
+    });
+
+    observer.observe(container);
+    // Initial call to set rows if height is already available
+    if (container.clientHeight > 0) {
+      updateRows(container.clientHeight);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
@@ -169,7 +201,7 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="glass-card p-6 overflow-hidden flex flex-col min-h-[750px]">
+      <div className="glass-card p-6 overflow-hidden flex flex-col min-h-[500px] h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-extrabold text-slate-800 tracking-tight">Trade History</h3>
@@ -190,10 +222,10 @@ export default function HistoryPage() {
           <div>{renderPagination()}</div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr className="text-slate-400 border-b border-slate-100 bg-slate-50/50">
+        <div ref={containerRef} className="overflow-auto flex-1 rounded-xl">
+          <table className="w-full text-left text-sm whitespace-nowrap relative">
+            <thead className="sticky top-0 z-10">
+              <tr className="text-slate-400 border-b border-slate-100 bg-slate-50">
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">Time</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>

@@ -137,6 +137,8 @@ export default function Dashboard() {
     const equityData = [0];
     const balanceData = [0];
     const chartLabels = ['Start'];
+    const dailyPoints = new Map<string, { balance: number, pnl: number, timestamp: number }>();
+    const shouldAggregate = timelineEvents.length > 500;
 
     let net = 0, wins = 0, losses = 0, gProfit = 0, gLoss = 0, countTP = 0, countSL = 0, countBE = 0;
     let totalRR = 0, rrCount = 0;
@@ -157,11 +159,16 @@ export default function Dashboard() {
         let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
         if (currentDD > maxDDValue) { maxDDValue = currentDD; maxDDPercent = currentDDPct; }
 
-        equityData.push(cumulativePnL);
-        balanceData.push(runningBalance);
-        
-        const d = new Date(evt.timeObj);
-        chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
+        if (shouldAggregate) {
+          const d = new Date(evt.timeObj);
+          const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          dailyPoints.set(dateKey, { balance: runningBalance, pnl: cumulativePnL, timestamp: evt.timeObj });
+        } else {
+          equityData.push(cumulativePnL);
+          balanceData.push(runningBalance);
+          const d = new Date(evt.timeObj);
+          chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
+        }
       } else if (evt.type === 'trade') {
         const t = evt.data;
         net += t.profit;
@@ -176,11 +183,17 @@ export default function Dashboard() {
         if (currentDD > maxDDValue) { maxDDValue = currentDD; maxDDPercent = currentDDPct; }
 
         cumulativePnL += t.profit;
-        equityData.push(cumulativePnL);
-        balanceData.push(runningBalance);
-
-        const d = new Date(evt.timeObj);
-        chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
+        
+        if (shouldAggregate) {
+          const d = new Date(evt.timeObj);
+          const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          dailyPoints.set(dateKey, { balance: runningBalance, pnl: cumulativePnL, timestamp: evt.timeObj });
+        } else {
+          equityData.push(cumulativePnL);
+          balanceData.push(runningBalance);
+          const d = new Date(evt.timeObj);
+          chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
+        }
 
         let isBE = false;
         const rawRisk = t.risk || 0;
@@ -215,6 +228,16 @@ export default function Dashboard() {
         }
       }
     });
+
+    if (shouldAggregate) {
+      const sortedDaily = Array.from(dailyPoints.values()).sort((a, b) => a.timestamp - b.timestamp);
+      sortedDaily.forEach(day => {
+        equityData.push(day.pnl);
+        balanceData.push(day.balance);
+        const d = new Date(day.timestamp);
+        chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
+      });
+    }
 
     if (balanceData.length > 0 && balanceData[0] === 0 && runningBalance > 0) {
       balanceData[0] = balanceData[1] || runningBalance;

@@ -72,11 +72,10 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Settings</h2>
-          <p className="text-slate-500 font-medium mt-1">Manage your application preferences and security.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+      <div className="bg-white rounded-2xl p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
           <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
             <Lock className="w-5 h-5 text-orange-500" />

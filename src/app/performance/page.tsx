@@ -44,8 +44,18 @@ const formatCurrency = (val: number) => val < 0 ? `-$${formatNumber(Math.abs(val
 
 export default function PerformancePage() {
   const { trades, funding, isLoading } = useJournalStore();
-  const [selectedYear, setSelectedYear] = useState('ALL');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMetric, setSelectedMetric] = useState('RR');
+
+  const availableYears = useMemo(() => {
+    const years = Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).sort((a, b) => b - a);
+    const currentYear = new Date().getFullYear();
+    if (!years.includes(currentYear)) {
+      years.push(currentYear);
+      years.sort((a, b) => b - a);
+    }
+    return years;
+  }, [trades]);
 
   const data = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -491,15 +501,19 @@ export default function PerformancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-center gap-3">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Filter by Year</span>
-        <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
-          className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
-          <option value="ALL">All Time</option>
-          {Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).map(y => (
-             <option key={y} value={y.toString()}>{y}</option>
-          ))}
-        </select>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Performance</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Filter by Year</span>
+          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
+            className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+            {availableYears.map(y => (
+               <option key={y} value={y.toString()}>{y}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="glass-card p-6 h-[400px] flex flex-col w-full">

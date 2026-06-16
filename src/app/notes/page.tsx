@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore, Note } from "@/store/useJournalStore";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NoteFormModal, ReadNoteModal, getNoteIconSvg } from "@/components/NoteModals";
 
 function formatNoteDate(dateStr: string) {
@@ -45,7 +45,36 @@ function truncateThaiText(text: string, maxLength: number) {
 export default function NotesPage() {
   const { notes, isLoading, deleteNote } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
-  const notesPerPage = 8;
+  const [notesPerPage, setNotesPerPage] = useState(8);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateRows = (height: number) => {
+      const rowHeight = 76; // Approximate height of a note row
+      let calculatedRows = Math.floor(height / rowHeight);
+      if (calculatedRows < 5) calculatedRows = 5;
+      if (calculatedRows > 50) calculatedRows = 50;
+      setNotesPerPage(calculatedRows);
+    };
+
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.target === container) {
+          updateRows(entry.contentRect.height);
+        }
+      }
+    });
+
+    observer.observe(container);
+    if (container.clientHeight > 0) {
+      updateRows(container.clientHeight);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isReadModalOpen, setIsReadModalOpen] = useState(false);
@@ -101,8 +130,8 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+    <div className="space-y-6 flex flex-col min-h-[500px] h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm shrink-0">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Notes</h2>
           <button 
@@ -117,8 +146,9 @@ export default function NotesPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 overflow-hidden">
-        <div className="flex flex-col divide-y divide-slate-100">
+      <div className="bg-white rounded-2xl shadow-sm p-4 overflow-hidden flex-1 flex flex-col">
+        <div ref={containerRef} className="flex-1 overflow-auto">
+          <div className="flex flex-col divide-y divide-slate-100">
           {notes.length === 0 ? (
             <div className="py-8 text-center text-slate-400 font-semibold">
               No notes found. Click "Add Note" to create one.
@@ -147,6 +177,7 @@ export default function NotesPage() {
               );
             })
           )}
+          </div>
         </div>
       </div>
 

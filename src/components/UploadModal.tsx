@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Trash2, Download } from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -7,9 +7,11 @@ interface UploadModalProps {
   onPasteSubmit: (text: string) => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDBRestoreUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClearDatabase: () => void;
+  onDownloadDatabase: () => void;
 }
 
-export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDBRestoreUpload }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDBRestoreUpload, onClearDatabase, onDownloadDatabase }: UploadModalProps) {
   const [pasteText, setPasteText] = useState("");
 
   if (!isOpen) return null;
@@ -97,6 +99,38 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
               }} 
             />
           </label>
+        </div>
+
+        <div className="flex items-center gap-4 mb-3">
+          <div className="h-px bg-slate-200 flex-1"></div>
+          <span className="text-slate-400 font-bold text-sm uppercase tracking-wider">Database Actions</span>
+          <div className="h-px bg-slate-200 flex-1"></div>
+        </div>
+
+        <div className="flex gap-4 mb-3">
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to clear the database?")) {
+                onClearDatabase();
+                onClose();
+              }
+            }}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl transition border border-red-200 hover:border-red-300 shadow-sm"
+          >
+            <Trash2 className="w-5 h-5" />
+            <span>Clear Database</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              onDownloadDatabase();
+              onClose();
+            }}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-orange-50 text-orange-500 font-bold rounded-xl transition border border-orange-500 hover:border-orange-600 shadow-sm"
+          >
+            <Download className="w-5 h-5" />
+            <span>Download Backup</span>
+          </button>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
