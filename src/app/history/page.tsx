@@ -11,7 +11,7 @@ import { formatNumber } from "@/lib/utils";
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function HistoryPage() {
-  const { trades, funding, isLoading, deleteTrade } = useJournalStore();
+  const { trades, funding, notes, isLoading, deleteTrade } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -114,6 +114,23 @@ export default function HistoryPage() {
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const onClearDatabase = async () => {
+    const { clearDatabase } = await import("@/lib/dbActions");
+    clearDatabase(
+      trades,
+      funding,
+      notes,
+      handleUploadStatus,
+      () => alert("Database cleared"),
+      () => alert("Error clearing database")
+    );
+  };
+
+  const onDownloadDatabase = async () => {
+    const { downloadDatabase } = await import("@/lib/dbActions");
+    downloadDatabase(trades, funding, notes);
   };
 
   const handleEdit = (t: any) => {
@@ -349,6 +366,8 @@ export default function HistoryPage() {
         onPasteSubmit={onPasteSubmit} 
         onFileUpload={onFileUpload}
         onDBRestoreUpload={onDBRestoreUpload}
+        onClearDatabase={onClearDatabase}
+        onDownloadDatabase={onDownloadDatabase}
       />
     </div>
   );
