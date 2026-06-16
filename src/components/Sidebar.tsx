@@ -214,6 +214,12 @@ export default function Sidebar() {
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            <div 
+              className="flex items-center justify-center bg-slate-50 border border-slate-100 rounded-lg w-10 h-10 shrink-0 cursor-help"
+              title={`Database Status: ${statusText}`}
+            >
+              <span className={`w-3 h-3 rounded-full ${statusColor}`}></span>
+            </div>
             <button
               className="text-slate-400 border border-transparent hover:border-blue-200 hover:text-blue-500 transition cursor-pointer flex items-center justify-center rounded-lg hover:bg-blue-50 w-10 h-10"
               title="Download Database"
