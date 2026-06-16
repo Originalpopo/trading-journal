@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, writeBatch, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
 const parseCustomDate = (dateStr: string) => {
@@ -13,6 +13,17 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
   const batch = writeBatch(db);
   let importCount = 0;
   let skipCount = 0;
+
+  let latestRisk = 0;
+  try {
+    const q = query(collection(db, 'trades'), orderBy('time', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      latestRisk = Number(querySnapshot.docs[0].data().risk) || 0;
+    }
+  } catch (e) {
+    console.error("Error fetching latest risk:", e);
+  }
 
   const positions: Record<string, any[]> = {};
   for (const row of data) {
@@ -91,8 +102,8 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
         profit: totalProfit,
         type: entryRow ? entryRow['Type'] : lastExitRow['Type'],
         resultType: resType,
-        risk: 0,
-        rr: 0
+        risk: latestRisk,
+        rr: latestRisk > 0 ? totalProfit / latestRisk : 0
       };
 
       batch.set(docRef, tradeData);
