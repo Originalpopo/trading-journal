@@ -425,13 +425,13 @@ export default function Dashboard() {
           </h3>
           <div className="space-y-4 pt-2">
             <div className="flex flex-col gap-3 mb-4">
-              <div className="p-3 bg-slate-50/70 rounded-xl flex flex-col border border-slate-200">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Drawdown</p>
+              <div className="p-3 bg-slate-50/70 rounded-xl flex flex-col items-center text-center border border-slate-200">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active DD</p>
                 <p className="text-2xl font-extrabold stat-value text-slate-800 mb-1">{formatNumber(data.activeDDPercent)}%</p>
                 <p className="text-[10px] font-bold text-slate-500">${formatNumber(data.activeDDValue)}</p>
               </div>
-              <div className="p-3 bg-red-50/70 rounded-xl flex flex-col border border-red-100">
-                <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Max Drawdown</p>
+              <div className="p-3 bg-red-50/70 rounded-xl flex flex-col items-center text-center border border-red-100">
+                <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Max DD</p>
                 <p className="text-2xl font-extrabold stat-value text-red-500 mb-1">{formatNumber(data.maxDDPercent)}%</p>
                 <p className="text-[10px] font-bold text-red-400">${formatNumber(data.maxDDValue)}</p>
               </div>

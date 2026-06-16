@@ -2,10 +2,13 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
-import { Plus, HelpCircle, Edit2, Trash2 } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
+import { UploadModal } from "@/components/UploadModal";
 import { Trade } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
+
+const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function HistoryPage() {
   const { trades, funding, isLoading, deleteTrade } = useJournalStore();
@@ -14,6 +17,72 @@ export default function HistoryPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  const handleUploadStatus = (status: string) => {
+    console.log("Upload status:", status);
+  };
+
+  const onFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { handleCSVUpload } = await import("@/lib/csvParser");
+    handleCSVUpload(
+      file,
+      handleUploadStatus,
+      (result) => {
+        alert(`Successfully imported ${result.importCount} new trades; Skipped ${result.skipCount} duplicate entries.`);
+        setIsUploadModalOpen(false);
+        e.target.value = '';
+      },
+      (error) => {
+        console.error(error);
+        alert("Error parsing CSV");
+        e.target.value = '';
+      }
+    );
+  };
+
+  const onPasteSubmit = async (text: string) => {
+    const { handlePasteText } = await import("@/lib/csvParser");
+    handlePasteText(
+      text,
+      handleUploadStatus,
+      (result) => {
+        alert(`Successfully imported ${result.importCount} new trades; Skipped ${result.skipCount} duplicate entries.`);
+        setIsUploadModalOpen(false);
+      },
+      (error) => {
+        console.error(error);
+        alert("Error parsing pasted data.");
+      }
+    );
+  };
+
+  const onDBRestoreUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        const { restoreDatabase } = await import("@/lib/dbActions");
+        restoreDatabase(
+          text,
+          handleUploadStatus,
+          (result) => {
+            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, and ${result.notes} notes.`);
+            setIsUploadModalOpen(false);
+          },
+          () => {
+            alert("Error restoring database");
+          }
+        );
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleEdit = (t: any) => {
     setTradeToEdit(t);
@@ -106,9 +175,16 @@ export default function HistoryPage() {
             <h3 className="text-lg font-extrabold text-slate-800 tracking-tight">Trade History</h3>
             <button 
               onClick={() => { setTradeToEdit(null); setIsModalOpen(true); }}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2">
+              className="bg-orange-500 hover:bg-orange-600 text-white border border-transparent px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32">
               <Plus className="w-3.5 h-3.5" />
               Add Manual
+            </button>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-500 text-slate-500 px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Upload
             </button>
           </div>
           <div>{renderPagination()}</div>
@@ -156,7 +232,7 @@ export default function HistoryPage() {
                       <td className="py-4 px-4 text-right font-bold text-slate-600">-</td>
                       <td className="py-4 px-4 text-right font-bold text-slate-600">-</td>
                       <td className={`py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-slate-900' : 'text-red-500'}`}>
-                        {formatNumber(Math.abs(t.profit))}
+                        {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
                       </td>
                       <td className="py-4 px-4 text-center flex justify-center gap-3">
                         <button onClick={() => handleEdit(t)} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
@@ -177,7 +253,7 @@ export default function HistoryPage() {
 
                 const badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-red-50 text-red-600 border-red-200');
                 const badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
-                const riskText = rawRisk && rawRisk !== 0 ? '$' + formatNumber(Math.abs(rawRisk)) : '-';
+                const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 let durationStr = null;
                 let sec = (t.duration && t.duration > 0) ? t.duration : 1;
@@ -214,10 +290,10 @@ export default function HistoryPage() {
                     </td>
                     <td className="py-4 px-4 text-right font-bold text-slate-600">{riskText}</td>
                     <td className="py-4 px-4 text-right font-bold text-slate-600">
-                      {t.rr ? formatNumber(t.rr) + 'R' : '-'}
+                      {t.rr ? format2Decimals(t.rr) + ' R' : '-'}
                     </td>
                     <td className={`py-4 px-4 text-right font-extrabold ${t.profit >= 0 && !isBE ? 'text-slate-900' : 'text-red-500'}`}>
-                      {formatNumber(t.profit)}
+                      {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
                     </td>
                     <td className="py-4 px-4 text-center flex justify-center gap-3">
                       <button onClick={() => handleEdit(t)} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
@@ -234,6 +310,13 @@ export default function HistoryPage() {
         isOpen={isModalOpen} 
         onClose={() => { setIsModalOpen(false); setTradeToEdit(null); }} 
         tradeToEdit={tradeToEdit} 
+      />
+      <UploadModal 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        onPasteSubmit={onPasteSubmit} 
+        onFileUpload={onFileUpload}
+        onDBRestoreUpload={onDBRestoreUpload}
       />
     </div>
   );
