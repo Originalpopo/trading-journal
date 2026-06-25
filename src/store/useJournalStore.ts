@@ -13,6 +13,7 @@ export interface Trade {
   isOnPlan: boolean;
   symbol?: string;
   side?: string;
+  images?: string[];
 }
 
 export interface Funding {
@@ -21,6 +22,7 @@ export interface Funding {
   deposit: number;
   withdraw: number;
   notes: string;
+  images?: string[];
 }
 
 export interface Note {

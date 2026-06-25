@@ -2,8 +2,9 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
+import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
 import { Trade } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
@@ -50,6 +51,8 @@ export default function HistoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedDetailTrade, setSelectedDetailTrade] = useState<any | null>(null);
 
   const handleUploadStatus = (status: string) => {
     console.log("Upload status:", status);
@@ -269,11 +272,11 @@ export default function HistoryPage() {
                   const badge = t.profit > 0 ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
                   const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                   return (
-                    <tr key={`${t.id}-${idx}`} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+                    <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50 cursor-pointer">
                       <td className="py-4 px-4 text-slate-500 text-[11px] font-semibold leading-tight">{shortTime}</td>
-                      <td className="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap flex items-center">
+                      <td className="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap flex items-center gap-1">
                         {badgeText}
-                        {t.notes && <span title={t.notes} className="text-slate-400 hover:text-orange-500 transition-colors ml-1 cursor-help"><HelpCircle className="w-3.5 h-3.5 inline" /></span>}
+                        {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-slate-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                       </td>
                       <td className="py-4 px-4 text-center">-</td>
                       <td className="py-4 px-4 text-center">-</td>
@@ -284,8 +287,8 @@ export default function HistoryPage() {
                         {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
                       </td>
                       <td className="py-4 px-4 text-center flex justify-center gap-3">
-                        <button onClick={() => handleEdit(t)} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(t.id, t.isFunding)} className="text-slate-400 hover:text-red-500 transition"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-slate-400 hover:text-red-500 transition"><Trash2 className="w-4 h-4" /></button>
                       </td>
                     </tr>
                   );
@@ -315,16 +318,14 @@ export default function HistoryPage() {
                 else if (m > 0) durationStr = <><br/><span className="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: {m}m {s}s</span></>;
                 else durationStr = <><br/><span className="text-[9px] text-slate-400 font-normal mt-0.5 inline-block">Hold: {s < 1 ? 1 : s}s</span></>;
 
-                const noteContent = t.strategy || t.notes || '';
-
                 return (
-                  <tr key={`${t.id}-${idx}`} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50 cursor-pointer">
                     <td className="py-4 px-4 text-slate-500 text-[11px] font-semibold leading-tight">
                       {shortTime}{durationStr}
                     </td>
-                    <td className="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap flex items-center">
+                    <td className="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap flex items-center gap-1">
                       {t.symbol}
-                      {noteContent && <span title={noteContent} className="text-slate-400 hover:text-orange-500 transition-colors ml-1 cursor-help"><HelpCircle className="w-3.5 h-3.5 inline" /></span>}
+                      {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-slate-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                     </td>
                     <td className="py-4 px-4 text-center">
                       {t.isOnPlan === false 
@@ -345,8 +346,8 @@ export default function HistoryPage() {
                       {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
                     </td>
                     <td className="py-4 px-4 text-center flex justify-center gap-3">
-                      <button onClick={() => handleEdit(t)} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(t.id, t.isFunding)} className="text-slate-400 hover:text-red-500 transition"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-slate-400 hover:text-slate-800 transition"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-slate-400 hover:text-red-500 transition"><Trash2 className="w-4 h-4" /></button>
                     </td>
                   </tr>
                 );
@@ -359,6 +360,13 @@ export default function HistoryPage() {
         isOpen={isModalOpen} 
         onClose={() => { setIsModalOpen(false); setTradeToEdit(null); }} 
         tradeToEdit={tradeToEdit} 
+      />
+      <TradeDetailModal
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        trade={selectedDetailTrade}
+        onEdit={(trade) => { setIsDetailOpen(false); handleEdit(trade); }}
+        onDelete={(id, isFunding) => { setIsDetailOpen(false); handleDelete(id, isFunding); }}
       />
       <UploadModal 
         isOpen={isUploadModalOpen} 

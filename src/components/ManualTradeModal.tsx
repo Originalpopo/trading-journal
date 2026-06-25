@@ -24,6 +24,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [risk, setRisk] = useState("");
   const [strategy, setStrategy] = useState("");
   const [isOnPlan, setIsOnPlan] = useState(true);
+  const [images, setImages] = useState<string[]>([""]);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,6 +38,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setSide("BUY");
           setRisk("");
           setIsOnPlan(true);
+          setImages(f.images && f.images.length > 0 ? f.images : [""]);
 
           try {
             const d = new Date(f.time.replace(" ", "T"));
@@ -54,6 +56,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setStrategy(t.strategy || "");
           setRisk(t.risk?.toString() || "");
           setIsOnPlan(t.isOnPlan !== false);
+          setImages(t.images && t.images.length > 0 ? t.images : [""]);
 
           try {
             const d = new Date(t.time.replace(" ", "T"));
@@ -69,6 +72,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         setSide("BUY");
         setAmount("");
         setStrategy("");
+        setImages([""]);
         
         let defaultRisk = "";
         if (trades.length > 0) {
@@ -98,6 +102,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
       const timeVal = time.replace("T", " ");
       const parsedAmount = parseFloat(amount) || 0;
       const parsedRisk = parseFloat(risk) || 0;
+      const cleanImages = images.filter(url => url.trim() !== "");
 
       if (entryType === "DEPOSIT" || entryType === "WITHDRAW") {
         const isDeposit = entryType === "DEPOSIT";
@@ -106,7 +111,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           time: timeVal,
           deposit: isDeposit ? Math.abs(parsedAmount) : 0,
           withdraw: isDeposit ? 0 : Math.abs(parsedAmount),
-          notes: strategy
+          notes: strategy,
+          images: cleanImages
         };
         await setDoc(doc(db, "funding", fId), data, { merge: true });
       } else {
@@ -133,7 +139,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           rr: rr,
           resultType: resType,
           strategy,
-          isOnPlan
+          isOnPlan,
+          images: cleanImages
         };
         await setDoc(doc(db, "trades", tId), data, { merge: true });
       }
@@ -237,6 +244,44 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Notes</label>
             <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={4}
               className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition resize-y"></textarea>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Google Drive Image Links</label>
+              <button 
+                type="button" 
+                onClick={() => setImages([...images, ""])}
+                className="text-[10px] font-extrabold text-orange-500 hover:text-orange-600 transition flex items-center gap-1">
+                + Add Another Link
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium leading-normal">
+              💡 <span className="font-bold">แนะนำ:</span> วางลิงก์รูปภาพจาก Google Drive (ตั้งค่าสิทธิ์ไฟล์เป็น "Anyone with the link")
+            </p>
+            {images.map((url, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  value={url} 
+                  onChange={(e) => {
+                    const newImgs = [...images];
+                    newImgs[idx] = e.target.value;
+                    setImages(newImgs);
+                  }} 
+                  placeholder={`Image link #${idx + 1} (https://drive.google.com/...)`}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition" 
+                />
+                {images.length > 1 && (
+                  <button 
+                    type="button" 
+                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                    className="text-slate-400 hover:text-red-500 p-1 rounded-lg transition">
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
