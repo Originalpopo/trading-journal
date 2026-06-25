@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trade, Funding } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
-import { X, Edit2, Trash2, ExternalLink, Calendar, HelpCircle, ImageIcon } from "lucide-react";
+import { X, Edit2, Trash2, ExternalLink, ImageIcon } from "lucide-react";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   if (!isOpen || !trade) return null;
 
   const isFunding = trade.isFunding;
-  const t = trade as Trade;
+  const t = trade as Trade & { duration?: number };
   const f = trade as Funding;
 
   let shortTime = trade.time;
