@@ -722,9 +722,9 @@ export default function PerformancePage() {
                 return (
                   <div key={tf}>
                     <div className="flex justify-between text-[10px] font-bold mb-1">
-                      <span className="text-slate-600 uppercase">{tf} <span className="text-slate-400 font-normal">({stat.trades})</span></span>
+                      <span className="text-slate-600">{tf} <span className="text-slate-400 font-normal">({stat.trades})</span></span>
                       <span className="text-slate-800 flex items-center gap-1.5">
-                        <span className={stat.pnl >= 0 ? 'text-green-600' : 'text-red-500'}>{formatCurrency(stat.pnl)}</span>
+                        <span className={stat.pnl >= 0 ? 'text-slate-800' : 'text-red-500'}>{formatCurrency(stat.pnl)}</span>
                         <span>| {formatNumber(wr)}%</span>
                       </span>
                     </div>
