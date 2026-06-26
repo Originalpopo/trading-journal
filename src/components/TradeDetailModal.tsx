@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trade, Funding } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
-import { X, Edit2, Trash2, ExternalLink, ImageIcon } from "lucide-react";
+import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export function getDriveDirectUrl(url: string): string {
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete }: TradeDetailModalProps) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   if (!isOpen || !trade) return null;
 
@@ -64,7 +64,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
     } else {
       isBE = (t.resultType === 'BE' || t.profit === 0);
     }
-    badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200');
+    badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-red-50 text-red-600 border-red-200');
     badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
 
     let sec = (t.duration && t.duration > 0) ? t.duration : 1;
@@ -81,15 +81,38 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
       {/* Image Lightbox Pop-up */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedImage(null)}>
+      {selectedIndex !== null && trade.images && trade.images[selectedIndex] && (
+        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedIndex(null)}>
           <div className="relative max-w-5xl h-[85vh] w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <iframe src={selectedImage} title="Expanded preview" className="w-full h-full rounded-2xl border-0 shadow-2xl bg-white" />
-            <button 
-              onClick={() => setSelectedImage(null)} 
-              className="absolute -top-12 right-0 text-white hover:text-slate-200 bg-white/10 hover:bg-white/20 p-2 rounded-full transition backdrop-blur-sm">
-              <X className="w-6 h-6" />
-            </button>
+            <iframe src={getDriveDirectUrl(trade.images[selectedIndex])} title="Expanded preview" className="w-full h-full rounded-2xl border-0 shadow-2xl bg-white" />
+            
+            {/* Header info / close button */}
+            <div className="absolute -top-12 inset-x-0 flex items-center justify-between px-2">
+              <span className="text-white/80 text-sm font-bold tracking-wide">
+                Image {selectedIndex + 1} of {trade.images.length}
+              </span>
+              <button 
+                onClick={() => setSelectedIndex(null)} 
+                className="text-white hover:text-slate-200 bg-white/10 hover:bg-white/20 p-2 rounded-full transition backdrop-blur-sm">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Navigation Buttons (Next / Prev) */}
+            {trade.images.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex - 1 + trade.images!.length) % trade.images!.length); }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md backdrop-blur-md border border-white/20 hover:scale-105 z-50">
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex + 1) % trade.images!.length); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md backdrop-blur-md border border-white/20 hover:scale-105 z-50">
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -104,9 +127,6 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 {t.side}
               </span>
             )}
-            <span className={`px-3 py-1 border rounded-lg text-xs font-black uppercase tracking-wider ${badge}`}>
-              {badgeText}
-            </span>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition">
             <X className="w-6 h-6" />
@@ -130,46 +150,65 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-2xl text-center">
-              {/* Row 1: Time, Plan, Duration */}
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Time</p>
-                <p className="text-xs font-bold text-slate-700">{shortTime}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Plan</p>
-                {t.isOnPlan === false ? (
-                  <p className="text-xs font-extrabold text-red-600 tracking-tight">Off Plan</p>
-                ) : (
-                  <p className="text-xs font-extrabold text-slate-900 tracking-tight">On Plan</p>
-                )}
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Duration</p>
-                <p className="text-xs font-bold text-slate-700">{durationDisplay}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* กล่องซ้าย (กรอบสีเทา): Time, Duration, Risk (แถวบน) / TF, Plan, RR (แถวล่าง) */}
+              <div className="md:col-span-2 bg-slate-50 p-6 rounded-2xl flex flex-col justify-between gap-6 border border-slate-100">
+                {/* Row 1 */}
+                <div className="grid grid-cols-3 gap-6 text-center">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Time</p>
+                    <p className="text-xs font-bold text-slate-700">{shortTime}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Duration</p>
+                    <p className="text-xs font-bold text-slate-700">{durationDisplay}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Risk</p>
+                    <p className="text-xs font-bold text-slate-700">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</p>
+                  </div>
+                </div>
+
+                {/* Row 2 (มีเส้นคั่นกลาง) */}
+                <div className="grid grid-cols-3 gap-6 text-center pt-6 border-t border-slate-200/60">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Timeframe</p>
+                    <p className="text-xs font-bold text-slate-700">{(t as any).tf && (t as any).tf !== 'none' ? (t as any).tf : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Plan</p>
+                    {t.isOnPlan === false ? (
+                      <p className="text-xs font-extrabold text-red-600 tracking-tight">Off Plan</p>
+                    ) : (
+                      <p className="text-xs font-extrabold text-slate-900 tracking-tight">On Plan</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">RR</p>
+                    <p className="text-xs font-bold text-slate-700">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Row 2: Net P&L, Risk, RR */}
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net P&L</p>
-                <p className={`text-xs font-bold ${profit > 0 ? 'text-green-600' : profit < 0 ? 'text-red-500' : 'text-slate-700'}`}>
-                  {profit < 0 ? '-' : ''}${format2Decimals(Math.abs(profit))}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Risk</p>
-                <p className="text-xs font-bold text-slate-700">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">RR</p>
-                <p className="text-xs font-bold text-slate-700">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</p>
+              {/* กล่องขวา (กรอบสีแดง): Result (TP, SL, BE) ด้านบน และ ตัวเลขกำไร/ขาดทุน ด้านล่าง */}
+              <div className={`md:col-span-1 ${badgeText === 'SL' ? 'bg-red-50 border border-red-100' : (badgeText === 'BE' ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50 border border-slate-100')} p-6 rounded-2xl flex flex-col justify-center items-center gap-3.5 text-center`}>
+                <div className="flex items-center justify-center">
+                  <span className={`px-5 py-1.5 border rounded-xl text-xs font-black uppercase tracking-widest ${badge}`}>
+                    {badgeText}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center">
+                  <p className={`text-2xl font-black tracking-tight ${profit > 0 ? 'text-slate-900' : profit < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                    {profit < 0 ? '-' : ''}${format2Decimals(Math.abs(profit))}
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
           {/* Notes / Strategy */}
           <div>
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">Notes / Strategy</h4>
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">Notes</h4>
             <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-slate-700 text-xs leading-relaxed font-medium min-h-[80px] whitespace-pre-wrap">
               {notes || <span className="text-slate-400 italic">No notes provided for this entry.</span>}
             </div>
@@ -190,17 +229,13 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 {images.map((url, idx) => {
                   const previewUrl = getDriveDirectUrl(url);
                   return (
-                    <div key={idx} className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm hover:shadow-md transition cursor-pointer" onClick={() => setSelectedImage(previewUrl)}>
-                      <div className="block w-full h-48 relative pointer-events-none bg-slate-100">
+                    <div key={idx} className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm hover:shadow-md hover:border-slate-400 transition-all duration-200 cursor-pointer" onClick={() => setSelectedIndex(idx)}>
+                      <div className="block w-full h-32 relative pointer-events-none bg-slate-100 overflow-hidden">
                         <iframe 
                           src={previewUrl} 
                           title={`Trade attachment ${idx + 1}`} 
-                          className="w-full h-full border-0 object-cover pointer-events-none" 
+                          className="absolute top-1/2 left-1/2 w-[800px] h-[600px] -translate-x-1/2 -translate-y-1/2 border-0 pointer-events-none scale-[0.6]" 
                         />
-                      </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent p-3 pt-6 pointer-events-none flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-white">Image #{idx + 1} (Click to expand)</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-white/80" />
                       </div>
                     </div>
                   );
@@ -212,18 +247,18 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
         {/* Bottom Actions */}
         <div className="flex items-center justify-between pt-4 mt-6 shrink-0">
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => onDelete(trade.id, !!isFunding)}
+              title="Delete Trade"
+              className="flex items-center justify-center p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition">
+              <Trash2 className="w-4 h-4" />
+            </button>
             <button 
               onClick={() => onEdit(trade)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
               <Edit2 className="w-3.5 h-3.5" />
               Edit
-            </button>
-            <button 
-              onClick={() => onDelete(trade.id, !!isFunding)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition">
-              <Trash2 className="w-3.5 h-3.5" />
-              Delete
             </button>
           </div>
           <button 

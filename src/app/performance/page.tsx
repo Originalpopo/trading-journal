@@ -45,6 +45,7 @@ const formatCurrency = (val: number) => val < 0 ? `-$${formatNumber(Math.abs(val
 export default function PerformancePage() {
   const { trades, funding, isLoading } = useJournalStore();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedTf, setSelectedTf] = useState('ALL');
   const [selectedMetric, setSelectedMetric] = useState('RR');
 
   const availableYears = useMemo(() => {
@@ -55,6 +56,14 @@ export default function PerformancePage() {
       years.sort((a, b) => b - a);
     }
     return years;
+  }, [trades]);
+
+  const availableTfs = useMemo(() => {
+    const tfs = Array.from(new Set(trades.map((t: any) => t.tf || 'none').filter(Boolean)));
+    ['15m', '5m', '1m', 'none'].forEach(item => {
+      if (!tfs.includes(item)) tfs.push(item);
+    });
+    return tfs;
   }, [trades]);
 
   const data = useMemo(() => {
@@ -74,6 +83,7 @@ export default function PerformancePage() {
     for (let i = 0; i < 12; i++) { moyStartBalance[i] = null; moyPnL[i] = 0; }
 
     const matrix: any = {};
+    const tfMatrix: any = {};
 
     let allTimelineEvents: any[] = [];
     trades.forEach(t => allTimelineEvents.push({ type: 'trade', timeObj: new Date(t.time.replace(' ', 'T')), data: t }));
@@ -85,6 +95,11 @@ export default function PerformancePage() {
 
     allTimelineEvents.forEach(evt => {
       if (!isNaN(evt.timeObj.getTime()) && evt.timeObj.getTime() > 0) {
+        if (evt.type === 'trade' && selectedTf !== 'ALL') {
+          const tfVal = evt.data.tf || 'none';
+          if (tfVal !== selectedTf) return;
+        }
+
         const y = evt.timeObj.getFullYear();
         if (selectedYear !== 'ALL' && y < parseInt(selectedYear)) {
           pastEvents.push(evt);
@@ -142,6 +157,13 @@ export default function PerformancePage() {
     let offPlanTrades = 0, offPlanWins = 0, offPlanLosses = 0, offPlanBE = 0, offPlanPnL = 0;
     let sumDurationWins = 0, countDurationWins = 0;
     let sumDurationLosses = 0, countDurationLosses = 0;
+
+    const tfStats: Record<string, { trades: number; win: number; loss: number; be: number; pnl: number }> = {
+      '15m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+      '5m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+      '1m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+      'none': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+    };
 
     currentEvents.forEach((evt) => {
       if (evt.type === 'funding') {
@@ -269,6 +291,17 @@ export default function PerformancePage() {
           if (!isBE && (pnl > 0 || t.resultType === 'TP')) shortWon++;
         }
 
+        const tfKey = t.tf && ['15m', '5m', '1m'].includes(t.tf) ? t.tf : 'none';
+        tfStats[tfKey].trades++;
+        tfStats[tfKey].pnl += pnl;
+        if (isBE) {
+          tfStats[tfKey].be++;
+        } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+          tfStats[tfKey].win++;
+        } else {
+          tfStats[tfKey].loss++;
+        }
+
         if (!isNaN(hr)) {
           hourStats[hr] += rrVal;
           hourStatsPnL[hr] += pnl;
@@ -291,6 +324,13 @@ export default function PerformancePage() {
             SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
           };
         }
+        const tfValKey = t.tf && t.tf !== 'none' ? t.tf : 'none';
+        if (!tfMatrix[tfValKey]) {
+          tfMatrix[tfValKey] = {
+            BUY: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 },
+            SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
+          };
+        }
         const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : null;
         if (side) {
           const m = matrix[t.symbol][side];
@@ -301,6 +341,15 @@ export default function PerformancePage() {
             if (pnl < 0 || t.resultType === 'SL') m.loss++;
           }
           if (t.rr) { m.rr += t.rr; m.rrCount++; }
+
+          const tm = tfMatrix[tfValKey][side];
+          tm.trades++;
+          tm.pnl += pnl;
+          if (!isBE) {
+            if (pnl > 0 || t.resultType === 'TP') tm.win++;
+            if (pnl < 0 || t.resultType === 'SL') tm.loss++;
+          }
+          if (t.rr) { tm.rr += t.rr; tm.rrCount++; }
         }
 
         runningBalance += pnl;
@@ -394,8 +443,10 @@ export default function PerformancePage() {
     const moyGainColors = moyGainData.map(v => v >= 0 ? 'rgba(94, 94, 94, 0.4)' : 'rgba(249, 115, 22, 0.4)');
 
     const matrixSorted = Object.entries(matrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
+    const tfMatrixSorted = Object.entries(tfMatrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
 
     return {
+      tfStats, tfMatrixSorted,
       netProfit, profitFactor, expectedPayoff, mainWinRate,
       totalTrades, winPct, lossPct, bePct, profitTradesCount, lossTradesCount, beTradesCount,
       longWinPct, shortWinPct,
@@ -411,7 +462,7 @@ export default function PerformancePage() {
       activeMoyNames, moyRRData, moyRRColors, moyGainData, moyGainColors,
       matrixSorted
     };
-  }, [trades, funding, selectedYear, selectedMetric]);
+  }, [trades, funding, selectedYear, selectedTf, selectedMetric]);
 
   const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
     id: 'lastBalancePointPlugin',
@@ -505,14 +556,26 @@ export default function PerformancePage() {
         <div>
           <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Performance</h2>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Filter by Year</span>
-          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
-            {availableYears.map(y => (
-               <option key={y} value={y.toString()}>{y}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Year:</span>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+              {availableYears.map(y => (
+                 <option key={y} value={y.toString()}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">TF:</span>
+            <select value={selectedTf} onChange={(e) => setSelectedTf(e.target.value)}
+              className="bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+              <option value="ALL">ALL</option>
+              {availableTfs.map(tf => (
+                <option key={tf} value={tf}>{tf}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -585,7 +648,7 @@ export default function PerformancePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
             <div className="flex justify-between items-end">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Outcomes</span>
@@ -644,6 +707,33 @@ export default function PerformancePage() {
                 <span className="text-slate-800">{data.offPlanWR}% WR</span>
                 <span className="text-slate-800">{formatCurrency(data.offPlanPnL)}</span>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-end">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Timeframe Win %</span>
+            </div>
+            <div className="space-y-3 mt-2">
+              {['15m', '5m', '1m'].map(tf => {
+                const stat = data.tfStats[tf];
+                const resolved = stat.win + stat.loss;
+                const wr = resolved > 0 ? (stat.win / resolved) * 100 : 0;
+                return (
+                  <div key={tf}>
+                    <div className="flex justify-between text-[10px] font-bold mb-1">
+                      <span className="text-slate-600 uppercase">{tf} <span className="text-slate-400 font-normal">({stat.trades})</span></span>
+                      <span className="text-slate-800 flex items-center gap-1.5">
+                        <span className={stat.pnl >= 0 ? 'text-green-600' : 'text-red-500'}>{formatCurrency(stat.pnl)}</span>
+                        <span>| {formatNumber(wr)}%</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-orange-500 transition-all duration-500" style={{ width: `${wr}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -829,6 +919,61 @@ export default function PerformancePage() {
                 return (
                   <tr key={sym} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
                     <td className="py-3 px-4 font-extrabold text-slate-800 text-[11px]">{sym}</td>
+                    <td className="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">{b.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-600">{bWR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-slate-500">{bRR}</td>
+                    <td className={`py-3 px-4 text-right font-black ${b.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}`}>{formatCurrency(b.pnl)}</td>
+                    <td className="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">{s.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-600">{sWR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-slate-500">{sRR}</td>
+                    <td className={`py-3 px-4 text-right font-black ${s.pnl >= 0 ? 'text-slate-800' : 'text-orange-500'}`}>{formatCurrency(s.pnl)}</td>
+                    <td className={`py-3 px-4 text-right border-l border-slate-100 font-black ${total >= 0 ? 'text-slate-800' : 'text-orange-500'}`}>{formatCurrency(total)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="glass-card p-6 overflow-hidden flex flex-col">
+        <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Timeframe Analysis
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+            <thead>
+              <tr className="text-slate-400 bg-slate-50/50">
+                <th className="py-3 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl align-bottom">Timeframe</th>
+                <th colSpan={4} className="py-2 px-4 font-black text-slate-600 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">Buy</th>
+                <th colSpan={4} className="py-2 px-4 font-black text-orange-500 uppercase text-[10px] tracking-widest text-center border-l border-slate-200">Sell</th>
+                <th className="py-3 px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl border-l border-slate-200 align-bottom">Net P&L</th>
+              </tr>
+              <tr className="text-slate-400 bg-slate-50/50 border-b border-slate-200">
+                <th className="py-2 px-4"></th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center border-l border-slate-200">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Win %</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-right">P&L</th>
+                <th className="py-2 px-4 border-l border-slate-200"></th>
+              </tr>
+            </thead>
+            <tbody className="text-[12px] divide-y divide-slate-50">
+              {data.tfMatrixSorted.map(([tf, mData]: [string, any]) => {
+                const b = mData.BUY, s = mData.SELL;
+                const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
+                const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
+                const bRR = b.rrCount ? formatNumber((b.rr / b.rrCount)) + 'R' : '-';
+                const sRR = s.rrCount ? formatNumber((s.rr / s.rrCount)) + 'R' : '-';
+                const total = b.pnl + s.pnl;
+
+                return (
+                  <tr key={tf} className="hover:bg-slate-50 transition duration-150 border-b border-slate-50">
+                    <td className="py-3 px-4 font-extrabold text-slate-800 text-[11px] uppercase">{tf}</td>
                     <td className="py-3 px-4 text-center border-l border-slate-100 font-semibold text-slate-500">{b.trades}</td>
                     <td className="py-3 px-4 text-center font-bold text-slate-600">{bWR}</td>
                     <td className="py-3 px-4 text-center font-semibold text-slate-500">{bRR}</td>

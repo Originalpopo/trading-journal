@@ -248,6 +248,7 @@ export default function HistoryPage() {
               <tr className="text-slate-400 border-b border-slate-100 bg-slate-50">
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">Time</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
+                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
@@ -278,6 +279,7 @@ export default function HistoryPage() {
                         {badgeText}
                         {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-slate-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                       </td>
+                      <td className="py-4 px-4 text-center">-</td>
                       <td className="py-4 px-4 text-center">-</td>
                       <td className="py-4 px-4 text-center">-</td>
                       <td className="py-4 px-4 text-center"><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
@@ -326,6 +328,9 @@ export default function HistoryPage() {
                     <td className="py-4 px-4 font-extrabold text-slate-800 whitespace-nowrap flex items-center gap-1">
                       {t.symbol}
                       {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-slate-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
+                    </td>
+                    <td className="py-4 px-4 text-center font-bold text-slate-600">
+                      {t.tf && t.tf !== 'none' ? t.tf : '-'}
                     </td>
                     <td className="py-4 px-4 text-center">
                       {t.isOnPlan === false 

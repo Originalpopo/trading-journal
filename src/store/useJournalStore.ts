@@ -14,6 +14,7 @@ export interface Trade {
   symbol?: string;
   side?: string;
   images?: string[];
+  tf?: string;
 }
 
 export interface Funding {

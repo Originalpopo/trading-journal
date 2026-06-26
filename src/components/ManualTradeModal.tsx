@@ -25,6 +25,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [strategy, setStrategy] = useState("");
   const [isOnPlan, setIsOnPlan] = useState(true);
   const [images, setImages] = useState<string[]>([""]);
+  const [tf, setTf] = useState("none");
 
   useEffect(() => {
     if (isOpen) {
@@ -39,6 +40,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setRisk("");
           setIsOnPlan(true);
           setImages(f.images && f.images.length > 0 ? f.images : [""]);
+          setTf("none");
 
           try {
             const d = new Date(f.time.replace(" ", "T"));
@@ -57,6 +59,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setRisk(t.risk?.toString() || "");
           setIsOnPlan(t.isOnPlan !== false);
           setImages(t.images && t.images.length > 0 ? t.images : [""]);
+          setTf(t.tf || "none");
 
           try {
             const d = new Date(t.time.replace(" ", "T"));
@@ -75,8 +78,10 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         setImages([""]);
         
         let defaultRisk = "";
+        let defaultTf = "none";
         if (trades.length > 0) {
           const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
+          if (sortedTrades[0].tf) defaultTf = sortedTrades[0].tf;
           for (let t of sortedTrades) {
             if (t.risk && t.risk > 0) {
               defaultRisk = t.risk.toString();
@@ -85,6 +90,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           }
         }
         setRisk(defaultRisk);
+        setTf(defaultTf);
         setIsOnPlan(true);
 
         const now = new Date();
@@ -140,7 +146,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           resultType: resType,
           strategy,
           isOnPlan,
-          images: cleanImages
+          images: cleanImages,
+          tf
         };
         await setDoc(doc(db, "trades", tId), data, { merge: true });
       }
@@ -237,6 +244,16 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               </label>
               <input type="number" step="0.01" value={risk} onChange={(e) => setRisk(e.target.value)} placeholder="Optional"
                 className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Timeframe (TF)</label>
+              <select value={tf} onChange={(e) => setTf(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                <option value="none">none</option>
+                <option value="15m">15m</option>
+                <option value="5m">5m</option>
+                <option value="1m">1m</option>
+              </select>
             </div>
           </div>
           

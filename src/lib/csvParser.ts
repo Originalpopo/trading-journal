@@ -15,14 +15,17 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
   let skipCount = 0;
 
   let latestRisk = 0;
+  let latestTf = "none";
   try {
     const q = query(collection(db, 'trades'), orderBy('time', 'desc'), limit(1));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-      latestRisk = Number(querySnapshot.docs[0].data().risk) || 0;
+      const data = querySnapshot.docs[0].data();
+      latestRisk = Number(data.risk) || 0;
+      latestTf = data.tf || "none";
     }
   } catch (e) {
-    console.error("Error fetching latest risk:", e);
+    console.error("Error fetching latest risk/tf:", e);
   }
 
   const positions: Record<string, any[]> = {};
@@ -103,7 +106,8 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
         type: entryRow ? entryRow['Type'] : lastExitRow['Type'],
         resultType: resType,
         risk: latestRisk,
-        rr: latestRisk > 0 ? totalProfit / latestRisk : 0
+        rr: latestRisk > 0 ? totalProfit / latestRisk : 0,
+        tf: latestTf
       };
 
       batch.set(docRef, tradeData);
