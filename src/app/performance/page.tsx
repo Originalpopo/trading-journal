@@ -580,7 +580,7 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      <div className="glass-card p-6 h-[400px] flex flex-col w-full">
+      <div className="glass-card p-6 h-[350px] flex flex-col w-full">
         <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Profit and Balance
         </h3>
@@ -626,16 +626,16 @@ export default function PerformancePage() {
       </div>
 
       <div className="bg-stone-100/60 border border-stone-200 rounded-[1.25rem] p-6 flex flex-col w-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)]">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Results
         </h3>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
           <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Net Profit</span>
             <span className={`text-xl font-black ${data.netProfit >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(data.netProfit)}</span>
           </div>
-          <div className="bg-orange-400 p-5 rounded-[1.25rem] shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+          <div className="bg-orange-400 p-5 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
             <span className="text-xl font-black text-white">{formatNumber(data.mainWinRate)}%</span>
           </div>
