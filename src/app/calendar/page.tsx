@@ -28,8 +28,7 @@ export default function CalendarPage() {
     const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
     const currentDay = today.getDate();
 
-    let firstDay = new Date(year, month, 1).getDay();
-    firstDay = firstDay === 0 ? 6 : firstDay - 1; // Make Monday the first day
+    const firstDay = new Date(year, month, 1).getDay(); // Sunday is 0, Monday is 1, etc.
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const statsMap: Record<number, { pnl: number, count: number, rr: number }> = {};
@@ -153,7 +152,7 @@ export default function CalendarPage() {
             </div>
             <div className="bg-stone-50 px-4 py-2 rounded-xl border border-stone-200 shadow-sm text-center shrink-0 flex-1 md:flex-none">
               <span className="text-[9px] font-black text-stone-400 uppercase block tracking-widest mb-0.5">RR</span>
-              <span className={`text-lg font-black ${data.mRR > 0 ? 'text-orange-400' : data.mRR < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+              <span className="text-lg font-black text-stone-950">
                 {data.mRR > 0 ? '+' : ''}{formatNumber(data.mRR)}R
               </span>
             </div>
@@ -165,7 +164,7 @@ export default function CalendarPage() {
         </div>
 
         <div className="calendar-grid">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(dayName => (
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(dayName => (
             <div key={dayName} className="bg-stone-50 p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest border-b border-r border-stone-200">
               {dayName}
             </div>
