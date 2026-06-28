@@ -156,7 +156,7 @@ export default function CalendarPage() {
                 {data.mRR > 0 ? '+' : ''}{formatNumber(data.mRR)}R
               </span>
             </div>
-            <div className="bg-orange-400 px-4 py-2 rounded-xl border border-orange-300 shadow-lg shadow-orange-400/20 text-center shrink-0 flex-1 md:flex-none">
+            <div className="bg-orange-400 px-4 py-2 rounded-xl shadow-lg shadow-orange-400/20 text-center shrink-0 flex-1 md:flex-none">
               <span className="text-[9px] font-bold text-white/90 uppercase block tracking-widest mb-0.5">Win Rate</span>
               <span className="text-lg font-black text-white">{formatNumber(data.winRate)}%</span>
             </div>

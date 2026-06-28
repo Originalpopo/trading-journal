@@ -635,7 +635,7 @@ export default function PerformancePage() {
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Net Profit</span>
             <span className={`text-xl font-black ${data.netProfit >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(data.netProfit)}</span>
           </div>
-          <div className="bg-orange-400 p-5 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+          <div className="bg-orange-400 p-5 rounded-[1.25rem] shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
             <span className="text-xl font-black text-white">{formatNumber(data.mainWinRate)}%</span>
           </div>

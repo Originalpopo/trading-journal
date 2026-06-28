@@ -349,7 +349,7 @@ export default function Dashboard() {
               ${formatNumber(data.net)}
             </p>
           </div>
-          <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+          <div className="bg-orange-400 p-6 rounded-[1.25rem] shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
             <span className="text-3xl font-extrabold stat-value text-white">
               {formatNumber(data.winRate * 100)}%
