@@ -68,7 +68,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Settings</h2>

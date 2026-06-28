@@ -116,6 +116,11 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+        <div>
+          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Calendar</h2>
+        </div>
+      </div>
       <div className="glass-card p-8">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
           <div className="flex items-center gap-2 md:gap-4 flex-wrap">
