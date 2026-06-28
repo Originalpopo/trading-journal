@@ -809,7 +809,7 @@ export default function PerformancePage() {
               options={{
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
-                  y: { border: { display: false }, grid: { drawBorder: false, color: '#fafaf9' }, ticks: { display: false } }, 
+                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false } }, 
                   x: { grid: { display: false } } 
                 },
                 plugins: { legend: { display: false } }
@@ -832,7 +832,7 @@ export default function PerformancePage() {
                 responsive: true, maintainAspectRatio: false,
                 layout: { padding: { top: 20, bottom: 20 } },
                 scales: {
-                  y: { border: { display: false }, grid: { drawBorder: false, color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
+                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
                   x: { grid: { display: false } }
                 },
                 plugins: { legend: { display: false } }
@@ -873,7 +873,7 @@ export default function PerformancePage() {
               responsive: true, maintainAspectRatio: false,
               layout: { padding: { top: 20, bottom: 20 } },
               scales: {
-                y: { border: { display: false }, grid: { drawBorder: false, color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
+                y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
                 y1: { display: false, grid: { drawOnChartArea: false }, grace: '20%' },
                 x: { grid: { display: false } }
               },
