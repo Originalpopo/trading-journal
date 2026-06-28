@@ -160,7 +160,7 @@ export default function CalendarPage() {
             <div className="flex flex-col justify-center items-center text-center shrink-0 flex-1 md:flex-none px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">RR</span>
               <span className="text-lg font-black text-stone-400">
-                {data.mRR > 0 ? '+' : ''}{formatNumber(data.mRR)}R
+                {formatNumber(data.mRR)}R
               </span>
             </div>
             <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
@@ -203,7 +203,7 @@ export default function CalendarPage() {
                     </div>
                     <div className="flex justify-between items-center w-full mt-2">
                       <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
-                        {stats.rr > 0 ? '+' : ''}{formatNumber(stats.rr)}R
+                        {formatNumber(stats.rr)}R
                       </div>
                       <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
                         Trades : {stats.count}
