@@ -5,6 +5,7 @@ import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
+import { Trash2, X, HelpCircle } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -164,37 +165,42 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const parsedAmount = parseFloat(amount) || 0;
   const parsedRisk = parseFloat(risk) || 0;
   let liveRRStr = "0.00R";
-  let liveRRClass = "text-slate-400 normal-case tracking-normal";
+  let liveRRClass = "text-stone-400 normal-case tracking-normal";
   if (parsedRisk > 0) {
     const rr = parsedAmount / parsedRisk;
     liveRRStr = `${formatNumber(rr)}R`;
-    liveRRClass = rr >= 0 ? "text-orange-500 normal-case tracking-normal" : "text-red-500 normal-case tracking-normal";
+    liveRRClass = rr >= 0 ? "text-orange-400 normal-case tracking-normal" : "text-red-900 normal-case tracking-normal";
   }
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl relative flex flex-col max-h-[90vh]">
-        <h3 className="text-xl font-extrabold text-slate-800 mb-6 tracking-tight">
-          {tradeToEdit ? (tradeToEdit.isFunding ? "Edit Funding" : "Edit Trade") : "Add Manual Entry"}
-        </h3>
+    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+      <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+          <h3 className="text-2xl font-black text-stone-950 tracking-tight">
+            {tradeToEdit ? (tradeToEdit.isFunding ? "Edit Funding" : "Edit Trade") : "Add Manual Entry"}
+          </h3>
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
         
-        <div className="space-y-4 overflow-y-auto pr-2">
+        <div className="space-y-6 overflow-y-auto pr-2 flex-1 border-0 border-transparent" style={{ outline: 'none' }}>
           <div className="mb-4">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Entry Type</label>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Entry Type</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="entryType" value="TRADE" checked={entryType === "TRADE"} onChange={() => setEntryType("TRADE")} className="text-orange-500 focus:ring-orange-500 w-4 h-4" />
-                <span className="text-sm font-bold text-slate-700">Trade</span>
+                <input type="radio" name="entryType" value="TRADE" checked={entryType === "TRADE"} onChange={() => setEntryType("TRADE")} className="text-orange-400 focus:ring-orange-400 w-4 h-4" />
+                <span className="text-sm font-bold text-stone-950">Trade</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="entryType" value="DEPOSIT" checked={entryType === "DEPOSIT"} onChange={() => setEntryType("DEPOSIT")} className="text-orange-500 focus:ring-orange-500 w-4 h-4" />
-                <span className="text-sm font-bold text-slate-700">Deposit</span>
+                <input type="radio" name="entryType" value="DEPOSIT" checked={entryType === "DEPOSIT"} onChange={() => setEntryType("DEPOSIT")} className="text-orange-400 focus:ring-orange-400 w-4 h-4" />
+                <span className="text-sm font-bold text-stone-950">Deposit</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="entryType" value="WITHDRAW" checked={entryType === "WITHDRAW"} onChange={() => setEntryType("WITHDRAW")} className="text-orange-500 focus:ring-orange-500 w-4 h-4" />
-                <span className="text-sm font-bold text-slate-700">Withdraw</span>
+                <input type="radio" name="entryType" value="WITHDRAW" checked={entryType === "WITHDRAW"} onChange={() => setEntryType("WITHDRAW")} className="text-orange-400 focus:ring-orange-400 w-4 h-4" />
+                <span className="text-sm font-bold text-stone-950">Withdraw</span>
               </label>
             </div>
           </div>
@@ -202,53 +208,53 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           <div className={entryType === "TRADE" ? "mb-4" : "hidden"}>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Symbol</label>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Symbol</label>
                 <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="e.g. BTCUSDT"
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition uppercase" />
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition uppercase" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Side</label>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Side</label>
                 <select value={side} onChange={(e) => setSide(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition">
                   <option value="BUY">BUY</option>
                   <option value="SELL">SELL</option>
                 </select>
               </div>
             </div>
             <label className="flex items-center gap-2 cursor-pointer mt-3 w-max">
-              <input type="checkbox" checked={isOnPlan} onChange={(e) => setIsOnPlan(e.target.checked)} className="text-orange-500 focus:ring-orange-500 w-4 h-4 rounded border-slate-300" />
-              <span className="text-xs font-bold text-slate-600">On Plan (ตามแผน)</span>
+              <input type="checkbox" checked={isOnPlan} onChange={(e) => setIsOnPlan(e.target.checked)} className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" />
+              <span className="text-xs font-bold text-stone-600">On Plan (ตามแผน)</span>
             </label>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
                 {entryType === "TRADE" ? "P&L / Amount ($)" : "Amount ($)"}
               </label>
               <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition" />
+                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date & Time</label>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Date & Time</label>
               <input type="datetime-local" value={time} onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition" />
+                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
           </div>
 
           <div className={`grid grid-cols-2 gap-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <div>
-              <label className="flex justify-between items-end text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              <label className="flex justify-between items-end text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
                 <span>Risk ($)</span>
                 <span className={liveRRClass}>RR: {liveRRStr}</span>
               </label>
               <input type="number" step="0.01" value={risk} onChange={(e) => setRisk(e.target.value)} placeholder="Optional"
-                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition" />
+                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Timeframe (TF)</label>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Timeframe (TF)</label>
               <select value={tf} onChange={(e) => setTf(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition">
+                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition">
                 <option value="none">none</option>
                 <option value="15m">15m</option>
                 <option value="5m">5m</option>
@@ -258,24 +264,30 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           </div>
           
           <div className="mt-4">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Notes</label>
-            <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={4}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition resize-y"></textarea>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
+            <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={3}
+              className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition resize-y"></textarea>
           </div>
 
           <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Google Drive Image Links</label>
+              <div className="flex items-center gap-1.5">
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest">Google Drive Image Links</label>
+                <div className="relative group flex items-center">
+                  <HelpCircle className="w-3.5 h-3.5 text-stone-400 hover:text-stone-600 cursor-help transition" />
+                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 p-2.5 bg-stone-900 text-white text-[10px] font-medium rounded-xl shadow-xl z-50 pointer-events-none leading-normal">
+                    💡 <span className="font-bold">แนะนำ:</span> วางลิงก์รูปภาพจาก Google Drive (ตั้งค่าสิทธิ์ไฟล์เป็น &quot;Anyone with the link&quot;)
+                    <div className="absolute left-3 top-full -mt-1 border-4 border-transparent border-t-stone-900"></div>
+                  </div>
+                </div>
+              </div>
               <button 
                 type="button" 
                 onClick={() => setImages([...images, ""])}
-                className="text-[10px] font-extrabold text-orange-500 hover:text-orange-600 transition flex items-center gap-1">
+                className="text-[10px] font-extrabold text-orange-400 hover:text-orange-500 transition flex items-center gap-1">
                 + Add Another Link
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium leading-normal">
-              💡 <span className="font-bold">แนะนำ:</span> วางลิงก์รูปภาพจาก Google Drive (ตั้งค่าสิทธิ์ไฟล์เป็น "Anyone with the link")
-            </p>
             {images.map((url, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <input 
@@ -287,14 +299,14 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                     setImages(newImgs);
                   }} 
                   placeholder={`Image link #${idx + 1} (https://drive.google.com/...)`}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 focus:outline-none focus:border-slate-500 transition" 
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-xs font-semibold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" 
                 />
                 {images.length > 1 && (
                   <button 
                     type="button" 
                     onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                    className="text-slate-400 hover:text-red-500 p-1 rounded-lg transition">
-                    ✕
+                    className="text-stone-400 hover:text-red-900 p-1 rounded-lg transition">
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -302,11 +314,11 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end mt-8 shrink-0">
+        <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={onClose} disabled={isSubmitting}
-            className="px-5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition">Cancel</button>
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
           <button onClick={handleSubmit} disabled={isSubmitting}
-            className="px-5 py-2 rounded-xl text-xs font-bold bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-200 transition disabled:opacity-50">
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Saving..." : "Save"}
           </button>
         </div>

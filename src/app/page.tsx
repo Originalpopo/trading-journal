@@ -40,16 +40,18 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       val1 = chart.data.datasets[1].data[lastIdx];
     }
 
-    let offset0 = 8;
-    let offset1 = 8;
+    let yOffset0 = 0;
+    let yOffset1 = 0;
 
     if (pos0 && pos1) {
       const yDiff = Math.abs(pos0.y - pos1.y);
-      if (yDiff < 15) {
+      if (yDiff < 22) {
         if (pos0.y <= pos1.y) {
-          offset0 = 24;
+          yOffset0 = -12;
+          yOffset1 = 12;
         } else {
-          offset1 = 24;
+          yOffset0 = 12;
+          yOffset1 = -12;
         }
       }
     }
@@ -58,14 +60,14 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.save();
       ctx.beginPath();
       ctx.arc(pos0.x, pos0.y, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = '#f97316';
+      ctx.fillStyle = '#fb923c';
       ctx.fill();
 
-      ctx.fillStyle = '#f97316';
+      ctx.fillStyle = '#fb923c';
       ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(formatNumber(val0), pos0.x, pos0.y - offset0);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(formatNumber(val0), pos0.x + 12, pos0.y + yOffset0);
       ctx.restore();
     }
 
@@ -73,14 +75,14 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.save();
       ctx.beginPath();
       ctx.arc(pos1.x, pos1.y, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = '#5E5E5E';
+      ctx.fillStyle = '#1c1917';
       ctx.fill();
 
-      ctx.fillStyle = '#5E5E5E';
+      ctx.fillStyle = '#1c1917';
       ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(formatNumber(val1), pos1.x, pos1.y - offset1);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(formatNumber(val1), pos1.x + 12, pos1.y + yOffset1);
       ctx.restore();
     }
   }
@@ -239,10 +241,6 @@ export default function Dashboard() {
       });
     }
 
-    if (balanceData.length > 0 && balanceData[0] === 0 && runningBalance > 0) {
-      balanceData[0] = balanceData[1] || runningBalance;
-    }
-
     let activeDDValue = highestBalance - runningBalance;
     let activeDDPercent = highestBalance > 0 ? (activeDDValue / highestBalance) * 100 : 0;
 
@@ -268,9 +266,9 @@ export default function Dashboard() {
         {
           label: 'Equity (PnL)',
           data: data.equityData,
-          borderColor: '#f97316',
+          borderColor: '#fb923c',
           borderWidth: 3,
-          backgroundColor: 'rgba(249, 115, 22, 0.08)',
+          backgroundColor: 'rgba(251, 146, 60, 0.08)',
           fill: false,
           tension: 0.4,
           pointRadius: 0,
@@ -295,7 +293,7 @@ export default function Dashboard() {
     responsive: true,
     maintainAspectRatio: false,
     layout: {
-      padding: { right: 40, top: 35, bottom: 20 }
+      padding: { right: 80, top: 35, bottom: 20 }
     },
     plugins: {
       legend: { display: false },
@@ -310,7 +308,9 @@ export default function Dashboard() {
         type: 'linear' as const,
         display: true,
         position: 'left' as const,
-        grid: { color: '#f1f5f9' }
+        grid: { color: '#fafaf9', drawOnChartArea: true },
+        ticks: { display: false },
+        border: { display: false }
       },
       y1: {
         type: 'linear' as const,
@@ -328,7 +328,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-slate-500 font-semibold animate-pulse">Loading dashboard...</p>
+        <p className="text-stone-500 font-semibold animate-pulse">Loading dashboard...</p>
       </div>
     );
   }
@@ -337,27 +337,27 @@ export default function Dashboard() {
     <div className="space-y-8">
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-card p-6">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
-            <p className="text-3xl font-extrabold stat-value text-slate-900">
+          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
+            <p className="text-3xl font-extrabold stat-value text-stone-950">
               ${formatNumber(data.runningBalance)}
             </p>
           </div>
-          <div className="glass-card p-6">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
-            <p className="text-3xl font-extrabold stat-value text-orange-500">
+          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
+            <p className={`text-3xl font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
               ${formatNumber(data.net)}
             </p>
           </div>
-          <div className="glass-card p-6">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Win Rate</p>
-            <p className="text-3xl font-extrabold stat-value text-orange-500">
+          <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
+            <span className="text-3xl font-extrabold stat-value text-white">
               {formatNumber(data.winRate * 100)}%
-            </p>
+            </span>
           </div>
-          <div className="glass-card p-6 border-none text-white shadow-lg shadow-orange-100" style={{ background: '#f97316' }}>
-            <p className="text-orange-100 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
-            <p className="text-3xl font-extrabold stat-value text-white">
+          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
+            <p className="text-3xl font-extrabold stat-value text-stone-950">
               {data.totalFunded > 0 ? formatNumber((data.net / data.totalFunded) * 100) : '0.00'}%
             </p>
           </div>
@@ -365,7 +365,9 @@ export default function Dashboard() {
       </section>
 
       <div className="glass-card p-6 h-[460px] flex flex-col">
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Equity and Balance</h3>
+        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
+        </h3>
         <div className="flex-1 relative w-full h-full">
           <Line data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin]} />
         </div>
@@ -373,118 +375,118 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Statistics
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Statistics
           </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Total Trades</span>
-              <span className="font-black text-slate-800 text-2xl">{data.totalTrades}</span>
+              <span className="text-xs font-bold text-stone-400">Total Trades</span>
+              <span className="font-black text-stone-950 text-2xl">{data.totalTrades}</span>
             </div>
             <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="bg-slate-50 p-3 rounded-lg text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">TP</p>
-                <p className="text-sm font-black text-slate-800">{data.countTP}</p>
+              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
+                <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">TP</p>
+                <p className="text-sm font-black text-orange-400">{data.countTP}</p>
               </div>
-              <div className="bg-orange-50 p-3 rounded-lg text-center">
-                <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">BE</p>
-                <p className="text-sm font-black text-orange-600">{data.countBE}</p>
+              <div className="bg-stone-50 p-3 rounded-lg text-center border border-stone-200">
+                <p className="text-[9px] font-bold text-stone-400 uppercase mb-1">BE</p>
+                <p className="text-sm font-black text-stone-400">{data.countBE}</p>
               </div>
-              <div className="bg-red-50 p-3 rounded-lg text-center">
-                <p className="text-[9px] font-bold text-red-500 uppercase mb-1">SL</p>
-                <p className="text-sm font-black text-red-500">{data.countSL}</p>
+              <div className="bg-red-50 p-3 rounded-lg text-center border border-red-200">
+                <p className="text-[9px] font-bold text-red-900 uppercase mb-1">SL</p>
+                <p className="text-sm font-black text-red-900">{data.countSL}</p>
               </div>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <span className="text-xs font-bold text-slate-400">Total Deposit</span>
-              <span className="font-black text-red-500 text-sm">${formatNumber(data.totalDeposit)}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+              <span className="text-xs font-bold text-stone-400">Total Deposit</span>
+              <span className="font-black text-red-900 text-sm">${formatNumber(data.totalDeposit)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Total Withdraw</span>
-              <span className="font-black text-slate-700 text-sm">${formatNumber(data.totalWithdraw)}</span>
+              <span className="text-xs font-bold text-stone-400">Total Withdraw</span>
+              <span className="font-black text-orange-400 text-sm">${formatNumber(data.totalWithdraw)}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <span className="text-xs font-bold text-slate-400">Capital</span>
-              <span className="font-black text-orange-600 text-sm">${formatNumber(data.totalFunded)}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+              <span className="text-xs font-bold text-stone-400">Capital</span>
+              <span className="font-black text-stone-950 text-sm">${formatNumber(data.totalFunded)}</span>
             </div>
           </div>
         </div>
 
         <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Reward to Risk
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Reward to Risk
           </h3>
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-slate-400">Avg TP RR</span>
-              <span className="text-[12px] font-black text-slate-800">{formatNumber(data.avgTPRR)} R</span>
+              <span className="text-[11px] font-bold text-stone-400">Avg TP RR</span>
+              <span className="text-[12px] font-black text-orange-400">{formatNumber(data.avgTPRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-slate-400">Max TP RR</span>
-              <span className="text-[12px] font-black text-slate-800">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
+              <span className="text-[11px] font-bold text-stone-400">Max TP RR</span>
+              <span className="text-[12px] font-black text-orange-400">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <span className="text-[11px] font-bold text-slate-400">Avg SL RR</span>
-              <span className="text-[12px] font-black text-red-500">{formatNumber(data.avgSLRR)} R</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-slate-400">Max SL RR</span>
-              <span className="text-[12px] font-black text-red-500">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <span className="text-[11px] font-bold text-slate-400">Consecutive Loss (Max)</span>
-              <span className="text-[12px] font-black text-red-500">{data.maxStreakL}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+              <span className="text-[11px] font-bold text-stone-400">Avg SL RR</span>
+              <span className="text-[12px] font-black text-red-900">{formatNumber(data.avgSLRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-slate-400">Consecutive Win (Max)</span>
-              <span className="text-[12px] font-black text-slate-800">{data.maxStreakW}</span>
+              <span className="text-[11px] font-bold text-stone-400">Max SL RR</span>
+              <span className="text-[12px] font-black text-red-900">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+              <span className="text-[11px] font-bold text-stone-400">Consecutive Loss (Max)</span>
+              <span className="text-[12px] font-black text-red-900">{data.maxStreakL}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-bold text-stone-400">Consecutive Win (Max)</span>
+              <span className="text-[12px] font-black text-orange-400">{data.maxStreakW}</span>
             </div>
           </div>
         </div>
 
         <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Drawdown
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Drawdown
           </h3>
           <div className="space-y-4 pt-2">
             <div className="flex flex-col gap-3 mb-4">
-              <div className="p-3 bg-slate-50/70 rounded-xl flex flex-col items-center text-center border border-slate-200">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active DD</p>
-                <p className="text-2xl font-extrabold stat-value text-slate-800 mb-1">{formatNumber(data.activeDDPercent)}%</p>
-                <p className="text-[10px] font-bold text-slate-500">${formatNumber(data.activeDDValue)}</p>
+              <div className="p-3 bg-stone-50 rounded-xl flex flex-col items-center text-center border border-stone-200">
+                <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
+                <p className="text-2xl font-extrabold stat-value text-stone-950 mb-1">{formatNumber(data.activeDDPercent)}%</p>
+                <p className="text-[10px] font-bold text-stone-400">${formatNumber(data.activeDDValue)}</p>
               </div>
-              <div className="p-3 bg-red-50/70 rounded-xl flex flex-col items-center text-center border border-red-100">
-                <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Max DD</p>
-                <p className="text-2xl font-extrabold stat-value text-red-500 mb-1">{formatNumber(data.maxDDPercent)}%</p>
-                <p className="text-[10px] font-bold text-red-400">${formatNumber(data.maxDDValue)}</p>
+              <div className="p-3 bg-red-50 rounded-xl flex flex-col items-center text-center border border-red-200">
+                <p className="text-[9px] font-black text-red-900 uppercase tracking-widest mb-1">Max DD</p>
+                <p className="text-2xl font-extrabold stat-value text-red-900 mb-1">{formatNumber(data.maxDDPercent)}%</p>
+                <p className="text-[10px] font-bold text-red-900">${formatNumber(data.maxDDValue)}</p>
               </div>
             </div>
           </div>
         </div>
 
         <div className="glass-card p-6 flex flex-col space-y-5 h-full">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Performance
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Performance
           </h3>
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Profit Factor</span>
-              <span className="font-black text-slate-800">{(data.gLoss === 0 ? data.gProfit : formatNumber(data.gProfit / data.gLoss))}</span>
+              <span className="text-xs font-bold text-stone-400">Profit Factor</span>
+              <span className="font-black text-stone-950">{(data.gLoss === 0 ? formatNumber(data.gProfit) : formatNumber(data.gProfit / data.gLoss))}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Expected Payoff</span>
-              <span className="font-black text-slate-800">${data.totalTrades > 0 ? formatNumber((data.net / data.totalTrades)) : '0.00'}</span>
+              <span className="text-xs font-bold text-stone-400">Expected Payoff</span>
+              <span className="font-black text-stone-950">${data.totalTrades > 0 ? formatNumber((data.net / data.totalTrades)) : '0.00'}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Sharpe Ratio</span>
-              <span className="font-black text-slate-800">{data.stdDev !== 0 ? formatNumber((data.net / data.totalTrades) / data.stdDev) : '0.00'}</span>
+              <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>
+              <span className="font-black text-stone-950">{data.stdDev !== 0 ? formatNumber((data.net / data.totalTrades) / data.stdDev) : '0.00'}</span>
             </div>
           </div>
-          <div className="pt-4 border-t border-slate-200 flex-1">
+          <div className="pt-4 border-t border-stone-200 flex-1">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net RR</span>
-              <span className={`font-black text-xl ${data.netRR >= 0 ? 'text-slate-800' : 'text-red-500'}`}>
-                {formatNumber(data.netRR)} <span className="text-[10px] font-bold text-slate-400">R</span>
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Net RR</span>
+              <span className="font-black text-xl text-stone-950">
+                {formatNumber(data.netRR)} <span className="text-[10px] font-bold text-stone-950">R</span>
               </span>
             </div>
           </div>

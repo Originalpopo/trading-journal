@@ -110,7 +110,7 @@ export default function CalendarPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-slate-500 font-semibold animate-pulse">Loading calendar...</p>
+        <p className="text-stone-500 font-semibold animate-pulse">Loading calendar...</p>
       </div>
     );
   }
@@ -121,43 +121,43 @@ export default function CalendarPage() {
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
           <div className="flex items-center gap-2 md:gap-4 flex-wrap">
             <div className="flex items-center">
-              <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
+              <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
                 <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
               </button>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 min-w-[180px] md:min-w-[240px] text-center tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-stone-950 min-w-[180px] md:min-w-[240px] text-center tracking-tight">
                 {data.monthLabel}
               </h2>
-              <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-slate-100 rounded-full text-slate-400 transition">
+              <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
                 <ChevronRight className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={goToToday} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
+              <button onClick={goToToday} className="px-4 py-2 bg-orange-400 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
                 Today
               </button>
-              <select value={data.year} onChange={jumpToYear} className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
+              <select value={data.year} onChange={jumpToYear} className="bg-stone-50 border border-stone-200 text-stone-950 text-xs font-bold rounded-lg px-3 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
                 {data.availableYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
-            <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
-              <span className="text-[9px] font-black text-slate-400 uppercase block tracking-widest mb-0.5">Trades</span>
-              <span className="text-lg font-black text-slate-900">{data.mTotalTradesAll}</span>
+            <div className="bg-stone-50 px-4 py-2 rounded-xl border border-stone-200 shadow-sm text-center shrink-0 flex-1 md:flex-none">
+              <span className="text-[9px] font-black text-stone-400 uppercase block tracking-widest mb-0.5">Trades</span>
+              <span className="text-lg font-black text-stone-950">{data.mTotalTradesAll}</span>
             </div>
-            <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
-              <span className="text-[9px] font-black text-slate-400 uppercase block tracking-widest mb-0.5">P&L</span>
-              <span className={`text-lg font-black ${data.mNet >= 0 ? 'text-slate-900' : 'text-red-500'}`}>
-                {data.mNet >= 0 ? '$' : '-$'}{formatNumber(Math.abs(data.mNet))}
+            <div className="bg-stone-50 px-4 py-2 rounded-xl border border-stone-200 shadow-sm text-center shrink-0 flex-1 md:flex-none">
+              <span className="text-[9px] font-black text-stone-400 uppercase block tracking-widest mb-0.5">P&L</span>
+              <span className={`text-lg font-black ${data.mNet > 0 ? 'text-orange-400' : data.mNet < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                {data.mNet < 0 ? '-' : ''}${formatNumber(Math.abs(data.mNet))}
               </span>
             </div>
-            <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shadow-sm text-center shrink-0 flex-1 md:flex-none">
-              <span className="text-[9px] font-black text-slate-400 uppercase block tracking-widest mb-0.5">RR</span>
-              <span className={`text-lg font-black ${data.mRR >= 0 ? 'text-slate-700' : 'text-red-500'}`}>
+            <div className="bg-stone-50 px-4 py-2 rounded-xl border border-stone-200 shadow-sm text-center shrink-0 flex-1 md:flex-none">
+              <span className="text-[9px] font-black text-stone-400 uppercase block tracking-widest mb-0.5">RR</span>
+              <span className={`text-lg font-black ${data.mRR > 0 ? 'text-orange-400' : data.mRR < 0 ? 'text-red-900' : 'text-stone-400'}`}>
                 {data.mRR > 0 ? '+' : ''}{formatNumber(data.mRR)}R
               </span>
             </div>
-            <div className="bg-orange-500 px-4 py-2 rounded-xl border border-orange-400 shadow-lg shadow-orange-500/20 text-center shrink-0 flex-1 md:flex-none">
+            <div className="bg-orange-400 px-4 py-2 rounded-xl border border-orange-300 shadow-lg shadow-orange-400/20 text-center shrink-0 flex-1 md:flex-none">
               <span className="text-[9px] font-bold text-white/90 uppercase block tracking-widest mb-0.5">Win Rate</span>
               <span className="text-lg font-black text-white">{formatNumber(data.winRate)}%</span>
             </div>
@@ -166,39 +166,39 @@ export default function CalendarPage() {
 
         <div className="calendar-grid">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(dayName => (
-            <div key={dayName} className="bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-r border-slate-200">
+            <div key={dayName} className="bg-stone-50 p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest border-b border-r border-stone-200">
               {dayName}
             </div>
           ))}
           {data.daysArray.map((cell) => {
             if (cell.type === 'empty') {
-              return <div key={cell.id} className="bg-slate-50/50 min-h-[110px] border-b border-r border-slate-100"></div>;
+              return <div key={cell.id} className="bg-stone-50/50 min-h-[110px] border-b border-r border-stone-200"></div>;
             }
 
             const { day, isToday, stats } = cell;
-            let bgColor = "bg-white";
+            let bgBorder = "bg-white border-stone-200";
             if (stats) {
-              bgColor = stats.pnl >= 0 ? "bg-slate-50/80" : "bg-red-50/40";
+              bgBorder = stats.pnl > 0 ? "bg-orange-50 border-orange-200" : (stats.pnl < 0 ? "bg-red-50 border-red-200" : "bg-stone-50 border-stone-200");
             }
 
             return (
-              <div key={cell.id} className={`${bgColor} min-h-[110px] p-3 flex flex-col border-b border-r border-slate-100 hover:bg-slate-100 transition`}>
+              <div key={cell.id} className={`${bgBorder} min-h-[110px] p-3 flex flex-col border-b border-r hover:bg-stone-100/50 transition`}>
                 {isToday ? (
-                  <span className="text-xs font-bold bg-orange-500 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">{day}</span>
+                  <span className="text-xs font-bold bg-orange-400 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">{day}</span>
                 ) : (
-                  <span className="text-xs font-bold text-slate-400">{day}</span>
+                  <span className="text-xs font-bold text-stone-400">{day}</span>
                 )}
                 
                 {stats && (
                   <div className="mt-auto">
-                    <div className={`text-base font-black ${stats.pnl >= 0 ? 'text-slate-900' : 'text-red-500'}`}>
-                      {stats.pnl >= 0 ? '$' : '-$'}{formatNumber(Math.abs(stats.pnl))}
+                    <div className={`text-base font-black ${stats.pnl > 0 ? 'text-orange-400' : stats.pnl < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                      {stats.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(stats.pnl))}
                     </div>
                     <div className="flex justify-between items-center w-full mt-2">
-                      <div className={`text-[10px] font-bold ${stats.rr >= 0 ? 'text-slate-600' : 'text-red-500'} tracking-tight`}>
+                      <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
                         {stats.rr > 0 ? '+' : ''}{formatNumber(stats.rr)}R
                       </div>
-                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
                         Trades : {stats.count}
                       </div>
                     </div>

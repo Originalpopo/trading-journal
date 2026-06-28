@@ -83,6 +83,10 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
         }
       } catch(e) {}
 
+      if (!duration || duration <= 0) {
+        duration = 60;
+      }
+
       const resType = totalProfit === 0 ? 'BE' : (totalProfit > 0 ? 'TP' : 'SL');
 
       let side = String(entryRow ? entryRow['Side'] : '').toUpperCase();

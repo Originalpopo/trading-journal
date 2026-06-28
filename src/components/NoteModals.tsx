@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useJournalStore, Note } from "@/store/useJournalStore";
+import { Trash2, Edit2 } from "lucide-react";
 
 const ICONS = [
   { id: "note", svg: <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /> },
@@ -83,29 +84,29 @@ export function NoteFormModal({ isOpen, onClose, noteToEdit }: NoteFormModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl relative">
-        <h3 className="text-xl font-extrabold text-slate-800 mb-6 tracking-tight">
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+      <div className="bg-white border-0 bg-clip-padding rounded-2xl w-full max-w-lg p-6 shadow-xl relative" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-xl font-extrabold text-stone-950 mb-6 tracking-tight">
           {noteToEdit ? "Edit Note" : "Add Note"}
         </h3>
-        <div className="space-y-4">
+        <div className="space-y-4 border-0 border-transparent" style={{ outline: 'none' }}>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Title</label>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Title</label>
             <input 
               type="text" 
               value={title} 
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-orange-500 transition" 
+              className="w-full bg-stone-50 border border-stone-200 rounded-lg px-4 py-2 text-sm font-semibold text-stone-950 focus:outline-none focus:border-orange-400 transition" 
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Icon</label>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Icon</label>
             <div className="flex flex-wrap gap-2">
               {ICONS.map((i) => (
                 <button 
                   key={i.id}
                   onClick={() => setIcon(i.id)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition ${icon === i.id ? 'text-orange-500 bg-orange-50 border-2 border-orange-500' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 border-2 border-transparent'}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition ${icon === i.id ? 'text-orange-400 bg-orange-50 border-2 border-orange-400' : 'text-stone-400 bg-stone-50 hover:bg-stone-100 border-2 border-transparent'}`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">{i.svg}</svg>
                 </button>
@@ -113,17 +114,17 @@ export function NoteFormModal({ isOpen, onClose, noteToEdit }: NoteFormModalProp
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
+            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Notes</label>
             <textarea 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
               rows={8} 
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-orange-500 transition resize-y"
+              className="w-full bg-stone-50 border border-stone-200 rounded-lg px-4 py-2 text-sm font-semibold text-stone-950 focus:outline-none focus:border-orange-400 transition resize-y"
             />
           </div>
           <div className="flex gap-3 pt-4">
-            <button onClick={onClose} disabled={isSubmitting} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition">Cancel</button>
-            <button onClick={handleSave} disabled={isSubmitting} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-orange-200 disabled:opacity-50">
+            <button onClick={onClose} disabled={isSubmitting} className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold py-3 rounded-xl transition">Cancel</button>
+            <button onClick={handleSave} disabled={isSubmitting} className="flex-1 bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-orange-200 disabled:opacity-50">
               {isSubmitting ? "Saving..." : "Save"}
             </button>
           </div>
@@ -145,33 +146,39 @@ export function ReadNoteModal({ isOpen, onClose, note, onEdit, onDelete }: ReadN
   if (!isOpen || !note) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 shadow-xl relative">
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+      <div className="bg-white border-0 bg-clip-padding rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 shadow-xl relative" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4 shrink-0">
           <div>
-            <h3 className="text-xl font-extrabold text-slate-800 tracking-tight leading-tight">{note.title || 'Untitled'}</h3>
-            <div className="text-sm font-semibold text-slate-400 mt-1">
+            <h3 className="text-xl font-extrabold text-stone-950 tracking-tight leading-tight">{note.title || 'Untitled'}</h3>
+            <div className="text-sm font-semibold text-stone-400 mt-1">
               {note.date ? new Date(note.date).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-lg transition shrink-0 ml-4">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 bg-stone-50 hover:bg-stone-100 p-2 rounded-lg transition shrink-0 ml-4">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] mb-4 pr-2">
+        <div className="text-stone-950 text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] mb-4 pr-2 border-0 border-transparent" style={{ outline: 'none' }}>
           {note.content}
         </div>
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
-          <button onClick={() => { onClose(); onEdit(note); }} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Edit
-          </button>
-          <button onClick={() => {
-            if (confirm("Are you sure you want to delete this note?")) {
-              onDelete(note.id);
-              onClose();
-            }
-          }} className="px-5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl transition flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Delete
+        <div className="flex items-center justify-between pt-4 mt-6 border-t border-stone-100 shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => {
+              if (confirm("Are you sure you want to delete this note?")) {
+                onDelete(note.id);
+                onClose();
+              }
+            }} className="p-2.5 bg-stone-100 hover:bg-red-50 text-stone-600 hover:text-red-900 rounded-xl transition" title="Delete">
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button onClick={() => { onClose(); onEdit(note); }} className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
+          </div>
+          <button onClick={onClose} className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-6 py-2.5 rounded-xl transition shadow-md shadow-stone-900/20">
+            Close
           </button>
         </div>
       </div>

@@ -49,12 +49,12 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
   let isBE = false;
   let rawRisk = 0;
-  let badge = 'bg-slate-100 text-slate-900 border-slate-300';
+  let badge = 'bg-stone-100 text-stone-900 border-stone-300';
   let badgeText = '';
   let durationDisplay = "1s";
 
   if (isFunding) {
-    badge = profit > 0 ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
+    badge = profit > 0 ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200';
     badgeText = profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
   } else {
     rawRisk = parseFloat((t.risk || 0).toString());
@@ -64,10 +64,10 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
     } else {
       isBE = (t.resultType === 'BE' || t.profit === 0);
     }
-    badge = isBE ? 'bg-orange-50 text-orange-500 border-orange-200' : (t.profit > 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-red-50 text-red-600 border-red-200');
+    badge = isBE ? 'bg-stone-50 text-stone-400 border-stone-200' : (t.profit > 0 ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200');
     badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
 
-    let sec = (t.duration && t.duration > 0) ? t.duration : 1;
+    let sec = (!t.duration || t.duration <= 0) ? 60 : t.duration;
     const d = Math.floor(sec / (24 * 3600)); sec %= (24 * 3600);
     const h = Math.floor(sec / 3600); sec %= 3600;
     const m = Math.floor(sec / 60); sec %= 60;
@@ -79,7 +79,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
       {/* Image Lightbox Pop-up */}
       {selectedIndex !== null && trade.images && trade.images[selectedIndex] && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedIndex(null)}>
@@ -93,7 +93,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </span>
               <button 
                 onClick={() => setSelectedIndex(null)} 
-                className="text-white hover:text-slate-200 bg-white/10 hover:bg-white/20 p-2 rounded-full transition backdrop-blur-sm">
+                className="text-white hover:text-stone-200 bg-white/10 hover:bg-white/20 p-2 rounded-full transition backdrop-blur-sm">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -117,34 +117,34 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
         </div>
       )}
 
-      <div className="bg-white rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         {/* Top Header */}
         <div className="flex items-center justify-between pb-4 mb-6">
           <div className="flex items-center gap-3">
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{symbol}</h3>
+            <h3 className="text-2xl font-black text-stone-950 tracking-tight">{symbol}</h3>
             {!isFunding && t.side && (
-              <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${t.side === 'BUY' ? 'bg-slate-100 text-slate-800' : 'bg-red-50 text-red-700'}`}>
+              <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${t.side === 'BUY' ? 'bg-stone-100 text-stone-950' : 'bg-stone-200 text-stone-950'}`}>
                 {t.side}
               </span>
             )}
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="space-y-6 overflow-y-auto pr-2 flex-1">
+        <div className="space-y-6 overflow-y-auto pr-2 flex-1 border-0 border-transparent" style={{ outline: 'none' }}>
           {/* Main Metrics Grid (2 rows, 3 columns) */}
           {isFunding ? (
-            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl text-center">
+            <div className="grid grid-cols-2 gap-4 bg-stone-50 p-5 rounded-2xl text-center">
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Time</p>
-                <p className="text-xs font-bold text-slate-700">{shortTime}</p>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Time</p>
+                <p className="text-xs font-bold text-stone-950">{shortTime}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net P&L</p>
-                <p className={`text-xs font-bold ${profit > 0 ? 'text-green-600' : profit < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Net P&L</p>
+                <p className={`text-xs font-bold ${profit > 0 ? 'text-orange-400' : profit < 0 ? 'text-red-900' : 'text-stone-400'}`}>
                   {profit < 0 ? '-' : ''}${format2Decimals(Math.abs(profit))}
                 </p>
               </div>
@@ -152,53 +152,53 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* กล่องซ้าย (กรอบสีเทา): Time, Duration, Risk (แถวบน) / TF, Plan, RR (แถวล่าง) */}
-              <div className="md:col-span-2 bg-slate-50 p-6 rounded-2xl flex flex-col justify-between gap-6 border border-slate-100">
+              <div className="md:col-span-2 bg-stone-50 p-6 rounded-2xl flex flex-col justify-between gap-6 border border-stone-100">
                 {/* Row 1 */}
                 <div className="grid grid-cols-3 gap-6 text-center">
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Time</p>
-                    <p className="text-xs font-bold text-slate-700">{shortTime}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Time</p>
+                    <p className="text-xs font-bold text-stone-950">{shortTime}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Duration</p>
-                    <p className="text-xs font-bold text-slate-700">{durationDisplay}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Duration</p>
+                    <p className="text-xs font-bold text-stone-950">{durationDisplay}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Risk</p>
-                    <p className="text-xs font-bold text-slate-700">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Risk</p>
+                    <p className="text-xs font-bold text-stone-950">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</p>
                   </div>
                 </div>
 
                 {/* Row 2 (มีเส้นคั่นกลาง) */}
-                <div className="grid grid-cols-3 gap-6 text-center pt-6 border-t border-slate-200/60">
+                <div className="grid grid-cols-3 gap-6 text-center pt-6 border-t border-stone-200/60">
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Timeframe</p>
-                    <p className="text-xs font-bold text-slate-700">{(t as any).tf && (t as any).tf !== 'none' ? (t as any).tf : '-'}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Timeframe</p>
+                    <p className="text-xs font-bold text-stone-950">{(t as any).tf && (t as any).tf !== 'none' ? (t as any).tf : '-'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Plan</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Plan</p>
                     {t.isOnPlan === false ? (
-                      <p className="text-xs font-extrabold text-red-600 tracking-tight">Off Plan</p>
+                      <p className="text-xs font-extrabold text-red-800 tracking-tight">Off Plan</p>
                     ) : (
-                      <p className="text-xs font-extrabold text-slate-900 tracking-tight">On Plan</p>
+                      <p className="text-xs font-extrabold text-stone-950 tracking-tight">On Plan</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">RR</p>
-                    <p className="text-xs font-bold text-slate-700">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">RR</p>
+                    <p className="text-xs font-bold text-stone-950">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</p>
                   </div>
                 </div>
               </div>
 
-              {/* กล่องขวา (กรอบสีแดง): Result (TP, SL, BE) ด้านบน และ ตัวเลขกำไร/ขาดทุน ด้านล่าง */}
-              <div className={`md:col-span-1 ${badgeText === 'SL' ? 'bg-red-50 border border-red-100' : (badgeText === 'BE' ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50 border border-slate-100')} p-6 rounded-2xl flex flex-col justify-center items-center gap-3.5 text-center`}>
+              {/* กล่องขวา: Result (TP, SL, BE) ด้านบน และ ตัวเลขกำไร/ขาดทุน ด้านล่าง */}
+              <div className={`md:col-span-1 ${badgeText === 'SL' ? 'bg-red-50 border border-red-200' : (badgeText === 'BE' ? 'bg-stone-50 border border-stone-200' : 'bg-orange-50 border border-orange-200')} p-6 rounded-2xl flex flex-col justify-center items-center gap-3.5 text-center`}>
                 <div className="flex items-center justify-center">
                   <span className={`px-5 py-1.5 border rounded-xl text-xs font-black uppercase tracking-widest ${badge}`}>
                     {badgeText}
                   </span>
                 </div>
                 <div className="flex items-center justify-center">
-                  <p className={`text-2xl font-black tracking-tight ${profit > 0 ? 'text-slate-900' : profit < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                  <p className={`text-2xl font-black tracking-tight ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
                     {profit < 0 ? '-' : ''}${format2Decimals(Math.abs(profit))}
                   </p>
                 </div>
@@ -208,20 +208,20 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
           {/* Notes / Strategy */}
           <div>
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">Notes</h4>
-            <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 text-slate-700 text-xs leading-relaxed font-medium min-h-[80px] whitespace-pre-wrap">
-              {notes || <span className="text-slate-400 italic">No notes provided for this entry.</span>}
+            <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 px-2">Notes</h4>
+            <div className="bg-stone-50/70 border border-stone-100 rounded-2xl p-4 text-stone-950 text-xs leading-relaxed font-medium min-h-[80px] whitespace-pre-wrap">
+              {notes || <span className="text-stone-400 italic">No notes provided for this entry.</span>}
             </div>
           </div>
 
           {/* Images Section */}
           <div>
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-orange-500" />
+            <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5 text-orange-400" />
               Attached Images ({images.length})
             </h4>
             {images.length === 0 ? (
-              <div className="border border-dashed border-slate-200 rounded-2xl p-6 text-center text-xs text-slate-400 font-medium">
+              <div className="border border-dashed border-stone-200 rounded-2xl p-6 text-center text-xs text-stone-400 font-medium">
                 No images attached to this trade. You can add Google Drive images by clicking Edit below.
               </div>
             ) : (
@@ -229,8 +229,8 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 {images.map((url, idx) => {
                   const previewUrl = getDriveDirectUrl(url);
                   return (
-                    <div key={idx} className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm hover:shadow-md hover:border-slate-400 transition-all duration-200 cursor-pointer" onClick={() => setSelectedIndex(idx)}>
-                      <div className="block w-full h-32 relative pointer-events-none bg-slate-100 overflow-hidden">
+                    <div key={idx} className="group relative rounded-2xl overflow-hidden border border-stone-200 bg-stone-50 shadow-sm hover:shadow-md hover:border-stone-400 transition-all duration-200 cursor-pointer" onClick={() => setSelectedIndex(idx)}>
+                      <div className="block w-full h-32 relative pointer-events-none bg-stone-100 overflow-hidden">
                         <iframe 
                           src={previewUrl} 
                           title={`Trade attachment ${idx + 1}`} 
@@ -251,19 +251,19 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             <button 
               onClick={() => onDelete(trade.id, !!isFunding)}
               title="Delete Trade"
-              className="flex items-center justify-center p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition">
+              className="flex items-center justify-center p-2.5 rounded-xl bg-stone-100 text-stone-600 hover:bg-red-50 hover:text-red-900 transition">
               <Trash2 className="w-4 h-4" />
             </button>
             <button 
               onClick={() => onEdit(trade)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-950 hover:bg-stone-200 transition">
               <Edit2 className="w-3.5 h-3.5" />
               Edit
             </button>
           </div>
           <button 
             onClick={onClose}
-            className="px-6 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition shadow-md">
+            className="px-6 py-2 rounded-xl text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 transition shadow-md">
             Close
           </button>
         </div>

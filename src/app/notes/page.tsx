@@ -3,6 +3,7 @@
 import { useJournalStore, Note } from "@/store/useJournalStore";
 import { useState, useEffect, useRef } from "react";
 import { NoteFormModal, ReadNoteModal, getNoteIconSvg } from "@/components/NoteModals";
+import { Plus } from "lucide-react";
 
 function formatNoteDate(dateStr: string) {
   if (!dateStr) return '';
@@ -93,7 +94,7 @@ export default function NotesPage() {
     const pages = [];
     pages.push(
       <button key="prev" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-        className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 disabled:opacity-50">
+        className="px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
         Prev
       </button>
     );
@@ -102,18 +103,18 @@ export default function NotesPage() {
       if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
         pages.push(
           <button key={i} onClick={() => handlePageChange(i)}
-            className={`px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-orange-500 text-white border-orange-500' : 'text-slate-600 hover:bg-slate-50'}`}>
+            className={`px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-orange-400 text-white border-orange-400' : 'text-stone-600 hover:bg-stone-50'}`}>
             {i}
           </button>
         );
       } else if (i === currentPage - 2 || i === currentPage + 2) {
-        pages.push(<span key={`dots-${i}`} className="px-2 text-slate-300">...</span>);
+        pages.push(<span key={`dots-${i}`} className="px-2 text-stone-300">...</span>);
       }
     }
 
     pages.push(
       <button key="next" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-        className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 disabled:opacity-50">
+        className="px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
         Next
       </button>
     );
@@ -124,33 +125,37 @@ export default function NotesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[500px]">
-        <p className="text-slate-500 font-semibold animate-pulse">Loading notes...</p>
+        <p className="text-stone-500 font-semibold animate-pulse">Loading notes...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6 flex flex-col min-h-[500px] h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm shrink-0">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Notes</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+        <div>
+          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Notes</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
           <button 
-            onClick={() => { setNoteToEdit(null); setIsFormModalOpen(true); }} 
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-xl shadow-sm transition text-sm"
-          >
+            onClick={() => { setNoteToEdit(null); setIsFormModalOpen(true); }}
+            className="bg-orange-400 hover:bg-orange-500 text-white border border-transparent px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32">
+            <Plus className="w-3.5 h-3.5" />
             Add Note
           </button>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {renderPagination()}
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-4 overflow-hidden flex-1 flex flex-col">
+        {totalPages > 1 && (
+          <div className="flex justify-end mb-4 border-b border-stone-100 pb-4 shrink-0">
+            {renderPagination()}
+          </div>
+        )}
         <div ref={containerRef} className="flex-1 overflow-auto">
-          <div className="flex flex-col divide-y divide-slate-100">
+          <div className="flex flex-col divide-y divide-stone-100">
           {notes.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 font-semibold">
+            <div className="py-8 text-center text-stone-400 font-semibold">
               No notes found. Click "Add Note" to create one.
             </div>
           ) : (
@@ -160,18 +165,18 @@ export default function NotesPage() {
               return (
                 <div 
                   key={note.id} 
-                  className="py-4 px-2 hover:bg-slate-50 transition cursor-pointer flex gap-4 items-start" 
+                  className="py-4 px-2 hover:bg-stone-50 transition cursor-pointer flex gap-4 items-start" 
                   onClick={() => { setNoteToRead(note); setIsReadModalOpen(true); }}
                 >
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-400 mt-1">
+                  <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center shrink-0 text-stone-400 mt-1">
                     {getNoteIconSvg(note.icon || 'note')}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-1">
-                      <h4 className="text-sm font-bold text-slate-900 truncate pr-4">{safeTitle}</h4>
-                      <span className="text-xs font-semibold text-slate-400 shrink-0">{formatNoteDate(note.date)}</span>
+                      <h4 className="text-sm font-bold text-stone-900 truncate pr-4">{safeTitle}</h4>
+                      <span className="text-xs font-semibold text-stone-400 shrink-0">{formatNoteDate(note.date)}</span>
                     </div>
-                    <p className="text-sm text-slate-500 truncate">{truncateThaiText(safeContent, 100)}</p>
+                    <p className="text-sm text-stone-500 truncate">{truncateThaiText(safeContent, 100)}</p>
                   </div>
                 </div>
               );
