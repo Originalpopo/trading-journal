@@ -893,13 +893,13 @@ export default function PerformancePage() {
             <thead>
               <tr className="text-stone-400 bg-stone-100">
                 <th className="py-2 px-4 rounded-tl-xl"></th>
-                <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center">Buy</th>
+                <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
                 <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
-                <th className="py-2 px-4 rounded-tr-xl"></th>
+                <th className="py-2 px-4 rounded-tr-xl border-l border-stone-200"></th>
               </tr>
               <tr className="text-stone-400 bg-stone-100">
                 <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">Symbol</th>
-                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
@@ -907,7 +907,7 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-                <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle">Net P&L</th>
+                <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle border-l border-stone-200">Net P&L</th>
               </tr>
             </thead>
             <tbody className="text-[12px]">
@@ -922,7 +922,7 @@ export default function PerformancePage() {
                 return (
                   <tr key={sym} className="hover:bg-stone-50 transition duration-150">
                     <td className="py-3 px-4 font-extrabold text-stone-950 text-[11px] text-center">{sym}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-stone-950">{b.trades}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-950 border-l border-stone-200">{b.trades}</td>
                     <td className="py-3 px-4 text-center font-bold text-stone-950">{bWR}</td>
                     <td className={`py-3 px-4 text-center font-bold ${b.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{bRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
@@ -930,7 +930,7 @@ export default function PerformancePage() {
                     <td className="py-3 px-4 text-center font-bold text-stone-950">{sWR}</td>
                     <td className={`py-3 px-4 text-center font-bold ${s.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{sRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
-                    <td className={`py-3 px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
+                    <td className={`py-3 px-4 text-center font-black border-l border-stone-200 ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                   </tr>
                 );
               })}
@@ -948,13 +948,13 @@ export default function PerformancePage() {
             <thead>
               <tr className="text-stone-400 bg-stone-100">
                 <th className="py-2 px-4 rounded-tl-xl"></th>
-                <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center">Buy</th>
+                <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
                 <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
-                <th className="py-2 px-4 rounded-tr-xl"></th>
+                <th className="py-2 px-4 rounded-tr-xl border-l border-stone-200"></th>
               </tr>
               <tr className="text-stone-400 bg-stone-100">
                 <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">Timeframe</th>
-                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
@@ -962,7 +962,7 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-                <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle">Net P&L</th>
+                <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle border-l border-stone-200">Net P&L</th>
               </tr>
             </thead>
             <tbody className="text-[12px]">
@@ -977,7 +977,7 @@ export default function PerformancePage() {
                 return (
                   <tr key={tf} className="hover:bg-stone-50 transition duration-150">
                     <td className="py-3 px-4 font-extrabold text-stone-950 text-[11px] text-center">{tf}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-stone-950">{b.trades}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-950 border-l border-stone-200">{b.trades}</td>
                     <td className="py-3 px-4 text-center font-bold text-stone-950">{bWR}</td>
                     <td className={`py-3 px-4 text-center font-bold ${b.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{bRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
@@ -985,7 +985,7 @@ export default function PerformancePage() {
                     <td className="py-3 px-4 text-center font-bold text-stone-950">{sWR}</td>
                     <td className={`py-3 px-4 text-center font-bold ${s.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{sRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
-                    <td className={`py-3 px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
+                    <td className={`py-3 px-4 text-center font-black border-l border-stone-200 ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                   </tr>
                 );
               })}
