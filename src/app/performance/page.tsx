@@ -722,19 +722,19 @@ export default function PerformancePage() {
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Discipline</span>
             </div>
             <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden flex mt-2">
-              <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
-              <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
+              <div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
+              <div className="h-full bg-stone-200 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
             </div>
             <div className="flex justify-between text-[10px] font-bold mt-3">
               <div className="flex flex-col gap-1">
-                <span className="text-orange-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400"></span><span>{data.onPlanWR}%</span></span>
-                <span className="text-orange-400">On Plan</span>
-                <span className="text-orange-400">{formatCurrency(data.onPlanPnL)}</span>
+                <span className="text-stone-950 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-stone-950"></span><span>{data.onPlanWR}%</span></span>
+                <span className="text-stone-950">On Plan</span>
+                <span className="text-stone-950">{formatCurrency(data.onPlanPnL)}</span>
               </div>
               <div className="flex flex-col gap-1 items-end text-right">
-                <span className="text-red-900 flex items-center gap-1 justify-end"><span className="w-2 h-2 rounded-full bg-red-900"></span><span>{data.offPlanWR}%</span></span>
-                <span className="text-red-900">Off Plan</span>
-                <span className="text-red-900">{formatCurrency(data.offPlanPnL)}</span>
+                <span className="text-stone-400 flex items-center gap-1 justify-end"><span className="w-2 h-2 rounded-full bg-stone-200"></span><span>{data.offPlanWR}%</span></span>
+                <span className="text-stone-400">Off Plan</span>
+                <span className="text-stone-400">{formatCurrency(data.offPlanPnL)}</span>
               </div>
             </div>
           </div>
@@ -768,7 +768,7 @@ export default function PerformancePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-xs space-y-2">
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Averages & Time</div>
             <div className="flex justify-between"><span className="text-stone-500">Avg Win</span><span className="font-bold text-orange-400">{formatCurrency(data.avgWin)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Avg Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.avgLoss)}</span></div>
@@ -776,14 +776,14 @@ export default function PerformancePage() {
             <div className="flex justify-between pt-1"><span className="text-stone-500">Hold (Win)</span><span className="font-bold text-stone-950">{data.holdWin}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Hold (Loss)</span><span className="font-bold text-stone-950">{data.holdLoss}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-xs space-y-2">
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Totals & Extremes</div>
             <div className="flex justify-between"><span className="text-stone-500">Gross Profit</span><span className="font-bold text-orange-400">{formatCurrency(data.grossProfit)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Gross Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.grossLoss)}</span></div>
             <div className="flex justify-between pt-1"><span className="text-stone-500">Largest Win</span><span className="font-bold text-orange-400">{formatCurrency(data.largestProfit)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Largest Loss</span><span className="font-bold text-red-900">{formatCurrency(data.largestLoss)}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-xs space-y-2">
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Risk & Drawdowns</div>
             <div className="flex justify-between"><span className="text-stone-500">Absolute DD</span><span className="font-bold text-red-900">{formatCurrency(data.absoluteDD)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Maximal DD</span><span className="font-bold text-red-900">{formatCurrency(data.maxDrawdownAmt)}</span></div>
@@ -791,7 +791,7 @@ export default function PerformancePage() {
             <div className="flex justify-between pt-1"><span className="text-stone-500">Recovery</span><span className="font-bold text-stone-950">{formatNumber(data.recoveryFactor)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Sharpe Ratio</span><span className="font-bold text-stone-950">{formatNumber(data.sharpeRatio)}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-xs space-y-2">
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Streaks</div>
             <div className="flex justify-between"><span className="text-stone-500">Max Cons Win</span><span className="font-bold text-orange-400">{data.countAtMaxWinAmt} ({formatCurrency(data.maxConsWinAmt)})</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Max Cons Loss</span><span className="font-bold text-red-900">{data.countAtMaxLossAmt} ({formatCurrency(-data.maxConsLossAmt)})</span></div>
@@ -937,13 +937,13 @@ export default function PerformancePage() {
                 return (
                   <tr key={sym} className="hover:bg-stone-50 transition duration-150">
                     <td className="py-3 px-4 font-extrabold text-stone-950 text-[11px] text-center">{sym}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-stone-950 border-l border-stone-200">{b.trades}</td>
-                    <td className="py-3 px-4 text-center font-bold text-stone-950">{bWR}</td>
-                    <td className={`py-3 px-4 text-center font-bold ${b.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{bRR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{b.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{bWR}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{bRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-stone-950 border-l border-stone-200">{s.trades}</td>
-                    <td className="py-3 px-4 text-center font-bold text-stone-950">{sWR}</td>
-                    <td className={`py-3 px-4 text-center font-bold ${s.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{sRR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{s.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{sWR}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{sRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
                     <td className={`py-3 px-4 text-center font-black border-l border-stone-200 ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                   </tr>
@@ -992,13 +992,13 @@ export default function PerformancePage() {
                 return (
                   <tr key={tf} className="hover:bg-stone-50 transition duration-150">
                     <td className="py-3 px-4 font-extrabold text-stone-950 text-[11px] text-center">{tf}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-stone-950 border-l border-stone-200">{b.trades}</td>
-                    <td className="py-3 px-4 text-center font-bold text-stone-950">{bWR}</td>
-                    <td className={`py-3 px-4 text-center font-bold ${b.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{bRR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{b.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{bWR}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{bRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-stone-950 border-l border-stone-200">{s.trades}</td>
-                    <td className="py-3 px-4 text-center font-bold text-stone-950">{sWR}</td>
-                    <td className={`py-3 px-4 text-center font-bold ${s.rr >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{sRR}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{s.trades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{sWR}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{sRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
                     <td className={`py-3 px-4 text-center font-black border-l border-stone-200 ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                   </tr>

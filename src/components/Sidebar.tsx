@@ -150,7 +150,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className={`bg-white border-r border-stone-200 flex flex-col shrink-0 overflow-y-auto z-10 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <aside className={`bg-white border-r border-stone-200 flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       <div className={`p-6 pb-8 flex items-center ${isCollapsed ? "justify-center px-4" : "gap-2"}`}>
         <button 
           onClick={(e) => {

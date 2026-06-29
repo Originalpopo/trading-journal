@@ -175,7 +175,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
       <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
           <h3 className="text-2xl font-black text-stone-950 tracking-tight">

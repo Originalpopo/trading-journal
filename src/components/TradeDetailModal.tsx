@@ -76,7 +76,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   }
 
   return (
-    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
       {/* Image Lightbox Pop-up */}
       {selectedIndex !== null && trade.images && trade.images[selectedIndex] && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedIndex(null)}>

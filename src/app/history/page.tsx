@@ -281,12 +281,12 @@ export default function HistoryPage() {
                         {badgeText}
                         {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-stone-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                       </td>
+                      <td className="py-4 px-4 text-center text-stone-500">-</td>
                       <td className="py-4 px-4 text-center">-</td>
-                      <td className="py-4 px-4 text-center">-</td>
-                      <td className="py-4 px-4 text-center">-</td>
+                      <td className="py-4 px-4 text-center text-stone-500">-</td>
                       <td className="py-4 px-4 text-center"><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
-                      <td className="py-4 px-4 text-right font-bold text-stone-600">-</td>
-                      <td className="py-4 px-4 text-right font-bold text-stone-600">-</td>
+                      <td className="py-4 px-4 text-right font-bold text-stone-500">-</td>
+                      <td className="py-4 px-4 text-right font-bold text-stone-500">-</td>
                       <td className={`py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
                         {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
                       </td>
@@ -331,7 +331,7 @@ export default function HistoryPage() {
                       {t.symbol}
                       {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-stone-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                     </td>
-                    <td className="py-4 px-4 text-center font-bold text-stone-600">
+                    <td className="py-4 px-4 text-center font-bold text-stone-500">
                       {t.tf && t.tf !== 'none' ? t.tf : '-'}
                     </td>
                     <td className="py-4 px-4 text-center">
@@ -339,14 +339,14 @@ export default function HistoryPage() {
                         ? <span title="Off Plan" className="text-red-800"><svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span> 
                         : <span title="On Plan" className="text-stone-400"><svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>}
                     </td>
-                    <td className="py-4 px-4 text-center font-extrabold text-stone-950 uppercase text-[11px]">
+                    <td className="py-4 px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]">
                       {t.side}
                     </td>
                     <td className="py-4 px-4 text-center">
                       <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
-                    <td className="py-4 px-4 text-right font-bold text-stone-600">{riskText}</td>
-                    <td className="py-4 px-4 text-right font-bold text-stone-600">
+                    <td className="py-4 px-4 text-right font-bold text-stone-500">{riskText}</td>
+                    <td className="py-4 px-4 text-right font-bold text-stone-500">
                       {t.rr ? format2Decimals(t.rr) + ' R' : '-'}
                     </td>
                     <td className={`py-4 px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (t.profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
