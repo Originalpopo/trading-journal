@@ -61,11 +61,16 @@ export default function PerformancePage() {
   }, [trades]);
 
   const availableTfs = useMemo(() => {
-    const tfs = Array.from(new Set(trades.map((t: any) => t.tf || 'none').filter(Boolean)));
-    ['15m', '5m', '1m', 'none'].forEach(item => {
-      if (!tfs.includes(item)) tfs.push(item);
+    const tfsSet = new Set<string>();
+    trades.forEach((t: any) => {
+      const tfVal = t.tf || 'none';
+      tfVal.split(',').forEach((item: string) => {
+        const trimmed = item.trim();
+        if (trimmed) tfsSet.add(trimmed);
+      });
     });
-    return tfs;
+    ['15m', '5m', '1m', 'none'].forEach(item => tfsSet.add(item));
+    return Array.from(tfsSet);
   }, [trades]);
 
   const data = useMemo(() => {
@@ -99,7 +104,8 @@ export default function PerformancePage() {
       if (!isNaN(evt.timeObj.getTime()) && evt.timeObj.getTime() > 0) {
         if (evt.type === 'trade' && selectedTf !== 'ALL') {
           const tfVal = evt.data.tf || 'none';
-          if (tfVal !== selectedTf) return;
+          const tradeTfs = tfVal.split(',').map((s: string) => s.trim());
+          if (!tradeTfs.includes(selectedTf)) return;
         }
 
         const y = evt.timeObj.getFullYear();
@@ -292,16 +298,21 @@ export default function PerformancePage() {
           if (!isBE && (pnl > 0 || t.resultType === 'TP')) shortWon++;
         }
 
-        const tfKey = t.tf && ['15m', '5m', '1m'].includes(t.tf) ? t.tf : 'none';
-        tfStats[tfKey].trades++;
-        tfStats[tfKey].pnl += pnl;
-        if (isBE) {
-          tfStats[tfKey].be++;
-        } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
-          tfStats[tfKey].win++;
-        } else {
-          tfStats[tfKey].loss++;
-        }
+        const tfVals = t.tf ? t.tf.split(',').map((s: string) => s.trim()).filter(Boolean) : ['none'];
+        if (tfVals.length === 0) tfVals.push('none');
+
+        tfVals.forEach((tfKey: string) => {
+          const validKey = ['15m', '5m', '1m'].includes(tfKey) ? tfKey : 'none';
+          tfStats[validKey].trades++;
+          tfStats[validKey].pnl += pnl;
+          if (isBE) {
+            tfStats[validKey].be++;
+          } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+            tfStats[validKey].win++;
+          } else {
+            tfStats[validKey].loss++;
+          }
+        });
 
         if (!isNaN(hr)) {
           hourStats[hr] += rrVal;
@@ -325,13 +336,9 @@ export default function PerformancePage() {
             SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
           };
         }
-        const tfValKey = t.tf && t.tf !== 'none' ? t.tf : 'none';
-        if (!tfMatrix[tfValKey]) {
-          tfMatrix[tfValKey] = {
-            BUY: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 },
-            SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
-          };
-        }
+        const tfValKeys = t.tf && t.tf !== 'none' ? t.tf.split(',').map((s: string) => s.trim()).filter(Boolean) : ['none'];
+        if (tfValKeys.length === 0) tfValKeys.push('none');
+
         const side = t.side === 'BUY' || t.side === 'SELL' ? t.side : null;
         if (side) {
           const m = matrix[t.symbol][side];
@@ -343,14 +350,22 @@ export default function PerformancePage() {
           }
           if (t.rr) { m.rr += t.rr; m.rrCount++; }
 
-          const tm = tfMatrix[tfValKey][side];
-          tm.trades++;
-          tm.pnl += pnl;
-          if (!isBE) {
-            if (pnl > 0 || t.resultType === 'TP') tm.win++;
-            if (pnl < 0 || t.resultType === 'SL') tm.loss++;
-          }
-          if (t.rr) { tm.rr += t.rr; tm.rrCount++; }
+          tfValKeys.forEach((tfKey: string) => {
+            if (!tfMatrix[tfKey]) {
+              tfMatrix[tfKey] = {
+                BUY: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 },
+                SELL: { trades: 0, win: 0, loss: 0, pnl: 0, rr: 0, rrCount: 0 }
+              };
+            }
+            const tm = tfMatrix[tfKey][side];
+            tm.trades++;
+            tm.pnl += pnl;
+            if (!isBE) {
+              if (pnl > 0 || t.resultType === 'TP') tm.win++;
+              if (pnl < 0 || t.resultType === 'SL') tm.loss++;
+            }
+            if (t.rr) { tm.rr += t.rr; tm.rrCount++; }
+          });
         }
 
         runningBalance += pnl;

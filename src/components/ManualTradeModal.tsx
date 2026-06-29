@@ -252,14 +252,33 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Timeframe (TF)</label>
-              <select value={tf} onChange={(e) => setTf(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition">
-                <option value="none">none</option>
-                <option value="15m">15m</option>
-                <option value="5m">5m</option>
-                <option value="1m">1m</option>
-              </select>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
+              <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2">
+                {['15m', '5m', '1m'].map((item) => {
+                  const currentTfs = tf.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
+                  const isChecked = currentTfs.includes(item);
+                  return (
+                    <label key={item} className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked} 
+                        onChange={(e) => {
+                          let newTfs = [...currentTfs];
+                          if (e.target.checked) {
+                            if (!newTfs.includes(item)) newTfs.push(item);
+                          } else {
+                            newTfs = newTfs.filter(t => t !== item);
+                          }
+                          const orderedTfs = ['15m', '5m', '1m'].filter(t => newTfs.includes(t));
+                          setTf(orderedTfs.length > 0 ? orderedTfs.join(', ') : 'none');
+                        }} 
+                        className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" 
+                      />
+                      <span className="text-xs font-bold text-stone-950">{item}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
           
