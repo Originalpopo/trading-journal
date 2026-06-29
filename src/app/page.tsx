@@ -325,6 +325,10 @@ export default function Dashboard() {
     }
   };
 
+  const ddScaleMax = Math.max(data.maxDDPercent * 1.25, 10);
+  const activeBarHeightPct = Math.min(100, Math.max(6, (data.activeDDPercent / ddScaleMax) * 100));
+  const maxCapBottomPct = Math.min(95, Math.max(activeBarHeightPct, (data.maxDDPercent / ddScaleMax) * 100));
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -444,22 +448,50 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="glass-card p-6 space-y-5">
+        <div className="glass-card p-6 flex flex-col h-full">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Drawdown
           </h3>
-          <div className="space-y-4 pt-2">
-            <div className="flex flex-col gap-3 mb-4">
-              <div className="p-3 bg-stone-50 rounded-xl flex flex-col items-center text-center border border-stone-200">
-                <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
-                <p className="text-2xl font-extrabold stat-value text-stone-950 mb-1">{formatNumber(data.activeDDPercent)}%</p>
-                <p className="text-[10px] font-bold text-stone-400">${formatNumber(data.activeDDValue)}</p>
+
+          <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[220px]">
+            <div className="flex flex-col justify-between z-10 flex-1 pr-2 py-1">
+              <div>
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Max DD</p>
+                <p className="text-2xl font-extrabold text-red-950">{formatNumber(data.maxDDPercent)}%</p>
+                <p className="text-[11px] font-bold text-stone-500">${formatNumber(data.maxDDValue)}</p>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl flex flex-col items-center text-center border border-red-200">
-                <p className="text-[9px] font-black text-red-900 uppercase tracking-widest mb-1">Max DD</p>
-                <p className="text-2xl font-extrabold stat-value text-red-900 mb-1">{formatNumber(data.maxDDPercent)}%</p>
-                <p className="text-[10px] font-bold text-red-900">${formatNumber(data.maxDDValue)}</p>
+              
+              <div className="w-full border-t border-stone-200 my-auto"></div>
+
+              <div>
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
+                <p className="text-2xl font-extrabold text-red-900">{formatNumber(data.activeDDPercent)}%</p>
+                <p className="text-[11px] font-bold text-stone-500">${formatNumber(data.activeDDValue)}</p>
               </div>
+            </div>
+
+            <div className="w-16 h-full bg-stone-50 rounded-xl p-1.5 border border-stone-200 flex flex-col justify-end items-center relative z-10 shadow-inner">
+              <div className="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none opacity-10">
+                <div className="w-full border-b border-stone-950"></div>
+                <div className="w-full border-b border-stone-950"></div>
+                <div className="w-full border-b border-stone-950"></div>
+                <div className="w-full border-b border-stone-950"></div>
+                <div className="w-full border-b border-stone-950"></div>
+                <div className="w-full border-b border-stone-950"></div>
+                <div className="w-full border-b border-stone-950"></div>
+              </div>
+
+              {/* Max DD Cap (Peak Indicator) */}
+              <div 
+                className="absolute left-1.5 right-1.5 h-1.5 bg-red-950 rounded-full shadow-[0_0_8px_rgba(69,10,10,0.4)] transition-all duration-700 ease-out z-20"
+                style={{ bottom: `${maxCapBottomPct}%` }}
+              />
+
+              {/* Active DD Bar */}
+              <div 
+                className="w-full bg-red-900 rounded-lg shadow-[0_0_12px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out relative z-10"
+                style={{ height: `${activeBarHeightPct}%` }}
+              />
             </div>
           </div>
         </div>
