@@ -24,7 +24,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [time, setTime] = useState("");
   const [risk, setRisk] = useState("");
   const [strategy, setStrategy] = useState("");
-  const [isOnPlan, setIsOnPlan] = useState(true);
   const [images, setImages] = useState<string[]>([""]);
   const [tf, setTf] = useState("none");
   const [checklists, setChecklists] = useState<string[]>([]);
@@ -40,7 +39,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setSymbol("");
           setSide("BUY");
           setRisk("");
-          setIsOnPlan(true);
           setImages(f.images && f.images.length > 0 ? f.images : [""]);
           setTf("none");
 
@@ -59,10 +57,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setAmount(t.profit?.toString() || "");
           setStrategy(t.strategy || "");
           setRisk(t.risk?.toString() || "");
-          setIsOnPlan(t.isOnPlan !== false);
+          const initialChecklists = t.checklists ? [...t.checklists] : [];
+          if (t.isOnPlan !== false && !initialChecklists.includes('On Plan')) {
+            initialChecklists.push('On Plan');
+          }
+          setChecklists(initialChecklists);
           setImages(t.images && t.images.length > 0 ? t.images : [""]);
-          setTf(t.tf || "none");
-          setChecklists(t.checklists || []);
 
           try {
             const d = new Date(t.time.replace(" ", "T"));
@@ -94,8 +94,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         }
         setRisk(defaultRisk);
         setTf(defaultTf);
-        setChecklists([]);
-        setIsOnPlan(true);
+        setChecklists(['On Plan']);
 
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -158,7 +157,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           rr: rr,
           resultType: resType,
           strategy,
-          isOnPlan,
+          isOnPlan: checklists.includes('On Plan'),
           images: cleanImages,
           tf,
           checklists
@@ -235,10 +234,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 </select>
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer mt-3 w-max">
-              <input type="checkbox" checked={isOnPlan} onChange={(e) => setIsOnPlan(e.target.checked)} className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" />
-              <span className="text-xs font-bold text-stone-600">On Plan (ตามแผน)</span>
-            </label>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -299,7 +294,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
             <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
-              {['POI QM', 'BB (Breaker block)'].map((item) => {
+              {['On Plan', 'POI QM', 'POI 1st', 'POI 2nd', 'LQ'].map((item) => {
                 const isChecked = checklists.includes(item);
                 return (
                   <label key={item} className="flex items-center gap-2 cursor-pointer">

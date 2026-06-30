@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Droplet } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -335,18 +335,30 @@ export default function HistoryPage() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-2">
-                        {t.isOnPlan === false 
-                          ? <span title="Off Plan" className="text-stone-300"><ClipboardX className="w-4 h-4" /></span> 
-                          : <span title="On Plan" className="text-orange-400"><ClipboardCheck className="w-4 h-4" /></span>}
+                        {(t.checklists && t.checklists.includes('On Plan')) || t.isOnPlan !== false ? (
+                          <span title="On Plan" className="text-orange-400"><ClipboardCheck className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="On Plan (Not Selected)" className="text-stone-300"><ClipboardCheck className="w-4 h-4" /></span>
+                        )}
                         {t.checklists && t.checklists.includes('POI QM') ? (
                           <span title="POI QM" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
                         ) : (
                           <span title="POI QM (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('BB (Breaker block)') ? (
-                          <span title="BB (Breaker block)" className="text-orange-400"><Activity className="w-4 h-4" /></span>
+                        {t.checklists && t.checklists.includes('POI 1st') ? (
+                          <span title="POI 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
                         ) : (
-                          <span title="BB (Not Selected)" className="text-stone-300"><Activity className="w-4 h-4" /></span>
+                          <span title="POI 1st (Not Selected)" className="text-stone-300"><Target className="w-4 h-4" /></span>
+                        )}
+                        {t.checklists && t.checklists.includes('POI 2nd') ? (
+                          <span title="POI 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="POI 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
+                        )}
+                        {t.checklists && t.checklists.includes('LQ') ? (
+                          <span title="LQ" className="text-orange-400"><Droplet className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="LQ (Not Selected)" className="text-stone-300"><Droplet className="w-4 h-4" /></span>
                         )}
                       </div>
                     </td>

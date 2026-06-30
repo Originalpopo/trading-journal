@@ -48,6 +48,7 @@ export default function PerformancePage() {
   const { trades, funding, isLoading } = useJournalStore();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedTf, setSelectedTf] = useState('ALL');
+  const [selectedChecklist, setSelectedChecklist] = useState('ALL');
   const [selectedMetric, setSelectedMetric] = useState('RR');
 
   const availableYears = useMemo(() => {
@@ -71,6 +72,22 @@ export default function PerformancePage() {
     });
     ['15m', '5m', '1m', 'none'].forEach(item => tfsSet.add(item));
     return Array.from(tfsSet);
+  }, [trades]);
+
+  const availableChecklists = useMemo(() => {
+    const clSet = new Set<string>();
+    trades.forEach((t: any) => {
+      if (t.checklists && Array.isArray(t.checklists)) {
+        t.checklists.forEach((c: string) => clSet.add(c));
+      }
+      if (t.isOnPlan !== false) {
+        clSet.add('On Plan');
+      } else {
+        clSet.add('Off Plan');
+      }
+    });
+    ['On Plan', 'Off Plan', 'POI QM', 'POI 1st', 'POI 2nd', 'LQ'].forEach(c => clSet.add(c));
+    return Array.from(clSet).sort();
   }, [trades]);
 
   const data = useMemo(() => {
@@ -102,10 +119,24 @@ export default function PerformancePage() {
 
     allTimelineEvents.forEach(evt => {
       if (!isNaN(evt.timeObj.getTime()) && evt.timeObj.getTime() > 0) {
-        if (evt.type === 'trade' && selectedTf !== 'ALL') {
-          const tfVal = evt.data.tf || 'none';
-          const tradeTfs = tfVal.split(',').map((s: string) => s.trim());
-          if (!tradeTfs.includes(selectedTf)) return;
+        if (evt.type === 'trade') {
+          if (selectedTf !== 'ALL') {
+            const tfVal = evt.data.tf || 'none';
+            const tradeTfs = tfVal.split(',').map((s: string) => s.trim());
+            if (!tradeTfs.includes(selectedTf)) return;
+          }
+          if (selectedChecklist !== 'ALL') {
+            const t = evt.data;
+            let isChecked = false;
+            if (selectedChecklist === 'On Plan') {
+              isChecked = t.checklists?.includes('On Plan') || t.isOnPlan !== false;
+            } else if (selectedChecklist === 'Off Plan') {
+              isChecked = t.checklists?.includes('Off Plan') || t.isOnPlan === false;
+            } else {
+              isChecked = t.checklists && t.checklists.includes(selectedChecklist);
+            }
+            if (!isChecked) return;
+          }
         }
 
         const y = evt.timeObj.getFullYear();
@@ -478,7 +509,7 @@ export default function PerformancePage() {
       activeMoyNames, moyRRData, moyRRColors, moyGainData, moyGainColors,
       matrixSorted
     };
-  }, [trades, funding, selectedYear, selectedTf, selectedMetric]);
+  }, [trades, funding, selectedYear, selectedTf, selectedChecklist, selectedMetric]);
 
   const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
     id: 'lastBalancePointPlugin',
@@ -589,6 +620,16 @@ export default function PerformancePage() {
               <option value="ALL">ALL</option>
               {availableTfs.map(tf => (
                 <option key={tf} value={tf}>{tf}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Checklist:</span>
+            <select value={selectedChecklist} onChange={(e) => setSelectedChecklist(e.target.value)}
+              className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              <option value="ALL">ALL</option>
+              {availableChecklists.map(cl => (
+                <option key={cl} value={cl}>{cl}</option>
               ))}
             </select>
           </div>

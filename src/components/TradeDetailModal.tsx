@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trade, Funding } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
-import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair } from "lucide-react";
+import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Droplet, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale } from "lucide-react";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -183,69 +183,51 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-6 py-2">
-              {/* Row 1 */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                <div className="flex flex-col items-center text-center gap-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Time</p>
-                  <p className="text-xs font-bold text-stone-950">{shortTime}</p>
+            <div className="flex flex-col md:flex-row gap-8 py-2">
+              {/* Left Column: Stats */}
+              <div className="flex-1 flex flex-col justify-center gap-4 py-2">
+                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time</span>
+                  <span className="text-xs font-extrabold text-stone-950">{shortTime}</span>
                 </div>
-                <div className="flex flex-col items-center text-center gap-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Duration</p>
-                  <p className="text-xs font-bold text-stone-950">{durationDisplay}</p>
+                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Duration</span>
+                  <span className="text-xs font-extrabold text-stone-950">{durationDisplay}</span>
                 </div>
-                <div className="flex flex-col items-center text-center gap-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Timeframe</p>
-                  <p className="text-xs font-bold text-stone-950">{(t as any).tf && (t as any).tf !== 'none' ? (t as any).tf : '-'}</p>
+                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
+                  <span className="text-xs font-extrabold text-stone-950">{(t as any).tf && (t as any).tf !== 'none' ? (t as any).tf : '-'}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
+                  <span className="text-xs font-extrabold text-stone-950">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk/Reward</span>
+                  <span className="text-xs font-extrabold text-stone-950">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</span>
                 </div>
               </div>
 
-              {/* Separator line */}
-              <div className="border-t border-stone-200/80 w-full"></div>
-
-              {/* Row 2 */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                <div className="flex flex-col items-center text-center gap-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Plan</p>
-                  <div>
-                    {t.isOnPlan === false ? (
-                      <p className="text-xs font-extrabold text-red-800 tracking-tight">Off Plan</p>
+              {/* Right Column: Checklists */}
+              <div className="flex flex-col w-full md:w-56 bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 shrink-0">
+                <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4">Checklists</h4>
+                <div className="flex flex-col gap-3">
+                  {['On Plan', 'POI QM', 'POI 1st', 'POI 2nd', 'LQ'].map((item, idx) => {
+                    const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
+                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'POI QM' ? Crosshair : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : item === 'LQ' ? Droplet : CheckCircle2;
+                    return isChecked ? (
+                      <div key={idx} className="flex items-center gap-2 text-orange-400">
+                        <ItemIcon className="w-4 h-4" />
+                        <span className="text-xs font-bold text-stone-900">{item}</span>
+                      </div>
                     ) : (
-                      <p className="text-xs font-extrabold text-stone-950 tracking-tight">On Plan</p>
-                    )}
-                  </div>
+                      <div key={idx} className="flex items-center gap-2 opacity-50 text-stone-400">
+                        <ItemIcon className="w-4 h-4" />
+                        <span className="text-xs font-bold">{item}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex flex-col items-center text-center gap-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Risk</p>
-                  <p className="text-xs font-bold text-stone-950">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</p>
-                </div>
-                <div className="flex flex-col items-center text-center gap-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Risk/Reward</p>
-                  <p className="text-xs font-bold text-stone-950">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Checklists Section */}
-          {!isFunding && (
-            <div>
-              <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 px-2">Checklists</h4>
-              <div className="flex flex-wrap gap-2 px-2">
-                {['POI QM', 'BB (Breaker block)'].map((item, idx) => {
-                  const isChecked = t.checklists && t.checklists.includes(item);
-                  return isChecked ? (
-                    <span key={idx} className="bg-orange-50 text-orange-400 border border-orange-200 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
-                      {item === 'POI QM' ? <Crosshair className="w-3.5 h-3.5" /> : item === 'BB (Breaker block)' ? <Activity className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                      {item}
-                    </span>
-                  ) : (
-                    <span key={idx} className="bg-stone-50 text-stone-400 border border-stone-200 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 opacity-70">
-                      <XCircle className="w-3.5 h-3.5" />
-                      {item}
-                    </span>
-                  );
-                })}
               </div>
             </div>
           )}
