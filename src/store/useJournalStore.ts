@@ -15,6 +15,7 @@ export interface Trade {
   side?: string;
   images?: string[];
   tf?: string;
+  checklists?: string[];
 }
 
 export interface Funding {

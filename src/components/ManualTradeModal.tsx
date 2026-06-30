@@ -9,7 +9,7 @@ import { Trash2, X, HelpCircle } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (savedTrade?: any) => void;
   tradeToEdit?: (Trade | Funding) & { isFunding?: boolean } | null;
 }
 
@@ -27,6 +27,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [isOnPlan, setIsOnPlan] = useState(true);
   const [images, setImages] = useState<string[]>([""]);
   const [tf, setTf] = useState("none");
+  const [checklists, setChecklists] = useState<string[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,6 +62,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setIsOnPlan(t.isOnPlan !== false);
           setImages(t.images && t.images.length > 0 ? t.images : [""]);
           setTf(t.tf || "none");
+          setChecklists(t.checklists || []);
 
           try {
             const d = new Date(t.time.replace(" ", "T"));
@@ -92,6 +94,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         }
         setRisk(defaultRisk);
         setTf(defaultTf);
+        setChecklists([]);
         setIsOnPlan(true);
 
         const now = new Date();
@@ -111,6 +114,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
       const parsedRisk = parseFloat(risk) || 0;
       const cleanImages = images.filter(url => url.trim() !== "");
 
+      let finalData: any;
+
       if (entryType === "DEPOSIT" || entryType === "WITHDRAW") {
         const isDeposit = entryType === "DEPOSIT";
         const fId = tradeToEdit?.id || "M_F_" + Date.now();
@@ -122,6 +127,13 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           images: cleanImages
         };
         await setDoc(doc(db, "funding", fId), data, { merge: true });
+        finalData = { 
+          id: fId, 
+          ...data, 
+          isFunding: true, 
+          symbol: isDeposit ? 'DEPOSIT' : 'WITHDRAW', 
+          profit: isDeposit ? data.deposit : -(data.withdraw || 0) 
+        };
       } else {
         const tId = tradeToEdit?.id || "M_T_" + Date.now();
         let rr = parsedRisk > 0 ? parsedAmount / parsedRisk : 0;
@@ -148,12 +160,14 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           strategy,
           isOnPlan,
           images: cleanImages,
-          tf
+          tf,
+          checklists
         };
         await setDoc(doc(db, "trades", tId), data, { merge: true });
+        finalData = { id: tId, ...data, isFunding: false };
       }
 
-      onClose();
+      onClose(finalData);
     } catch (error) {
       console.error("Failed to save:", error);
       alert("Failed to save. Please try again.");
@@ -175,13 +189,13 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={() => onClose()}>
       <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
           <h3 className="text-2xl font-black text-stone-950 tracking-tight">
             {tradeToEdit ? (tradeToEdit.isFunding ? "Edit Funding" : "Edit Trade") : "Add Manual Entry"}
           </h3>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
+          <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -282,6 +296,32 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             </div>
           </div>
           
+          <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
+            <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
+              {['POI QM', 'BB (Breaker block)'].map((item) => {
+                const isChecked = checklists.includes(item);
+                return (
+                  <label key={item} className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={isChecked} 
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          if (!checklists.includes(item)) setChecklists([...checklists, item]);
+                        } else {
+                          setChecklists(checklists.filter(t => t !== item));
+                        }
+                      }} 
+                      className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" 
+                    />
+                    <span className="text-xs font-bold text-stone-950">{item}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="mt-4">
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
             <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={3}
@@ -334,7 +374,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         </div>
 
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
-          <button onClick={onClose} disabled={isSubmitting}
+          <button onClick={() => onClose()} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
           <button onClick={handleSubmit} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">

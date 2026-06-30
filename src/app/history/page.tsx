@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -53,6 +53,7 @@ export default function HistoryPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailTrade, setSelectedDetailTrade] = useState<any | null>(null);
+  const [cameFromDetail, setCameFromDetail] = useState(false);
 
   const handleUploadStatus = (status: string) => {
     console.log("Upload status:", status);
@@ -158,11 +159,9 @@ export default function HistoryPage() {
     trades.forEach(t => data.push({ ...t, isFunding: false }));
     funding.forEach(f => {
       data.push({
-        id: f.id,
-        time: f.time,
+        ...f,
         symbol: f.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW',
         profit: f.deposit > 0 ? f.deposit : -(f.withdraw || 0),
-        notes: f.notes,
         isFunding: true
       });
     });
@@ -251,7 +250,7 @@ export default function HistoryPage() {
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">Time</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
+                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Checklists</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
@@ -334,10 +333,22 @@ export default function HistoryPage() {
                     <td className="py-4 px-4 text-center font-bold text-stone-500">
                       {t.tf && t.tf !== 'none' ? t.tf : '-'}
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      {t.isOnPlan === false 
-                        ? <span title="Off Plan" className="text-red-800"><svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span> 
-                        : <span title="On Plan" className="text-stone-400"><svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>}
+                    <td className="py-4 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        {t.isOnPlan === false 
+                          ? <span title="Off Plan" className="text-stone-300"><ClipboardX className="w-4 h-4" /></span> 
+                          : <span title="On Plan" className="text-orange-400"><ClipboardCheck className="w-4 h-4" /></span>}
+                        {t.checklists && t.checklists.includes('POI QM') ? (
+                          <span title="POI QM" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="POI QM (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
+                        )}
+                        {t.checklists && t.checklists.includes('BB (Breaker block)') ? (
+                          <span title="BB (Breaker block)" className="text-orange-400"><Activity className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="BB (Not Selected)" className="text-stone-300"><Activity className="w-4 h-4" /></span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]">
                       {t.side}
@@ -365,15 +376,41 @@ export default function HistoryPage() {
       </div>
       <ManualTradeModal 
         isOpen={isModalOpen} 
-        onClose={() => { setIsModalOpen(false); setTradeToEdit(null); }} 
+        onClose={(savedTrade?: any) => { 
+          setIsModalOpen(false); 
+          setTradeToEdit(null); 
+          if (savedTrade) {
+            setSelectedDetailTrade(savedTrade);
+            setIsDetailOpen(true);
+          } else if (cameFromDetail) {
+            setIsDetailOpen(true);
+          }
+          setCameFromDetail(false);
+        }} 
         tradeToEdit={tradeToEdit} 
       />
       <TradeDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         trade={selectedDetailTrade}
-        onEdit={(trade) => { setIsDetailOpen(false); handleEdit(trade); }}
+        onEdit={(trade) => { 
+          setIsDetailOpen(false); 
+          setCameFromDetail(true);
+          handleEdit(trade); 
+        }}
         onDelete={(id, isFunding) => { setIsDetailOpen(false); handleDelete(id, isFunding); }}
+        hasPrev={selectedDetailTrade ? combinedData.findIndex(t => t.id === selectedDetailTrade.id) > 0 : false}
+        hasNext={selectedDetailTrade ? combinedData.findIndex(t => t.id === selectedDetailTrade.id) >= 0 && combinedData.findIndex(t => t.id === selectedDetailTrade.id) < combinedData.length - 1 : false}
+        currentIndex={selectedDetailTrade ? combinedData.findIndex(t => t.id === selectedDetailTrade.id) + 1 : 0}
+        totalItems={combinedData.length}
+        onPrev={() => {
+          const idx = combinedData.findIndex(t => t.id === selectedDetailTrade?.id);
+          if (idx > 0) setSelectedDetailTrade(combinedData[idx - 1]);
+        }}
+        onNext={() => {
+          const idx = combinedData.findIndex(t => t.id === selectedDetailTrade?.id);
+          if (idx >= 0 && idx < combinedData.length - 1) setSelectedDetailTrade(combinedData[idx + 1]);
+        }}
       />
       <UploadModal 
         isOpen={isUploadModalOpen} 

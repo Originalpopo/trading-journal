@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trade, Funding } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
-import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair } from "lucide-react";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -11,6 +11,12 @@ interface TradeDetailModalProps {
   trade: (Trade | Funding) & { isFunding?: boolean; duration?: number } | null;
   onEdit: (trade: any) => void;
   onDelete: (id: string, isFunding: boolean) => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
+  currentIndex?: number;
+  totalItems?: number;
 }
 
 export function getDriveDirectUrl(url: string): string {
@@ -24,7 +30,7 @@ export function getDriveDirectUrl(url: string): string {
 
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete }: TradeDetailModalProps) {
+export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   if (!isOpen || !trade) return null;
@@ -80,7 +86,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
       {/* Image Lightbox Pop-up */}
       {selectedIndex !== null && trade.images && trade.images[selectedIndex] && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedIndex(null)}>
-          <div className="relative max-w-5xl h-[85vh] w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-w-[95vw] 2xl:max-w-[1600px] h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <iframe src={getDriveDirectUrl(trade.images[selectedIndex])} title="Expanded preview" className="w-full h-full rounded-2xl border-0 shadow-2xl bg-white" />
             
             {/* Header info / close button */}
@@ -100,12 +106,12 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               <>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex - 1 + trade.images!.length) % trade.images!.length); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md backdrop-blur-md border border-white/20 hover:scale-105 z-50">
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md border border-white/20 hover:scale-105 z-50">
                   <ChevronLeft className="w-8 h-8" />
                 </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex + 1) % trade.images!.length); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md backdrop-blur-md border border-white/20 hover:scale-105 z-50">
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md border border-white/20 hover:scale-105 z-50">
                   <ChevronRight className="w-8 h-8" />
                 </button>
               </>
@@ -221,6 +227,29 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             </div>
           )}
 
+          {/* Checklists Section */}
+          {!isFunding && (
+            <div>
+              <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 px-2">Checklists</h4>
+              <div className="flex flex-wrap gap-2 px-2">
+                {['POI QM', 'BB (Breaker block)'].map((item, idx) => {
+                  const isChecked = t.checklists && t.checklists.includes(item);
+                  return isChecked ? (
+                    <span key={idx} className="bg-orange-50 text-orange-400 border border-orange-200 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                      {item === 'POI QM' ? <Crosshair className="w-3.5 h-3.5" /> : item === 'BB (Breaker block)' ? <Activity className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {item}
+                    </span>
+                  ) : (
+                    <span key={idx} className="bg-stone-50 text-stone-400 border border-stone-200 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 opacity-70">
+                      <XCircle className="w-3.5 h-3.5" />
+                      {item}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Notes / Strategy Section */}
           <div>
             <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 px-2">Notes</h4>
@@ -277,6 +306,27 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 Edit
               </button>
             </div>
+            {(onPrev || onNext) && (
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={onPrev}
+                  disabled={!hasPrev}
+                  className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                {currentIndex !== undefined && totalItems !== undefined && (
+                  <span className="text-xs font-black text-stone-400 font-mono tracking-widest">
+                    {currentIndex} <span className="opacity-40 font-normal">|</span> {totalItems}
+                  </span>
+                )}
+                <button 
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
             <button 
               onClick={onClose}
               className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-6 py-2.5 rounded-xl transition shadow-md shadow-stone-900/20">
