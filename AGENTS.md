@@ -5,6 +5,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 
 ## UI Guidelines
+- **Color Palette**:
+  - Main Orange: Always use `orange-400` (e.g. สีส้มหลัก)
+  - Main Red: Always use `red-900` (e.g. สีแดงหลัก)
 - **Checklists**: When rendering Checklists in the UI (e.g. popups, details), always use this styling convention:
   - Selected state: Orange theme (`bg-orange-50`, `text-orange-400`, `border-orange-200`) with a Check icon (e.g. `CheckCircle2`).
   - Unselected state: Light stone theme (`bg-stone-50`, `text-stone-400`, `border-stone-200`, `opacity-70`) with a Cross icon (e.g. `XCircle`).

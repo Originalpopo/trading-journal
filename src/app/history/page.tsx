@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Droplet } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -16,37 +16,6 @@ export default function HistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const updateRows = (height: number) => {
-      const headerHeight = 46; // Approximate height of the table header
-      const availableHeight = height - headerHeight;
-      const rowHeight = 62; // Approximate height of a row
-      let calculatedRows = Math.floor(availableHeight / rowHeight);
-      if (calculatedRows < 5) calculatedRows = 5;
-      if (calculatedRows > 50) calculatedRows = 50;
-      setRowsPerPage(calculatedRows);
-    };
-
-    const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        if (entry.target === container) {
-          updateRows(entry.contentRect.height);
-        }
-      }
-    });
-
-    observer.observe(container);
-    // Initial call to set rows if height is already available
-    if (container.clientHeight > 0) {
-      updateRows(container.clientHeight);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
@@ -238,12 +207,11 @@ export default function HistoryPage() {
             <Upload className="w-3.5 h-3.5" />
             Upload
           </button>
-          <div>{renderPagination()}</div>
         </div>
       </div>
 
-      <div className="glass-card p-6 overflow-hidden flex flex-col min-h-[500px] h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)]">
-        <div ref={containerRef} className="overflow-auto flex-1 rounded-xl">
+      <div className="glass-card p-6 overflow-hidden flex flex-col h-fit">
+        <div ref={containerRef} className="overflow-auto rounded-xl">
           <table className="w-full text-left text-sm whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
               <tr className="text-stone-400 border-b border-stone-100 bg-stone-50">
@@ -345,6 +313,11 @@ export default function HistoryPage() {
                         ) : (
                           <span title="POI QM (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
                         )}
+                        {t.checklists && t.checklists.includes('Head') ? (
+                          <span title="Head" className="text-orange-400"><Crown className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="Head (Not Selected)" className="text-stone-300"><Crown className="w-4 h-4" /></span>
+                        )}
                         {t.checklists && t.checklists.includes('POI 1st') ? (
                           <span title="POI 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
                         ) : (
@@ -354,11 +327,6 @@ export default function HistoryPage() {
                           <span title="POI 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
                         ) : (
                           <span title="POI 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('LQ') ? (
-                          <span title="LQ" className="text-orange-400"><Droplet className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="LQ (Not Selected)" className="text-stone-300"><Droplet className="w-4 h-4" /></span>
                         )}
                       </div>
                     </td>
@@ -384,6 +352,9 @@ export default function HistoryPage() {
               })}
             </tbody>
           </table>
+        </div>
+        <div className="pt-4 flex justify-center shrink-0">
+          {renderPagination()}
         </div>
       </div>
       <ManualTradeModal 

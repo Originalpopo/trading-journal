@@ -48,6 +48,7 @@ export default function PerformancePage() {
   const { trades, funding, isLoading } = useJournalStore();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedTf, setSelectedTf] = useState('ALL');
+  const [selectedPlan, setSelectedPlan] = useState('ALL');
   const [selectedChecklist, setSelectedChecklist] = useState('ALL');
   const [selectedMetric, setSelectedMetric] = useState('RR');
 
@@ -78,15 +79,12 @@ export default function PerformancePage() {
     const clSet = new Set<string>();
     trades.forEach((t: any) => {
       if (t.checklists && Array.isArray(t.checklists)) {
-        t.checklists.forEach((c: string) => clSet.add(c));
-      }
-      if (t.isOnPlan !== false) {
-        clSet.add('On Plan');
-      } else {
-        clSet.add('Off Plan');
+        t.checklists.forEach((c: string) => {
+          if (c !== 'On Plan' && c !== 'Off Plan') clSet.add(c);
+        });
       }
     });
-    ['On Plan', 'Off Plan', 'POI QM', 'POI 1st', 'POI 2nd', 'LQ'].forEach(c => clSet.add(c));
+    ['POI QM', 'Head', 'POI 1st', 'POI 2nd'].forEach(c => clSet.add(c));
     return Array.from(clSet).sort();
   }, [trades]);
 
@@ -127,13 +125,15 @@ export default function PerformancePage() {
           }
           if (selectedChecklist !== 'ALL') {
             const t = evt.data;
+            if (!t.checklists || !t.checklists.includes(selectedChecklist)) return;
+          }
+          if (selectedPlan !== 'ALL') {
+            const t = evt.data;
             let isChecked = false;
-            if (selectedChecklist === 'On Plan') {
+            if (selectedPlan === 'On Plan') {
               isChecked = t.checklists?.includes('On Plan') || t.isOnPlan !== false;
-            } else if (selectedChecklist === 'Off Plan') {
+            } else if (selectedPlan === 'Off Plan') {
               isChecked = t.checklists?.includes('Off Plan') || t.isOnPlan === false;
-            } else {
-              isChecked = t.checklists && t.checklists.includes(selectedChecklist);
             }
             if (!isChecked) return;
           }
@@ -509,7 +509,7 @@ export default function PerformancePage() {
       activeMoyNames, moyRRData, moyRRColors, moyGainData, moyGainColors,
       matrixSorted
     };
-  }, [trades, funding, selectedYear, selectedTf, selectedChecklist, selectedMetric]);
+  }, [trades, funding, selectedYear, selectedTf, selectedPlan, selectedChecklist, selectedMetric]);
 
   const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
     id: 'lastBalancePointPlugin',
@@ -621,6 +621,15 @@ export default function PerformancePage() {
               {availableTfs.map(tf => (
                 <option key={tf} value={tf}>{tf}</option>
               ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Plan:</span>
+            <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
+              className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              <option value="ALL">ALL</option>
+              <option value="On Plan">On Plan</option>
+              <option value="Off Plan">Off Plan</option>
             </select>
           </div>
           <div className="flex items-center gap-2">

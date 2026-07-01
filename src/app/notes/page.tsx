@@ -49,34 +49,6 @@ export default function NotesPage() {
   const [notesPerPage, setNotesPerPage] = useState(8);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const updateRows = (height: number) => {
-      const rowHeight = 76; // Approximate height of a note row
-      let calculatedRows = Math.floor(height / rowHeight);
-      if (calculatedRows < 5) calculatedRows = 5;
-      if (calculatedRows > 50) calculatedRows = 50;
-      setNotesPerPage(calculatedRows);
-    };
-
-    const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        if (entry.target === container) {
-          updateRows(entry.contentRect.height);
-        }
-      }
-    });
-
-    observer.observe(container);
-    if (container.clientHeight > 0) {
-      updateRows(container.clientHeight);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isReadModalOpen, setIsReadModalOpen] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<Note | null>(null);
@@ -131,7 +103,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="space-y-6 flex flex-col min-h-[500px] h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Notes</h2>
@@ -146,13 +118,8 @@ export default function NotesPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-4 overflow-hidden flex-1 flex flex-col">
-        {totalPages > 1 && (
-          <div className="flex justify-end mb-4 border-b border-stone-100 pb-4 shrink-0">
-            {renderPagination()}
-          </div>
-        )}
-        <div ref={containerRef} className="flex-1 overflow-auto">
+      <div className="bg-white rounded-2xl shadow-sm p-4 overflow-hidden flex flex-col h-fit">
+        <div ref={containerRef} className="overflow-auto">
           <div className="flex flex-col divide-y divide-stone-100">
           {notes.length === 0 ? (
             <div className="py-8 text-center text-stone-400 font-semibold">
@@ -183,6 +150,9 @@ export default function NotesPage() {
             })
           )}
           </div>
+        </div>
+        <div className="pt-4 flex justify-center border-t border-stone-100 mt-2 shrink-0">
+          {renderPagination()}
         </div>
       </div>
 

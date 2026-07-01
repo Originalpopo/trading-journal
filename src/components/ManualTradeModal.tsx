@@ -63,6 +63,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           }
           setChecklists(initialChecklists);
           setImages(t.images && t.images.length > 0 ? t.images : [""]);
+          setTf(t.tf || "none");
 
           try {
             const d = new Date(t.time.replace(" ", "T"));
@@ -294,7 +295,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
             <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
-              {['On Plan', 'POI QM', 'POI 1st', 'POI 2nd', 'LQ'].map((item) => {
+              {['On Plan', 'POI QM', 'Head', 'POI 1st', 'POI 2nd'].map((item) => {
                 const isChecked = checklists.includes(item);
                 return (
                   <label key={item} className="flex items-center gap-2 cursor-pointer">
