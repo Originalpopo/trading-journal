@@ -308,16 +308,6 @@ export default function HistoryPage() {
                         ) : (
                           <span title="On Plan (Not Selected)" className="text-stone-300"><ClipboardCheck className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('POI QM') ? (
-                          <span title="POI QM" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="POI QM (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('Head') ? (
-                          <span title="Head" className="text-orange-400"><Crown className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="Head (Not Selected)" className="text-stone-300"><Crown className="w-4 h-4" /></span>
-                        )}
                         {t.checklists && t.checklists.includes('POI 1st') ? (
                           <span title="POI 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
                         ) : (

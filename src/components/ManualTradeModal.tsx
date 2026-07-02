@@ -5,7 +5,7 @@ import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
-import { Trash2, X, HelpCircle } from "lucide-react";
+import { Trash2, X, HelpCircle, ImageIcon } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [risk, setRisk] = useState("");
   const [strategy, setStrategy] = useState("");
   const [images, setImages] = useState<string[]>([""]);
+  const [isUploading, setIsUploading] = useState(false);
   const [tf, setTf] = useState("none");
   const [checklists, setChecklists] = useState<string[]>([]);
 
@@ -103,6 +104,48 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
       }
     }
   }, [isOpen, tradeToEdit, trades]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    let file: File | null = null;
+    
+    if ('dataTransfer' in e) {
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        file = e.dataTransfer.files[0];
+      }
+    } else if (e.target && 'files' in e.target) {
+      const target = e.target as HTMLInputElement;
+      if (target.files && target.files.length > 0) {
+        file = target.files[0];
+      }
+    }
+    
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      if (data.success && data.url) {
+        const cleanImages = images.filter(url => url.trim() !== "");
+        setImages([...cleanImages, data.url, ""]);
+      } else {
+        alert(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,7 +307,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             <div>
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
               <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2">
-                {['15m', '5m', '1m'].map((item) => {
+                {['1h', '15m', '5m', '1m'].map((item) => {
                   const currentTfs = tf.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
                   const isChecked = currentTfs.includes(item);
                   return (
@@ -279,7 +322,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                           } else {
                             newTfs = newTfs.filter(t => t !== item);
                           }
-                          const orderedTfs = ['15m', '5m', '1m'].filter(t => newTfs.includes(t));
+                          const orderedTfs = ['1h', '15m', '5m', '1m'].filter(t => newTfs.includes(t));
                           setTf(orderedTfs.length > 0 ? orderedTfs.join(', ') : 'none');
                         }} 
                         className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" 
@@ -295,7 +338,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
             <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
-              {['On Plan', 'POI QM', 'Head', 'POI 1st', 'POI 2nd'].map((item) => {
+              {['On Plan', 'POI 1st', 'POI 2nd'].map((item) => {
                 const isChecked = checklists.includes(item);
                 return (
                   <label key={item} className="flex items-center gap-2 cursor-pointer">
@@ -343,6 +386,28 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 + Add Another Link
               </button>
             </div>
+
+            <div 
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleFileUpload}
+              className={`relative mt-2 mb-3 border-2 border-dashed ${isUploading ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-stone-50'} rounded-xl p-4 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[80px]`}
+            >
+              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
+              <div className="pointer-events-none flex flex-col items-center justify-center gap-1.5 h-full">
+                {isUploading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs font-bold text-orange-500">Uploading to Google Drive...</span>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-5 h-5 text-stone-400" />
+                    <span className="text-xs font-bold text-stone-500">Click or drag an image here to upload</span>
+                  </>
+                )}
+              </div>
+            </div>
+
             {images.map((url, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <input 
@@ -356,14 +421,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                   placeholder={`Image link #${idx + 1} (https://drive.google.com/...)`}
                   className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-xs font-semibold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" 
                 />
-                {images.length > 1 && (
                   <button 
                     type="button" 
                     onClick={() => setImages(images.filter((_, i) => i !== idx))}
                     className="text-stone-400 hover:text-red-900 p-1 rounded-lg transition">
                     <Trash2 className="w-4 h-4" />
                   </button>
-                )}
               </div>
             ))}
           </div>

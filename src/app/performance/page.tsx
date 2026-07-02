@@ -71,7 +71,7 @@ export default function PerformancePage() {
         if (trimmed) tfsSet.add(trimmed);
       });
     });
-    ['15m', '5m', '1m', 'none'].forEach(item => tfsSet.add(item));
+    ['1h', '15m', '5m', '1m', 'none'].forEach(item => tfsSet.add(item));
     return Array.from(tfsSet);
   }, [trades]);
 
@@ -84,7 +84,7 @@ export default function PerformancePage() {
         });
       }
     });
-    ['POI QM', 'Head', 'POI 1st', 'POI 2nd'].forEach(c => clSet.add(c));
+    ['POI 1st', 'POI 2nd'].forEach(c => clSet.add(c));
     return Array.from(clSet).sort();
   }, [trades]);
 
@@ -198,6 +198,7 @@ export default function PerformancePage() {
     let sumDurationLosses = 0, countDurationLosses = 0;
 
     const tfStats: Record<string, { trades: number; win: number; loss: number; be: number; pnl: number }> = {
+      '1h': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
       '15m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
       '5m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
       '1m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
@@ -333,7 +334,7 @@ export default function PerformancePage() {
         if (tfVals.length === 0) tfVals.push('none');
 
         tfVals.forEach((tfKey: string) => {
-          const validKey = ['15m', '5m', '1m'].includes(tfKey) ? tfKey : 'none';
+          const validKey = ['1h', '15m', '5m', '1m'].includes(tfKey) ? tfKey : 'none';
           tfStats[validKey].trades++;
           tfStats[validKey].pnl += pnl;
           if (isBE) {
@@ -471,23 +472,25 @@ export default function PerformancePage() {
     const holdLoss = countDurationLosses > 0 ? formatDuration(sumDurationLosses / countDurationLosses) : '-';
 
     // Chart Data Generation
-    const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : hourStatsPnL[h]);
+    const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : selectedMetric === 'GAIN' ? (hourStatsPnL[h] / initialDeposit) * 100 : hourStatsPnL[h]);
     const hourlyColors = hourlyDataArr.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
 
-    const activeDowKeys = Object.keys(dowStats).filter(k => selectedMetric === 'RR' ? dowStats[k as any as number] !== 0 : dowStatsPnL[k as any as number] !== 0).map(Number);
+    const activeDowKeys = Object.keys(dowStats).filter(k => (selectedMetric === 'RR' ? dowStats[k as any as number] : dowStatsPnL[k as any as number]) !== 0).map(Number);
     const activeDowNames = activeDowKeys.map(k => dowNames[k]);
-    const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : dowStatsPnL[k]);
+    const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
     const dowColors = activeDowData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
 
-    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k as any as number] !== 0 : moyStatsPnL[k as any as number] !== 0) || moyPnL[k as any as number] !== 0).map(Number);
+    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k as any as number] : moyStatsPnL[k as any as number]) !== 0 || moyPnL[k as any as number] !== 0).map(Number);
     const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
-    const moyRRData = activeMoyKeys.map(k => selectedMetric === 'RR' ? moyStats[k] : moyStatsPnL[k]);
-    const moyRRColors = moyRRData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
-    const moyGainData = activeMoyKeys.map(k => {
-      let sb = moyStartBalance[k] || 1;
-      return (moyPnL[k] / sb) * 100;
+    const moyRRData = activeMoyKeys.map(k => {
+      if (selectedMetric === 'RR') return moyStats[k];
+      if (selectedMetric === 'GAIN') {
+        const sb = moyStartBalance[k] || initialDeposit;
+        return (moyPnL[k] / sb) * 100;
+      }
+      return moyStatsPnL[k];
     });
-    const moyGainColors = moyGainData.map(v => v >= 0 ? '#fed7aa' : '#b91c1c');
+    const moyRRColors = moyRRData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
 
     const matrixSorted = Object.entries(matrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
     const tfMatrixSorted = Object.entries(tfMatrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
@@ -506,7 +509,7 @@ export default function PerformancePage() {
       avgConsLoss: totalLossStreaksCount > 0 ? Math.round(sumOfLossStreaks / totalLossStreaksCount) : 0,
       perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
       hourlyDataArr, hourlyColors, activeDowNames, activeDowData, dowColors,
-      activeMoyNames, moyRRData, moyRRColors, moyGainData, moyGainColors,
+      activeMoyNames, moyRRData, moyRRColors,
       matrixSorted
     };
   }, [trades, funding, selectedYear, selectedTf, selectedPlan, selectedChecklist, selectedMetric]);
@@ -551,7 +554,7 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             const val = dataset.data[index] as number;
-            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : '$' + formatNumber(val);
+            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : '$' + formatNumber(val);
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -577,8 +580,9 @@ export default function PerformancePage() {
 
             const val = dataset.data[index] as number;
             let text = formatNumber(val);
-            if (i === 0) text = selectedMetric === 'RR' ? text + 'R' : '$' + formatNumber(val);
-            else text += '%';
+            if (selectedMetric === 'RR') text += 'R';
+            else if (selectedMetric === 'GAIN') text += '%';
+            else text = '$' + text;
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -794,7 +798,7 @@ export default function PerformancePage() {
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
             </div>
             <div className="space-y-3 mt-2">
-              {['15m', '5m', '1m'].map(tf => {
+              {['1h', '15m', '5m', '1m'].map(tf => {
                 const stat = data.tfStats[tf];
                 const resolved = stat.win + stat.loss;
                 const wr = resolved > 0 ? (stat.win / resolved) * 100 : 0;
@@ -857,6 +861,7 @@ export default function PerformancePage() {
           className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
           <option value="RR">Risk/Reward (RR)</option>
           <option value="PNL">Net P&L ($)</option>
+          <option value="GAIN">Gain (%)</option>
         </select>
       </div>
 
@@ -869,7 +874,7 @@ export default function PerformancePage() {
             <Bar
               data={{
                 labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6 }]
+                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
@@ -891,7 +896,7 @@ export default function PerformancePage() {
               key={`dow-${selectedMetric}`}
               data={{
                 labels: data.activeDowNames,
-                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6 }]
+                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
@@ -919,30 +924,21 @@ export default function PerformancePage() {
               labels: data.activeMoyNames,
               datasets: [
                 {
-                  label: selectedMetric === 'RR' ? 'Net RR' : 'Net P&L ($)',
+                  label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)',
                   data: data.moyRRData,
                   backgroundColor: data.moyRRColors,
                   borderRadius: 6,
-                  yAxisID: 'y'
-                },
-                {
-                  label: 'Gain',
-                  data: data.moyGainData,
-                  backgroundColor: data.moyGainColors,
-                  borderRadius: 6,
-                  yAxisID: 'y1'
                 }
-              ] as any
+              ]
             }}
             options={{
               responsive: true, maintainAspectRatio: false,
               layout: { padding: { top: 20, bottom: 20 } },
               scales: {
                 y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
-                y1: { display: false, grid: { drawOnChartArea: false }, grace: '20%' },
                 x: { grid: { display: false } }
               },
-              plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } }
+              plugins: { legend: { display: false } }
             }}
             plugins={[customMoyLabels]}
           />

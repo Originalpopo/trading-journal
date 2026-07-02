@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Trade, Funding } from "@/store/useJournalStore";
+import { useState, useEffect } from "react";
+import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
 import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale } from "lucide-react";
 
@@ -31,7 +31,34 @@ export function getDriveDirectUrl(url: string): string {
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
+  const updateTrade = useJournalStore((state) => state.updateTrade);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [localImages, setLocalImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (trade) {
+      setLocalImages(trade.images || []);
+    }
+  }, [trade]);
+
+  // Keyboard navigation for Lightbox
+  useEffect(() => {
+    if (selectedIndex === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedIndex(null);
+      } else if (e.key === 'ArrowLeft' && localImages.length > 1) {
+        setSelectedIndex((prev) => (prev !== null ? (prev - 1 + localImages.length) % localImages.length : null));
+      } else if (e.key === 'ArrowRight' && localImages.length > 1) {
+        setSelectedIndex((prev) => (prev !== null ? (prev + 1) % localImages.length : null));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, localImages.length]);
 
   if (!isOpen || !trade) return null;
 
@@ -51,12 +78,64 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   const profit = isFunding ? (f.deposit > 0 ? f.deposit : -(f.withdraw || 0)) : t.profit;
   const symbol = isFunding ? (f.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW') : t.symbol;
   const notes = isFunding ? f.notes : t.strategy;
-  const images = trade.images || [];
+  const images = localImages;
 
   let isBE = false;
   let rawRisk = 0;
   let badgeText = '';
   let durationDisplay = "1s";
+
+  const handleDirectFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!trade || isFunding) return;
+
+    let files: File[] = [];
+    if ('dataTransfer' in e) {
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        files = Array.from(e.dataTransfer.files);
+      }
+    } else if (e.target && 'files' in e.target) {
+      const target = e.target as HTMLInputElement;
+      if (target.files && target.files.length > 0) {
+        files = Array.from(target.files);
+      }
+    }
+
+    if (files.length === 0) return;
+
+    try {
+      setIsUploading(true);
+      const newUrls: string[] = [];
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (data.success && data.url) {
+          newUrls.push(data.url);
+        } else {
+          console.error('Upload failed for', file.name, data.error);
+        }
+      }
+
+      if (newUrls.length > 0) {
+        const updatedImages = [...localImages, ...newUrls];
+        setLocalImages(updatedImages);
+        await updateTrade(trade.id, { images: updatedImages });
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (isFunding) {
     badgeText = profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
@@ -84,15 +163,20 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
       {/* Image Lightbox Pop-up */}
-      {selectedIndex !== null && trade.images && trade.images[selectedIndex] && (
+      {selectedIndex !== null && images && images[selectedIndex] && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedIndex(null)}>
           <div className="relative w-full max-w-[95vw] 2xl:max-w-[1600px] h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <iframe src={getDriveDirectUrl(trade.images[selectedIndex])} title="Expanded preview" className="w-full h-full rounded-2xl border-0 shadow-2xl bg-white" />
+            {(() => {
+              const url = getDriveDirectUrl(images[selectedIndex]);
+              return url.startsWith('/api/images/') 
+                ? <img src={url} alt="Expanded preview" className="w-full h-full object-contain rounded-2xl border-0 shadow-2xl bg-black/50" />
+                : <iframe src={url} title="Expanded preview" className="w-full h-full rounded-2xl border-0 shadow-2xl bg-white" />;
+            })()}
             
             {/* Header info / close button */}
             <div className="absolute -top-12 inset-x-0 flex items-center justify-between px-2">
               <span className="text-white/80 text-sm font-bold tracking-wide">
-                Image {selectedIndex + 1} of {trade.images.length}
+                Image {selectedIndex + 1} of {images.length}
               </span>
               <button 
                 onClick={() => setSelectedIndex(null)} 
@@ -102,15 +186,15 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             </div>
 
             {/* Navigation Buttons (Next / Prev) */}
-            {trade.images.length > 1 && (
+            {images.length > 1 && (
               <>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex - 1 + trade.images!.length) % trade.images!.length); }}
+                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex - 1 + images.length) % images.length); }}
                   className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md border border-white/20 hover:scale-105 z-50">
                   <ChevronLeft className="w-8 h-8" />
                 </button>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex + 1) % trade.images!.length); }}
+                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex + 1) % images.length); }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md border border-white/20 hover:scale-105 z-50">
                   <ChevronRight className="w-8 h-8" />
                 </button>
@@ -212,9 +296,9 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               <div className="flex flex-col w-full md:w-56 bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 shrink-0">
                 <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4">Checklists</h4>
                 <div className="flex flex-col gap-3">
-                  {['On Plan', 'POI QM', 'Head', 'POI 1st', 'POI 2nd'].map((item, idx) => {
+                  {['On Plan', 'POI 1st', 'POI 2nd'].map((item, idx) => {
                     const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
-                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'POI QM' ? Crosshair : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : item === 'Head' ? Crown : CheckCircle2;
+                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : CheckCircle2;
                     return isChecked ? (
                       <div key={idx} className="flex items-center gap-2 text-orange-400">
                         <ItemIcon className="w-4 h-4" />
@@ -247,8 +331,28 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               Attached Images ({images.length})
             </h4>
             {images.length === 0 ? (
-              <div className="border border-dashed border-stone-200 rounded-2xl p-6 text-center text-xs text-stone-400 font-medium">
-                No images attached to this trade. You can add Google Drive images by clicking Edit below.
+              <div 
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDirectFileUpload}
+                className={`relative border-2 border-dashed ${isUploading ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-stone-50'} rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[100px]`}
+              >
+                <input type="file" multiple className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleDirectFileUpload} disabled={isUploading || isFunding} />
+                <div className="pointer-events-none flex flex-col items-center justify-center gap-2 h-full">
+                  {isUploading ? (
+                    <>
+                      <div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-xs font-bold text-orange-500">Uploading Images...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-6 h-6 text-stone-300" />
+                      <span className="text-xs text-stone-400 font-medium leading-relaxed">
+                        No images attached to this trade.<br/>
+                        <span className="font-bold text-stone-500">Click or drag images here</span> to upload directly.
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -282,7 +386,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 <Trash2 className="w-4 h-4" />
               </button>
               <button 
-                onClick={() => onEdit(trade)}
+                onClick={() => onEdit({ ...trade, images: localImages })}
                 className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
                 <Edit2 className="w-4 h-4" />
                 Edit
