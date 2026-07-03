@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -307,6 +307,11 @@ export default function HistoryPage() {
                           <span title="On Plan" className="text-orange-400"><ClipboardCheck className="w-4 h-4" /></span>
                         ) : (
                           <span title="On Plan (Not Selected)" className="text-stone-300"><ClipboardCheck className="w-4 h-4" /></span>
+                        )}
+                        {t.checklists && t.checklists.includes('Follow') ? (
+                          <span title="Follow" className="text-orange-400"><TrendingUp className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="Counter (Follow Not Selected)" className="text-stone-300"><TrendingUp className="w-4 h-4" /></span>
                         )}
                         {t.checklists && t.checklists.includes('POI 1st') ? (
                           <span title="POI 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -111,6 +111,7 @@ function calculateStandardDeviation(values: number[], mean: number) {
 
 export default function Dashboard() {
   const { trades, funding, isLoading } = useJournalStore();
+  const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'twr'>('twr');
 
   const data = useMemo(() => {
     let totalFunded = 0;
@@ -136,6 +137,15 @@ export default function Dashboard() {
     let maxDDPercent = 0;
     let cumulativePnL = 0;
 
+    let highestEquity = 0;
+    let maxEquityDDValue = 0;
+    let maxEquityDDPercent = 0;
+
+    let twrBalance = 0;
+    let highestTwrBalance = 0;
+    let maxTwrDDValue = 0;
+    let maxTwrDDPercent = 0;
+
     const equityData = [0];
     const balanceData = [0];
     const chartLabels = ['Start'];
@@ -155,11 +165,18 @@ export default function Dashboard() {
         runningBalance += evt.data.deposit;
         runningBalance -= evt.data.withdraw;
 
+        twrBalance += evt.data.deposit;
+
         if (runningBalance > highestBalance) highestBalance = runningBalance;
 
         let currentDD = highestBalance - runningBalance;
         let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
         if (currentDD > maxDDValue) { maxDDValue = currentDD; maxDDPercent = currentDDPct; }
+
+        if (twrBalance > highestTwrBalance) highestTwrBalance = twrBalance;
+        let currentTwrDD = highestTwrBalance - twrBalance;
+        let currentTwrDDPct = highestTwrBalance > 0 ? (currentTwrDD / highestTwrBalance) * 100 : 0;
+        if (currentTwrDD > maxTwrDDValue) { maxTwrDDValue = currentTwrDD; maxTwrDDPercent = currentTwrDDPct; }
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
@@ -184,8 +201,23 @@ export default function Dashboard() {
         let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
         if (currentDD > maxDDValue) { maxDDValue = currentDD; maxDDPercent = currentDDPct; }
 
+        twrBalance += t.profit;
+        if (twrBalance > highestTwrBalance) highestTwrBalance = twrBalance;
+        let currentTwrDD = highestTwrBalance - twrBalance;
+        let currentTwrDDPct = highestTwrBalance > 0 ? (currentTwrDD / highestTwrBalance) * 100 : 0;
+        if (currentTwrDD > maxTwrDDValue) { maxTwrDDValue = currentTwrDD; maxTwrDDPercent = currentTwrDDPct; }
+
         cumulativePnL += t.profit;
         
+        if (cumulativePnL > highestEquity) highestEquity = cumulativePnL;
+
+        let currentEquityDD = highestEquity - cumulativePnL;
+        let currentEquityDDPct = highestEquity > 0 ? (currentEquityDD / highestEquity) * 100 : 0;
+        if (currentEquityDD > maxEquityDDValue) {
+          maxEquityDDValue = currentEquityDD;
+          maxEquityDDPercent = currentEquityDDPct;
+        }
+
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
           const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -244,6 +276,12 @@ export default function Dashboard() {
     let activeDDValue = highestBalance - runningBalance;
     let activeDDPercent = highestBalance > 0 ? (activeDDValue / highestBalance) * 100 : 0;
 
+    let activeEquityDDValue = highestEquity - cumulativePnL;
+    let activeEquityDDPercent = highestEquity > 0 ? (activeEquityDDValue / highestEquity) * 100 : 0;
+
+    let activeTwrDDValue = highestTwrBalance - twrBalance;
+    let activeTwrDDPercent = highestTwrBalance > 0 ? (activeTwrDDValue / highestTwrBalance) * 100 : 0;
+
     const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) : 0;
     const stdDev = calculateStandardDeviation(profits, trades.length ? net / trades.length : 0);
 
@@ -255,6 +293,8 @@ export default function Dashboard() {
       avgSLRR: slRRCount ? (slTotalRR / slRRCount) : 0, maxSLRR,
       maxStreakW, maxStreakL,
       maxDDValue, maxDDPercent, activeDDValue, activeDDPercent,
+      maxEquityDDValue, maxEquityDDPercent, activeEquityDDValue, activeEquityDDPercent,
+      maxTwrDDValue, maxTwrDDPercent, activeTwrDDValue, activeTwrDDPercent,
       equityData, balanceData, chartLabels
     };
   }, [trades, funding]);
@@ -325,9 +365,15 @@ export default function Dashboard() {
     }
   };
 
-  const ddScaleMax = Math.max(data.maxDDPercent * 1.25, 10);
-  const activeBarHeightPct = Math.min(100, Math.max(6, (data.activeDDPercent / ddScaleMax) * 100));
-  const maxCapBottomPct = Math.min(95, Math.max(activeBarHeightPct, (data.maxDDPercent / ddScaleMax) * 100));
+  const displayMaxDDPercent = ddMode === 'balance' ? data.maxDDPercent : (ddMode === 'twr' ? data.maxTwrDDPercent : data.maxEquityDDPercent);
+  const displayMaxDDValue = ddMode === 'balance' ? data.maxDDValue : (ddMode === 'twr' ? data.maxTwrDDValue : data.maxEquityDDValue);
+  const displayMaxDDLabel = ddMode === 'balance' ? 'Max DD' : (ddMode === 'twr' ? 'TWR MAX DD' : 'EQ. Max DD');
+  const displayActiveDDPercent = ddMode === 'balance' ? data.activeDDPercent : (ddMode === 'twr' ? data.activeTwrDDPercent : data.activeEquityDDPercent);
+  const displayActiveDDValue = ddMode === 'balance' ? data.activeDDValue : (ddMode === 'twr' ? data.activeTwrDDValue : data.activeEquityDDValue);
+
+  const ddScaleMax = Math.max(displayMaxDDPercent * 1.25, 10);
+  const activeBarHeightPct = Math.min(100, Math.max(6, (displayActiveDDPercent / ddScaleMax) * 100));
+  const maxCapBottomPct = Math.min(95, Math.max(activeBarHeightPct, (displayMaxDDPercent / ddScaleMax) * 100));
 
   if (isLoading) {
     return (
@@ -448,25 +494,27 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col h-full">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Drawdown
-          </h3>
+        <div className="glass-card p-6 flex flex-col h-full relative">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Drawdown
+            </h3>
+          </div>
 
-          <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[220px]">
+          <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[200px] mb-8">
             <div className="flex flex-col justify-between z-10 flex-1 pr-2 py-1">
               <div>
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Max DD</p>
-                <p className="text-2xl font-extrabold text-red-950">{formatNumber(data.maxDDPercent)}%</p>
-                <p className="text-[11px] font-bold text-stone-500">${formatNumber(data.maxDDValue)}</p>
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{displayMaxDDLabel}</p>
+                <p className="text-2xl font-extrabold text-red-950">{formatNumber(displayMaxDDPercent)}%</p>
+                <p className="text-[11px] font-bold text-stone-500">${formatNumber(displayMaxDDValue)}</p>
               </div>
               
               <div className="w-full border-t border-stone-200 my-auto"></div>
 
               <div>
                 <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
-                <p className="text-2xl font-extrabold text-red-900">{formatNumber(data.activeDDPercent)}%</p>
-                <p className="text-[11px] font-bold text-stone-500">${formatNumber(data.activeDDValue)}</p>
+                <p className="text-2xl font-extrabold text-red-900">{formatNumber(displayActiveDDPercent)}%</p>
+                <p className="text-[11px] font-bold text-stone-500">${formatNumber(displayActiveDDValue)}</p>
               </div>
             </div>
 
@@ -492,6 +540,41 @@ export default function Dashboard() {
                 className="w-full bg-red-900 rounded-lg shadow-[0_0_12px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out relative z-10"
                 style={{ height: `${activeBarHeightPct}%` }}
               />
+            </div>
+          </div>
+          
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+            <div className="flex items-center bg-stone-100 p-0.5 rounded-md border border-stone-200 shadow-sm">
+              <button
+                onClick={() => setDdMode('equity')}
+                className={`text-[9px] font-bold px-3 py-1 rounded transition-all ${
+                  ddMode === 'equity' 
+                    ? 'bg-white text-stone-950 shadow-md' 
+                    : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                Equity
+              </button>
+              <button
+                onClick={() => setDdMode('twr')}
+                className={`text-[9px] font-bold px-3 py-1 rounded transition-all ${
+                  ddMode === 'twr' 
+                    ? 'bg-white text-stone-950 shadow-md' 
+                    : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                TWR
+              </button>
+              <button
+                onClick={() => setDdMode('balance')}
+                className={`text-[9px] font-bold px-3 py-1 rounded transition-all ${
+                  ddMode === 'balance' 
+                    ? 'bg-white text-stone-950 shadow-md' 
+                    : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                Balance
+              </button>
             </div>
           </div>
         </div>

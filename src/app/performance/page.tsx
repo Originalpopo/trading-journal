@@ -50,7 +50,7 @@ export default function PerformancePage() {
   const [selectedTf, setSelectedTf] = useState('ALL');
   const [selectedPlan, setSelectedPlan] = useState('ALL');
   const [selectedChecklist, setSelectedChecklist] = useState('ALL');
-  const [selectedMetric, setSelectedMetric] = useState('RR');
+  const [selectedMetric, setSelectedMetric] = useState('GAIN');
 
   const availableYears = useMemo(() => {
     const years = Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).sort((a, b) => b - a);
@@ -84,7 +84,7 @@ export default function PerformancePage() {
         });
       }
     });
-    ['POI 1st', 'POI 2nd'].forEach(c => clSet.add(c));
+    ['POI 1st', 'POI 2nd', 'Follow', 'Counter'].forEach(c => clSet.add(c));
     return Array.from(clSet).sort();
   }, [trades]);
 
@@ -125,7 +125,11 @@ export default function PerformancePage() {
           }
           if (selectedChecklist !== 'ALL') {
             const t = evt.data;
-            if (!t.checklists || !t.checklists.includes(selectedChecklist)) return;
+            if (selectedChecklist === 'Counter') {
+              if (t.checklists && t.checklists.includes('Follow')) return;
+            } else {
+              if (!t.checklists || !t.checklists.includes(selectedChecklist)) return;
+            }
           }
           if (selectedPlan !== 'ALL') {
             const t = evt.data;
@@ -607,46 +611,6 @@ export default function PerformancePage() {
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Performance</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Year:</span>
-            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              {availableYears.map(y => (
-                 <option key={y} value={y.toString()}>{y}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">TF:</span>
-            <select value={selectedTf} onChange={(e) => setSelectedTf(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              <option value="ALL">ALL</option>
-              {availableTfs.map(tf => (
-                <option key={tf} value={tf}>{tf}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Plan:</span>
-            <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              <option value="ALL">ALL</option>
-              <option value="On Plan">On Plan</option>
-              <option value="Off Plan">Off Plan</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Checklist:</span>
-            <select value={selectedChecklist} onChange={(e) => setSelectedChecklist(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              <option value="ALL">ALL</option>
-              {availableChecklists.map(cl => (
-                <option key={cl} value={cl}>{cl}</option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
 
       <div className="glass-card p-6 h-[350px] flex flex-col w-full">
@@ -691,6 +655,49 @@ export default function PerformancePage() {
             }}
             plugins={[lastBalancePointPlugin]}
           />
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-2 mb-2">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year:</span>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              {availableYears.map(y => (
+                 <option key={y} value={y.toString()}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">TF:</span>
+            <select value={selectedTf} onChange={(e) => setSelectedTf(e.target.value)}
+              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              <option value="ALL">ALL</option>
+              {availableTfs.map(tf => (
+                <option key={tf} value={tf}>{tf}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Plan:</span>
+            <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
+              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              <option value="ALL">ALL</option>
+              <option value="On Plan">On Plan</option>
+              <option value="Off Plan">Off Plan</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Checklist:</span>
+            <select value={selectedChecklist} onChange={(e) => setSelectedChecklist(e.target.value)}
+              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              <option value="ALL">ALL</option>
+              {availableChecklists.map(cl => (
+                <option key={cl} value={cl}>{cl}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -855,14 +862,39 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      <div className="flex justify-end items-center gap-3 mt-4 mb-2">
-        <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Chart Metric</span>
-        <select value={selectedMetric} onChange={(e) => setSelectedMetric(e.target.value)}
-          className="bg-white border border-stone-200 text-stone-950 text-sm font-bold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-          <option value="RR">Risk/Reward (RR)</option>
-          <option value="PNL">Net P&L ($)</option>
-          <option value="GAIN">Gain (%)</option>
-        </select>
+      <div className="flex justify-end mt-4 mb-2">
+        <div className="flex bg-stone-100 p-1 rounded-xl">
+          <button
+            onClick={() => setSelectedMetric('RR')}
+            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
+              selectedMetric === 'RR' 
+                ? 'bg-white text-stone-950 shadow-sm' 
+                : 'text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Risk/Reward (RR)
+          </button>
+          <button
+            onClick={() => setSelectedMetric('PNL')}
+            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
+              selectedMetric === 'PNL' 
+                ? 'bg-white text-stone-950 shadow-sm' 
+                : 'text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Net P&L ($)
+          </button>
+          <button
+            onClick={() => setSelectedMetric('GAIN')}
+            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
+              selectedMetric === 'GAIN' 
+                ? 'bg-white text-stone-950 shadow-sm' 
+                : 'text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Gain (%)
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -103,6 +103,7 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
         entryTime: entryTimeStr,
         duration: duration,
         isOnPlan: true,
+        checklists: ['On Plan', 'Follow'],
         qty: parseFloat(entryRow ? entryRow['Filled Qty'] : lastExitRow['Filled Qty']) || 0,
         price: parseFloat(entryRow ? entryRow['Avg Fill Price'] : lastExitRow['Avg Fill Price']) || 0,
         commission: totalCommission,
