@@ -266,7 +266,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             <div>
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
               <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2">
-                {['1h', '15m', '5m', '1m'].map((item) => {
+                {['1h', '15m', '5m', '1m', '15s', '5s'].map((item) => {
                   const currentTfs = tf.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
                   const isChecked = currentTfs.includes(item);
                   return (
@@ -281,7 +281,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                           } else {
                             newTfs = newTfs.filter(t => t !== item);
                           }
-                          const orderedTfs = ['1h', '15m', '5m', '1m'].filter(t => newTfs.includes(t));
+                          const orderedTfs = ['1h', '15m', '5m', '1m', '15s', '5s'].filter(t => newTfs.includes(t));
                           setTf(orderedTfs.length > 0 ? orderedTfs.join(', ') : 'none');
                         }} 
                         className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" 

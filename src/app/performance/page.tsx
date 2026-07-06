@@ -71,7 +71,7 @@ export default function PerformancePage() {
         if (trimmed) tfsSet.add(trimmed);
       });
     });
-    ['1h', '15m', '5m', '1m', 'none'].forEach(item => tfsSet.add(item));
+    ['1h', '15m', '5m', '1m', '15s', '5s', 'none'].forEach(item => tfsSet.add(item));
     return Array.from(tfsSet);
   }, [trades]);
 
@@ -206,6 +206,8 @@ export default function PerformancePage() {
       '15m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
       '5m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
       '1m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+      '15s': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+      '5s': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
       'none': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
     };
 
@@ -338,7 +340,7 @@ export default function PerformancePage() {
         if (tfVals.length === 0) tfVals.push('none');
 
         tfVals.forEach((tfKey: string) => {
-          const validKey = ['1h', '15m', '5m', '1m'].includes(tfKey) ? tfKey : 'none';
+          const validKey = ['1h', '15m', '5m', '1m', '15s', '5s'].includes(tfKey) ? tfKey : 'none';
           tfStats[validKey].trades++;
           tfStats[validKey].pnl += pnl;
           if (isBE) {
@@ -805,7 +807,7 @@ export default function PerformancePage() {
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
             </div>
             <div className="space-y-3 mt-2">
-              {['1h', '15m', '5m', '1m'].map(tf => {
+              {['1h', '15m', '5m', '1m', '15s', '5s'].map(tf => {
                 const stat = data.tfStats[tf];
                 const resolved = stat.win + stat.loss;
                 const wr = resolved > 0 ? (stat.win / resolved) * 100 : 0;
