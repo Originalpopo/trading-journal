@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
-import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp } from "lucide-react";
+import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -296,9 +296,9 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               <div className="flex flex-col w-full md:w-56 bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 shrink-0">
                 <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4">Checklists</h4>
                 <div className="flex flex-col gap-3">
-                  {['On Plan', 'Follow', 'POI 1st', 'POI 2nd'].map((item, idx) => {
+                  {['On Plan', 'Follow', 'Reversal', 'POI 1st', 'POI 2nd', 'POI 3rd'].map((item, idx) => {
                     const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
-                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : CheckCircle2;
+                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : item === 'POI 3rd' ? Crosshair : CheckCircle2;
                     return isChecked ? (
                       <div key={idx} className="flex items-center gap-2 text-orange-400">
                         <ItemIcon className="w-4 h-4" />

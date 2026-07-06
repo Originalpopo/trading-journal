@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp, TrendingDown } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -313,6 +313,11 @@ export default function HistoryPage() {
                         ) : (
                           <span title="Counter (Follow Not Selected)" className="text-stone-300"><TrendingUp className="w-4 h-4" /></span>
                         )}
+                        {t.checklists && t.checklists.includes('Reversal') ? (
+                          <span title="Reversal" className="text-orange-400"><TrendingDown className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="Reversal (Not Selected)" className="text-stone-300"><TrendingDown className="w-4 h-4" /></span>
+                        )}
                         {t.checklists && t.checklists.includes('POI 1st') ? (
                           <span title="POI 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
                         ) : (
@@ -322,6 +327,11 @@ export default function HistoryPage() {
                           <span title="POI 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
                         ) : (
                           <span title="POI 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
+                        )}
+                        {t.checklists && t.checklists.includes('POI 3rd') ? (
+                          <span title="POI 3rd" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
+                        ) : (
+                          <span title="POI 3rd (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
                         )}
                       </div>
                     </td>

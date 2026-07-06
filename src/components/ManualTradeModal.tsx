@@ -338,7 +338,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
             <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
-              {['On Plan', 'Follow', 'POI 1st', 'POI 2nd'].map((item) => {
+              {['On Plan', 'Follow', 'Reversal', 'POI 1st', 'POI 2nd', 'POI 3rd'].map((item) => {
                 const isChecked = checklists.includes(item);
                 return (
                   <label key={item} className="flex items-center gap-2 cursor-pointer">

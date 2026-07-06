@@ -84,7 +84,7 @@ export default function PerformancePage() {
         });
       }
     });
-    ['POI 1st', 'POI 2nd', 'Follow', 'Counter'].forEach(c => clSet.add(c));
+    ['POI 1st', 'POI 2nd', 'POI 3rd', 'Follow', 'Reversal', 'Counter'].forEach(c => clSet.add(c));
     return Array.from(clSet).sort();
   }, [trades]);
 
