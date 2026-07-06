@@ -2,6 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -51,6 +52,7 @@ export default function PerformancePage() {
   const [selectedPlan, setSelectedPlan] = useState('ALL');
   const [selectedChecklist, setSelectedChecklist] = useState('ALL');
   const [selectedMetric, setSelectedMetric] = useState('GAIN');
+  const [tfPage, setTfPage] = useState(0);
 
   const availableYears = useMemo(() => {
     const years = Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).sort((a, b) => b - a);
@@ -803,12 +805,27 @@ export default function PerformancePage() {
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
+              <div className="flex gap-1">
+                <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronRight className="w-3.5 h-3.5" /></button>
+              </div>
             </div>
             <div className="space-y-3 mt-2">
-              {['1h', '15m', '5m', '1m', '15s', '5s'].map(tf => {
-                const stat = data.tfStats[tf];
+              {(() => {
+                const validTfs = ['1h', '15m', '5m', '1m', '15s', '5s']
+                  .filter(tf => data.tfStats[tf] && data.tfStats[tf].trades > 0)
+                  .sort((a, b) => data.tfStats[b].pnl - data.tfStats[a].pnl);
+                
+                if (validTfs.length === 0) return null;
+                
+                const totalPages = Math.ceil(validTfs.length / 3);
+                let normalizedPage = tfPage % totalPages;
+                if (normalizedPage < 0) normalizedPage += totalPages;
+                
+                return validTfs.slice(normalizedPage * 3, normalizedPage * 3 + 3).map(tf => {
+                  const stat = data.tfStats[tf];
                 const resolved = stat.win + stat.loss;
                 const wr = resolved > 0 ? (stat.win / resolved) * 100 : 0;
                 return (
@@ -825,7 +842,8 @@ export default function PerformancePage() {
                     </div>
                   </div>
                 );
-              })}
+                });
+              })()}
             </div>
           </div>
         </div>
