@@ -25,7 +25,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [risk, setRisk] = useState("");
   const [strategy, setStrategy] = useState("");
   const [images, setImages] = useState<string[]>([""]);
-  const [isUploading, setIsUploading] = useState(false);
   const [tf, setTf] = useState("none");
   const [checklists, setChecklists] = useState<string[]>([]);
 
@@ -105,47 +104,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     }
   }, [isOpen, tradeToEdit, trades]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    let file: File | null = null;
-    
-    if ('dataTransfer' in e) {
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        file = e.dataTransfer.files[0];
-      }
-    } else if (e.target && 'files' in e.target) {
-      const target = e.target as HTMLInputElement;
-      if (target.files && target.files.length > 0) {
-        file = target.files[0];
-      }
-    }
-    
-    if (!file) return;
 
-    try {
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await res.json();
-      if (data.success && data.url) {
-        const cleanImages = images.filter(url => url.trim() !== "");
-        setImages([...cleanImages, data.url, ""]);
-      } else {
-        alert(data.error || 'Upload failed');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Upload failed');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -387,26 +346,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               </button>
             </div>
 
-            <div 
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleFileUpload}
-              className={`relative mt-2 mb-3 border-2 border-dashed ${isUploading ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-stone-50'} rounded-xl p-4 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[80px]`}
-            >
-              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
-              <div className="pointer-events-none flex flex-col items-center justify-center gap-1.5 h-full">
-                {isUploading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs font-bold text-orange-500">Uploading to Google Drive...</span>
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="w-5 h-5 text-stone-400" />
-                    <span className="text-xs font-bold text-stone-500">Click or drag an image here to upload</span>
-                  </>
-                )}
-              </div>
-            </div>
+
 
             {images.map((url, idx) => (
               <div key={idx} className="flex items-center gap-2">

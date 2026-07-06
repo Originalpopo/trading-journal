@@ -8,10 +8,8 @@ import { Lock, Save, FolderOpen } from "lucide-react";
 export default function SettingsPage() {
   const [pin, setPin] = useState("");
   const [hint, setHint] = useState("");
-  const [uploadPath, setUploadPath] = useState("D:\\Google Drive\\TradeJournal_Photos");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -27,15 +25,7 @@ export default function SettingsPage() {
           setHint("โทรศัพท์บ้านเก่า");
         }
 
-        try {
-          const configRes = await fetch('/api/config');
-          if (configRes.ok) {
-            const config = await configRes.json();
-            if (config.uploadPath) setUploadPath(config.uploadPath);
-          }
-        } catch (e) {
-          console.error("Error fetching local config:", e);
-        }
+
       } catch (error) {
         console.error("Error fetching settings:", error);
       } finally {
@@ -70,32 +60,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadPath.trim()) {
-      alert("Storage path cannot be empty.");
-      return;
-    }
 
-    setIsSavingConfig(true);
-    try {
-      const res = await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uploadPath: uploadPath.trim() })
-      });
-      if (res.ok) {
-        alert("Local Image Storage path saved successfully!");
-      } else {
-        alert("Failed to save storage path.");
-      }
-    } catch (error) {
-      console.error("Error saving config:", error);
-      alert("Failed to save storage path.");
-    } finally {
-      setIsSavingConfig(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -165,42 +130,7 @@ export default function SettingsPage() {
         </form>
       </div>
 
-      <div className="bg-white rounded-2xl p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
-          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-            <FolderOpen className="w-5 h-5 text-orange-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-stone-950">Local Image Storage</h3>
-            <p className="text-sm text-stone-500 font-medium">Set the directory on this computer where uploaded images will be saved.</p>
-          </div>
-        </div>
 
-        <form onSubmit={handleSaveConfig} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-stone-950">Folder Path</label>
-            <input
-              type="text"
-              value={uploadPath}
-              onChange={(e) => setUploadPath(e.target.value)}
-              placeholder="e.g. D:\Google Drive\TradeJournal_Photos"
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition"
-            />
-            <p className="text-xs text-stone-400 font-medium">Example: D:\Google Drive\TradeJournal_Photos</p>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <button
-              type="submit"
-              disabled={isSavingConfig || !uploadPath.trim()}
-              className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {isSavingConfig ? "Saving..." : "Save Path"}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

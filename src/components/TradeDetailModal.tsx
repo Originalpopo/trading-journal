@@ -33,7 +33,6 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
   const updateTrade = useJournalStore((state) => state.updateTrade);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [localImages, setLocalImages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -85,57 +84,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   let badgeText = '';
   let durationDisplay = "1s";
 
-  const handleDirectFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!trade || isFunding) return;
 
-    let files: File[] = [];
-    if ('dataTransfer' in e) {
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        files = Array.from(e.dataTransfer.files);
-      }
-    } else if (e.target && 'files' in e.target) {
-      const target = e.target as HTMLInputElement;
-      if (target.files && target.files.length > 0) {
-        files = Array.from(target.files);
-      }
-    }
-
-    if (files.length === 0) return;
-
-    try {
-      setIsUploading(true);
-      const newUrls: string[] = [];
-
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const data = await res.json();
-        if (data.success && data.url) {
-          newUrls.push(data.url);
-        } else {
-          console.error('Upload failed for', file.name, data.error);
-        }
-      }
-
-      if (newUrls.length > 0) {
-        const updatedImages = [...localImages, ...newUrls];
-        setLocalImages(updatedImages);
-        await updateTrade(trade.id, { images: updatedImages });
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Upload failed');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   if (isFunding) {
     badgeText = profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
@@ -331,27 +280,13 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               Attached Images ({images.length})
             </h4>
             {images.length === 0 ? (
-              <div 
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDirectFileUpload}
-                className={`relative border-2 border-dashed ${isUploading ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-stone-50'} rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[100px]`}
-              >
-                <input type="file" multiple className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={handleDirectFileUpload} disabled={isUploading || isFunding} />
-                <div className="pointer-events-none flex flex-col items-center justify-center gap-2 h-full">
-                  {isUploading ? (
-                    <>
-                      <div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-xs font-bold text-orange-500">Uploading Images...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="w-6 h-6 text-stone-300" />
-                      <span className="text-xs text-stone-400 font-medium leading-relaxed">
-                        No images attached to this trade.<br/>
-                        <span className="font-bold text-stone-500">Click or drag images here</span> to upload directly.
-                      </span>
-                    </>
-                  )}
+              <div className="relative border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center min-h-[100px]">
+                <div className="flex flex-col items-center justify-center gap-2 h-full">
+                  <ImageIcon className="w-6 h-6 text-stone-300" />
+                  <span className="text-xs text-stone-400 font-medium leading-relaxed">
+                    No images attached to this entry.<br/>
+                    <span className="font-bold text-stone-500">Click Edit to add Google Drive links</span>.
+                  </span>
                 </div>
               </div>
             ) : (
