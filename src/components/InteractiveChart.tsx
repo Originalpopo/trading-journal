@@ -238,7 +238,11 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
               if (trade.slPrice && trade.slPrice < trade.entryPrice) {
                 slP = trade.slPrice;
               } else {
-                slP = trade.entryPrice - (rewardSize / 5);
+                if (trade.rr && trade.rr > 0) {
+                  slP = trade.entryPrice - (rewardSize / trade.rr);
+                } else {
+                  slP = trade.entryPrice - (rewardSize / 5);
+                }
               }
             } else {
               tpP = trade.tpPrice || trade.entryPrice * 1.002;
@@ -262,7 +266,11 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
               if (trade.slPrice && trade.slPrice > trade.entryPrice) {
                 slP = trade.slPrice;
               } else {
-                slP = trade.entryPrice + (rewardSize / 5);
+                if (trade.rr && trade.rr > 0) {
+                  slP = trade.entryPrice + (rewardSize / trade.rr);
+                } else {
+                  slP = trade.entryPrice + (rewardSize / 5);
+                }
               }
             } else {
               tpP = trade.tpPrice || trade.entryPrice * 0.998;
