@@ -792,12 +792,12 @@ export default function PerformancePage() {
             </div>
             <div className="flex justify-between text-[10px] font-bold mt-3">
               <div className="flex flex-col gap-1">
-                <span className="text-stone-950 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-stone-950"></span><span>{data.onPlanWR}%</span></span>
+                <span className="text-stone-950 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-stone-950"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
                 <span className="text-stone-950">On Plan</span>
                 <span className="text-stone-950">{formatCurrency(data.onPlanPnL)}</span>
               </div>
               <div className="flex flex-col gap-1 items-end text-right">
-                <span className="text-stone-400 flex items-center gap-1 justify-end"><span className="w-2 h-2 rounded-full bg-stone-200"></span><span>{data.offPlanWR}%</span></span>
+                <span className="text-stone-400 flex items-center gap-1 justify-end"><span className="w-2 h-2 rounded-full bg-stone-200"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
                 <span className="text-stone-400">Off Plan</span>
                 <span className="text-stone-400">{formatCurrency(data.offPlanPnL)}</span>
               </div>

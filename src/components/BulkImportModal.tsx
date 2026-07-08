@@ -53,8 +53,17 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
 
     let defaultRisk = 0;
     let defaultTf = "none";
+    let defaultChecklists = ["On Plan", "Follow"];
     if (trades.length > 0) {
       const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
+      
+      const lastChecklists = sortedTrades[0].checklists || [];
+      const newChecklists = ['On Plan'];
+      if (lastChecklists.includes('Follow')) newChecklists.push('Follow');
+      if (lastChecklists.includes('Reversal')) newChecklists.push('Reversal');
+      if (newChecklists.length === 1) newChecklists.push('Follow');
+      defaultChecklists = newChecklists;
+
       for (const t of sortedTrades) {
         if (defaultTf === "none" && t.tf && t.tf !== "none") {
           defaultTf = t.tf;
@@ -115,13 +124,13 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
           risk: defaultRisk,
           rr: rr,
           resultType,
-          strategy: "Imported from TradingView",
+          strategy: "",
           isOnPlan: true,
           symbol: t.symbol || "UNKNOWN",
           side: t.side || "BUY",
           images: [],
           tf: defaultTf,
-          checklists: [],
+          checklists: defaultChecklists,
           entryPrice: t.entryPrice,
           exitPrice: t.exitPrice,
           slPrice: t.slPrice,

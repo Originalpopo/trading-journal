@@ -105,13 +105,23 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         
         let defaultRisk = "";
         let defaultTf = "15m";
+        let defaultChecklists = ['On Plan', 'Follow'];
         if (trades.length > 0) {
           const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
+          
           if (sortedTrades[0].tf) {
              let lastTf = sortedTrades[0].tf;
              if (lastTf.includes(',')) lastTf = lastTf.split(',')[0].trim();
              defaultTf = lastTf === 'none' ? '15m' : lastTf;
           }
+
+          const lastChecklists = sortedTrades[0].checklists || [];
+          const newChecklists = ['On Plan'];
+          if (lastChecklists.includes('Follow')) newChecklists.push('Follow');
+          if (lastChecklists.includes('Reversal')) newChecklists.push('Reversal');
+          if (newChecklists.length === 1) newChecklists.push('Follow');
+          defaultChecklists = newChecklists;
+
           for (let t of sortedTrades) {
             if (t.risk && t.risk > 0) {
               defaultRisk = t.risk.toString();
@@ -121,7 +131,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         }
         setRisk(defaultRisk);
         setTf(defaultTf);
-        setChecklists(['On Plan', 'Follow']);
+        setChecklists(defaultChecklists);
 
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
