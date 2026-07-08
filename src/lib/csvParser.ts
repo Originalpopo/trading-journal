@@ -17,12 +17,19 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
   let latestRisk = 0;
   let latestTf = "none";
   try {
-    const q = query(collection(db, 'trades'), orderBy('time', 'desc'), limit(1));
+    const q = query(collection(db, 'trades'), orderBy('time', 'desc'), limit(15));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-      const data = querySnapshot.docs[0].data();
-      latestRisk = Number(data.risk) || 0;
-      latestTf = data.tf || "none";
+      for (const doc of querySnapshot.docs) {
+        const data = doc.data();
+        if (latestRisk === 0 && Number(data.risk) > 0) {
+          latestRisk = Number(data.risk);
+        }
+        if (latestTf === "none" && data.tf && data.tf !== "none") {
+          latestTf = data.tf;
+        }
+        if (latestRisk > 0 && latestTf !== "none") break;
+      }
     }
   } catch (e) {
     console.error("Error fetching latest risk/tf:", e);

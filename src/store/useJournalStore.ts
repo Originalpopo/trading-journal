@@ -16,6 +16,16 @@ export interface Trade {
   images?: string[];
   tf?: string;
   checklists?: string[];
+  entryPrice?: number;
+  exitPrice?: number;
+  slPrice?: number;
+  tpPrice?: number;
+  exitTime?: string;
+  orderId?: string;
+  positionId?: string;
+  entryType?: string;
+  exitType?: string;
+  chartData?: any;
 }
 
 export interface Funding {

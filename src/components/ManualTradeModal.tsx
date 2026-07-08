@@ -5,7 +5,7 @@ import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
-import { Trash2, X, HelpCircle, ImageIcon } from "lucide-react";
+import { Trash2, X, HelpCircle } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -24,9 +24,15 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [time, setTime] = useState("");
   const [risk, setRisk] = useState("");
   const [strategy, setStrategy] = useState("");
-  const [images, setImages] = useState<string[]>([""]);
+
   const [tf, setTf] = useState("none");
   const [checklists, setChecklists] = useState<string[]>([]);
+  const [entryPrice, setEntryPrice] = useState("");
+  const [exitPrice, setExitPrice] = useState("");
+  const [tpPrice, setTpPrice] = useState("");
+  const [slPrice, setSlPrice] = useState("");
+  const [orderEntryType, setOrderEntryType] = useState("Limit");
+  const [orderExitType, setOrderExitType] = useState("Limit");
 
   useEffect(() => {
     if (isOpen) {
@@ -39,13 +45,13 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setSymbol("");
           setSide("BUY");
           setRisk("");
-          setImages(f.images && f.images.length > 0 ? f.images : [""]);
+
           setTf("none");
 
           try {
             const d = new Date(f.time.replace(" ", "T"));
             d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            setTime(d.toISOString().slice(0, 16));
+            setTime(d.toISOString().slice(0, 19));
           } catch (e) {
             setTime("");
           }
@@ -62,13 +68,23 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             initialChecklists.push('On Plan');
           }
           setChecklists(initialChecklists);
-          setImages(t.images && t.images.length > 0 ? t.images : [""]);
-          setTf(t.tf || "none");
+
+          
+          let initialTf = t.tf || "15m";
+          if (initialTf.includes(',')) initialTf = initialTf.split(',')[0].trim();
+          setTf(initialTf === 'none' ? '15m' : initialTf);
+          
+          setEntryPrice(t.entryPrice?.toString() || "");
+          setExitPrice(t.exitPrice?.toString() || "");
+          setTpPrice(t.tpPrice?.toString() || "");
+          setSlPrice(t.slPrice?.toString() || "");
+          setOrderEntryType(t.entryType || "Limit");
+          setOrderExitType(t.exitType || "Limit");
 
           try {
             const d = new Date(t.time.replace(" ", "T"));
             d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            setTime(d.toISOString().slice(0, 16));
+            setTime(d.toISOString().slice(0, 19));
           } catch (e) {
             setTime("");
           }
@@ -79,13 +95,23 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         setSide("BUY");
         setAmount("");
         setStrategy("");
-        setImages([""]);
+
+        setEntryPrice("");
+        setExitPrice("");
+        setTpPrice("");
+        setSlPrice("");
+        setOrderEntryType("Limit");
+        setOrderExitType("Limit");
         
         let defaultRisk = "";
-        let defaultTf = "none";
+        let defaultTf = "15m";
         if (trades.length > 0) {
           const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
-          if (sortedTrades[0].tf) defaultTf = sortedTrades[0].tf;
+          if (sortedTrades[0].tf) {
+             let lastTf = sortedTrades[0].tf;
+             if (lastTf.includes(',')) lastTf = lastTf.split(',')[0].trim();
+             defaultTf = lastTf === 'none' ? '15m' : lastTf;
+          }
           for (let t of sortedTrades) {
             if (t.risk && t.risk > 0) {
               defaultRisk = t.risk.toString();
@@ -99,7 +125,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        setTime(now.toISOString().slice(0, 16));
+        setTime(now.toISOString().slice(0, 19));
       }
     }
   }, [isOpen, tradeToEdit, trades]);
@@ -111,10 +137,10 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     setIsSubmitting(true);
 
     try {
-      const timeVal = time.replace("T", " ");
+      const timeVal = time;
       const parsedAmount = parseFloat(amount) || 0;
       const parsedRisk = parseFloat(risk) || 0;
-      const cleanImages = images.filter(url => url.trim() !== "");
+
 
       let finalData: any;
 
@@ -125,8 +151,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           time: timeVal,
           deposit: isDeposit ? Math.abs(parsedAmount) : 0,
           withdraw: isDeposit ? 0 : Math.abs(parsedAmount),
-          notes: strategy,
-          images: cleanImages
+          notes: strategy
         };
         await setDoc(doc(db, "funding", fId), data, { merge: true });
         finalData = { 
@@ -161,12 +186,15 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           resultType: resType,
           strategy,
           isOnPlan: checklists.includes('On Plan'),
-          images: cleanImages,
           tf,
-          checklists
+          checklists,
+          ...(entryPrice && { entryPrice: parseFloat(entryPrice), entryType: orderEntryType }),
+          ...(exitPrice && { exitPrice: parseFloat(exitPrice), exitType: orderExitType }),
+          ...(tpPrice && { tpPrice: parseFloat(tpPrice) }),
+          ...(slPrice && { slPrice: parseFloat(slPrice) })
         };
         await setDoc(doc(db, "trades", tId), data, { merge: true });
-        finalData = { id: tId, ...data, isFunding: false };
+        finalData = { ...(tradeToEdit || {}), id: tId, ...data, isFunding: false };
       }
 
       onClose(finalData);
@@ -239,6 +267,46 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             </div>
           </div>
 
+          <div className={`grid grid-cols-2 gap-4 mb-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
+            <div>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Entry Price & Type</label>
+              <div className="flex bg-stone-50 border border-stone-200 rounded-lg overflow-hidden focus-within:border-stone-500 transition">
+                <input type="number" step="0.01" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} placeholder="Optional"
+                  className="w-full bg-transparent text-stone-950 text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
+                <select value={orderEntryType} onChange={(e) => setOrderEntryType(e.target.value)} 
+                  className="bg-stone-100/50 text-stone-500 text-xs font-bold border-l border-stone-200 px-2 py-2 focus:outline-none cursor-pointer">
+                  <option value="Limit">Limit</option>
+                  <option value="Market">Market</option>
+                  <option value="Stop">Stop</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Exit Price & Type</label>
+              <div className="flex bg-stone-50 border border-stone-200 rounded-lg overflow-hidden focus-within:border-stone-500 transition">
+                <input type="number" step="0.01" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} placeholder="Optional"
+                  className="w-full bg-transparent text-stone-950 text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
+                <select value={orderExitType} onChange={(e) => setOrderExitType(e.target.value)} 
+                  className="bg-stone-100/50 text-stone-500 text-xs font-bold border-l border-stone-200 px-2 py-2 focus:outline-none cursor-pointer">
+                  <option value="Limit">Limit</option>
+                  <option value="Take Profit">Take Profit</option>
+                  <option value="Stop Loss">Stop Loss</option>
+                  <option value="Market">Market</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Take Profit</label>
+              <input type="number" step="0.01" value={tpPrice} onChange={(e) => setTpPrice(e.target.value)} placeholder="Optional"
+                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Stop Loss</label>
+              <input type="number" step="0.01" value={slPrice} onChange={(e) => setSlPrice(e.target.value)} placeholder="Optional"
+                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
@@ -249,7 +317,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             </div>
             <div>
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Date & Time</label>
-              <input type="datetime-local" value={time} onChange={(e) => setTime(e.target.value)}
+              <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
                 className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
           </div>
@@ -265,31 +333,21 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             </div>
             <div>
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
-              <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2">
-                {['1h', '15m', '5m', '1m', '15s', '5s'].map((item) => {
-                  const currentTfs = tf.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
-                  const isChecked = currentTfs.includes(item);
-                  return (
-                    <label key={item} className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked} 
-                        onChange={(e) => {
-                          let newTfs = [...currentTfs];
-                          if (e.target.checked) {
-                            if (!newTfs.includes(item)) newTfs.push(item);
-                          } else {
-                            newTfs = newTfs.filter(t => t !== item);
-                          }
-                          const orderedTfs = ['1h', '15m', '5m', '1m', '15s', '5s'].filter(t => newTfs.includes(t));
-                          setTf(orderedTfs.length > 0 ? orderedTfs.join(', ') : 'none');
-                        }} 
-                        className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" 
-                      />
-                      <span className="text-xs font-bold text-stone-950">{item}</span>
-                    </label>
-                  );
-                })}
+              <div className="flex gap-2 flex-wrap h-full items-start">
+                {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
+                  <button
+                    type="button"
+                    key={item}
+                    onClick={() => setTf(item)}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+                      tf === item 
+                        ? 'bg-orange-400 text-white shadow-sm' 
+                        : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -324,51 +382,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
             <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={3}
               className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition resize-y"></textarea>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest">Google Drive Image Links</label>
-                <div className="relative group flex items-center">
-                  <HelpCircle className="w-3.5 h-3.5 text-stone-400 hover:text-stone-600 cursor-help transition" />
-                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 p-2.5 bg-stone-900 text-white text-[10px] font-medium rounded-xl shadow-xl z-50 pointer-events-none leading-normal">
-                    💡 <span className="font-bold">แนะนำ:</span> วางลิงก์รูปภาพจาก Google Drive (ตั้งค่าสิทธิ์ไฟล์เป็น &quot;Anyone with the link&quot;)
-                    <div className="absolute left-3 top-full -mt-1 border-4 border-transparent border-t-stone-900"></div>
-                  </div>
-                </div>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setImages([...images, ""])}
-                className="text-[10px] font-extrabold text-orange-400 hover:text-orange-500 transition flex items-center gap-1">
-                + Add Another Link
-              </button>
-            </div>
-
-
-
-            {images.map((url, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input 
-                  type="text" 
-                  value={url} 
-                  onChange={(e) => {
-                    const newImgs = [...images];
-                    newImgs[idx] = e.target.value;
-                    setImages(newImgs);
-                  }} 
-                  placeholder={`Image link #${idx + 1} (https://drive.google.com/...)`}
-                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-xs font-semibold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" 
-                />
-                  <button 
-                    type="button" 
-                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                    className="text-stone-400 hover:text-red-900 p-1 rounded-lg transition">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-              </div>
-            ))}
           </div>
         </div>
 

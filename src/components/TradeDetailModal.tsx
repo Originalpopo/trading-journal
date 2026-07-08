@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
-import { X, Edit2, Trash2, ExternalLink, ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
+import { X, Edit2, Trash2, ExternalLink, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
+import InteractiveChart from "./InteractiveChart";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -32,32 +33,6 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
   const updateTrade = useJournalStore((state) => state.updateTrade);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [localImages, setLocalImages] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (trade) {
-      setLocalImages(trade.images || []);
-    }
-  }, [trade]);
-
-  // Keyboard navigation for Lightbox
-  useEffect(() => {
-    if (selectedIndex === null) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedIndex(null);
-      } else if (e.key === 'ArrowLeft' && localImages.length > 1) {
-        setSelectedIndex((prev) => (prev !== null ? (prev - 1 + localImages.length) % localImages.length : null));
-      } else if (e.key === 'ArrowRight' && localImages.length > 1) {
-        setSelectedIndex((prev) => (prev !== null ? (prev + 1) % localImages.length : null));
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex, localImages.length]);
 
   if (!isOpen || !trade) return null;
 
@@ -70,14 +45,13 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
     const d = new Date(trade.time.replace(' ', 'T'));
     if (!isNaN(d.getTime())) {
       shortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
-                  d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                  d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
   } catch (e) { }
 
   const profit = isFunding ? (f.deposit > 0 ? f.deposit : -(f.withdraw || 0)) : t.profit;
   const symbol = isFunding ? (f.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW') : t.symbol;
   const notes = isFunding ? f.notes : t.strategy;
-  const images = localImages;
 
   let isBE = false;
   let rawRisk = 0;
@@ -98,60 +72,35 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
     }
     badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
 
-    let sec = (!t.duration || t.duration <= 0) ? 60 : t.duration;
-    const d = Math.floor(sec / (24 * 3600)); sec %= (24 * 3600);
-    const h = Math.floor(sec / 3600); sec %= 3600;
-    const m = Math.floor(sec / 60); sec %= 60;
-    const s = Math.floor(sec);
-    if (d > 0) durationDisplay = `${d}d ${h}h`;
-    else if (h > 0) durationDisplay = `${h}h ${m}m`;
-    else if (m > 0) durationDisplay = `${m}m ${s}s`;
-    else durationDisplay = `${s < 1 ? 1 : s}s`;
+    let sec = t.duration || 0;
+    if (!sec && t.exitTime && t.time) {
+      try {
+        const entryDate = new Date(t.time.replace(' ', 'T')).getTime();
+        const exitDate = new Date(t.exitTime.replace(' ', 'T')).getTime();
+        if (!isNaN(entryDate) && !isNaN(exitDate)) {
+          sec = Math.max(0, Math.floor((exitDate - entryDate) / 1000));
+        }
+      } catch (e) {}
+    }
+    
+    if (sec === 0 && !t.exitTime) {
+      durationDisplay = "-";
+    } else {
+      if (sec === 0) sec = 1;
+      let m = Math.floor(sec / 60);
+      let s = sec % 60;
+      let h = Math.floor(m / 60); m = m % 60;
+      let d = Math.floor(h / 24); h = h % 24;
+      if (d > 0) durationDisplay = `${d}d ${h}h`;
+      else if (h > 0) durationDisplay = `${h}h ${m}m`;
+      else if (m > 0) durationDisplay = `${m}m ${s}s`;
+      else durationDisplay = `${s}s`;
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
-      {/* Image Lightbox Pop-up */}
-      {selectedIndex !== null && images && images[selectedIndex] && (
-        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedIndex(null)}>
-          <div className="relative w-full max-w-[95vw] 2xl:max-w-[1600px] h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            {(() => {
-              const url = getDriveDirectUrl(images[selectedIndex]);
-              return url.startsWith('/api/images/') 
-                ? <img src={url} alt="Expanded preview" className="w-full h-full object-contain rounded-2xl border-0 shadow-2xl bg-black/50" />
-                : <iframe src={url} title="Expanded preview" className="w-full h-full rounded-2xl border-0 shadow-2xl bg-white" />;
-            })()}
-            
-            {/* Header info / close button */}
-            <div className="absolute -top-12 inset-x-0 flex items-center justify-between px-2">
-              <span className="text-white/80 text-sm font-bold tracking-wide">
-                Image {selectedIndex + 1} of {images.length}
-              </span>
-              <button 
-                onClick={() => setSelectedIndex(null)} 
-                className="text-white hover:text-stone-200 bg-white/10 hover:bg-white/20 p-2 rounded-full transition backdrop-blur-sm">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
 
-            {/* Navigation Buttons (Next / Prev) */}
-            {images.length > 1 && (
-              <>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex - 1 + images.length) % images.length); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md border border-white/20 hover:scale-105 z-50">
-                  <ChevronLeft className="w-8 h-8" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedIndex((selectedIndex + 1) % images.length); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/15 hover:bg-black/40 text-white/70 hover:text-white p-3 rounded-full transition-all duration-200 shadow-md border border-white/20 hover:scale-105 z-50">
-                  <ChevronRight className="w-8 h-8" />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Modal Container */}
       <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl shadow-[0_32px_64px_rgba(0,0,0,0.15)] relative flex flex-col max-h-[90vh] overflow-hidden" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
@@ -200,7 +149,14 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-6 border-0 border-transparent" style={{ outline: 'none' }}>
+        <div className="flex-1 overflow-y-auto px-6 md:px-8 py-2 md:py-4 flex flex-col gap-6 border-0 border-transparent" style={{ outline: 'none' }}>
+          {/* Chart Section */}
+          {!isFunding && (
+            <div className="border-b border-stone-200 pb-6">
+              <InteractiveChart trade={t as Trade} />
+            </div>
+          )}
+
           {/* Key Data - Borderless / Naked Layout */}
           {isFunding ? (
             <div className="grid grid-cols-2 gap-4 md:gap-6 py-2">
@@ -216,22 +172,21 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </div>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-8 py-2">
-              {/* Left Column: Stats */}
-              <div className="flex-1 flex flex-col justify-center gap-4 py-2">
-                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+            <div className="flex flex-col md:flex-row gap-6 py-2">
+              <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4">
+                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time</span>
                   <span className="text-xs font-extrabold text-stone-950">{shortTime}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Duration</span>
                   <span className="text-xs font-extrabold text-stone-950">{durationDisplay}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
-                  <span className="text-xs font-extrabold text-stone-950">{(t as any).tf && (t as any).tf !== 'none' ? (t as any).tf : '-'}</span>
+                  <span className="text-xs font-extrabold text-stone-950">{(t as any).tf && (t as any).tf !== 'none' ? ((t as any).tf.includes(',') ? (t as any).tf.split(',')[0].trim() : (t as any).tf) : '-'}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
                   <span className="text-xs font-extrabold text-stone-950">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</span>
                 </div>
@@ -241,29 +196,63 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 </div>
               </div>
 
+              {/* Middle Column: Order Details */}
+              {(t as any).positionId && (
+                 <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4 relative">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Entry</span>
+                        {(t as any).entryType && (
+                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{(t as any).entryType}</span>
+                        )}
+                      </div>
+                      <span className="text-xs font-extrabold text-stone-950">{(t as any).entryPrice?.toFixed(2) || '-'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Exit</span>
+                        {(t as any).exitType && (
+                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{(t as any).exitType}</span>
+                        )}
+                      </div>
+                      <span className="text-xs font-extrabold text-stone-950">{(t as any).exitPrice?.toFixed(2) || '-'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Take Profit</span>
+                      <span className={`text-xs font-extrabold ${profit > 0 ? 'text-orange-400' : 'text-stone-950'}`}>{(t as any).tpPrice?.toFixed(2) || '-'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stop Loss</span>
+                      <span className={`text-xs font-extrabold ${profit < 0 ? 'text-red-900' : 'text-stone-950'}`}>{(t as any).slPrice?.toFixed(2) || '-'}</span>
+                    </div>
+                    <div className="flex justify-end pt-1">
+                      <span className="text-[8px] font-bold text-stone-300 opacity-60">#{(t as any).positionId}</span>
+                    </div>
+                 </div>
+              )}
+
               {/* Right Column: Checklists */}
-              <div className="flex flex-col w-full md:w-56 bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 shrink-0">
-                <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4">Checklists</h4>
-                <div className="flex flex-col gap-3">
+              <div className="flex-1 grid grid-cols-2 grid-rows-3 grid-flow-col bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 content-start gap-x-2 gap-y-4">
                   {['On Plan', 'Follow', 'Reversal', 'POI 1st', 'POI 2nd', 'POI 3rd'].map((item, idx) => {
                     const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
                     const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : item === 'POI 3rd' ? Crosshair : CheckCircle2;
                     return isChecked ? (
-                      <div key={idx} className="flex items-center gap-2 text-orange-400">
-                        <ItemIcon className="w-4 h-4" />
-                        <span className="text-xs font-bold text-stone-900">{item}</span>
+                      <div key={idx} className="flex items-center gap-1.5 text-orange-400">
+                        <ItemIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-xs font-bold text-stone-900 truncate">{item}</span>
                       </div>
                     ) : (
-                      <div key={idx} className="flex items-center gap-2 opacity-50 text-stone-400">
-                        <ItemIcon className="w-4 h-4" />
-                        <span className="text-xs font-bold">{item}</span>
+                      <div key={idx} className="flex items-center gap-1.5 opacity-50 text-stone-400">
+                        <ItemIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-xs font-bold truncate">{item}</span>
                       </div>
                     );
                   })}
-                </div>
               </div>
             </div>
           )}
+
+
 
           {/* Notes / Strategy Section */}
           <div>
@@ -273,41 +262,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             </div>
           </div>
 
-          {/* Images Section */}
-          <div>
-            <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-orange-400" />
-              Attached Images ({images.length})
-            </h4>
-            {images.length === 0 ? (
-              <div className="relative border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center min-h-[100px]">
-                <div className="flex flex-col items-center justify-center gap-2 h-full">
-                  <ImageIcon className="w-6 h-6 text-stone-300" />
-                  <span className="text-xs text-stone-400 font-medium leading-relaxed">
-                    No images attached to this entry.<br/>
-                    <span className="font-bold text-stone-500">Click Edit to add Google Drive links</span>.
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {images.map((url, idx) => {
-                  const previewUrl = getDriveDirectUrl(url);
-                  return (
-                    <div key={idx} className="group relative rounded-2xl overflow-hidden border border-stone-200 bg-stone-50 shadow-sm hover:shadow-md hover:border-stone-400 transition-all duration-200 cursor-pointer" onClick={() => setSelectedIndex(idx)}>
-                      <div className="block w-full h-32 relative pointer-events-none bg-stone-100 overflow-hidden">
-                        <iframe 
-                          src={previewUrl} 
-                          title={`Trade attachment ${idx + 1}`} 
-                          className="absolute top-1/2 left-1/2 w-[800px] h-[600px] -translate-x-1/2 -translate-y-1/2 border-0 pointer-events-none scale-[0.6]" 
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+
         </div>
 
         {/* Footer Actions */}
@@ -321,7 +276,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 <Trash2 className="w-4 h-4" />
               </button>
               <button 
-                onClick={() => onEdit({ ...trade, images: localImages })}
+                onClick={() => onEdit({ ...trade })}
                 className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
                 <Edit2 className="w-4 h-4" />
                 Edit

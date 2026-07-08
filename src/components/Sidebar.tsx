@@ -21,6 +21,7 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { handleCSVUpload, handlePasteText } from "@/lib/csvParser";
 import { clearDatabase, downloadDatabase, restoreDatabase } from "@/lib/dbActions";
 import { UploadModal } from "./UploadModal";
+import BulkImportModal from "./BulkImportModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -28,6 +29,8 @@ export default function Sidebar() {
   const [statusText, setStatusText] = useState("Initializing...");
   const [statusColor, setStatusColor] = useState("bg-stone-300");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [tvRawText, setTvRawText] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
@@ -41,48 +44,21 @@ export default function Sidebar() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    handleCSVUpload(
-      file, 
-      (status) => {
-        setStatusText(status);
-        setStatusColor("bg-yellow-500");
-      },
-      (result) => {
-        alert(`Successfully imported ${result.importCount} new trades; Skipped ${result.skipCount} duplicate entries.`);
-        setStatusText("Live");
-        setStatusColor("bg-orange-400 shadow-md shadow-orange-400");
-        e.target.value = '';
-      },
-      (error) => {
-        console.error(error);
-        alert("Error parsing CSV");
-        setStatusText("Error");
-        setStatusColor("bg-stone-500");
-        e.target.value = '';
-        e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setTvRawText(text);
+        setIsBulkImportOpen(true);
       }
-    );
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const onPasteSubmit = (text: string) => {
-    handlePasteText(
-      text,
-      (status) => {
-        setStatusText(status);
-        setStatusColor("bg-yellow-500");
-      },
-      (result) => {
-        alert(`Successfully imported ${result.importCount} new trades; Skipped ${result.skipCount} duplicate entries.`);
-        setStatusText("Live");
-        setStatusColor("bg-orange-400 shadow-md shadow-orange-400");
-      },
-      (error) => {
-        console.error(error);
-        alert("Error parsing pasted data.");
-        setStatusText("Error");
-        setStatusColor("bg-stone-500");
-      }
-    );
+    setTvRawText(text);
+    setIsBulkImportOpen(true);
   };
 
   const onDBRestoreUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,15 +171,17 @@ export default function Sidebar() {
 
       <div className={`p-4 border-t border-stone-100 flex gap-2 mt-auto ${isCollapsed ? "flex-col items-center" : "flex-col"}`}>
         <button
-          title="Upload"
+          title="Upload / Database"
           onClick={() => setIsUploadModalOpen(true)}
           className={`bg-white border border-stone-200 hover:border-orange-200 hover:text-orange-400 text-stone-500 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"
           }`}
         >
           <Upload className="w-4 h-4 shrink-0" />
-          {!isCollapsed && <span>Upload</span>}
+          {!isCollapsed && <span>DB / Import CSV</span>}
         </button>
+
+
         
         {isCollapsed ? (
           <>
@@ -232,6 +210,13 @@ export default function Sidebar() {
         onClearDatabase={onClearDatabase}
         onDownloadDatabase={onDownloadDatabase}
       />
+      {isBulkImportOpen && (
+        <BulkImportModal 
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          initialRawText={tvRawText}
+        />
+      )}
     </aside>
   );
 }

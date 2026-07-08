@@ -34,7 +34,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
         
         {/* Paste Text Section */}
         <div className="mb-3">
-          <label className="block text-sm font-bold text-stone-950 mb-2">Option 1: Paste cTrader/MT4 Data</label>
+          <label className="block text-sm font-bold text-stone-950 mb-2">Option 1: Paste TradingView History</label>
           <textarea
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
@@ -48,7 +48,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
               disabled={!pasteText.trim()}
               className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-300 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200"
             >
-              Import Text
+              Parse Data
             </button>
           </div>
         </div>

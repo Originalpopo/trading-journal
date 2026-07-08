@@ -2,10 +2,11 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Image as ImageIcon, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp, TrendingDown } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
+import BulkImportModal from "@/components/BulkImportModal";
 import { Trade } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
 
@@ -20,9 +21,38 @@ export default function HistoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [tvRawText, setTvRawText] = useState("");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailTrade, setSelectedDetailTrade] = useState<any | null>(null);
   const [cameFromDetail, setCameFromDetail] = useState(false);
+
+  useEffect(() => {
+    if (selectedDetailTrade) {
+      if (selectedDetailTrade.isFunding) {
+        const updated = funding.find(f => f.id === selectedDetailTrade.id);
+        if (updated) {
+          const enrichedUpdated = {
+            ...updated,
+            symbol: updated.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW',
+            profit: updated.deposit > 0 ? updated.deposit : -(updated.withdraw || 0),
+            isFunding: true
+          };
+          if (JSON.stringify(enrichedUpdated) !== JSON.stringify(selectedDetailTrade)) {
+            setSelectedDetailTrade(enrichedUpdated);
+          }
+        }
+      } else {
+        const updated = trades.find(t => t.id === selectedDetailTrade.id);
+        if (updated) {
+          const enrichedUpdated = { ...updated, isFunding: false };
+          if (JSON.stringify(enrichedUpdated) !== JSON.stringify(selectedDetailTrade)) {
+            setSelectedDetailTrade(enrichedUpdated);
+          }
+        }
+      }
+    }
+  }, [trades, funding, selectedDetailTrade]);
 
   const handleUploadStatus = (status: string) => {
     console.log("Upload status:", status);
@@ -31,37 +61,24 @@ export default function HistoryPage() {
   const onFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { handleCSVUpload } = await import("@/lib/csvParser");
-    handleCSVUpload(
-      file,
-      handleUploadStatus,
-      (result) => {
-        alert(`Successfully imported ${result.importCount} new trades; Skipped ${result.skipCount} duplicate entries.`);
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
         setIsUploadModalOpen(false);
-        e.target.value = '';
-      },
-      (error) => {
-        console.error(error);
-        alert("Error parsing CSV");
-        e.target.value = '';
+        setTvRawText(text);
+        setIsBulkImportOpen(true);
       }
-    );
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const onPasteSubmit = async (text: string) => {
-    const { handlePasteText } = await import("@/lib/csvParser");
-    handlePasteText(
-      text,
-      handleUploadStatus,
-      (result) => {
-        alert(`Successfully imported ${result.importCount} new trades; Skipped ${result.skipCount} duplicate entries.`);
-        setIsUploadModalOpen(false);
-      },
-      (error) => {
-        console.error(error);
-        alert("Error parsing pasted data.");
-      }
-    );
+    setIsUploadModalOpen(false);
+    setTvRawText(text);
+    setIsBulkImportOpen(true);
   };
 
   const onDBRestoreUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,7 +251,7 @@ export default function HistoryPage() {
                   const d = new Date(t.time.replace(' ', 'T'));
                   if (!isNaN(d.getTime())) {
                     shortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' +
-                                d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                                d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                   }
                 } catch (e) { }
 
@@ -246,7 +263,6 @@ export default function HistoryPage() {
                       <td className="py-4 px-4 text-stone-500 text-[11px] font-semibold leading-tight">{shortTime}</td>
                       <td className="py-4 px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                         {badgeText}
-                        {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-stone-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                       </td>
                       <td className="py-4 px-4 text-center text-stone-500">-</td>
                       <td className="py-4 px-4 text-center">-</td>
@@ -279,15 +295,29 @@ export default function HistoryPage() {
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 let durationStr = null;
-                let sec = (!t.duration || t.duration <= 0) ? 60 : t.duration;
-                let m = Math.floor(sec / 60);
-                let s = sec % 60;
-                let h = Math.floor(m / 60); m = m % 60;
-                let d = Math.floor(h / 24); h = h % 24;
-                if (d > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {d}d {h}h</span></>;
-                else if (h > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {h}h {m}m</span></>;
-                else if (m > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {m}m {s}s</span></>;
-                else durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {s}s</span></>;
+                let sec = t.duration || 0;
+                if (!sec && t.exitTime && t.time) {
+                  try {
+                    const entryDate = new Date(t.time.replace(' ', 'T')).getTime();
+                    const exitDate = new Date(t.exitTime.replace(' ', 'T')).getTime();
+                    if (!isNaN(entryDate) && !isNaN(exitDate)) {
+                      sec = Math.max(0, Math.floor((exitDate - entryDate) / 1000));
+                    }
+                  } catch (e) {}
+                }
+                if (sec === 0 && !t.exitTime) {
+                   durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: -</span></>;
+                } else {
+                  if (sec === 0) sec = 1;
+                  let m = Math.floor(sec / 60);
+                  let s = sec % 60;
+                  let h = Math.floor(m / 60); m = m % 60;
+                  let d = Math.floor(h / 24); h = h % 24;
+                  if (d > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {d}d {h}h</span></>;
+                  else if (h > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {h}h {m}m</span></>;
+                  else if (m > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {m}m {s}s</span></>;
+                  else durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {s}s</span></>;
+                }
 
                 return (
                   <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
@@ -296,10 +326,9 @@ export default function HistoryPage() {
                     </td>
                     <td className="py-4 px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                       {t.symbol}
-                      {t.images && t.images.length > 0 && <span title={`${t.images.length} Attached Images`} className="text-stone-400"><ImageIcon className="w-3.5 h-3.5 inline" /></span>}
                     </td>
                     <td className="py-4 px-4 text-center font-bold text-stone-500">
-                      {t.tf && t.tf !== 'none' ? t.tf : '-'}
+                      {t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-2">
@@ -409,6 +438,14 @@ export default function HistoryPage() {
         onClearDatabase={onClearDatabase}
         onDownloadDatabase={onDownloadDatabase}
       />
+
+      {isBulkImportOpen && (
+        <BulkImportModal 
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          initialRawText={tvRawText}
+        />
+      )}
     </div>
   );
 }
