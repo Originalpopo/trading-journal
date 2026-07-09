@@ -34,6 +34,20 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
   const updateTrade = useJournalStore((state) => state.updateTrade);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === 'ArrowLeft' && hasPrev && onPrev) {
+        onPrev();
+      } else if (e.key === 'ArrowRight' && hasNext && onNext) {
+        onNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, hasPrev, hasNext, onPrev, onNext]);
+
   if (!isOpen || !trade) return null;
 
   const isFunding = trade.isFunding;

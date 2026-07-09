@@ -65,6 +65,11 @@ export default function CalendarPage() {
     let mNet = 0;
     let mRR = 0;
     const daysArray = [];
+    const weeklySummaries = [];
+
+    let currentWeekPnL = 0;
+    let currentWeekRR = 0;
+    let currentWeekCount = 0;
 
     for (let i = 0; i < firstDay; i++) {
       daysArray.push({ type: 'empty', id: `empty-${i}` });
@@ -75,13 +80,43 @@ export default function CalendarPage() {
       if (s) {
         mNet += s.pnl;
         mRR += s.rr;
+        currentWeekPnL += s.pnl;
+        currentWeekRR += s.rr;
+        currentWeekCount += s.count;
       }
+      
       daysArray.push({
         type: 'day',
         id: `day-${day}`,
         day,
         isToday: isCurrentMonth && day === currentDay,
         stats: s
+      });
+
+      const currentDayOfWeek = new Date(year, month, day).getDay();
+      if (currentDayOfWeek === 6) {
+        weeklySummaries.push({
+          id: `summary-${day}`,
+          pnl: currentWeekPnL,
+          rr: currentWeekRR,
+          count: currentWeekCount
+        });
+        currentWeekPnL = 0;
+        currentWeekRR = 0;
+        currentWeekCount = 0;
+      }
+    }
+
+    const lastDayOfWeek = new Date(year, month, daysInMonth).getDay();
+    if (lastDayOfWeek !== 6) {
+      for (let i = lastDayOfWeek + 1; i <= 6; i++) {
+        daysArray.push({ type: 'empty', id: `empty-end-${i}` });
+      }
+      weeklySummaries.push({
+        id: `summary-end`,
+        pnl: currentWeekPnL,
+        rr: currentWeekRR,
+        count: currentWeekCount
       });
     }
 
@@ -97,6 +132,7 @@ export default function CalendarPage() {
     return {
       monthLabel: new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentDate),
       daysArray,
+      weeklySummaries,
       mNet,
       mRR,
       mTotalTradesAll,
@@ -171,49 +207,80 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="calendar-grid">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(dayName => (
-            <div key={dayName} className="bg-stone-50 p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest border-b border-r border-stone-200">
-              {dayName}
-            </div>
-          ))}
-          {data.daysArray.map((cell) => {
-            if (cell.type === 'empty') {
-              return <div key={cell.id} className="bg-stone-50/50 min-h-[110px] border-b border-r border-stone-200"></div>;
-            }
-
-            const { day, isToday, stats } = cell;
-            let bgBorder = "bg-white border-stone-200";
-            if (stats) {
-              bgBorder = stats.pnl > 0 ? "bg-orange-50 border-orange-200" : (stats.pnl < 0 ? "bg-red-50 border-red-200" : "bg-stone-50 border-stone-200");
-            }
-
-            return (
-              <div key={cell.id} className={`${bgBorder} min-h-[110px] p-3 flex flex-col border-b border-r hover:bg-stone-100/50 transition`}>
-                {isToday ? (
-                  <span className="text-xs font-bold bg-orange-400 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">{day}</span>
-                ) : (
-                  <span className="text-xs font-bold text-stone-400">{day}</span>
-                )}
-                
-                {stats && (
-                  <div className="mt-auto">
-                    <div className={`text-base font-black ${stats.pnl > 0 ? 'text-orange-400' : stats.pnl < 0 ? 'text-red-900' : 'text-stone-400'}`}>
-                      {stats.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(stats.pnl))}
-                    </div>
-                    <div className="flex justify-between items-center w-full mt-2">
-                      <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
-                        {formatNumber(stats.rr)}R
-                      </div>
-                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
-                        Trades : {stats.count}
-                      </div>
-                    </div>
-                  </div>
-                )}
+        <div className="flex flex-col xl:flex-row gap-4">
+          <div className="calendar-grid flex-1">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(dayName => (
+              <div key={dayName} className="bg-stone-50 p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">
+                {dayName}
               </div>
-            );
-          })}
+            ))}
+            {data.daysArray.map((cell: any) => {
+              if (cell.type === 'empty') {
+                return <div key={cell.id} className="bg-stone-50/50 min-h-[110px]"></div>;
+              }
+
+              const { day, isToday, stats } = cell;
+              let bgColor = "bg-white";
+              if (stats) {
+                bgColor = stats.pnl > 0 ? "bg-orange-50" : (stats.pnl < 0 ? "bg-red-50" : "bg-stone-50");
+              }
+
+              return (
+                <div key={cell.id} className={`${bgColor} min-h-[110px] p-3 flex flex-col`}>
+                  {isToday ? (
+                    <span className="text-xs font-bold bg-orange-400 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">{day}</span>
+                  ) : (
+                    <span className="text-xs font-bold text-stone-400">{day}</span>
+                  )}
+                  
+                  {stats && (
+                    <div className="mt-auto">
+                      <div className={`text-base font-black ${stats.pnl > 0 ? 'text-orange-400' : stats.pnl < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                        {stats.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(stats.pnl))}
+                      </div>
+                      <div className="flex justify-between items-center w-full mt-2">
+                        <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
+                          {formatNumber(stats.rr)}R
+                        </div>
+                        <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
+                          Trades : {stats.count}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-stone-200 gap-[1px] border border-stone-200 rounded-xl overflow-hidden">
+            <div className="bg-orange-50 p-3 text-center text-[10px] font-black text-orange-400 uppercase tracking-widest shrink-0 flex items-center justify-center min-h-[41px]">
+              Summary
+            </div>
+            {data.weeklySummaries.map((cell: any) => {
+              let bgBorder = "bg-stone-50/50";
+              if (cell.pnl > 0) bgBorder = "bg-orange-50";
+              else if (cell.pnl < 0) bgBorder = "bg-red-50";
+
+              return (
+                <div key={cell.id} className={`${bgBorder} min-h-[110px] p-3 flex flex-col justify-center items-center flex-1`}>
+                  {cell.pnl !== 0 && (
+                    <>
+                      <div className={`text-base font-black ${cell.pnl > 0 ? 'text-orange-400' : 'text-red-900'} mb-1`}>
+                        {cell.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(cell.pnl))}
+                      </div>
+                      <div className={`text-xs font-bold ${cell.rr > 0 ? 'text-orange-400' : cell.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
+                        {formatNumber(cell.rr)}R
+                      </div>
+                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-1">
+                        Trades : {cell.count}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
