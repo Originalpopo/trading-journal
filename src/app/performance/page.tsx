@@ -93,15 +93,22 @@ export default function PerformancePage() {
   const data = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const hourStats: Record<number, number> = {}; const hourStatsPnL: Record<number, number> = {};
-    hours.forEach(h => { hourStats[h] = 0; hourStatsPnL[h] = 0; });
+    const hourWins: Record<number, number> = {}; const hourLosses: Record<number, number> = {}; const hourBEs: Record<number, number> = {};
+    hours.forEach(h => { hourStats[h] = 0; hourStatsPnL[h] = 0; hourWins[h] = 0; hourLosses[h] = 0; hourBEs[h] = 0; });
 
     const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dowStats: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
     const dowStatsPnL: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const dowWins: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const dowLosses: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const dowBEs: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const moyStats: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
     const moyStatsPnL: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+    const moyWins: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+    const moyLosses: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+    const moyBEs: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
     const moyStartBalance: Record<number, number | null> = {};
     const moyPnL: Record<number, number> = {};
     for (let i = 0; i < 12; i++) { moyStartBalance[i] = null; moyPnL[i] = 0; }
@@ -357,17 +364,38 @@ export default function PerformancePage() {
         if (!isNaN(hr)) {
           hourStats[hr] += rrVal;
           hourStatsPnL[hr] += pnl;
+          if (isBE) {
+            hourBEs[hr]++;
+          } else {
+            if (pnl > 0 || (!isBE && t.resultType === 'TP')) hourWins[hr]++;
+            else hourLosses[hr]++;
+          }
         }
 
         if (!isNaN(evt.timeObj.getTime())) {
           const mMonth = evt.timeObj.getMonth();
+          const dDay = evt.timeObj.getDay();
+
           if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = runningBalance - pnl;
           moyPnL[mMonth] += pnl;
 
-          dowStats[evt.timeObj.getDay()] += rrVal;
-          dowStatsPnL[evt.timeObj.getDay()] += pnl;
+          dowStats[dDay] += rrVal;
+          dowStatsPnL[dDay] += pnl;
           moyStats[mMonth] += rrVal;
           moyStatsPnL[mMonth] += pnl;
+
+          if (isBE) {
+            dowBEs[dDay]++;
+            moyBEs[mMonth]++;
+          } else {
+            if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+              dowWins[dDay]++;
+              moyWins[mMonth]++;
+            } else {
+              dowLosses[dDay]++;
+              moyLosses[mMonth]++;
+            }
+          }
         }
 
         if (!matrix[t.symbol]) {
@@ -482,13 +510,19 @@ export default function PerformancePage() {
     // Chart Data Generation
     const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : selectedMetric === 'GAIN' ? (hourStatsPnL[h] / initialDeposit) * 100 : hourStatsPnL[h]);
     const hourlyColors = hourlyDataArr.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
+    const hourlyWinsArr = hours.map(h => hourWins[h]);
+    const hourlyLossesArr = hours.map(h => hourLosses[h]);
+    const hourlyBEsArr = hours.map(h => hourBEs[h]);
 
-    const activeDowKeys = Object.keys(dowStats).filter(k => (selectedMetric === 'RR' ? dowStats[k as any as number] : dowStatsPnL[k as any as number]) !== 0).map(Number);
+    const activeDowKeys = Object.keys(dowStats).filter(k => (selectedMetric === 'RR' ? dowStats[k as any as number] : dowStatsPnL[k as any as number]) !== 0 || dowWins[k as any as number] > 0 || dowLosses[k as any as number] > 0 || dowBEs[k as any as number] > 0).map(Number);
     const activeDowNames = activeDowKeys.map(k => dowNames[k]);
     const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
     const dowColors = activeDowData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
+    const activeDowWins = activeDowKeys.map(k => dowWins[k]);
+    const activeDowLosses = activeDowKeys.map(k => dowLosses[k]);
+    const activeDowBEs = activeDowKeys.map(k => dowBEs[k]);
 
-    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k as any as number] : moyStatsPnL[k as any as number]) !== 0 || moyPnL[k as any as number] !== 0).map(Number);
+    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k as any as number] : moyStatsPnL[k as any as number]) !== 0 || moyPnL[k as any as number] !== 0 || moyWins[k as any as number] > 0 || moyLosses[k as any as number] > 0 || moyBEs[k as any as number] > 0).map(Number);
     const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
     const moyRRData = activeMoyKeys.map(k => {
       if (selectedMetric === 'RR') return moyStats[k];
@@ -499,6 +533,9 @@ export default function PerformancePage() {
       return moyStatsPnL[k];
     });
     const moyRRColors = moyRRData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
+    const activeMoyWins = activeMoyKeys.map(k => moyWins[k]);
+    const activeMoyLosses = activeMoyKeys.map(k => moyLosses[k]);
+    const activeMoyBEs = activeMoyKeys.map(k => moyBEs[k]);
 
     const matrixSorted = Object.entries(matrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
     const tfMatrixSorted = Object.entries(tfMatrix).sort((a: any, b: any) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl));
@@ -516,8 +553,9 @@ export default function PerformancePage() {
       avgConsWin: totalWinStreaksCount > 0 ? Math.round(sumOfWinStreaks / totalWinStreaksCount) : 0,
       avgConsLoss: totalLossStreaksCount > 0 ? Math.round(sumOfLossStreaks / totalLossStreaksCount) : 0,
       perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
-      hourlyDataArr, hourlyColors, activeDowNames, activeDowData, dowColors,
-      activeMoyNames, moyRRData, moyRRColors,
+      hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr,
+      activeDowNames, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
+      activeMoyNames, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
       matrixSorted
     };
   }, [trades, funding, selectedYear, selectedTf, selectedPlan, selectedChecklist, selectedMetric]);
@@ -552,6 +590,29 @@ export default function PerformancePage() {
     id: 'customDowLabels',
     afterDatasetsDraw(chart) {
       const { ctx } = chart;
+      if (selectedMetric === 'COUNT') {
+        const lastDatasetIndex = chart.data.datasets.length - 1;
+        if (lastDatasetIndex >= 0) {
+          const meta = chart.getDatasetMeta(lastDatasetIndex);
+          if (!meta.hidden) {
+            meta.data.forEach((element, index) => {
+              let sum = 0;
+              chart.data.datasets.forEach(ds => { sum += (ds.data[index] as number || 0); });
+              if (sum === 0) return;
+              
+              ctx.fillStyle = '#78716c';
+              ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              const position = (element as any).tooltipPosition();
+              ctx.fillText(sum.toString(), position.x, position.y - 12);
+            });
+          }
+        }
+        return;
+      }
+
       chart.data.datasets.forEach((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
         if (!meta.hidden) {
@@ -577,6 +638,29 @@ export default function PerformancePage() {
     id: 'customMoyLabels',
     afterDatasetsDraw(chart) {
       const { ctx } = chart;
+      if (selectedMetric === 'COUNT') {
+        const lastDatasetIndex = chart.data.datasets.length - 1;
+        if (lastDatasetIndex >= 0) {
+          const meta = chart.getDatasetMeta(lastDatasetIndex);
+          if (!meta.hidden) {
+            meta.data.forEach((element, index) => {
+              let sum = 0;
+              chart.data.datasets.forEach(ds => { sum += (ds.data[index] as number || 0); });
+              if (sum === 0) return;
+              
+              ctx.fillStyle = '#78716c';
+              ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              const position = (element as any).tooltipPosition();
+              ctx.fillText(sum.toString(), position.x, position.y - 12);
+            });
+          }
+        }
+        return;
+      }
+
       chart.data.datasets.forEach((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
         if (!meta.hidden) {
@@ -885,6 +969,16 @@ export default function PerformancePage() {
       <div className="flex justify-end mt-4 mb-2">
         <div className="flex bg-stone-100 p-1 rounded-xl">
           <button
+            onClick={() => setSelectedMetric('COUNT')}
+            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
+              selectedMetric === 'COUNT' 
+                ? 'bg-white text-stone-950 shadow-sm' 
+                : 'text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Win/Loss
+          </button>
+          <button
             onClick={() => setSelectedMetric('RR')}
             className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
               selectedMetric === 'RR' 
@@ -924,15 +1018,20 @@ export default function PerformancePage() {
           </h3>
           <div className="flex-1 relative w-full h-full">
             <Bar
+              key={`hour-${selectedMetric}`}
               data={{
                 labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6 }]
+              datasets: selectedMetric === 'COUNT' ? [
+                  { label: 'Losses', data: data.hourlyLossesArr, backgroundColor: '#7f1d1d', borderRadius: 6 },
+                  { label: 'BEs', data: data.hourlyBEsArr, backgroundColor: '#d6d3d1', borderRadius: 6 },
+                  { label: 'Wins', data: data.hourlyWinsArr, backgroundColor: '#fb923c', borderRadius: 6 }
+                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
-                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false } }, 
-                  x: { grid: { display: false } } 
+                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, stacked: selectedMetric === 'COUNT' }, 
+                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT' } 
                 },
                 plugins: { legend: { display: false } }
               }}
@@ -948,14 +1047,18 @@ export default function PerformancePage() {
               key={`dow-${selectedMetric}`}
               data={{
                 labels: data.activeDowNames,
-                datasets: [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6 }]
+                datasets: selectedMetric === 'COUNT' ? [
+                  { label: 'Losses', data: data.activeDowLosses, backgroundColor: '#7f1d1d', borderRadius: 6 },
+                  { label: 'BEs', data: data.activeDowBEs, backgroundColor: '#d6d3d1', borderRadius: 6 },
+                  { label: 'Wins', data: data.activeDowWins, backgroundColor: '#fb923c', borderRadius: 6 }
+                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
                 layout: { padding: { top: 20, bottom: 20 } },
                 scales: {
-                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
-                  x: { grid: { display: false } }
+                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
+                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT' }
                 },
                 plugins: { legend: { display: false } }
               }}
@@ -974,7 +1077,11 @@ export default function PerformancePage() {
             key={`moy-${selectedMetric}`}
             data={{
               labels: data.activeMoyNames,
-              datasets: [
+              datasets: selectedMetric === 'COUNT' ? [
+                { label: 'Losses', data: data.activeMoyLosses, backgroundColor: '#7f1d1d', borderRadius: 6 },
+                { label: 'BEs', data: data.activeMoyBEs, backgroundColor: '#d6d3d1', borderRadius: 6 },
+                { label: 'Wins', data: data.activeMoyWins, backgroundColor: '#fb923c', borderRadius: 6 }
+              ] : [
                 {
                   label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)',
                   data: data.moyRRData,
@@ -987,8 +1094,8 @@ export default function PerformancePage() {
               responsive: true, maintainAspectRatio: false,
               layout: { padding: { top: 20, bottom: 20 } },
               scales: {
-                y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%' },
-                x: { grid: { display: false } }
+                y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
+                x: { grid: { display: false }, stacked: selectedMetric === 'COUNT' }
               },
               plugins: { legend: { display: false } }
             }}

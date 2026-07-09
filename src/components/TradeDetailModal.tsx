@@ -153,7 +153,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
           {/* Chart Section */}
           {!isFunding && (
             <div className="border-b border-stone-200 pb-6">
-              <InteractiveChart trade={t as Trade} />
+              <InteractiveChart key={(t as Trade).id} trade={t as Trade} />
             </div>
           )}
 
