@@ -33,6 +33,7 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
   const updateTrade = useJournalStore((state) => state.updateTrade);
+  const isPrivacyMode = useJournalStore((state) => state.isPrivacyMode);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,7 +158,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
           </div>
           <div className="mt-4 md:mt-0 text-left md:text-right">
             <div className={`text-3xl md:text-4xl font-black tracking-tighter leading-none ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
-              {profit < 0 ? '-' : (profit > 0 ? '+' : '')}${format2Decimals(Math.abs(profit))}
+              {isPrivacyMode ? '***' : `${profit < 0 ? '-' : (profit > 0 ? '+' : '')}$${format2Decimals(Math.abs(profit))}`}
             </div>
           </div>
         </div>
@@ -202,7 +203,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
-                  <span className="text-xs font-extrabold text-stone-950">{rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-'}</span>
+                  <span className="text-xs font-extrabold text-stone-950">{isPrivacyMode ? '***' : (rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-')}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk/Reward</span>

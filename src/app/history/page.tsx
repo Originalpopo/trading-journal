@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, HelpCircle, Edit2, Trash2, Upload, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp, TrendingDown, EyeOff } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -13,7 +13,7 @@ import { formatNumber } from "@/lib/utils";
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function HistoryPage() {
-  const { trades, funding, notes, isLoading, deleteTrade } = useJournalStore();
+  const { trades, funding, notes, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -240,7 +240,7 @@ export default function HistoryPage() {
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">RR</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Net P&L ($)</th>
+                <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Net PNL ($)</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">Actions</th>
               </tr>
             </thead>
@@ -271,7 +271,7 @@ export default function HistoryPage() {
                       <td className="py-4 px-4 text-right font-bold text-stone-500">-</td>
                       <td className="py-4 px-4 text-right font-bold text-stone-500">-</td>
                       <td className={`py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
-                        {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
+                        {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                       </td>
                       <td className="py-4 px-4 text-center flex justify-center gap-3">
                         <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
@@ -370,12 +370,14 @@ export default function HistoryPage() {
                     <td className="py-4 px-4 text-center">
                       <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
-                    <td className="py-4 px-4 text-right font-bold text-stone-500">{riskText}</td>
+                    <td className="py-4 px-4 text-right font-bold text-stone-500">
+                      {isPrivacyMode ? '***' : riskText}
+                    </td>
                     <td className="py-4 px-4 text-right font-bold text-stone-500">
                       {t.rr ? format2Decimals(t.rr) + ' R' : '-'}
                     </td>
                     <td className={`py-4 px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (t.profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
-                      {t.profit < 0 ? '-' : ''}${format2Decimals(Math.abs(t.profit))}
+                      {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                     </td>
                     <td className="py-4 px-4 text-center flex justify-center gap-3">
                       <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>

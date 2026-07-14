@@ -67,7 +67,8 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(formatNumber(val0), pos0.x + 12, pos0.y + yOffset0);
+      const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
+      ctx.fillText(isPrivacyMode ? '***' : formatNumber(val0), pos0.x + 12, pos0.y + yOffset0);
       ctx.restore();
     }
 
@@ -82,7 +83,8 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(formatNumber(val1), pos1.x + 12, pos1.y + yOffset1);
+      const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
+      ctx.fillText(isPrivacyMode ? '***' : formatNumber(val1), pos1.x + 12, pos1.y + yOffset1);
       ctx.restore();
     }
   }
@@ -110,7 +112,7 @@ function calculateStandardDeviation(values: number[], mean: number) {
 }
 
 export default function Dashboard() {
-  const { trades, funding, isLoading } = useJournalStore();
+  const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'twr'>('twr');
 
   const data = useMemo(() => {
@@ -390,13 +392,13 @@ export default function Dashboard() {
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
             <p className="text-3xl font-extrabold stat-value text-stone-950">
-              ${formatNumber(data.runningBalance)}
+              {isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`}
             </p>
           </div>
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
             <p className={`text-3xl font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
-              ${formatNumber(data.net)}
+              {isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`}
             </p>
           </div>
           <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
@@ -419,7 +421,7 @@ export default function Dashboard() {
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
         </h3>
         <div className="flex-1 relative w-full h-full">
-          <Line data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin]} />
+          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin]} />
         </div>
       </div>
 
@@ -449,15 +451,15 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-stone-200">
               <span className="text-xs font-bold text-stone-400">Total Deposit</span>
-              <span className="font-black text-red-900 text-sm">${formatNumber(data.totalDeposit)}</span>
+              <span className="font-black text-sm text-red-900">{isPrivacyMode ? '***' : `$${formatNumber(data.totalDeposit)}`}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Total Withdraw</span>
-              <span className="font-black text-orange-400 text-sm">${formatNumber(data.totalWithdraw)}</span>
+              <span className="font-black text-sm text-orange-400">{isPrivacyMode ? '***' : `$${formatNumber(data.totalWithdraw)}`}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-stone-200">
               <span className="text-xs font-bold text-stone-400">Capital</span>
-              <span className="font-black text-stone-950 text-sm">${formatNumber(data.totalFunded)}</span>
+              <span className="font-black text-sm text-stone-950">{isPrivacyMode ? '***' : `$${formatNumber(data.totalFunded)}`}</span>
             </div>
           </div>
         </div>
@@ -506,7 +508,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{displayMaxDDLabel}</p>
                 <p className="text-2xl font-extrabold text-red-950">{formatNumber(displayMaxDDPercent)}%</p>
-                <p className="text-[11px] font-bold text-stone-500">${formatNumber(displayMaxDDValue)}</p>
+                <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayMaxDDValue)}`}</p>
               </div>
               
               <div className="w-full border-t border-stone-200 my-auto"></div>
@@ -514,7 +516,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
                 <p className="text-2xl font-extrabold text-red-900">{formatNumber(displayActiveDDPercent)}%</p>
-                <p className="text-[11px] font-bold text-stone-500">${formatNumber(displayActiveDDValue)}</p>
+                <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayActiveDDValue)}`}</p>
               </div>
             </div>
 
@@ -590,7 +592,7 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Expected Payoff</span>
-              <span className="font-black text-stone-950">${data.totalTrades > 0 ? formatNumber((data.net / data.totalTrades)) : '0.00'}</span>
+              <span className="font-black text-stone-950">{isPrivacyMode ? '***' : `$${data.totalTrades > 0 ? formatNumber((data.net / data.totalTrades)) : '0.00'}`}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>

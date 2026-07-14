@@ -43,10 +43,14 @@ function calculateStandardDeviation(values: number[], mean: number) {
   return Math.sqrt(avgSquareDiff);
 }
 
-const formatCurrency = (val: number) => val < 0 ? `-$${formatNumber(Math.abs(val))}` : `$${formatNumber(val)}`;
+const formatCurrencyHelper = (val: number, isPrivacyMode?: boolean) => {
+  if (isPrivacyMode) return '***';
+  return val < 0 ? `-$${formatNumber(Math.abs(val))}` : `$${formatNumber(val)}`;
+};
 
 export default function PerformancePage() {
-  const { trades, funding, isLoading } = useJournalStore();
+  const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
+  const formatCurrency = (val: number) => formatCurrencyHelper(val, isPrivacyMode);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
   const [isTfMenuOpen, setIsTfMenuOpen] = useState(false);
@@ -603,11 +607,11 @@ export default function PerformancePage() {
         ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(formatNumber(lastVal), position.x + 12, position.y);
+        ctx.fillText(isPrivacyMode ? '***' : formatNumber(lastVal), position.x + 12, position.y);
         ctx.restore();
       }
     }
-  }), []);
+  }), [isPrivacyMode]);
 
   const customDowLabels: Plugin<'bar'> = useMemo(() => ({
     id: 'customDowLabels',
@@ -646,7 +650,7 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             const val = dataset.data[index] as number;
-            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : '$' + formatNumber(val);
+            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : (isPrivacyMode ? '***' : '$' + formatNumber(val));
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -655,7 +659,7 @@ export default function PerformancePage() {
         }
       });
     }
-  }), [selectedMetric]);
+  }), [selectedMetric, isPrivacyMode]);
 
   const customMoyLabels: Plugin<'bar'> = useMemo(() => ({
     id: 'customMoyLabels',
@@ -697,7 +701,7 @@ export default function PerformancePage() {
             let text = formatNumber(val);
             if (selectedMetric === 'RR') text += 'R';
             else if (selectedMetric === 'GAIN') text += '%';
-            else text = '$' + text;
+            else text = isPrivacyMode ? '***' : '$' + text;
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -706,7 +710,7 @@ export default function PerformancePage() {
         }
       });
     }
-  }), [selectedMetric]);
+  }), [selectedMetric, isPrivacyMode]);
 
   if (isLoading) {
     return (
@@ -730,6 +734,7 @@ export default function PerformancePage() {
         </h3>
         <div className="flex-1 relative w-full h-full">
           <Line
+            key={`pnl-${isPrivacyMode}`}
             data={{
               labels: data.perfBalanceLabels,
               datasets: [
@@ -1143,7 +1148,7 @@ export default function PerformancePage() {
           </h3>
           <div className="flex-1 relative w-full h-full">
             <Bar
-              key={`hour-${selectedMetric}`}
+              key={`hour-${selectedMetric}-${isPrivacyMode}`}
               data={{
                 labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
               datasets: selectedMetric === 'COUNT' ? [
@@ -1169,7 +1174,7 @@ export default function PerformancePage() {
           </h3>
           <div className="flex-1 relative w-full h-full">
             <Bar
-              key={`dow-${selectedMetric}`}
+              key={`dow-${selectedMetric}-${isPrivacyMode}`}
               data={{
                 labels: data.activeDowNames,
                 datasets: selectedMetric === 'COUNT' ? [
@@ -1199,7 +1204,7 @@ export default function PerformancePage() {
         </h3>
         <div className="flex-1 relative w-full h-full">
           <Bar
-            key={`moy-${selectedMetric}`}
+            key={`moy-${selectedMetric}-${isPrivacyMode}`}
             data={{
               labels: data.activeMoyNames,
               datasets: selectedMetric === 'COUNT' ? [

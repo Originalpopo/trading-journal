@@ -52,6 +52,8 @@ interface JournalState {
   funding: Funding[];
   notes: Note[];
   isLoading: boolean;
+  isPrivacyMode: boolean;
+  setIsPrivacyMode: (val: boolean) => void;
   initializeListeners: () => () => void;
   addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
@@ -66,6 +68,8 @@ export const useJournalStore = create<JournalState>((set) => ({
   funding: [],
   notes: [],
   isLoading: true,
+  isPrivacyMode: false,
+  setIsPrivacyMode: (val) => set({ isPrivacyMode: val }),
   initializeListeners: () => {
     set({ isLoading: true });
 

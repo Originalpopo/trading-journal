@@ -15,7 +15,9 @@ import {
   Trash2,
   Download,
   Flame,
-  Settings
+  Settings,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { handleCSVUpload, handlePasteText } from "@/lib/csvParser";
@@ -25,7 +27,7 @@ import BulkImportModal from "./BulkImportModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { initializeListeners, trades, funding, notes } = useJournalStore();
+  const { initializeListeners, trades, funding, notes, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
   const [statusText, setStatusText] = useState("Initializing...");
   const [statusColor, setStatusColor] = useState("bg-stone-300");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -169,7 +171,22 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className={`p-4 border-t border-stone-100 flex gap-2 mt-auto ${isCollapsed ? "flex-col items-center" : "flex-col"}`}>
+      <div className={`px-4 py-2 mt-auto flex justify-center`}>
+        <button
+          title={isPrivacyMode ? "Show Data" : "Privacy Mode"}
+          onClick={() => setIsPrivacyMode(!isPrivacyMode)}
+          className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg transition shadow-sm border ${
+            isPrivacyMode 
+              ? 'bg-orange-50 text-orange-400 border-orange-200' 
+              : 'bg-white border-stone-200 text-stone-500 hover:border-orange-200 hover:text-orange-400'
+          } ${isCollapsed ? "justify-center w-10 h-10 p-0 shrink-0" : ""}`}
+        >
+          {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
+          {!isCollapsed && <span>Privacy Mode</span>}
+        </button>
+      </div>
+
+      <div className={`p-4 pt-3 border-t border-stone-100 flex gap-2 ${isCollapsed ? "flex-col items-center" : "flex-col"}`}>
         <button
           title="Upload / Database"
           onClick={() => setIsUploadModalOpen(true)}
