@@ -149,7 +149,7 @@ export default function PerformancePage() {
           if (selectedTfs.length > 0) {
             const tfVal = evt.data.tf || 'none';
             const tradeTfs = tfVal.split(',').map((s: string) => s.trim());
-            const matched = tradeTfs.some(tf => selectedTfs.includes(tf));
+            const matched = tradeTfs.some((tf: string) => selectedTfs.includes(tf));
             if (!matched) return;
           }
           if (selectedChecklists.length > 0) {
