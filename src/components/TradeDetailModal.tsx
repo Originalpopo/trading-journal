@@ -247,9 +247,9 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
               {/* Right Column: Checklists */}
               <div className="flex-1 grid grid-cols-2 grid-rows-3 grid-flow-col bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 content-start gap-x-2 gap-y-4">
-                  {['On Plan', 'Follow', 'Reversal', 'POI 1st', 'POI 2nd', 'POI 3rd'].map((item, idx) => {
+                  {['On Plan', 'Follow', 'Reversal', 'Enty 1st', 'Enty 2nd', 'Enty 3rd'].map((item, idx) => {
                     const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
-                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'POI 1st' ? Target : item === 'POI 2nd' ? Focus : item === 'POI 3rd' ? Crosshair : CheckCircle2;
+                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'Enty 1st' ? Target : item === 'Enty 2nd' ? Focus : item === 'Enty 3rd' ? Crosshair : CheckCircle2;
                     return isChecked ? (
                       <div key={idx} className="flex items-center gap-1.5 text-orange-400">
                         <ItemIcon className="w-3.5 h-3.5 shrink-0" />

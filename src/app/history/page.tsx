@@ -347,20 +347,20 @@ export default function HistoryPage() {
                         ) : (
                           <span title="Reversal (Not Selected)" className="text-stone-300"><TrendingDown className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('POI 1st') ? (
-                          <span title="POI 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
+                        {t.checklists && t.checklists.includes('Enty 1st') ? (
+                          <span title="Enty 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
                         ) : (
-                          <span title="POI 1st (Not Selected)" className="text-stone-300"><Target className="w-4 h-4" /></span>
+                          <span title="Enty 1st (Not Selected)" className="text-stone-300"><Target className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('POI 2nd') ? (
-                          <span title="POI 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
+                        {t.checklists && t.checklists.includes('Enty 2nd') ? (
+                          <span title="Enty 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
                         ) : (
-                          <span title="POI 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
+                          <span title="Enty 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('POI 3rd') ? (
-                          <span title="POI 3rd" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
+                        {t.checklists && t.checklists.includes('Enty 3rd') ? (
+                          <span title="Enty 3rd" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
                         ) : (
-                          <span title="POI 3rd (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
+                          <span title="Enty 3rd (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
                         )}
                       </div>
                     </td>

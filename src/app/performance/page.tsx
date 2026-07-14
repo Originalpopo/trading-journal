@@ -1,8 +1,8 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -48,9 +48,28 @@ const formatCurrency = (val: number) => val < 0 ? `-$${formatNumber(Math.abs(val
 export default function PerformancePage() {
   const { trades, funding, isLoading } = useJournalStore();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [selectedTf, setSelectedTf] = useState('ALL');
+  const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
+  const [isTfMenuOpen, setIsTfMenuOpen] = useState(false);
+  const tfRef = useRef<HTMLDivElement>(null);
+  
   const [selectedPlan, setSelectedPlan] = useState('ALL');
-  const [selectedChecklist, setSelectedChecklist] = useState('ALL');
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isChecklistMenuOpen, setIsChecklistMenuOpen] = useState(false);
+  const checklistRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (checklistRef.current && !checklistRef.current.contains(event.target as Node)) {
+        setIsChecklistMenuOpen(false);
+      }
+      if (tfRef.current && !tfRef.current.contains(event.target as Node)) {
+        setIsTfMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [selectedMetric, setSelectedMetric] = useState('GAIN');
   const [tfPage, setTfPage] = useState(0);
 
@@ -86,7 +105,7 @@ export default function PerformancePage() {
         });
       }
     });
-    ['POI 1st', 'POI 2nd', 'POI 3rd', 'Follow', 'Reversal', 'Counter'].forEach(c => clSet.add(c));
+    ['Enty 1st', 'Enty 2nd', 'Enty 3rd', 'Follow', 'Reversal'].forEach(c => clSet.add(c));
     return Array.from(clSet).sort();
   }, [trades]);
 
@@ -127,18 +146,22 @@ export default function PerformancePage() {
     allTimelineEvents.forEach(evt => {
       if (!isNaN(evt.timeObj.getTime()) && evt.timeObj.getTime() > 0) {
         if (evt.type === 'trade') {
-          if (selectedTf !== 'ALL') {
+          if (selectedTfs.length > 0) {
             const tfVal = evt.data.tf || 'none';
             const tradeTfs = tfVal.split(',').map((s: string) => s.trim());
-            if (!tradeTfs.includes(selectedTf)) return;
+            const matched = tradeTfs.some(tf => selectedTfs.includes(tf));
+            if (!matched) return;
           }
-          if (selectedChecklist !== 'ALL') {
+          if (selectedChecklists.length > 0) {
             const t = evt.data;
-            if (selectedChecklist === 'Counter') {
-              if (t.checklists && t.checklists.includes('Follow')) return;
-            } else {
-              if (!t.checklists || !t.checklists.includes(selectedChecklist)) return;
+            let matchedAny = false;
+            for (const c of selectedChecklists) {
+              if (t.checklists && t.checklists.includes(c)) {
+                matchedAny = true;
+                break;
+              }
             }
+            if (!matchedAny) return;
           }
           if (selectedPlan !== 'ALL') {
             const t = evt.data;
@@ -558,7 +581,7 @@ export default function PerformancePage() {
       activeMoyNames, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
       matrixSorted
     };
-  }, [trades, funding, selectedYear, selectedTf, selectedPlan, selectedChecklist, selectedMetric]);
+  }, [trades, funding, selectedYear, selectedTfs, selectedPlan, selectedChecklists, selectedMetric]);
 
   const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
     id: 'lastBalancePointPlugin',
@@ -757,15 +780,66 @@ export default function PerformancePage() {
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" ref={tfRef}>
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">TF:</span>
-            <select value={selectedTf} onChange={(e) => setSelectedTf(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              <option value="ALL">ALL</option>
-              {availableTfs.map(tf => (
-                <option key={tf} value={tf}>{tf}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <button
+                onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
+                className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer min-w-[70px] justify-between transition-colors"
+              >
+                <span className="truncate max-w-[100px]">
+                  {selectedTfs.length === 0 
+                    ? "ALL" 
+                    : selectedTfs.length <= 2 
+                      ? selectedTfs.join(", ") 
+                      : `${selectedTfs.length} Selected`}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isTfMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isTfMenuOpen && (
+                <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                  <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+                    <span className="text-[10px] font-bold text-stone-400 uppercase">Select TFs</span>
+                    {selectedTfs.length > 0 && (
+                      <button 
+                        onClick={() => setSelectedTfs([])}
+                        className="text-[10px] font-bold text-orange-400 hover:text-orange-500 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-1.5">
+                    {availableTfs.map(tf => {
+                      const isSelected = selectedTfs.includes(tf);
+                      return (
+                        <div 
+                          key={tf}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedTfs(selectedTfs.filter(i => i !== tf));
+                            } else {
+                              setSelectedTfs([...selectedTfs, tf]);
+                            }
+                          }}
+                          className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? 'bg-orange-50 text-orange-400' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                          }`}
+                        >
+                          <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected ? 'bg-orange-400 border-orange-400' : 'border-stone-200'
+                          }`}>
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                          </div>
+                          <span className="truncate">{tf}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Plan:</span>
@@ -776,15 +850,66 @@ export default function PerformancePage() {
               <option value="Off Plan">Off Plan</option>
             </select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" ref={checklistRef}>
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Checklist:</span>
-            <select value={selectedChecklist} onChange={(e) => setSelectedChecklist(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              <option value="ALL">ALL</option>
-              {availableChecklists.map(cl => (
-                <option key={cl} value={cl}>{cl}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <button
+                onClick={() => setIsChecklistMenuOpen(!isChecklistMenuOpen)}
+                className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer min-w-[100px] justify-between transition-colors"
+              >
+                <span className="truncate max-w-[120px]">
+                  {selectedChecklists.length === 0 
+                    ? "ALL" 
+                    : selectedChecklists.length <= 2 
+                      ? selectedChecklists.join(", ") 
+                      : `${selectedChecklists.length} Selected`}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isChecklistMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isChecklistMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                  <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+                    <span className="text-[10px] font-bold text-stone-400 uppercase">Select Filters</span>
+                    {selectedChecklists.length > 0 && (
+                      <button 
+                        onClick={() => setSelectedChecklists([])}
+                        className="text-[10px] font-bold text-orange-400 hover:text-orange-500 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-1.5">
+                    {availableChecklists.map(cl => {
+                      const isSelected = selectedChecklists.includes(cl);
+                      return (
+                        <div 
+                          key={cl}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedChecklists(selectedChecklists.filter(i => i !== cl));
+                            } else {
+                              setSelectedChecklists([...selectedChecklists, cl]);
+                            }
+                          }}
+                          className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? 'bg-orange-50 text-orange-400' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                          }`}
+                        >
+                          <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected ? 'bg-orange-400 border-orange-400' : 'border-stone-200'
+                          }`}>
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                          </div>
+                          <span className="truncate">{cl}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
