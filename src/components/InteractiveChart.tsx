@@ -379,7 +379,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
   if (error) {
     return (
-      <div className="h-[400px] bg-transparent flex flex-col items-center justify-center text-stone-500 p-4 text-center relative">
+      <div className="h-[250px] bg-transparent flex flex-col items-center justify-center text-stone-500 p-4 text-center relative">
          <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/50 p-1 rounded-lg z-10">
           <button 
             onClick={handleRefresh}
@@ -397,7 +397,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   }
 
   return (
-    <div className="relative w-full h-[400px] bg-transparent">
+    <div className="relative w-full h-[250px] bg-transparent">
       {/* UI Overlay */}
       <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
         <button 

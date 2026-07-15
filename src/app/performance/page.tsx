@@ -1251,11 +1251,11 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">Symbol</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
                 <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle border-l border-stone-200">Net P&L</th>
               </tr>
@@ -1265,8 +1265,8 @@ export default function PerformancePage() {
                 const b = mData.BUY, s = mData.SELL;
                 const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
                 const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
-                const bRR = b.rrCount ? formatNumber((b.rr / b.rrCount)) + 'R' : '-';
-                const sRR = s.rrCount ? formatNumber((s.rr / s.rrCount)) + 'R' : '-';
+                const bRR = b.rrCount ? formatNumber(b.rr) + 'R' : '-';
+                const sRR = s.rrCount ? formatNumber(s.rr) + 'R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (
@@ -1306,11 +1306,11 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">Timeframe</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Avg RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
                 <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle border-l border-stone-200">Net P&L</th>
               </tr>
@@ -1320,8 +1320,8 @@ export default function PerformancePage() {
                 const b = mData.BUY, s = mData.SELL;
                 const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
                 const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
-                const bRR = b.rrCount ? formatNumber((b.rr / b.rrCount)) + 'R' : '-';
-                const sRR = s.rrCount ? formatNumber((s.rr / s.rrCount)) + 'R' : '-';
+                const bRR = b.rrCount ? formatNumber(b.rr) + 'R' : '-';
+                const sRR = s.rrCount ? formatNumber(s.rr) + 'R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (

@@ -145,6 +145,14 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                     </>
                   )}
                 </div>
+                {t.rr !== undefined && t.rr !== 0 && (
+                  <>
+                    <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
+                    <span className={`text-xs font-black tracking-widest ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
+                      {format2Decimals(t.rr)}R
+                    </span>
+                  </>
+                )}
                 {t.side && (
                   <>
                     <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
@@ -158,7 +166,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
           </div>
           <div className="mt-4 md:mt-0 text-left md:text-right">
             <div className={`text-3xl md:text-4xl font-black tracking-tighter leading-none ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
-              {isPrivacyMode ? '***' : `${profit < 0 ? '-' : (profit > 0 ? '+' : '')}$${format2Decimals(Math.abs(profit))}`}
+              {isPrivacyMode ? (!isFunding && t.rr !== undefined && t.rr !== 0 ? `${format2Decimals(t.rr)}R` : '***') : `${profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(profit))}`}
             </div>
           </div>
         </div>
@@ -167,7 +175,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
         <div className="flex-1 overflow-y-auto px-6 md:px-8 py-2 md:py-4 flex flex-col gap-6 border-0 border-transparent" style={{ outline: 'none' }}>
           {/* Chart Section */}
           {!isFunding && (
-            <div className="border-b border-stone-200 pb-6">
+            <div className="border-b border-stone-200 pb-2">
               <InteractiveChart key={(t as Trade).id} trade={t as Trade} />
             </div>
           )}
@@ -187,7 +195,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </div>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-6 py-2">
+            <div className="flex flex-col md:flex-row gap-6 pb-2">
               <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time</span>
@@ -204,10 +212,6 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
                   <span className="text-xs font-extrabold text-stone-950">{isPrivacyMode ? '***' : (rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk/Reward</span>
-                  <span className="text-xs font-extrabold text-stone-950">{t.rr ? `${format2Decimals(t.rr)}R` : '-'}</span>
                 </div>
               </div>
 
@@ -240,9 +244,6 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                       <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stop Loss</span>
                       <span className={`text-xs font-extrabold ${profit < 0 ? 'text-red-900' : 'text-stone-950'}`}>{(t as any).slPrice?.toFixed(2) || '-'}</span>
                     </div>
-                    <div className="flex justify-end pt-1">
-                      <span className="text-[8px] font-bold text-stone-300 opacity-60">#{(t as any).positionId}</span>
-                    </div>
                  </div>
               )}
 
@@ -271,8 +272,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
           {/* Notes / Strategy Section */}
           <div>
-            <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 px-2">Notes</h4>
-            <div className="bg-stone-50/70 border border-stone-100 rounded-2xl p-4 text-stone-950 text-xs leading-relaxed font-medium min-h-[80px] whitespace-pre-wrap">
+            <div className={`bg-stone-50/70 border border-stone-100 rounded-2xl text-stone-950 text-xs leading-relaxed font-medium whitespace-pre-wrap ${notes ? 'p-5 min-h-[100px]' : 'px-5 py-4'}`}>
               {notes || <span className="text-stone-400 italic">No notes provided for this entry.</span>}
             </div>
           </div>
@@ -282,7 +282,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
         {/* Footer Actions */}
         <div className="px-6 md:px-8 pb-6 bg-white shrink-0 border-0 border-transparent" style={{ outline: 'none' }}>
-          <div className="flex items-center justify-between pt-4 border-t border-stone-100">
+          <div className="flex items-center justify-between pt-4 border-t border-stone-200">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => onDelete(trade.id, !!isFunding)}

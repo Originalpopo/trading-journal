@@ -175,11 +175,11 @@ export default function Sidebar() {
         <button
           title={isPrivacyMode ? "Show Data" : "Privacy Mode"}
           onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-          className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg transition shadow-sm border ${
+          className={`w-full flex items-center justify-center gap-3 px-3 py-2 text-sm font-bold rounded-lg transition shadow-sm border ${
             isPrivacyMode 
               ? 'bg-orange-50 text-orange-400 border-orange-200' 
               : 'bg-white border-stone-200 text-stone-500 hover:border-orange-200 hover:text-orange-400'
-          } ${isCollapsed ? "justify-center w-10 h-10 p-0 shrink-0" : ""}`}
+          } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : ""}`}
         >
           {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
           {!isCollapsed && <span>Privacy Mode</span>}
@@ -195,7 +195,7 @@ export default function Sidebar() {
           }`}
         >
           <Upload className="w-4 h-4 shrink-0" />
-          {!isCollapsed && <span>DB / Import CSV</span>}
+          {!isCollapsed && <span>Upload</span>}
         </button>
 
 
