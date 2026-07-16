@@ -650,7 +650,7 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             const val = dataset.data[index] as number;
-            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : (isPrivacyMode ? '***' : '$' + formatNumber(val));
+            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : (isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(val));
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -701,7 +701,7 @@ export default function PerformancePage() {
             let text = formatNumber(val);
             if (selectedMetric === 'RR') text += 'R';
             else if (selectedMetric === 'GAIN') text += '%';
-            else text = isPrivacyMode ? '***' : '$' + text;
+            else text = isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(Math.abs(val));
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -1086,12 +1086,56 @@ export default function PerformancePage() {
             <div className="flex justify-between pt-1"><span className="text-stone-500">Recovery</span><span className="font-bold text-stone-950">{formatNumber(data.recoveryFactor)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Sharpe Ratio</span><span className="font-bold text-stone-950">{formatNumber(data.sharpeRatio)}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Streaks</div>
-            <div className="flex justify-between"><span className="text-stone-500">Max Cons Win</span><span className="font-bold text-orange-400">{data.countAtMaxWinAmt} ({formatCurrency(data.maxConsWinAmt)})</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Max Cons Loss</span><span className="font-bold text-red-900">{data.countAtMaxLossAmt} ({formatCurrency(-data.maxConsLossAmt)})</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-500">Avg Cons Win</span><span className="font-bold text-stone-950">{data.avgConsWin}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Avg Cons Loss</span><span className="font-bold text-stone-950">{data.avgConsLoss}</span></div>
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-4">
+            <div className="text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Streaks</div>
+            
+            {(() => {
+              const maxWin = data.countAtMaxWinAmt || 0;
+              const maxLoss = data.countAtMaxLossAmt || 0;
+              const maxTotal = maxWin + maxLoss || 1;
+              const winPct = (maxWin / maxTotal) * 100;
+              const lossPct = (maxLoss / maxTotal) * 100;
+
+              const avgWin = data.avgConsWin || 0;
+              const avgLoss = data.avgConsLoss || 0;
+              const avgTotal = avgWin + avgLoss || 1;
+              const avgWinPct = (avgWin / avgTotal) * 100;
+              const avgLossPct = (avgLoss / avgTotal) * 100;
+
+              return (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[10px] font-bold text-stone-600">
+                      <span>Win Streaks</span>
+                      <span>Loss Streaks</span>
+                    </div>
+                    <div className="w-full h-6 bg-stone-100 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
+                      <div className="h-full bg-orange-400 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${winPct}%` }}>
+                        {maxWin > 0 ? maxWin : ''}
+                      </div>
+                      <div className="h-full bg-red-900 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${lossPct}%` }}>
+                        {maxLoss > 0 ? maxLoss : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <div className="w-full h-6 bg-stone-100 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
+                      <div className="h-full bg-stone-950 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${avgWinPct}%` }}>
+                        {avgWin > 0 ? avgWin : ''}
+                      </div>
+                      <div className="h-full bg-stone-300 flex items-center justify-center text-stone-900 transition-all duration-500" style={{ width: `${avgLossPct}%` }}>
+                        {avgLoss > 0 ? avgLoss : ''}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-stone-600">
+                      <span>AVG Win</span>
+                      <span>AVG Loss</span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
