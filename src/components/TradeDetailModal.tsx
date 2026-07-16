@@ -56,11 +56,30 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   const f = trade as Funding;
 
   let shortTime = trade.time;
+  let entryShortTime = '-';
+  let exitShortTime = '-';
   try {
-    const d = new Date(trade.time.replace(' ', 'T'));
-    if (!isNaN(d.getTime())) {
-      shortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
-                  d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const rawEntryTime = (trade as any).entryTime || trade.time;
+    if (rawEntryTime) {
+      const d = new Date(rawEntryTime.replace(' ', 'T'));
+      if (!isNaN(d.getTime())) {
+        entryShortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+                    d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (rawEntryTime === trade.time) shortTime = entryShortTime;
+      } else {
+        entryShortTime = rawEntryTime;
+      }
+    }
+
+    const rawExitTime = trade.exitTime || ((trade as any).entryTime ? trade.time : undefined);
+    if (rawExitTime) {
+      const d = new Date(rawExitTime.replace(' ', 'T'));
+      if (!isNaN(d.getTime())) {
+        exitShortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+                    d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } else {
+        exitShortTime = rawExitTime;
+      }
     }
   } catch (e) { }
 
@@ -198,8 +217,12 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             <div className="flex flex-col md:flex-row gap-6 pb-2">
               <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time</span>
-                  <span className="text-xs font-extrabold text-stone-950">{shortTime}</span>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time Entry</span>
+                  <span className="text-xs font-extrabold text-stone-950">{entryShortTime}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time Exit</span>
+                  <span className="text-xs font-extrabold text-stone-950">{exitShortTime}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Duration</span>

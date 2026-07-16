@@ -20,6 +20,7 @@ export interface Trade {
   exitPrice?: number;
   slPrice?: number;
   tpPrice?: number;
+  entryTime?: string;
   exitTime?: string;
   orderId?: string;
   positionId?: string;

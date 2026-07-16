@@ -103,10 +103,13 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
     if (forceFetch || !chartData || chartData.length === 0) {
       try {
-        const entryTime = new Date(trade.time.replace(' ', 'T'));
+        const resolvedEntryTimeStr = trade.entryTime || trade.time;
+        const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
+
+        const entryTime = new Date(resolvedEntryTimeStr.replace(' ', 'T'));
         let exitTime = entryTime;
-        if (trade.exitTime) {
-          exitTime = new Date(trade.exitTime.replace(' ', 'T'));
+        if (resolvedExitTimeStr) {
+          exitTime = new Date(resolvedExitTimeStr.replace(' ', 'T'));
         } else {
           exitTime = new Date(entryTime.getTime() + 4 * 60 * 60 * 1000); // +4H fallback
         }
@@ -151,20 +154,37 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
         let rawSymbol = trade.symbol ? trade.symbol.trim().toUpperCase() : "";
         let formattedSymbol = rawSymbol;
-        if (rawSymbol.length === 6 && !rawSymbol.includes('/')) {
-          formattedSymbol = rawSymbol.substring(0, 3) + '/' + rawSymbol.substring(3);
+        let exchangeParam = "&exchange=OANDA"; 
+
+        if (rawSymbol.includes(':')) {
+          const parts = rawSymbol.split(':');
+          exchangeParam = `&exchange=${encodeURIComponent(parts[0])}`;
+          formattedSymbol = parts[1];
+        }
+
+        if (formattedSymbol.length === 6 && !formattedSymbol.includes('/')) {
+          formattedSymbol = formattedSymbol.substring(0, 3) + '/' + formattedSymbol.substring(3);
         }
 
         const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(formattedSymbol)}&interval=${interval}&end_date=${encodeURIComponent(endStr)}&outputsize=${outputSize}&timezone=${userTz}&apikey=${apiKey}`;
-        const res = await fetch(url);
-        const json = await res.json();
+        let url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(formattedSymbol)}&interval=${interval}&end_date=${encodeURIComponent(endStr)}&outputsize=${outputSize}&timezone=${userTz}${exchangeParam}&apikey=${apiKey}`;
+        
+        let res = await fetch(url);
+        let json = await res.json();
+        
+        if (json.status === 'error') {
+           // Fallback to without exchange
+           url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(formattedSymbol)}&interval=${interval}&end_date=${encodeURIComponent(endStr)}&outputsize=${outputSize}&timezone=${userTz}&apikey=${apiKey}`;
+           res = await fetch(url);
+           json = await res.json();
+        }
+
         if (json.status === 'error') throw new Error(json.message || "Failed to fetch data");
         
         let fetchedChartData = [];
         if (json.values && Array.isArray(json.values)) {
           fetchedChartData = json.values.map((v: any) => ({
-            time: new Date(v.datetime).getTime() / 1000,
+            time: new Date(v.datetime.replace(' ', 'T')).getTime() / 1000,
             open: parseFloat(v.open),
             high: parseFloat(v.high),
             low: parseFloat(v.low),
@@ -202,9 +222,11 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       chartRef.current = chart;
 
       // 1. Draw Background AreaSeries for Position Tool first so they stay behind candles
-      if (trade.entryPrice && trade.time) {
-        const time = new Date(trade.time.replace(' ', 'T')).getTime() / 1000;
-        const exitT = trade.exitTime ? new Date(trade.exitTime.replace(' ', 'T')).getTime() / 1000 : chartData[chartData.length - 1].time;
+      if (trade.entryPrice && (trade.entryTime || trade.time)) {
+        const resolvedEntryTimeStr = trade.entryTime || trade.time;
+        const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
+        const time = new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000;
+        const exitT = resolvedExitTimeStr ? new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000 : chartData[chartData.length - 1].time;
         let areaData = chartData.filter((c: any) => c.time >= time && c.time <= exitT);
         if (areaData.length === 0) {
            const closest = chartData.find((c: any) => c.time >= time);
@@ -328,13 +350,15 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       series.setData(chartData);
       
       const markers: any[] = [];
-      if (trade.entryPrice && trade.time) {
-        const time = new Date(trade.time.replace(' ', 'T')).getTime() / 1000;
+      if (trade.entryPrice && (trade.entryTime || trade.time)) {
+        const resolvedEntryTimeStr = trade.entryTime || trade.time;
+        const time = new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000;
         markers.push({ time, position: (trade.side === 'BUY' || trade.side === 'LONG') ? 'belowBar' : 'aboveBar', color: '#000000', shape: 'arrowUp', text: 'Entry' });
       }
 
-      if (trade.exitPrice && trade.exitTime) {
-        const time = new Date(trade.exitTime.replace(' ', 'T')).getTime() / 1000;
+      const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
+      if (trade.exitPrice && resolvedExitTimeStr) {
+        const time = new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000;
         const isWin = (trade.side === 'BUY' || trade.side === 'LONG') ? trade.exitPrice > (trade.entryPrice || 0) : trade.exitPrice < (trade.entryPrice || 0);
         markers.push({ time, position: (trade.side === 'BUY' || trade.side === 'LONG') ? 'aboveBar' : 'belowBar', color: isWin ? '#fb923c' : '#7f1d1d', shape: 'arrowDown', text: 'Exit' });
       }

@@ -2,6 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useMemo, useState } from "react";
+import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -603,15 +604,45 @@ export default function Dashboard() {
               <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>
               <span className="font-black text-stone-950">{data.stdDev !== 0 ? formatNumber((data.net / data.totalTrades) / data.stdDev) : '0.00'}</span>
             </div>
-          </div>
-          <div className="pt-4 border-t border-stone-200 flex-1">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Net RR</span>
-              <span className="font-black text-xl text-stone-950">
+              <span className="text-xs font-bold text-stone-400">Net RR</span>
+              <span className="font-black text-stone-950">
                 {formatNumber(data.netRR)} R
               </span>
             </div>
           </div>
+          {(() => {
+            let healthTier = 3;
+            if (data.totalTrades > 0) {
+              const pf = data.gLoss === 0 ? data.gProfit : (data.gProfit / data.gLoss);
+              if (pf >= 2.0) healthTier = 5;
+              else if (pf >= 1.2) healthTier = 4;
+              else if (pf >= 0.8) healthTier = 3;
+              else if (pf >= 0.5) healthTier = 2;
+              else healthTier = 1;
+            }
+            return (
+              <div className="flex justify-center items-center pt-4 mt-2 border-t border-stone-200">
+                <div className="flex items-center justify-center gap-1">
+                  <div title="PF < 0.5" className="flex items-center justify-center w-10 h-10 cursor-help">
+                    <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-10 h-10 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                  </div>
+                  <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-10 h-10 cursor-help">
+                    <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-10 h-10 text-stone-700 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                  </div>
+                  <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-10 h-10 cursor-help">
+                    <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-10 h-10 text-stone-500 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                  </div>
+                  <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-10 h-10 cursor-help">
+                    <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-10 h-10 text-orange-300 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                  </div>
+                  <div title="PF >= 2.0" className="flex items-center justify-center w-10 h-10 cursor-help">
+                    <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-10 h-10 text-orange-400 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
       </div>

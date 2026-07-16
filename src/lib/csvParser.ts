@@ -2,6 +2,26 @@ import Papa from 'papaparse';
 import { doc, getDoc, writeBatch, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
+const normalizeDateStr = (dateStr: string) => {
+  if (!dateStr) return dateStr;
+  const match = dateStr.trim().match(/^(\d{1,2})\s+([A-Za-z]{3})\s+'(\d{2})\s+(\d{1,2}:\d{2})$/);
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const monthStr = match[2];
+    const year = "20" + match[3];
+    const time = match[4] + ":00";
+    
+    const months: Record<string, string> = {
+      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+      'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    const month = months[monthStr] || '01';
+    
+    return `${year}-${month}-${day} ${time}`;
+  }
+  return dateStr;
+};
+
 const parseCustomDate = (dateStr: string) => {
   if (!dateStr) return 0;
   const d = new Date(dateStr.replace(' ', 'T'));
@@ -78,8 +98,11 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
     if (docSnap.exists()) {
       skipCount++;
     } else {
-      const entryTimeStr = entryRow ? (entryRow['Update Time'] || entryRow['Date']) : (lastExitRow['Update Time'] || lastExitRow['Date']);
-      const exitTimeStr = lastExitRow['Update Time'] || lastExitRow['Date'] || new Date().toISOString();
+      let entryTimeStr = entryRow ? (entryRow['Update Time'] || entryRow['Date']) : (lastExitRow['Update Time'] || lastExitRow['Date']);
+      let exitTimeStr = lastExitRow['Update Time'] || lastExitRow['Date'] || new Date().toISOString();
+      
+      entryTimeStr = normalizeDateStr(entryTimeStr);
+      exitTimeStr = normalizeDateStr(exitTimeStr);
       
       let duration = 0;
       try {
