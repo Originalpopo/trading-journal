@@ -593,7 +593,7 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Expectancy</span>
-              <span className="font-black text-stone-950">{isPrivacyMode ? '***' : (() => {
+              <span className="font-black text-stone-950">{(() => {
                 if (data.totalTrades === 0) return '0.00 R';
                 const avgLoss = data.countSL > 0 ? (data.gLoss / data.countSL) : 0;
                 const expectedPayoff = data.net / data.totalTrades;
