@@ -591,8 +591,13 @@ export default function Dashboard() {
               <span className="font-black text-stone-950">{(data.gLoss === 0 ? formatNumber(data.gProfit) : formatNumber(data.gProfit / data.gLoss))}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Expected Payoff</span>
-              <span className="font-black text-stone-950">{isPrivacyMode ? '***' : `$${data.totalTrades > 0 ? formatNumber((data.net / data.totalTrades)) : '0.00'}`}</span>
+              <span className="text-xs font-bold text-stone-400">Expectancy</span>
+              <span className="font-black text-stone-950">{isPrivacyMode ? '***' : (() => {
+                if (data.totalTrades === 0) return '0.00 R';
+                const avgLoss = data.countSL > 0 ? (data.gLoss / data.countSL) : 0;
+                const expectedPayoff = data.net / data.totalTrades;
+                return avgLoss > 0 ? `${formatNumber(expectedPayoff / avgLoss)} R` : '0.00 R';
+              })()}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>
@@ -603,7 +608,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Net RR</span>
               <span className="font-black text-xl text-stone-950">
-                {formatNumber(data.netRR)} <span className="text-[10px] font-bold text-stone-950">R</span>
+                {formatNumber(data.netRR)} R
               </span>
             </div>
           </div>

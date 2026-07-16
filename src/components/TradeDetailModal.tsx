@@ -149,7 +149,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                   <>
                     <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
                     <span className={`text-xs font-black tracking-widest ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
-                      {format2Decimals(t.rr)}R
+                      {format2Decimals(t.rr)} R
                     </span>
                   </>
                 )}
@@ -166,7 +166,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
           </div>
           <div className="mt-4 md:mt-0 text-left md:text-right">
             <div className={`text-3xl md:text-4xl font-black tracking-tighter leading-none ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
-              {isPrivacyMode ? (!isFunding && t.rr !== undefined && t.rr !== 0 ? `${format2Decimals(t.rr)}R` : '***') : `${profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(profit))}`}
+              {isPrivacyMode ? (!isFunding && t.rr !== undefined && t.rr !== 0 ? `${format2Decimals(t.rr)} R` : '***') : `${profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(profit))}`}
             </div>
           </div>
         </div>

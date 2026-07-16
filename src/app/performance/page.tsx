@@ -498,6 +498,7 @@ export default function PerformancePage() {
     const recoveryFactor = maxDrawdownAmt > 0 ? (netProfit / maxDrawdownAmt) : 0;
     const avgWin = profitTradesCount > 0 ? (grossProfit / profitTradesCount) : 0;
     const avgLoss = lossTradesCount > 0 ? (grossLoss / lossTradesCount) : 0;
+    const expectancyR = avgLoss > 0 ? (expectedPayoff / avgLoss) : 0;
     const avgBE = beTradesCount > 0 ? (sumBE / beTradesCount) : 0;
 
     const stdDev = calculateStandardDeviation(allProfits, totalTrades > 0 ? (netProfit / totalTrades) : 0);
@@ -569,7 +570,7 @@ export default function PerformancePage() {
 
     return {
       tfStats, tfMatrixSorted,
-      netProfit, profitFactor, expectedPayoff, mainWinRate,
+      netProfit, profitFactor, expectedPayoff, expectancyR, mainWinRate,
       totalTrades, winPct, lossPct, bePct, profitTradesCount, lossTradesCount, beTradesCount,
       longWinPct, shortWinPct, longTrades, shortTrades,
       onPlanPct, offPlanPct, onPlanWR, offPlanWR, onPlanPnL, offPlanPnL,
@@ -650,7 +651,7 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             const val = dataset.data[index] as number;
-            const text = selectedMetric === 'RR' ? formatNumber(val) + 'R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : (isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(val));
+            const text = selectedMetric === 'RR' ? formatNumber(val) + ' R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : (isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(val));
 
             const position = (element as any).tooltipPosition();
             const yOffset = val >= 0 ? -12 : 14;
@@ -699,7 +700,7 @@ export default function PerformancePage() {
 
             const val = dataset.data[index] as number;
             let text = formatNumber(val);
-            if (selectedMetric === 'RR') text += 'R';
+            if (selectedMetric === 'RR') text += ' R';
             else if (selectedMetric === 'GAIN') text += '%';
             else text = isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(Math.abs(val));
 
@@ -939,7 +940,7 @@ export default function PerformancePage() {
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Expectancy</span>
-            <span className="text-xl font-black text-stone-950">{formatCurrency(data.expectedPayoff)}</span>
+            <span className="text-xl font-black text-stone-950">{formatNumber(data.expectancyR)} R</span>
           </div>
         </div>
 
@@ -1309,8 +1310,8 @@ export default function PerformancePage() {
                 const b = mData.BUY, s = mData.SELL;
                 const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
                 const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
-                const bRR = b.rrCount ? formatNumber(b.rr) + 'R' : '-';
-                const sRR = s.rrCount ? formatNumber(s.rr) + 'R' : '-';
+                const bRR = b.rrCount ? formatNumber(b.rr) + ' R' : '-';
+                const sRR = s.rrCount ? formatNumber(s.rr) + ' R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (
@@ -1364,8 +1365,8 @@ export default function PerformancePage() {
                 const b = mData.BUY, s = mData.SELL;
                 const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
                 const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
-                const bRR = b.rrCount ? formatNumber(b.rr) + 'R' : '-';
-                const sRR = s.rrCount ? formatNumber(s.rr) + 'R' : '-';
+                const bRR = b.rrCount ? formatNumber(b.rr) + ' R' : '-';
+                const sRR = s.rrCount ? formatNumber(s.rr) + ' R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (

@@ -218,11 +218,11 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   const parsedAmount = parseFloat(amount) || 0;
   const parsedRisk = parseFloat(risk) || 0;
-  let liveRRStr = "0.00R";
+  let liveRRStr = "0.00 R";
   let liveRRClass = "text-stone-400 normal-case tracking-normal";
   if (parsedRisk > 0) {
     const rr = parsedAmount / parsedRisk;
-    liveRRStr = `${formatNumber(rr)}R`;
+    liveRRStr = `${formatNumber(rr)} R`;
     liveRRClass = rr >= 0 ? "text-orange-400 normal-case tracking-normal" : "text-red-900 normal-case tracking-normal";
   }
 
