@@ -71,7 +71,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
       }
     }
 
-    const rawExitTime = trade.exitTime || ((trade as any).entryTime ? trade.time : undefined);
+    const rawExitTime = (trade as any).exitTime || ((trade as any).entryTime ? trade.time : undefined);
     if (rawExitTime) {
       const d = new Date(rawExitTime.replace(' ', 'T'));
       if (!isNaN(d.getTime())) {
