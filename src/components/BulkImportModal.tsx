@@ -17,6 +17,42 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [offsetSign, setOffsetSign] = useState<1 | -1>(1);
+  const [offsetHours, setOffsetHours] = useState(1);
+  const [offsetMinutes, setOffsetMinutes] = useState(20);
+  const [offsetSeconds, setOffsetSeconds] = useState(0);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('importTimeOffset');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.sign !== undefined) setOffsetSign(parsed.sign);
+        if (parsed.hours !== undefined) setOffsetHours(parsed.hours);
+        if (parsed.minutes !== undefined) setOffsetMinutes(parsed.minutes);
+        if (parsed.seconds !== undefined) setOffsetSeconds(parsed.seconds);
+      } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('importTimeOffset', JSON.stringify({
+      sign: offsetSign,
+      hours: offsetHours,
+      minutes: offsetMinutes,
+      seconds: offsetSeconds
+    }));
+  }, [offsetSign, offsetHours, offsetMinutes, offsetSeconds]);
+
+  const applyTimeOffset = (dateStr: string | undefined, totalSeconds: number) => {
+    if (!dateStr) return dateStr;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    d.setTime(d.getTime() + totalSeconds * 1000);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
   if (!isOpen) return null;
 
   const handleParse = () => {
@@ -75,15 +111,19 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
       }
     }
 
+    const totalOffsetSeconds = offsetSign * ((offsetHours * 3600) + (offsetMinutes * 60) + offsetSeconds);
+
     try {
       for (const t of parsedTrades) {
+        const adjustedTTime = applyTimeOffset(t.time, totalOffsetSeconds);
+        
         // Check for duplicates
         const existingTrade = trades.find(existingTrade => {
           if (t.positionId && existingTrade.positionId) {
              return existingTrade.positionId === t.positionId;
           }
           // Fallback check
-          return existingTrade.time === (t.time || "") && 
+          return existingTrade.time === (adjustedTTime || "") && 
                  existingTrade.symbol === t.symbol &&
                  existingTrade.profit === (t.profit || 0);
         });
@@ -119,7 +159,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
         }
 
         const newTrade: Omit<Trade, 'id'> = {
-          time: t.time || new Date().toISOString(),
+          time: applyTimeOffset(t.time, totalOffsetSeconds) || new Date().toISOString(),
           profit: t.profit || 0,
           risk: defaultRisk,
           rr: rr,
@@ -135,7 +175,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
           exitPrice: t.exitPrice,
           slPrice: t.slPrice,
           tpPrice: t.tpPrice,
-          exitTime: t.exitTime,
+          entryTime: applyTimeOffset(t.entryTime, totalOffsetSeconds),
+          exitTime: applyTimeOffset(t.exitTime, totalOffsetSeconds),
           positionId: t.positionId,
           entryType: t.entryType,
           exitType: t.exitType
@@ -168,11 +209,12 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={() => onClose()}>
       <div className="bg-white border-0 rounded-3xl w-full max-w-5xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100 flex-wrap gap-4">
           <h3 className="text-2xl font-black text-stone-950 tracking-tight">
             Bulk Import from TradingView
           </h3>
-          <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
+
+          <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition ml-auto">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -189,15 +231,34 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
 
           {parsedTrades.length > 0 && (
             <div>
-              <h4 className="text-sm font-bold text-stone-950 mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-orange-400" />
-                Found {parsedTrades.length} Trades to Import
-              </h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-stone-950 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-orange-400" />
+                  Found {parsedTrades.length} Trades to Import
+                </h4>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-bold text-stone-600 text-[10px] uppercase tracking-wider mr-1">Time Offset:</span>
+                  <select className="bg-white border border-stone-200 rounded px-1 py-0.5 text-stone-950 font-bold outline-none cursor-pointer text-xs" 
+                          value={offsetSign} onChange={e => setOffsetSign(Number(e.target.value) as 1 | -1)}>
+                    <option value={1}>+</option>
+                    <option value={-1}>-</option>
+                  </select>
+                  <input type="number" min="0" className="w-12 bg-white border border-stone-200 rounded px-1 py-0.5 text-stone-950 font-bold outline-none text-center text-xs" 
+                         value={String(offsetHours).padStart(2, '0')} onChange={e => setOffsetHours(Number(e.target.value))} placeholder="HH" title="Hours" />
+                  <span className="text-stone-400 font-bold">:</span>
+                  <input type="number" min="0" max="59" className="w-12 bg-white border border-stone-200 rounded px-1 py-0.5 text-stone-950 font-bold outline-none text-center text-xs" 
+                         value={String(offsetMinutes).padStart(2, '0')} onChange={e => setOffsetMinutes(Number(e.target.value))} placeholder="MM" title="Minutes" />
+                  <span className="text-stone-400 font-bold">:</span>
+                  <input type="number" min="0" max="59" className="w-12 bg-white border border-stone-200 rounded px-1 py-0.5 text-stone-950 font-bold outline-none text-center text-xs" 
+                         value={String(offsetSeconds).padStart(2, '0')} onChange={e => setOffsetSeconds(Number(e.target.value))} placeholder="SS" title="Seconds" />
+                </div>
+              </div>
               <div className="overflow-x-auto border border-stone-100 rounded-xl">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="bg-stone-50 text-stone-400 border-b border-stone-100">
                     <tr>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-orange-500">Preview</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">Entry</th>
@@ -208,10 +269,14 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                     </tr>
                   </thead>
                   <tbody className="text-[11px] divide-y divide-stone-50">
-                    {parsedTrades.map((t, idx) => (
-                      <tr key={idx} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
-                        <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">{t.time?.split('T')[1]}<br/><span className="text-[9px] opacity-70">{t.time?.split('T')[0]}</span></td>
-                        <td className="px-4 py-4 font-extrabold text-stone-950">{t.symbol}</td>
+                    {parsedTrades.map((t, idx) => {
+                        const totalOffsetSeconds = offsetSign * ((offsetHours * 3600) + (offsetMinutes * 60) + offsetSeconds);
+                        const adjustedTime = applyTimeOffset(t.time, totalOffsetSeconds);
+                        return (
+                          <tr key={idx} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
+                            <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">{t.time?.split('T')[1]}<br/><span className="text-[9px] opacity-70">{t.time?.split('T')[0]}</span></td>
+                            <td className="px-4 py-4 text-orange-500 font-bold leading-tight">{adjustedTime?.split('T')[1]}<br/><span className="text-[9px] opacity-70">{adjustedTime?.split('T')[0]}</span></td>
+                            <td className="px-4 py-4 font-extrabold text-stone-950">{t.symbol}</td>
                         <td className="px-4 py-4 text-center">
                           <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${t.side === 'BUY' ? 'bg-stone-100 text-stone-600 border-stone-200' : 'bg-stone-100 text-stone-600 border-stone-200'}`}>
                             {t.side}
@@ -224,9 +289,10 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                         <td className={`px-4 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
                           {t.profit! < 0 ? '-' : (t.profit! > 0 ? '+' : '')}${Math.abs(t.profit || 0).toFixed(2)}
                         </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
                 </table>
               </div>
             </div>
