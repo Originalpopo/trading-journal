@@ -136,8 +136,8 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
       try {
         const tEntry = parseCustomDate(entryTimeStr);
         const tExit = parseCustomDate(exitTimeStr);
-        if (!isNaN(tEntry.getTime()) && !isNaN(tExit.getTime())) {
-          duration = Math.max(0, Math.floor((tExit.getTime() - tEntry.getTime()) / 1000));
+        if (!isNaN(tEntry) && !isNaN(tExit)) {
+          duration = Math.max(0, Math.floor((tExit - tEntry) / 1000));
         }
       } catch(e) {}
 
