@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { X, Edit2, Trash2, ExternalLink, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
 
@@ -106,30 +106,8 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
     }
     badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
 
-    let sec = t.duration || 0;
-    if (!sec && t.exitTime && t.time) {
-      try {
-        const entryDate = new Date(t.time.replace(' ', 'T')).getTime();
-        const exitDate = new Date(t.exitTime.replace(' ', 'T')).getTime();
-        if (!isNaN(entryDate) && !isNaN(exitDate)) {
-          sec = Math.max(0, Math.floor((exitDate - entryDate) / 1000));
-        }
-      } catch (e) {}
-    }
-    
-    if (sec === 0 && !t.exitTime) {
-      durationDisplay = "-";
-    } else {
-      if (sec === 0) sec = 1;
-      let m = Math.floor(sec / 60);
-      let s = sec % 60;
-      let h = Math.floor(m / 60); m = m % 60;
-      let d = Math.floor(h / 24); h = h % 24;
-      if (d > 0) durationDisplay = `${d}d ${h}h`;
-      else if (h > 0) durationDisplay = `${h}h ${m}m`;
-      else if (m > 0) durationDisplay = `${m}m ${s}s`;
-      else durationDisplay = `${s}s`;
-    }
+    const sec = calculateDurationInSeconds(t);
+    durationDisplay = formatDurationDetailed(sec);
   }
 
   return (
@@ -271,10 +249,10 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               )}
 
               {/* Right Column: Checklists */}
-              <div className="flex-1 grid grid-cols-2 grid-rows-3 grid-flow-col bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 content-start gap-x-2 gap-y-4">
-                  {['On Plan', 'Follow', 'Reversal', 'Enty 1st', 'Enty 2nd', 'Enty 3rd'].map((item, idx) => {
+              <div className="flex-1 flex flex-row flex-wrap items-center bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 gap-4">
+                  {['On Plan', 'Follow', 'Reversal', 'Entry 1st', 'Entry 2nd'].map((item, idx) => {
                     const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
-                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'Enty 1st' ? Target : item === 'Enty 2nd' ? Focus : item === 'Enty 3rd' ? Crosshair : CheckCircle2;
+                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'Entry 1st' ? Target : item === 'Entry 2nd' ? Focus : CheckCircle2;
                     return isChecked ? (
                       <div key={idx} className="flex items-center gap-1.5 text-orange-400">
                         <ItemIcon className="w-3.5 h-3.5 shrink-0" />

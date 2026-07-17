@@ -141,13 +141,15 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
       positionId: posId,
       symbol: entryOrder.symbol,
       side: entryOrder.side === 'Buy' ? 'BUY' : 'SELL',
-      time: entryOrder.updateTime.replace(' ', 'T'), // Format to standard datetime
+      time: exitOrder.updateTime.replace(' ', 'T'), // Format to standard datetime
+      entryTime: entryOrder.updateTime.replace(' ', 'T'),
       exitTime: exitOrder.updateTime.replace(' ', 'T'),
       entryPrice: entryOrder.avgFillPrice || entryOrder.limitOrStopPrice,
       exitPrice: exitOrder.avgFillPrice || exitOrder.limitOrStopPrice,
       entryType: entryOrder.type,
       exitType: exitOrder.type,
       profit: exitOrder.pnl || 0,
+      duration: Math.max(0, Math.floor((new Date(exitOrder.updateTime.replace(' ', 'T')).getTime() - new Date(entryOrder.updateTime.replace(' ', 'T')).getTime()) / 1000) || 0),
     };
 
     // Find SL/TP within filled orders

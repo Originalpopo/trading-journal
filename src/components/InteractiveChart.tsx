@@ -29,6 +29,9 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   const [error, setError] = useState<string | null>(null);
   
   const updateTrade = useJournalStore((state) => state.updateTrade);
+  const chartTimeOffset = useJournalStore((state) => state.chartTimeOffset);
+  const setChartTimeOffset = useJournalStore((state) => state.setChartTimeOffset);
+  const offsetSec = chartTimeOffset * 3600;
 
   // Normalize trade.tf
   let baseTf = '15m';
@@ -314,7 +317,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             priceLineVisible: false,
             lastValueVisible: false,
           });
-          rewardSeries.setData(areaData.map((c: any) => ({ time: c.time, value: tpP })));
+          rewardSeries.setData(areaData.map((c: any) => ({ time: c.time + offsetSec, value: tpP })));
 
           // Risk Box
           const riskSeries = chart.addBaselineSeries({
@@ -330,7 +333,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             priceLineVisible: false,
             lastValueVisible: false,
           });
-          riskSeries.setData(areaData.map((c: any) => ({ time: c.time, value: slP })));
+          riskSeries.setData(areaData.map((c: any) => ({ time: c.time + offsetSec, value: slP })));
         }
       }
 
@@ -347,18 +350,18 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         priceLineVisible: false
       });
       seriesRef.current = series;
-      series.setData(chartData);
+      series.setData(chartData.map((c: any) => ({...c, time: c.time + offsetSec})));
       
       const markers: any[] = [];
       if (trade.entryPrice && (trade.entryTime || trade.time)) {
         const resolvedEntryTimeStr = trade.entryTime || trade.time;
-        const time = new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000;
+        const time = (new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000) + offsetSec;
         markers.push({ time, position: (trade.side === 'BUY' || trade.side === 'LONG') ? 'belowBar' : 'aboveBar', color: '#000000', shape: 'arrowUp', text: 'Entry' });
       }
 
       const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
       if (trade.exitPrice && resolvedExitTimeStr) {
-        const time = new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000;
+        const time = (new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000) + offsetSec;
         const isWin = (trade.side === 'BUY' || trade.side === 'LONG') ? trade.exitPrice > (trade.entryPrice || 0) : trade.exitPrice < (trade.entryPrice || 0);
         markers.push({ time, position: (trade.side === 'BUY' || trade.side === 'LONG') ? 'aboveBar' : 'belowBar', color: isWin ? '#fb923c' : '#7f1d1d', shape: 'arrowDown', text: 'Exit' });
       }
@@ -385,7 +388,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trade.id, trade.time, trade.exitTime, selectedTf]);
+  }, [trade.id, trade.time, trade.exitTime, selectedTf, chartTimeOffset]);
   
   useEffect(() => {
     const handleResize = () => {
@@ -446,6 +449,19 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
               {tf}
             </button>
           ))}
+        </div>
+
+        <div className="flex items-center p-0.5 ml-2 bg-stone-100/80 backdrop-blur-sm rounded-lg border border-stone-200/50">
+          <select 
+            value={chartTimeOffset}
+            onChange={(e) => setChartTimeOffset(Number(e.target.value))}
+            className="text-[11px] font-black text-stone-500 bg-transparent border-none focus:outline-none cursor-pointer px-1 py-1"
+            title="Chart Timezone Offset"
+          >
+            {Array.from({length: 25}, (_, i) => i - 12).map(h => (
+              <option key={h} value={h}>{h > 0 ? `+${h}` : h} hrs</option>
+            ))}
+          </select>
         </div>
       </div>
 

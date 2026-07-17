@@ -2,7 +2,8 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check, CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
+import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,9 +18,6 @@ import {
   Plugin
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-const formatNumber = (val: number): string => {
-  return (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
 
 ChartJS.register(
   CategoryScale,
@@ -109,7 +107,7 @@ export default function PerformancePage() {
         });
       }
     });
-    ['Enty 1st', 'Enty 2nd', 'Enty 3rd', 'Follow', 'Reversal'].forEach(c => clSet.add(c));
+    ['Entry 1st', 'Entry 2nd', 'Follow', 'Reversal'].forEach(c => clSet.add(c));
     return Array.from(clSet).sort();
   }, [trades]);
 
@@ -188,7 +186,7 @@ export default function PerformancePage() {
       }
     });
 
-    let carriedOverBalance = 0; // globalCapital is usually 0 here if not explicitly set
+    let carriedOverBalance = 0;
     pastEvents.forEach(evt => {
       if (evt.type === 'funding') {
         carriedOverBalance += evt.data.deposit - (evt.data.withdraw || 0);
@@ -237,14 +235,14 @@ export default function PerformancePage() {
     let sumDurationWins = 0, countDurationWins = 0;
     let sumDurationLosses = 0, countDurationLosses = 0;
 
-    const tfStats: Record<string, { trades: number; win: number; loss: number; be: number; pnl: number }> = {
-      '1h': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
-      '15m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
-      '5m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
-      '1m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
-      '15s': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
-      '5s': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
-      'none': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0 },
+    const tfStats: Record<string, { trades: number; win: number; loss: number; be: number; pnl: number; rr: number }> = {
+      '1h': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
+      '15m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
+      '5m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
+      '1m': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
+      '15s': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
+      '5s': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
+      'none': { trades: 0, win: 0, loss: 0, be: 0, pnl: 0, rr: 0 },
     };
 
     currentEvents.forEach((evt) => {
@@ -269,7 +267,8 @@ export default function PerformancePage() {
         perfBalanceLabels.push(dateStr);
       } else if (evt.type === 'trade') {
         const t = evt.data;
-        let hr = evt.timeObj.getHours();
+        const entryTimeObj = new Date((t.entryTime || t.time).replace(' ', 'T'));
+        let hr = entryTimeObj.getHours();
         const rrVal = t.rr || 0;
         const pnl = t.profit || 0;
         
@@ -286,30 +285,30 @@ export default function PerformancePage() {
         totalTrades++;
         allProfits.push(pnl);
 
+        const isWin = !isBE && (pnl > 0 || t.resultType === 'TP');
+        const isLoss = !isBE && (pnl < 0 || t.resultType === 'SL');
+
         const planStatus = t.isOnPlan !== false;
         if (planStatus) {
           onPlanTrades++;
           onPlanPnL += pnl;
           if (isBE) onPlanBE++;
-          else if (pnl > 0 || (!isBE && t.resultType === 'TP')) onPlanWins++;
+          else if (isWin) onPlanWins++;
           else onPlanLosses++;
         } else {
           offPlanTrades++;
           offPlanPnL += pnl;
           if (isBE) offPlanBE++;
-          else if (pnl > 0 || (!isBE && t.resultType === 'TP')) offPlanWins++;
+          else if (isWin) offPlanWins++;
           else offPlanLosses++;
         }
 
-        const validDuration = (!t.duration || t.duration <= 0) ? 60 : t.duration;
-        if (!isBE) {
-          if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
-            sumDurationWins += validDuration;
-            countDurationWins++;
-          } else if (pnl < 0 || (!isBE && t.resultType === 'SL')) {
-            sumDurationLosses += validDuration;
-            countDurationLosses++;
-          }
+        if (isWin) {
+          sumDurationWins += calculateDurationInSeconds(t);
+          countDurationWins++;
+        } else if (isLoss) {
+          sumDurationLosses += calculateDurationInSeconds(t);
+          countDurationLosses++;
         }
 
         if (isBE) {
@@ -317,7 +316,7 @@ export default function PerformancePage() {
           sumBE += pnl;
           if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
           beTradesCount++;
-        } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+        } else if (isWin) {
           grossProfit += pnl;
           profitTradesCount++;
           if (pnl > largestProfit) largestProfit = pnl;
@@ -340,7 +339,7 @@ export default function PerformancePage() {
             countAtMaxWinAmt = currentWinCount;
           }
 
-        } else if (pnl < 0 || (!isBE && t.resultType === 'SL')) {
+        } else if (isLoss) {
           grossLoss += Math.abs(pnl);
           lossTradesCount++;
           if (pnl < largestLoss) largestLoss = pnl;
@@ -366,10 +365,10 @@ export default function PerformancePage() {
 
         if (t.side === 'BUY') {
           longTrades++;
-          if (!isBE && (pnl > 0 || t.resultType === 'TP')) longWon++;
+          if (isWin) longWon++;
         } else if (t.side === 'SELL') {
           shortTrades++;
-          if (!isBE && (pnl > 0 || t.resultType === 'TP')) shortWon++;
+          if (isWin) shortWon++;
         }
 
         const tfVals = t.tf ? t.tf.split(',').map((s: string) => s.trim()).filter(Boolean) : ['none'];
@@ -379,9 +378,10 @@ export default function PerformancePage() {
           const validKey = ['1h', '15m', '5m', '1m', '15s', '5s'].includes(tfKey) ? tfKey : 'none';
           tfStats[validKey].trades++;
           tfStats[validKey].pnl += pnl;
+          tfStats[validKey].rr += rrVal;
           if (isBE) {
             tfStats[validKey].be++;
-          } else if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+          } else if (isWin) {
             tfStats[validKey].win++;
           } else {
             tfStats[validKey].loss++;
@@ -394,14 +394,14 @@ export default function PerformancePage() {
           if (isBE) {
             hourBEs[hr]++;
           } else {
-            if (pnl > 0 || (!isBE && t.resultType === 'TP')) hourWins[hr]++;
+            if (isWin) hourWins[hr]++;
             else hourLosses[hr]++;
           }
         }
 
-        if (!isNaN(evt.timeObj.getTime())) {
-          const mMonth = evt.timeObj.getMonth();
-          const dDay = evt.timeObj.getDay();
+        if (!isNaN(entryTimeObj.getTime())) {
+          const mMonth = entryTimeObj.getMonth();
+          const dDay = entryTimeObj.getDay();
 
           if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = runningBalance - pnl;
           moyPnL[mMonth] += pnl;
@@ -415,7 +415,7 @@ export default function PerformancePage() {
             dowBEs[dDay]++;
             moyBEs[mMonth]++;
           } else {
-            if (pnl > 0 || (!isBE && t.resultType === 'TP')) {
+            if (isWin) {
               dowWins[dDay]++;
               moyWins[mMonth]++;
             } else {
@@ -440,8 +440,8 @@ export default function PerformancePage() {
           m.trades++;
           m.pnl += pnl;
           if (!isBE) {
-            if (pnl > 0 || t.resultType === 'TP') m.win++;
-            if (pnl < 0 || t.resultType === 'SL') m.loss++;
+            if (isWin) m.win++;
+            if (isLoss) m.loss++;
           }
           if (t.rr) { m.rr += t.rr; m.rrCount++; }
 
@@ -456,8 +456,8 @@ export default function PerformancePage() {
             tm.trades++;
             tm.pnl += pnl;
             if (!isBE) {
-              if (pnl > 0 || t.resultType === 'TP') tm.win++;
-              if (pnl < 0 || t.resultType === 'SL') tm.loss++;
+              if (isWin) tm.win++;
+              if (isLoss) tm.loss++;
             }
             if (t.rr) { tm.rr += t.rr; tm.rrCount++; }
           });
@@ -521,19 +521,8 @@ export default function PerformancePage() {
     const onPlanWR = (onPlanWins + onPlanLosses) > 0 ? formatNumber((onPlanWins / (onPlanWins + onPlanLosses)) * 100) : '0.00';
     const offPlanWR = (offPlanWins + offPlanLosses) > 0 ? formatNumber((offPlanWins / (offPlanWins + offPlanLosses)) * 100) : '0.00';
 
-    function formatDuration(sec: number) {
-      if (!sec || sec <= 0) return '0s';
-      const d = Math.floor(sec / (24 * 3600)); sec %= (24 * 3600);
-      const h = Math.floor(sec / 3600); sec %= 3600;
-      const m = Math.floor(sec / 60); const s = Math.floor(sec % 60);
-      if (d > 0) return `${d}d ${h}h`;
-      if (h > 0) return `${h}h ${m}m`;
-      if (m > 0) return `${m}m ${s}s`;
-      return `${s}s`;
-    }
-
-    const holdWin = countDurationWins > 0 ? formatDuration(sumDurationWins / countDurationWins) : '-';
-    const holdLoss = countDurationLosses > 0 ? formatDuration(sumDurationLosses / countDurationLosses) : '-';
+    const holdWin = countDurationWins > 0 ? formatDurationDetailed(sumDurationWins / countDurationWins) : '-';
+    const holdLoss = countDurationLosses > 0 ? formatDurationDetailed(sumDurationLosses / countDurationLosses) : '-';
 
     // Chart Data Generation
     const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : selectedMetric === 'GAIN' ? (hourStatsPnL[h] / initialDeposit) * 100 : hourStatsPnL[h]);
@@ -775,7 +764,37 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      <div className="flex justify-end mt-2 mb-2">
+      <div className="flex justify-between items-center mt-2 mb-2">
+        {(() => {
+            let healthTier = 3;
+            if (data.totalTrades > 0) {
+              const pf = data.profitFactor;
+              if (pf >= 2.0) healthTier = 5;
+              else if (pf >= 1.2) healthTier = 4;
+              else if (pf >= 0.8) healthTier = 3;
+              else if (pf >= 0.5) healthTier = 2;
+              else healthTier = 1;
+            }
+            return (
+              <div className="flex items-center justify-center gap-1 ml-2">
+                <div title="PF < 0.5" className="flex items-center justify-center w-8 h-8 cursor-help">
+                  <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-8 h-8 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-8 h-8 cursor-help">
+                  <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-8 h-8 text-stone-700 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-8 h-8 cursor-help">
+                  <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-8 h-8 text-stone-500 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-8 h-8 cursor-help">
+                  <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-8 h-8 text-orange-300 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF >= 2.0" className="flex items-center justify-center w-8 h-8 cursor-help">
+                  <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-8 h-8 text-orange-400 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+              </div>
+            );
+        })()}
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year:</span>
@@ -946,18 +965,18 @@ export default function PerformancePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
           <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-2.5">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Outcomes</span>
-            </div>
-            <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden flex">
-              <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${data.winPct}%` }}></div>
-              <div className="h-full bg-stone-200 transition-all duration-500" style={{ width: `${data.bePct}%` }}></div>
-              <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.lossPct}%` }}></div>
             </div>
             <div className="flex justify-between text-[10px] font-bold">
               <span className="text-orange-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
               <span className="text-stone-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
               <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
+            </div>
+            <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden flex mt-1">
+              <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${data.winPct}%` }}></div>
+              <div className="h-full bg-stone-200 transition-all duration-500" style={{ width: `${data.bePct}%` }}></div>
+              <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.lossPct}%` }}></div>
             </div>
             <div className="grid grid-cols-3 gap-2 pt-0.5">
               <div className="bg-orange-50/60 border border-orange-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
@@ -976,7 +995,7 @@ export default function PerformancePage() {
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Direction</span>
             </div>
             <div className="space-y-3 mt-2">
@@ -985,83 +1004,109 @@ export default function PerformancePage() {
                   <span className="text-stone-600">Buy <span className="text-stone-400 font-normal">({data.longTrades})</span></span>
                   <span className="text-stone-950">{formatNumber(data.longWinPct)}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.longWinPct}%` }}></div></div>
+                <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.longWinPct}%` }}></div></div>
               </div>
               <div>
                 <div className="flex justify-between text-[10px] font-bold mb-1">
                   <span className="text-stone-600">Sell <span className="text-stone-400 font-normal">({data.shortTrades})</span></span>
                   <span className="text-stone-950">{formatNumber(data.shortWinPct)}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.shortWinPct}%` }}></div></div>
+                <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.shortWinPct}%` }}></div></div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-end">
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-1">
+            <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Discipline</span>
             </div>
-            <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden flex mt-2">
-              <div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
-              <div className="h-full bg-stone-200 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
+            <div className="flex justify-between text-[10px] font-bold">
+              <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
+              <span className="text-stone-600 flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-stone-100 border border-stone-200 shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
             </div>
-            <div className="flex justify-between text-[10px] font-bold mt-3">
-              <div className="flex flex-col gap-1">
-                <span className="text-stone-950 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-stone-950"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
-                <span className="text-stone-950">On Plan</span>
-                <span className="text-stone-950">{formatCurrency(data.onPlanPnL)}</span>
+            <div className="w-full h-4 bg-stone-100 rounded-full overflow-hidden flex mt-1 mb-1">
+              <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
+              <div className="h-full bg-stone-100 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
+            </div>
+            <div className="flex justify-between text-[10px] font-bold mt-2">
+              <div className="flex flex-col">
+                <span className="text-red-900">Off Plan</span>
+                <span className="text-red-900">{formatCurrency(data.offPlanPnL)}</span>
               </div>
-              <div className="flex flex-col gap-1 items-end text-right">
-                <span className="text-stone-400 flex items-center gap-1 justify-end"><span className="w-2 h-2 rounded-full bg-stone-200"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
-                <span className="text-stone-400">Off Plan</span>
-                <span className="text-stone-400">{formatCurrency(data.offPlanPnL)}</span>
+              <div className="flex flex-col items-end text-right">
+                <span className="text-stone-600">On Plan</span>
+                <span className="text-stone-600">{formatCurrency(data.onPlanPnL)}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
-              <div className="flex gap-1">
-                <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronRight className="w-3.5 h-3.5" /></button>
-              </div>
-            </div>
-            <div className="space-y-3 mt-2">
-              {(() => {
-                const validTfs = ['1h', '15m', '5m', '1m', '15s', '5s']
-                  .filter(tf => data.tfStats[tf] && data.tfStats[tf].trades > 0)
-                  .sort((a, b) => data.tfStats[b].pnl - data.tfStats[a].pnl);
+          {(() => {
+            const validTfs = ['1h', '15m', '5m', '1m', '15s', '5s']
+              .filter(tf => data.tfStats[tf] && data.tfStats[tf].trades > 0)
+              .sort((a, b) => data.tfStats[b].pnl - data.tfStats[a].pnl);
+              
+            return (
+              <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
+                <div className="flex justify-between items-center border-b border-stone-100 pb-1.5 mb-2">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
+                  {validTfs.length > 4 && (
+                    <div className="flex gap-1">
+                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronRight className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3 mt-2">
+                  {validTfs.length === 0 ? null : (() => {
                 
-                if (validTfs.length === 0) return null;
-                
-                const totalPages = Math.ceil(validTfs.length / 3);
+                const totalPages = Math.ceil(validTfs.length / 4);
                 let normalizedPage = tfPage % totalPages;
                 if (normalizedPage < 0) normalizedPage += totalPages;
                 
-                return validTfs.slice(normalizedPage * 3, normalizedPage * 3 + 3).map(tf => {
+                const maxPosPnl = Math.max(0, ...validTfs.map(tf => data.tfStats[tf].pnl));
+                const maxNegPnl = Math.max(0, ...validTfs.map(tf => -data.tfStats[tf].pnl));
+                const totalRange = maxPosPnl + maxNegPnl;
+                
+                const negRatio = totalRange > 0 ? (maxNegPnl / totalRange) * 100 : 50;
+                const posRatio = totalRange > 0 ? (maxPosPnl / totalRange) * 100 : 50;
+                
+                return validTfs.slice(normalizedPage * 4, normalizedPage * 4 + 4).map(tf => {
                   const stat = data.tfStats[tf];
-                const resolved = stat.win + stat.loss;
-                const wr = resolved > 0 ? (stat.win / resolved) * 100 : 0;
-                return (
-                  <div key={tf}>
-                    <div className="flex justify-between text-[10px] font-bold mb-1">
-                      <span className="text-stone-600">{tf} <span className="text-stone-400 font-normal">({stat.trades})</span></span>
-                      <span className="text-stone-950 flex items-center gap-1.5">
-                        <span className={stat.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatCurrency(stat.pnl)}</span>
-                        <span>| {formatNumber(wr)}%</span>
-                      </span>
+                  
+                  let negWidth = 0;
+                  let posWidth = 0;
+                  if (stat.pnl < 0 && maxNegPnl > 0) negWidth = (Math.abs(stat.pnl) / maxNegPnl) * 100;
+                  if (stat.pnl > 0 && maxPosPnl > 0) posWidth = (stat.pnl / maxPosPnl) * 100;
+                  
+                  return (
+                    <div key={tf} className="flex items-center gap-2">
+                      <div className="w-7 shrink-0 flex items-baseline text-[10px]">
+                        <span className="font-bold text-stone-950">{tf}</span>
+                      </div>
+                      <div className="flex-1 h-2.5 bg-stone-100 rounded-full flex items-center overflow-hidden">
+                        <div className="h-full flex justify-end" style={{ width: `${negRatio}%` }}>
+                          {stat.pnl < 0 && (
+                            <div className="h-full bg-red-900 rounded-full" style={{ width: `${negWidth}%` }}></div>
+                          )}
+                        </div>
+                        <div className="h-full flex justify-start" style={{ width: `${posRatio}%` }}>
+                          {stat.pnl > 0 && (
+                            <div className="h-full bg-orange-400 rounded-full" style={{ width: `${posWidth}%` }}></div>
+                          )}
+                        </div>
+                      </div>
+                      <div className={`w-auto shrink-0 text-left text-[10px] font-bold ${stat.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
+                        {formatCurrency(stat.pnl)} <span className="text-stone-300 font-normal mx-0.5">|</span> <span className={stat.rr >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatNumber(stat.rr)} R</span>
+                      </div>
                     </div>
-                    <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${wr}%` }}></div>
-                    </div>
-                  </div>
-                );
+                  );
                 });
               })()}
             </div>
           </div>
-        </div>
+        );
+      })()}
+    </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
@@ -1125,7 +1170,7 @@ export default function PerformancePage() {
                       <div className="h-full bg-stone-950 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${avgWinPct}%` }}>
                         {avgWin > 0 ? avgWin : ''}
                       </div>
-                      <div className="h-full bg-stone-300 flex items-center justify-center text-stone-900 transition-all duration-500" style={{ width: `${avgLossPct}%` }}>
+                      <div className="h-full bg-stone-100 flex items-center justify-center text-stone-500 transition-all duration-500" style={{ width: `${avgLossPct}%` }}>
                         {avgLoss > 0 ? avgLoss : ''}
                       </div>
                     </div>
@@ -1290,7 +1335,7 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 rounded-tl-xl"></th>
                 <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
                 <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
-                <th className="py-2 px-4 rounded-tr-xl border-l border-stone-200"></th>
+                <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200 rounded-tr-xl">All</th>
               </tr>
               <tr className="text-stone-400 bg-stone-100">
                 <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">Symbol</th>
@@ -1302,7 +1347,10 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-                <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle border-l border-stone-200">Net P&L</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Net P&L</th>
               </tr>
             </thead>
             <tbody className="text-[12px]">
@@ -1312,6 +1360,12 @@ export default function PerformancePage() {
                 const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
                 const bRR = b.rrCount ? formatNumber(b.rr) + ' R' : '-';
                 const sRR = s.rrCount ? formatNumber(s.rr) + ' R' : '-';
+                const allTrades = b.trades + s.trades;
+                const allWin = b.win + s.win;
+                const allLoss = b.loss + s.loss;
+                const allWR = (allWin + allLoss) > 0 ? formatNumber(allWin / (allWin + allLoss) * 100) + '%' : '-';
+                const allRRCount = (b.rrCount || 0) + (s.rrCount || 0);
+                const allRR = allRRCount ? formatNumber((b.rr || 0) + (s.rr || 0)) + ' R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (
@@ -1325,7 +1379,10 @@ export default function PerformancePage() {
                     <td className="py-3 px-4 text-center font-bold text-stone-500">{sWR}</td>
                     <td className="py-3 px-4 text-center font-bold text-stone-500">{sRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
-                    <td className={`py-3 px-4 text-center font-black border-l border-stone-200 ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{allTrades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{allWR}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{allRR}</td>
+                    <td className={`py-3 px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                   </tr>
                 );
               })}
@@ -1345,7 +1402,7 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 rounded-tl-xl"></th>
                 <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
                 <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
-                <th className="py-2 px-4 rounded-tr-xl border-l border-stone-200"></th>
+                <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200 rounded-tr-xl">All</th>
               </tr>
               <tr className="text-stone-400 bg-stone-100">
                 <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">Timeframe</th>
@@ -1357,7 +1414,10 @@ export default function PerformancePage() {
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
                 <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-                <th className="py-2 px-4 font-bold uppercase text-[10px] text-center align-middle border-l border-stone-200">Net P&L</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
+                <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Net P&L</th>
               </tr>
             </thead>
             <tbody className="text-[12px]">
@@ -1367,6 +1427,12 @@ export default function PerformancePage() {
                 const sWR = (s.win + s.loss) > 0 ? formatNumber(s.win / (s.win + s.loss) * 100) + '%' : '-';
                 const bRR = b.rrCount ? formatNumber(b.rr) + ' R' : '-';
                 const sRR = s.rrCount ? formatNumber(s.rr) + ' R' : '-';
+                const allTrades = b.trades + s.trades;
+                const allWin = b.win + s.win;
+                const allLoss = b.loss + s.loss;
+                const allWR = (allWin + allLoss) > 0 ? formatNumber(allWin / (allWin + allLoss) * 100) + '%' : '-';
+                const allRRCount = (b.rrCount || 0) + (s.rrCount || 0);
+                const allRR = allRRCount ? formatNumber((b.rr || 0) + (s.rr || 0)) + ' R' : '-';
                 const total = b.pnl + s.pnl;
 
                 return (
@@ -1380,7 +1446,10 @@ export default function PerformancePage() {
                     <td className="py-3 px-4 text-center font-bold text-stone-500">{sWR}</td>
                     <td className="py-3 px-4 text-center font-bold text-stone-500">{sRR}</td>
                     <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
-                    <td className={`py-3 px-4 text-center font-black border-l border-stone-200 ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{allTrades}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{allWR}</td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-500">{allRR}</td>
+                    <td className={`py-3 px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                   </tr>
                 );
               })}

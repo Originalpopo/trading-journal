@@ -23,6 +23,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [amount, setAmount] = useState("");
   const [time, setTime] = useState("");
   const [risk, setRisk] = useState("");
+  const [entryTime, setEntryTime] = useState("");
   const [strategy, setStrategy] = useState("");
 
   const [tf, setTf] = useState("none");
@@ -82,11 +83,22 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           setOrderExitType(t.exitType || "Limit");
 
           try {
-            const d = new Date(t.time.replace(" ", "T"));
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            setTime(d.toISOString().slice(0, 19));
+            if (t.entryTime) {
+              const dEntry = new Date(t.entryTime.replace(" ", "T"));
+              dEntry.setMinutes(dEntry.getMinutes() - dEntry.getTimezoneOffset());
+              setEntryTime(dEntry.toISOString().slice(0, 19));
+            } else {
+              const dEntry = new Date(t.time.replace(" ", "T"));
+              dEntry.setMinutes(dEntry.getMinutes() - dEntry.getTimezoneOffset());
+              setEntryTime(dEntry.toISOString().slice(0, 19));
+            }
+
+            const dExit = new Date(t.time.replace(" ", "T"));
+            dExit.setMinutes(dExit.getMinutes() - dExit.getTimezoneOffset());
+            setTime(dExit.toISOString().slice(0, 19));
           } catch (e) {
             setTime("");
+            setEntryTime("");
           }
         }
       } else {
@@ -135,7 +147,9 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        setTime(now.toISOString().slice(0, 19));
+        const nowStr = now.toISOString().slice(0, 19);
+        setTime(nowStr);
+        setEntryTime(nowStr);
       }
     }
   }, [isOpen, tradeToEdit, trades]);
@@ -186,8 +200,20 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             else resType = "SL";
         }
 
+        let calculatedDuration = 0;
+        if (entryTime && timeVal) {
+          const tEntry = new Date(entryTime.replace(" ", "T"));
+          const tExit = new Date(timeVal.replace(" ", "T"));
+          if (!isNaN(tEntry.getTime()) && !isNaN(tExit.getTime())) {
+            calculatedDuration = Math.max(0, Math.floor((tExit.getTime() - tEntry.getTime()) / 1000));
+          }
+        }
+
         const data = {
           time: timeVal,
+          entryTime: entryTime,
+          exitTime: timeVal,
+          duration: calculatedDuration,
           symbol: symbol.toUpperCase().trim(),
           side,
           profit: parsedAmount,
@@ -317,7 +343,30 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {entryType === "TRADE" ? (
+              <>
+                <div>
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Entry Time</label>
+                  <input type="datetime-local" step="1" value={entryTime} onChange={(e) => setEntryTime(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Exit Time</label>
+                  <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Date & Time</label>
+                <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              </div>
+            )}
+          </div>
+
+          <div className={`grid grid-cols-2 gap-4 ${entryType === "TRADE" ? "mb-4" : ""}`}>
             <div>
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
                 {entryType === "TRADE" ? "P&L / Amount ($)" : "Amount ($)"}
@@ -325,23 +374,21 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
                 className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Date & Time</label>
-              <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
-            </div>
+            
+            {entryType === "TRADE" && (
+              <div>
+                <label className="flex justify-between items-end text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
+                  <span>Risk ($)</span>
+                  <span className={liveRRClass}>RR: {liveRRStr}</span>
+                </label>
+                <input type="number" step="0.01" value={risk} onChange={(e) => setRisk(e.target.value)} placeholder="Optional"
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              </div>
+            )}
           </div>
 
-          <div className={`grid grid-cols-2 gap-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
-            <div>
-              <label className="flex justify-between items-end text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
-                <span>Risk ($)</span>
-                <span className={liveRRClass}>RR: {liveRRStr}</span>
-              </label>
-              <input type="number" step="0.01" value={risk} onChange={(e) => setRisk(e.target.value)} placeholder="Optional"
-                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
-            </div>
-            <div>
+          {entryType === "TRADE" && (
+            <div className="mb-4">
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
               <div className="flex gap-2 flex-wrap h-full items-start">
                 {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
@@ -360,12 +407,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 ))}
               </div>
             </div>
-          </div>
+          )}
           
           <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
             <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
-              {['On Plan', 'Follow', 'Reversal', 'Enty 1st', 'Enty 2nd', 'Enty 3rd'].map((item) => {
+              {['On Plan', 'Follow', 'Reversal', 'Entry 1st', 'Entry 2nd'].map((item) => {
                 const isChecked = checklists.includes(item);
                 return (
                   <label key={item} className="flex items-center gap-2 cursor-pointer">

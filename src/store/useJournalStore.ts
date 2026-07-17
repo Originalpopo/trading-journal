@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { parseRobustDate } from '@/lib/utils';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -26,6 +27,7 @@ export interface Trade {
   positionId?: string;
   entryType?: string;
   exitType?: string;
+  duration?: number;
   chartData?: any;
 }
 
@@ -54,7 +56,9 @@ interface JournalState {
   notes: Note[];
   isLoading: boolean;
   isPrivacyMode: boolean;
+  chartTimeOffset: number;
   setIsPrivacyMode: (val: boolean) => void;
+  setChartTimeOffset: (val: number) => void;
   initializeListeners: () => () => void;
   addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
@@ -70,7 +74,11 @@ export const useJournalStore = create<JournalState>((set) => ({
   notes: [],
   isLoading: true,
   isPrivacyMode: false,
+  chartTimeOffset: 0,
+  
   setIsPrivacyMode: (val) => set({ isPrivacyMode: val }),
+  setChartTimeOffset: (val) => set({ chartTimeOffset: val }),
+
   initializeListeners: () => {
     set({ isLoading: true });
 
@@ -80,7 +88,7 @@ export const useJournalStore = create<JournalState>((set) => ({
         tradesData.push({ id: doc.id, ...doc.data() } as Trade);
       });
       // Sort by time
-      tradesData.sort((a, b) => new Date(a.time.replace(' ', 'T')).getTime() - new Date(b.time.replace(' ', 'T')).getTime());
+      tradesData.sort((a, b) => parseRobustDate(b.time) - parseRobustDate(a.time));
       set({ trades: tradesData });
     });
 

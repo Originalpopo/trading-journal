@@ -24,8 +24,36 @@ const normalizeDateStr = (dateStr: string) => {
 
 const parseCustomDate = (dateStr: string) => {
   if (!dateStr) return 0;
-  const d = new Date(dateStr.replace(' ', 'T'));
-  return isNaN(d.getTime()) ? 0 : d.getTime();
+  
+  let d = new Date(dateStr.replace(' ', 'T'));
+  let time = d.getTime();
+  if (!isNaN(time)) return time;
+
+  const parts = dateStr.split(/[\sT]/);
+  if (parts.length >= 1) {
+    const dateParts = parts[0].split(/[\/-]/);
+    if (dateParts.length === 3) {
+      let year, month, day;
+      if (dateParts[0].length === 4) { 
+        year = dateParts[0]; month = dateParts[1]; day = dateParts[2];
+      } else {
+        day = dateParts[0]; month = dateParts[1]; year = dateParts[2];
+      }
+      
+      let hour = '00', min = '00', sec = '00';
+      if (parts.length >= 2) {
+        const timeParts = parts[1].split(':');
+        if (timeParts.length >= 1) hour = timeParts[0];
+        if (timeParts.length >= 2) min = timeParts[1];
+        if (timeParts.length >= 3) sec = timeParts[2];
+      }
+
+      d = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}`);
+      time = d.getTime();
+      if (!isNaN(time)) return time;
+    }
+  }
+  return 0;
 };
 
 export const processTradeImportData = async (data: any[], onProgress?: (status: string) => void) => {
@@ -108,8 +136,8 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
       try {
         const tEntry = parseCustomDate(entryTimeStr);
         const tExit = parseCustomDate(exitTimeStr);
-        if (!isNaN(tEntry) && !isNaN(tExit) && tExit >= tEntry) {
-          duration = Math.floor((tExit - tEntry) / 1000);
+        if (!isNaN(tEntry.getTime()) && !isNaN(tExit.getTime())) {
+          duration = Math.max(0, Math.floor((tExit.getTime() - tEntry.getTime()) / 1000));
         }
       } catch(e) {}
 
@@ -131,6 +159,7 @@ export const processTradeImportData = async (data: any[], onProgress?: (status: 
         side: side,
         time: exitTimeStr,
         entryTime: entryTimeStr,
+        exitTime: exitTimeStr,
         duration: duration,
         isOnPlan: true,
         checklists: ['On Plan', 'Follow'],

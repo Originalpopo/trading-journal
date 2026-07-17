@@ -8,7 +8,7 @@ import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
 import BulkImportModal from "@/components/BulkImportModal";
 import { Trade } from "@/store/useJournalStore";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -294,30 +294,9 @@ export default function HistoryPage() {
                 const badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
-                let durationStr = null;
-                let sec = t.duration || 0;
-                if (!sec && t.exitTime && t.time) {
-                  try {
-                    const entryDate = new Date(t.time.replace(' ', 'T')).getTime();
-                    const exitDate = new Date(t.exitTime.replace(' ', 'T')).getTime();
-                    if (!isNaN(entryDate) && !isNaN(exitDate)) {
-                      sec = Math.max(0, Math.floor((exitDate - entryDate) / 1000));
-                    }
-                  } catch (e) {}
-                }
-                if (sec === 0 && !t.exitTime) {
-                   durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: -</span></>;
-                } else {
-                  if (sec === 0) sec = 1;
-                  let m = Math.floor(sec / 60);
-                  let s = sec % 60;
-                  let h = Math.floor(m / 60); m = m % 60;
-                  let d = Math.floor(h / 24); h = h % 24;
-                  if (d > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {d}d {h}h</span></>;
-                  else if (h > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {h}h {m}m</span></>;
-                  else if (m > 0) durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {m}m {s}s</span></>;
-                  else durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {s}s</span></>;
-                }
+                const sec = calculateDurationInSeconds(t);
+                let durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {formatDurationDetailed(sec)}</span></>;
+
 
                 return (
                   <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
@@ -347,20 +326,15 @@ export default function HistoryPage() {
                         ) : (
                           <span title="Reversal (Not Selected)" className="text-stone-300"><TrendingDown className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('Enty 1st') ? (
-                          <span title="Enty 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
+                        {t.checklists && t.checklists.includes('Entry 1st') ? (
+                          <span title="Entry 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
                         ) : (
-                          <span title="Enty 1st (Not Selected)" className="text-stone-300"><Target className="w-4 h-4" /></span>
+                          <span title="Entry 1st (Not Selected)" className="text-stone-300"><Target className="w-4 h-4" /></span>
                         )}
-                        {t.checklists && t.checklists.includes('Enty 2nd') ? (
-                          <span title="Enty 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
+                        {t.checklists && t.checklists.includes('Entry 2nd') ? (
+                          <span title="Entry 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
                         ) : (
-                          <span title="Enty 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('Enty 3rd') ? (
-                          <span title="Enty 3rd" className="text-orange-400"><Crosshair className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="Enty 3rd (Not Selected)" className="text-stone-300"><Crosshair className="w-4 h-4" /></span>
+                          <span title="Entry 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
                         )}
                       </div>
                     </td>
