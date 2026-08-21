@@ -202,6 +202,9 @@ export default function PerformancePage() {
     let maxDrawdownAmt = 0;
     let maxDrawdownPct = 0;
 
+    const shouldAggregate = currentEvents.length > 500;
+    const dailyPerfPoints = new Map<string, { balance: number, pnl: number, timestamp: number, isFundingOnly: boolean }>();
+
     const perfBalanceData = [runningBalance];
     const perfBalanceLabels = ["Start"];
     const perfPnlData = [0];
@@ -256,15 +259,27 @@ export default function PerformancePage() {
         if (runningBalance > peakBalance) peakBalance = runningBalance;
         if (runningBalance < minBalance) minBalance = runningBalance;
 
-        perfBalanceData.push(runningBalance);
-        perfPnlData.push(0);
-        perfPnlColors.push('transparent');
+        if (shouldAggregate) {
+          const d = evt.timeObj;
+          const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const existing = dailyPerfPoints.get(dateKey);
+          if (existing) {
+            existing.balance = runningBalance;
+            existing.timestamp = evt.timeObj.getTime();
+          } else {
+            dailyPerfPoints.set(dateKey, { balance: runningBalance, pnl: 0, timestamp: evt.timeObj.getTime(), isFundingOnly: true });
+          }
+        } else {
+          perfBalanceData.push(runningBalance);
+          perfPnlData.push(0);
+          perfPnlColors.push('transparent');
 
-        let dateStr = "Funding";
-        if (evt.data.time) {
-          try { dateStr = evt.data.time.split(' ')[0]; } catch (e) { }
+          let dateStr = "Funding";
+          if (evt.data.time) {
+            try { dateStr = evt.data.time.split(' ')[0]; } catch (e) { }
+          }
+          perfBalanceLabels.push(dateStr);
         }
-        perfBalanceLabels.push(dateStr);
       } else if (evt.type === 'trade') {
         const t = evt.data;
         const entryTimeObj = new Date((t.entryTime || t.time).replace(' ', 'T'));
@@ -473,18 +488,51 @@ export default function PerformancePage() {
         if (currentDD > maxDrawdownAmt) maxDrawdownAmt = currentDD;
         if (currentDDPct > maxDrawdownPct) maxDrawdownPct = currentDDPct;
 
-        perfBalanceData.push(runningBalance);
-        perfPnlData.push(pnl);
-        perfPnlColors.push(isBE ? '#d6d3d1' : (pnl >= 0 ? '#fb923c' : '#7f1d1d'));
+        if (shouldAggregate) {
+          const d = evt.timeObj;
+          const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const existing = dailyPerfPoints.get(dateKey);
+          if (existing) {
+            existing.balance = runningBalance;
+            existing.pnl += pnl;
+            existing.timestamp = evt.timeObj.getTime();
+            existing.isFundingOnly = false;
+          } else {
+            dailyPerfPoints.set(dateKey, { balance: runningBalance, pnl: pnl, timestamp: evt.timeObj.getTime(), isFundingOnly: false });
+          }
+        } else {
+          perfBalanceData.push(runningBalance);
+          perfPnlData.push(pnl);
+          perfPnlColors.push(isBE ? '#d6d3d1' : (pnl >= 0 ? '#fb923c' : '#7f1d1d'));
 
-        tradeCount++;
-        let dateStr = "Trade " + tradeCount;
-        if (t.time) {
-          try { dateStr = t.time.split(' ')[0]; } catch (e) { }
+          tradeCount++;
+          let dateStr = "Trade " + tradeCount;
+          if (t.time) {
+            try { dateStr = t.time.split(' ')[0]; } catch (e) { }
+          }
+          perfBalanceLabels.push(dateStr);
         }
-        perfBalanceLabels.push(dateStr);
       }
     });
+
+    if (shouldAggregate) {
+      const sortedDaily = Array.from(dailyPerfPoints.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
+      sortedDaily.forEach(([, day]) => {
+        perfBalanceData.push(day.balance);
+        perfPnlData.push(day.pnl);
+        if (day.isFundingOnly && day.pnl === 0) {
+          perfPnlColors.push('transparent');
+        } else if (day.pnl === 0) {
+          perfPnlColors.push('#d6d3d1');
+        } else if (day.pnl > 0) {
+          perfPnlColors.push('#fb923c');
+        } else {
+          perfPnlColors.push('#7f1d1d');
+        }
+        const d = new Date(day.timestamp);
+        perfBalanceLabels.push(`${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear().toString().slice(-2)}`);
+      });
+    }
 
     if (currentWinCount > 0) { totalWinStreaksCount++; sumOfWinStreaks += currentWinCount; }
     if (currentLossCount > 0) { totalLossStreaksCount++; sumOfLossStreaks += currentLossCount; }
@@ -573,7 +621,8 @@ export default function PerformancePage() {
       hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr,
       activeDowNames, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
       activeMoyNames, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
-      matrixSorted
+      matrixSorted,
+      isAggregated: shouldAggregate
     };
   }, [trades, funding, selectedYear, selectedTfs, selectedPlan, selectedChecklists, selectedMetric]);
 
@@ -719,9 +768,16 @@ export default function PerformancePage() {
       </div>
 
       <div className="glass-card p-6 h-[350px] flex flex-col w-full">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Profit and Balance
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Profit and Balance
+          </h3>
+          {data.isAggregated && (
+            <span className="text-[10px] font-bold text-stone-500 bg-stone-100/90 border border-stone-200/70 px-2 py-0.5 rounded-md tracking-normal normal-case">
+              Daily Aggregated ({data.perfBalanceData.length - 1} Days)
+            </span>
+          )}
+        </div>
         <div className="flex-1 relative w-full h-full">
           <Line
             key={`pnl-${isPrivacyMode}`}
@@ -752,7 +808,25 @@ export default function PerformancePage() {
             options={{
               responsive: true, maintainAspectRatio: false,
               layout: { padding: { top: 20, right: 80 } },
-              plugins: { legend: { display: false } },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  callbacks: {
+                    label: function(context: any) {
+                      const val = context.parsed.y;
+                      if (context.dataset.label === 'Account Balance') {
+                        return ` Balance: ${isPrivacyMode ? '***' : (val < 0 ? '-$' : '$') + formatNumber(Math.abs(val))}`;
+                      }
+                      if (context.dataset.label === 'Net P&L') {
+                        return ` Net P&L: ${isPrivacyMode ? '***' : (val < 0 ? '-$' : '$') + formatNumber(Math.abs(val))}`;
+                      }
+                      return ` ${context.dataset.label}: ${val}`;
+                    }
+                  }
+                }
+              },
               scales: {
                 x: { display: false },
                 y: { display: false, grace: '10%' },

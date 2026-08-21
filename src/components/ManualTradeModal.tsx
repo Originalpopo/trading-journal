@@ -5,7 +5,7 @@ import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
-import { Trash2, X, HelpCircle } from "lucide-react";
+import { Trash2, X, HelpCircle, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -411,25 +411,37 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           
           <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
-            <div className="flex gap-4 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap h-full items-start">
               {['On Plan', 'Follow', 'Reversal', 'Entry 1st', 'Entry 2nd'].map((item) => {
                 const isChecked = checklists.includes(item);
+                const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'Entry 1st' ? Target : item === 'Entry 2nd' ? Focus : CheckCircle2;
                 return (
-                  <label key={item} className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={isChecked} 
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          if (!checklists.includes(item)) setChecklists([...checklists, item]);
-                        } else {
-                          setChecklists(checklists.filter(t => t !== item));
+                  <button
+                    type="button"
+                    key={item}
+                    onClick={() => {
+                      if (isChecked) {
+                        setChecklists(checklists.filter(t => t !== item));
+                      } else {
+                        let updated = [...checklists];
+                        if (item === 'Follow') {
+                          updated = updated.filter(t => t !== 'Reversal');
+                        } else if (item === 'Reversal') {
+                          updated = updated.filter(t => t !== 'Follow');
                         }
-                      }} 
-                      className="text-orange-400 focus:ring-orange-400 w-4 h-4 rounded border-stone-300" 
-                    />
-                    <span className="text-xs font-bold text-stone-950">{item}</span>
-                  </label>
+                        updated.push(item);
+                        setChecklists(updated);
+                      }
+                    }}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                      isChecked 
+                        ? 'bg-orange-400 text-white shadow-sm' 
+                        : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
+                    }`}
+                  >
+                    <ItemIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{item}</span>
+                  </button>
                 );
               })}
             </div>

@@ -15,3 +15,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Checklists in History Table**: When a new checklist item is introduced to the system, it must be assigned a unique Lucide icon. The "Checklists" column in the History table must render the icons for all available checklists horizontally side-by-side.
   - If a checklist is selected for that trade, render its specific icon in orange (`text-orange-400`).
   - If a checklist is not selected, render its specific icon in a muted color (`text-stone-300`).
+- **Checklist Exclusivity**: "Follow" and "Reversal" are mutually exclusive — selecting one will automatically deselect the other.
+
