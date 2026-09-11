@@ -224,15 +224,35 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       });
       chartRef.current = chart;
 
-      // 1. Draw Background AreaSeries for Position Tool first so they stay behind candles
-      if (trade.entryPrice && (trade.entryTime || trade.time)) {
-        const resolvedEntryTimeStr = trade.entryTime || trade.time;
-        const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
-        const time = new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000;
-        const exitT = resolvedExitTimeStr ? new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000 : chartData[chartData.length - 1].time;
-        let areaData = chartData.filter((c: any) => c.time >= time && c.time <= exitT);
+      // 1. Detect entry candle and draw Background AreaSeries for Position Tool first so they stay behind candles
+      const resolvedEntryTimeStr = trade.entryTime || trade.time;
+      const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
+      const rawEntryTime = resolvedEntryTimeStr ? new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000 : 0;
+      const rawExitTime = resolvedExitTimeStr ? new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000 : (chartData[chartData.length - 1]?.time || rawEntryTime);
+
+      const entryPrice = typeof trade.entryPrice === 'number' ? trade.entryPrice : parseFloat(String(trade.entryPrice || '0'));
+      const sideUpper = (trade.side || '').toUpperCase();
+      const isBuy = sideUpper === 'BUY' || sideUpper === 'LONG';
+
+      // Auto-detect first candle that reached entryPrice within the active window
+      let effectiveEntryTime = rawEntryTime;
+      if (trade.entryPrice && chartData && chartData.length > 0 && !isNaN(entryPrice)) {
+        const candleDuration = chartData.length > 1 ? Math.abs(chartData[1].time - chartData[0].time) : 60;
+        const firstHitCandle = chartData.find((c: any) => {
+          const inWindow = (c.time + candleDuration > rawEntryTime) && (c.time <= rawExitTime);
+          if (!inWindow) return false;
+          return isBuy ? (c.low <= entryPrice) : (c.high >= entryPrice);
+        });
+
+        if (firstHitCandle) {
+          effectiveEntryTime = firstHitCandle.time;
+        }
+      }
+
+      if (trade.entryPrice && resolvedEntryTimeStr) {
+        let areaData = chartData.filter((c: any) => c.time >= effectiveEntryTime && c.time <= rawExitTime);
         if (areaData.length === 0) {
-           const closest = chartData.find((c: any) => c.time >= time);
+           const closest = chartData.find((c: any) => c.time >= effectiveEntryTime);
            if (closest) areaData = [closest];
         }
         if (areaData.length === 1) {
@@ -245,7 +265,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
           let tpP = trade.entryPrice;
           let slP = trade.entryPrice;
 
-          if (trade.side === 'BUY' || trade.side === 'LONG') {
+          if (isBuy) {
             const isWin = trade.exitPrice && trade.exitPrice > trade.entryPrice;
             const isLoss = trade.exitPrice && trade.exitPrice < trade.entryPrice;
 
@@ -353,20 +373,26 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       series.setData(chartData.map((c: any) => ({...c, time: c.time + offsetSec})));
       
       const markers: any[] = [];
-      if (trade.entryPrice && (trade.entryTime || trade.time)) {
-        const resolvedEntryTimeStr = trade.entryTime || trade.time;
-        const time = (new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000) + offsetSec;
-        markers.push({ time, position: (trade.side === 'BUY' || trade.side === 'LONG') ? 'belowBar' : 'aboveBar', color: '#000000', shape: 'arrowUp', text: 'Entry' });
+      if (trade.entryPrice && resolvedEntryTimeStr) {
+        const time = effectiveEntryTime + offsetSec;
+        markers.push({ time, position: isBuy ? 'belowBar' : 'aboveBar', color: '#000000', shape: 'arrowUp', text: 'Entry' });
       }
 
-      const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
       if (trade.exitPrice && resolvedExitTimeStr) {
-        const time = (new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000) + offsetSec;
-        const isWin = (trade.side === 'BUY' || trade.side === 'LONG') ? trade.exitPrice > (trade.entryPrice || 0) : trade.exitPrice < (trade.entryPrice || 0);
-        markers.push({ time, position: (trade.side === 'BUY' || trade.side === 'LONG') ? 'aboveBar' : 'belowBar', color: isWin ? '#fb923c' : '#7f1d1d', shape: 'arrowDown', text: 'Exit' });
+        let exitTime = rawExitTime;
+        const closestExit = chartData.reduce((prev: any, curr: any) => {
+          return Math.abs(curr.time - rawExitTime) < Math.abs(prev.time - rawExitTime) ? curr : prev;
+        }, chartData[0]);
+        if (closestExit && Math.abs(closestExit.time - rawExitTime) <= (chartData.length > 1 ? Math.abs(chartData[1].time - chartData[0].time) * 2 : 300)) {
+          exitTime = closestExit.time;
+        }
+        if (exitTime < effectiveEntryTime) {
+          exitTime = effectiveEntryTime;
+        }
+        const time = exitTime + offsetSec;
+        const isWin = isBuy ? trade.exitPrice > (trade.entryPrice || 0) : trade.exitPrice < (trade.entryPrice || 0);
+        markers.push({ time, position: isBuy ? 'aboveBar' : 'belowBar', color: isWin ? '#fb923c' : '#7f1d1d', shape: 'arrowDown', text: 'Exit' });
       }
-      
-
       
       if (markers.length > 0) {
         markers.sort((a, b) => a.time - b.time);
