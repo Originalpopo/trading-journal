@@ -1,4 +1,4 @@
-import { Trade } from '@/store/useJournalStore';
+import type { Trade, ExitTimeConfidence } from '@/store/useJournalStore';
 import Papa from 'papaparse';
 
 export interface ParsedOrder {
@@ -87,6 +87,14 @@ export function parseTradingViewData(raw: string): ParsedOrder[] {
   return orders;
 }
 
+// An exit at exactly 0.00 is still an exit, so only an empty cell means "no P&L".
+const parsePnl = (raw: string | undefined): number | undefined => {
+  const cleaned = (raw || '').replace(/,/g, '').trim();
+  if (cleaned === '') return undefined;
+  const val = parseFloat(cleaned);
+  return isNaN(val) ? undefined : val;
+};
+
 export function parseTradingViewCSVData(csvText: string): ParsedOrder[] {
   const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   const orders: ParsedOrder[] = [];
@@ -105,17 +113,74 @@ export function parseTradingViewCSVData(csvText: string): ParsedOrder[] {
       updateTime: (row['Update Time'] || row['Date'] || '').trim(),
       positionId: row['Position ID'] ? row['Position ID'].trim() : undefined,
       commission: parseFloat((row['Commission'] || '').replace(/,/g, '')) || 0,
-      pnl: parseFloat((row['Closed P&L'] || row['Closed P&L ($)'] || '').replace(/,/g, '')) || undefined,
+      pnl: parsePnl(row['Closed P&L'] || row['Closed P&L ($)']),
       orderId: row['Order ID'] ? row['Order ID'].trim() : undefined
     });
   }
   return orders;
 }
 
+const toMs = (time: string) => new Date(time.replace(' ', 'T')).getTime();
+const orderType = (o: ParsedOrder) => o.type.toLowerCase();
+const orderIdNum = (o: ParsedOrder) => (o.orderId ? parseInt(o.orderId, 10) : NaN);
+
+interface ResolvedExit {
+  time: string;
+  confidence: ExitTimeConfidence;
+  sibling?: ParsedOrder;
+}
+
+// TradingView's "Update Time" on a filled Stop Loss / Take Profit is when that order was last
+// placed or moved (e.g. SL dragged to break-even), not when it was hit. When one side of the
+// bracket fills, the other side is cancelled at that moment, so its cancel time is the real exit.
+function resolveExitTime(
+  entry: ParsedOrder,
+  exit: ParsedOrder,
+  cancelledOrders: ParsedOrder[],
+  unfilledBracketIds: Set<number>,
+  nextEntryMs: number,
+): ResolvedExit {
+  const exitType = orderType(exit);
+  if (exitType !== 'stop loss' && exitType !== 'take profit') {
+    return { time: exit.updateTime, confidence: 'exact' }; // manual/market close: time is correct
+  }
+
+  const siblingType = exitType === 'stop loss' ? 'take profit' : 'stop loss';
+  const staleMs = toMs(exit.updateTime);
+  const candidates = cancelledOrders.filter(o =>
+    orderType(o) === siblingType && o.side === exit.side && toMs(o.updateTime) >= staleMs);
+
+  // Placed together with the entry: TP is entry ID + 1, SL is entry ID + 2.
+  const entryId = orderIdNum(entry);
+  const bracketSibling = candidates.find(o => {
+    const diff = orderIdNum(o) - entryId;
+    return diff === 1 || diff === 2;
+  });
+  if (bracketSibling) return { time: bracketSibling.updateTime, confidence: 'exact', sibling: bracketSibling };
+
+  // Placed after the entry: the last matching cancel before the next position opened.
+  const inWindow = candidates
+    .filter(o => toMs(o.updateTime) < nextEntryMs && !unfilledBracketIds.has(orderIdNum(o)))
+    .sort((a, b) => toMs(b.updateTime) - toMs(a.updateTime));
+  if (inWindow.length > 0) return { time: inWindow[0].updateTime, confidence: 'estimated', sibling: inWindow[0] };
+
+  return { time: exit.updateTime, confidence: 'uncertain' };
+}
+
 export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
   const trades: Partial<Trade>[] = [];
   const filledOrders = orders.filter(o => o.status === 'filled' && o.positionId);
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+
+  // TP/SL attached to a limit order that was cancelled unfilled never belonged to a position.
+  const unfilledBracketIds = new Set<number>();
+  for (const o of cancelledOrders) {
+    const id = orderIdNum(o);
+    if (orderType(o) === 'limit' && !isNaN(id)) {
+      unfilledBracketIds.add(id + 1);
+      unfilledBracketIds.add(id + 2);
+    }
+  }
 
   const positions = new Map<string, ParsedOrder[]>();
   for (const o of filledOrders) {
@@ -124,33 +189,44 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
     positions.get(o.positionId)!.push(o);
   }
 
-  for (const [posId, posOrders] of positions.entries()) {
-    posOrders.sort((a, b) => {
-      const timeDiff = new Date(a.updateTime).getTime() - new Date(b.updateTime).getTime();
-      if (timeDiff !== 0) return timeDiff;
-      if (a.pnl === undefined && b.pnl !== undefined) return -1;
-      if (a.pnl !== undefined && b.pnl === undefined) return 1;
-      return 0;
-    });
-    const entryOrder = posOrders[0];
-    const exitOrder = posOrders[posOrders.length - 1];
+  // Positions are never partially closed: one fill opens (no P&L), one fill closes (has P&L).
+  // Positions without both (still open, or cut off at the edge of the pasted history) are skipped.
+  const closedPositions = Array.from(positions.entries())
+    .map(([posId, posOrders]) => ({
+      posId,
+      posOrders,
+      entryOrder: posOrders.find(o => o.pnl === undefined),
+      exitOrder: posOrders.find(o => o.pnl !== undefined),
+    }))
+    .filter((p): p is typeof p & { entryOrder: ParsedOrder; exitOrder: ParsedOrder } => !!p.entryOrder && !!p.exitOrder);
 
-    if (!entryOrder || !exitOrder || entryOrder === exitOrder) continue; // Need at least 2 distinct filling events or we can't form a full trade? Wait, what if it's open but not closed? For a trading journal, we only care about closed trades.
+  const entryTimesMs = closedPositions.map(p => toMs(p.entryOrder.updateTime)).sort((a, b) => a - b);
+
+  for (const { posId, posOrders, entryOrder, exitOrder } of closedPositions) {
+    const entryMs = toMs(entryOrder.updateTime);
+    const nextEntryMs = entryTimesMs.find(t => t > entryMs) ?? Infinity;
+    const exit = resolveExitTime(entryOrder, exitOrder, cancelledOrders, unfilledBracketIds, nextEntryMs);
 
     const trade: Partial<Trade> = {
       positionId: posId,
       symbol: entryOrder.symbol,
       side: entryOrder.side === 'Buy' ? 'BUY' : 'SELL',
-      time: exitOrder.updateTime.replace(' ', 'T'), // Format to standard datetime
+      time: exit.time.replace(' ', 'T'),
       entryTime: entryOrder.updateTime.replace(' ', 'T'),
-      exitTime: exitOrder.updateTime.replace(' ', 'T'),
+      exitTime: exit.time.replace(' ', 'T'),
+      exitTimeConfidence: exit.confidence,
       entryPrice: entryOrder.avgFillPrice || entryOrder.limitOrStopPrice,
       exitPrice: exitOrder.avgFillPrice || exitOrder.limitOrStopPrice,
       entryType: entryOrder.type,
       exitType: exitOrder.type,
       profit: exitOrder.pnl || 0,
-      duration: Math.max(0, Math.floor((new Date(exitOrder.updateTime.replace(' ', 'T')).getTime() - new Date(entryOrder.updateTime.replace(' ', 'T')).getTime()) / 1000) || 0),
+      duration: Math.max(0, Math.floor((toMs(exit.time) - entryMs) / 1000) || 0),
     };
+
+    if (exit.sibling) {
+      if (orderType(exit.sibling) === 'take profit') trade.tpPrice = exit.sibling.limitOrStopPrice;
+      else trade.slPrice = exit.sibling.limitOrStopPrice;
+    }
 
     // Find SL/TP within filled orders
     for (const o of posOrders) {

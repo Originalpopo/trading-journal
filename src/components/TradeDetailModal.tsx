@@ -6,6 +6,7 @@ import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 import { X, Edit2, Trash2, ExternalLink, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
+import ExitConfidenceBadge from "./ExitConfidenceBadge";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -197,7 +198,10 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time Exit</span>
-                  <span className="text-xs font-extrabold text-stone-950">{exitShortTime}</span>
+                  <span className="text-xs font-extrabold text-stone-950 inline-flex items-center gap-1.5">
+                    <ExitConfidenceBadge confidence={t.exitTimeConfidence} />
+                    {exitShortTime}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Duration</span>

@@ -7,6 +7,7 @@ import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
 import BulkImportModal from "@/components/BulkImportModal";
+import ExitConfidenceBadge from "@/components/ExitConfidenceBadge";
 import { Trade } from "@/store/useJournalStore";
 import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
@@ -291,7 +292,7 @@ export default function HistoryPage() {
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 const sec = calculateDurationInSeconds(t);
-                let durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-block">Hold: {formatDurationDetailed(sec)}</span></>;
+                let durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
 
 
                 return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -34,9 +34,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [slPrice, setSlPrice] = useState("");
   const [orderEntryType, setOrderEntryType] = useState("Limit");
   const [orderExitType, setOrderExitType] = useState("Limit");
+  // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
+  const timesEditedRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
+      timesEditedRef.current = false;
       if (tradeToEdit) {
         if (tradeToEdit.isFunding) {
           const f = tradeToEdit as Funding;
@@ -216,6 +219,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           isOnPlan: checklists.includes('On Plan'),
           tf,
           checklists,
+          ...((!tradeToEdit || timesEditedRef.current) && { exitTimeConfidence: 'manual' as const }),
         };
 
         // Optional fields left empty must be deleted, otherwise the merge keeps the old value.
@@ -353,12 +357,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               <>
                 <div>
                   <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Entry Time</label>
-                  <input type="datetime-local" step="1" value={entryTime} onChange={(e) => setEntryTime(e.target.value)}
+                  <input type="datetime-local" step="1" value={entryTime} onChange={(e) => { timesEditedRef.current = true; setEntryTime(e.target.value); }}
                     className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Exit Time</label>
-                  <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
+                  <input type="datetime-local" step="1" value={time} onChange={(e) => { timesEditedRef.current = true; setTime(e.target.value); }}
                     className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
                 </div>
               </>

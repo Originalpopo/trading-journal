@@ -3,6 +3,11 @@ import { parseRobustDate } from '@/lib/utils';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// How exitTime was determined: 'exact' from broker data, 'estimated' from a TP/SL placed after
+// entry, 'uncertain' when the broker data had nothing better (SL hit with no TP), 'manual' when
+// the user set the times by hand (re-importing never overwrites those).
+export type ExitTimeConfidence = 'exact' | 'estimated' | 'uncertain' | 'manual';
+
 export interface Trade {
   id: string;
   time: string;
@@ -23,6 +28,7 @@ export interface Trade {
   tpPrice?: number;
   entryTime?: string;
   exitTime?: string;
+  exitTimeConfidence?: ExitTimeConfidence;
   orderId?: string;
   positionId?: string;
   entryType?: string;
@@ -56,9 +62,7 @@ interface JournalState {
   notes: Note[];
   isLoading: boolean;
   isPrivacyMode: boolean;
-  chartTimeOffset: number;
   setIsPrivacyMode: (val: boolean) => void;
-  setChartTimeOffset: (val: number) => void;
   initializeListeners: () => () => void;
   addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
@@ -74,10 +78,8 @@ export const useJournalStore = create<JournalState>((set) => ({
   notes: [],
   isLoading: true,
   isPrivacyMode: false,
-  chartTimeOffset: 0,
-  
+
   setIsPrivacyMode: (val) => set({ isPrivacyMode: val }),
-  setChartTimeOffset: (val) => set({ chartTimeOffset: val }),
 
   initializeListeners: () => {
     set({ isLoading: true });

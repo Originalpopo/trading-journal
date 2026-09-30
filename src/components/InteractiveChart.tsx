@@ -10,6 +10,16 @@ interface InteractiveChartProps {
 
 const TF_SEQUENCE = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
 
+// lightweight-charts labels its time axis in UTC; shift timestamps so it shows the viewer's local time.
+const toLocalChartTime = (utcSec: number) => utcSec - new Date(utcSec * 1000).getTimezoneOffset() * 60;
+
+// Index of the candle whose period contains `timeSec` (candles sorted by time).
+const candleIndexAt = (candles: { time: number }[], timeSec: number) => {
+  let idx = -1;
+  for (let i = 0; i < candles.length && candles[i].time <= timeSec; i++) idx = i;
+  return idx;
+};
+
 const mapTimeframe = (tf?: string) => {
   if (!tf || tf === 'none') return '15min'; // default
   if (tf.includes('s')) return '1min'; // fallback seconds to 1m
@@ -29,9 +39,6 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   const [error, setError] = useState<string | null>(null);
   
   const updateTrade = useJournalStore((state) => state.updateTrade);
-  const chartTimeOffset = useJournalStore((state) => state.chartTimeOffset);
-  const setChartTimeOffset = useJournalStore((state) => state.setChartTimeOffset);
-  const offsetSec = chartTimeOffset * 3600;
 
   // Normalize trade.tf
   let baseTf = '15m';
@@ -104,7 +111,14 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
     let chartData = chartDataCache[tfToLoad];
 
-    if (forceFetch || !chartData || chartData.length === 0) {
+    // Cached candles may predate a correction of the trade's times; refetch if they don't cover it.
+    const coversTrade = (candles: { time: number }[]) => {
+      const entrySec = new Date((trade.entryTime || trade.time).replace(' ', 'T')).getTime() / 1000;
+      const exitSec = new Date((trade.exitTime || trade.time).replace(' ', 'T')).getTime() / 1000;
+      return candles[0].time <= entrySec && candles[candles.length - 1].time >= exitSec;
+    };
+
+    if (forceFetch || !chartData || chartData.length === 0 || !coversTrade(chartData)) {
       try {
         const resolvedEntryTimeStr = trade.entryTime || trade.time;
         const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
@@ -230,31 +244,18 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       const rawEntryTime = resolvedEntryTimeStr ? new Date(resolvedEntryTimeStr.replace(' ', 'T')).getTime() / 1000 : 0;
       const rawExitTime = resolvedExitTimeStr ? new Date(resolvedExitTimeStr.replace(' ', 'T')).getTime() / 1000 : (chartData[chartData.length - 1]?.time || rawEntryTime);
 
-      const entryPrice = typeof trade.entryPrice === 'number' ? trade.entryPrice : parseFloat(String(trade.entryPrice || '0'));
       const sideUpper = (trade.side || '').toUpperCase();
       const isBuy = sideUpper === 'BUY' || sideUpper === 'LONG';
 
-      // Auto-detect first candle that reached entryPrice within the active window
-      let effectiveEntryTime = rawEntryTime;
-      if (trade.entryPrice && chartData && chartData.length > 0 && !isNaN(entryPrice)) {
-        const candleDuration = chartData.length > 1 ? Math.abs(chartData[1].time - chartData[0].time) : 60;
-        const firstHitCandle = chartData.find((c: any) => {
-          const inWindow = (c.time + candleDuration > rawEntryTime) && (c.time <= rawExitTime);
-          if (!inWindow) return false;
-          return isBuy ? (c.low <= entryPrice) : (c.high >= entryPrice);
-        });
-
-        if (firstHitCandle) {
-          effectiveEntryTime = firstHitCandle.time;
-        }
-      }
+      // Markers sit on the candles containing the recorded entry/exit times. The chart feed's prices
+      // differ from the broker's, so searching for the entry price would pick the wrong candle.
+      const entryIdx = Math.max(0, candleIndexAt(chartData, rawEntryTime));
+      const exitIdx = Math.max(entryIdx, candleIndexAt(chartData, rawExitTime));
+      const entryCandleTime = chartData[entryIdx].time;
+      const exitCandleTime = chartData[exitIdx].time;
 
       if (trade.entryPrice && resolvedEntryTimeStr) {
-        let areaData = chartData.filter((c: any) => c.time >= effectiveEntryTime && c.time <= rawExitTime);
-        if (areaData.length === 0) {
-           const closest = chartData.find((c: any) => c.time >= effectiveEntryTime);
-           if (closest) areaData = [closest];
-        }
+        const areaData = chartData.slice(entryIdx, exitIdx + 1);
         if (areaData.length === 1) {
            const idx = chartData.indexOf(areaData[0]);
            if (idx >= 0 && idx < chartData.length - 1) areaData.push(chartData[idx + 1]);
@@ -337,7 +338,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             priceLineVisible: false,
             lastValueVisible: false,
           });
-          rewardSeries.setData(areaData.map((c: any) => ({ time: c.time + offsetSec, value: tpP })));
+          rewardSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: tpP })));
 
           // Risk Box
           const riskSeries = chart.addBaselineSeries({
@@ -353,7 +354,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             priceLineVisible: false,
             lastValueVisible: false,
           });
-          riskSeries.setData(areaData.map((c: any) => ({ time: c.time + offsetSec, value: slP })));
+          riskSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: slP })));
         }
       }
 
@@ -370,28 +371,28 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         priceLineVisible: false
       });
       seriesRef.current = series;
-      series.setData(chartData.map((c: any) => ({...c, time: c.time + offsetSec})));
-      
+      series.setData(chartData.map((c: any) => ({...c, time: toLocalChartTime(c.time)})));
+
       const markers: any[] = [];
       if (trade.entryPrice && resolvedEntryTimeStr) {
-        const time = effectiveEntryTime + offsetSec;
-        markers.push({ time, position: isBuy ? 'belowBar' : 'aboveBar', color: '#000000', shape: 'arrowUp', text: 'Entry' });
+        markers.push({
+          time: toLocalChartTime(entryCandleTime),
+          position: isBuy ? 'belowBar' : 'aboveBar',
+          color: '#000000',
+          shape: isBuy ? 'arrowUp' : 'arrowDown',
+          text: 'Entry',
+        });
       }
 
       if (trade.exitPrice && resolvedExitTimeStr) {
-        let exitTime = rawExitTime;
-        const closestExit = chartData.reduce((prev: any, curr: any) => {
-          return Math.abs(curr.time - rawExitTime) < Math.abs(prev.time - rawExitTime) ? curr : prev;
-        }, chartData[0]);
-        if (closestExit && Math.abs(closestExit.time - rawExitTime) <= (chartData.length > 1 ? Math.abs(chartData[1].time - chartData[0].time) * 2 : 300)) {
-          exitTime = closestExit.time;
-        }
-        if (exitTime < effectiveEntryTime) {
-          exitTime = effectiveEntryTime;
-        }
-        const time = exitTime + offsetSec;
         const isWin = isBuy ? trade.exitPrice > (trade.entryPrice || 0) : trade.exitPrice < (trade.entryPrice || 0);
-        markers.push({ time, position: isBuy ? 'aboveBar' : 'belowBar', color: isWin ? '#fb923c' : '#7f1d1d', shape: 'arrowDown', text: 'Exit' });
+        markers.push({
+          time: toLocalChartTime(exitCandleTime),
+          position: isBuy ? 'aboveBar' : 'belowBar',
+          color: isWin ? '#fb923c' : '#7f1d1d',
+          shape: isBuy ? 'arrowDown' : 'arrowUp',
+          text: 'Exit',
+        });
       }
       
       if (markers.length > 0) {
@@ -414,7 +415,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trade.id, trade.time, trade.exitTime, selectedTf, chartTimeOffset]);
+  }, [trade.id, trade.time, trade.entryTime, trade.exitTime, selectedTf]);
   
   useEffect(() => {
     const handleResize = () => {
@@ -475,19 +476,6 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
               {tf}
             </button>
           ))}
-        </div>
-
-        <div className="flex items-center p-0.5 ml-2 bg-stone-100/80 backdrop-blur-sm rounded-lg border border-stone-200/50">
-          <select 
-            value={chartTimeOffset}
-            onChange={(e) => setChartTimeOffset(Number(e.target.value))}
-            className="text-[11px] font-black text-stone-500 bg-transparent border-none focus:outline-none cursor-pointer px-1 py-1"
-            title="Chart Timezone Offset"
-          >
-            {Array.from({length: 25}, (_, i) => i - 12).map(h => (
-              <option key={h} value={h}>{h > 0 ? `+${h}` : h} hrs</option>
-            ))}
-          </select>
         </div>
       </div>
 
