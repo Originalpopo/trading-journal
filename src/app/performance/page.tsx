@@ -46,15 +46,9 @@ export default function PerformancePage() {
   const tfRef = useRef<HTMLDivElement>(null);
   
   const [selectedPlan, setSelectedPlan] = useState('ALL');
-  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
-  const [isChecklistMenuOpen, setIsChecklistMenuOpen] = useState(false);
-  const checklistRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (checklistRef.current && !checklistRef.current.contains(event.target as Node)) {
-        setIsChecklistMenuOpen(false);
-      }
       if (tfRef.current && !tfRef.current.contains(event.target as Node)) {
         setIsTfMenuOpen(false);
       }
@@ -87,19 +81,6 @@ export default function PerformancePage() {
     });
     ['1h', '15m', '5m', '1m', '15s', '5s', 'none'].forEach(item => tfsSet.add(item));
     return Array.from(tfsSet);
-  }, [trades]);
-
-  const availableChecklists = useMemo(() => {
-    const clSet = new Set<string>();
-    trades.forEach((t: any) => {
-      if (t.checklists && Array.isArray(t.checklists)) {
-        t.checklists.forEach((c: string) => {
-          if (c !== 'On Plan' && c !== 'Off Plan') clSet.add(c);
-        });
-      }
-    });
-    ['Entry 1st', 'Entry 2nd', 'Follow', 'Reversal'].forEach(c => clSet.add(c));
-    return Array.from(clSet).sort();
   }, [trades]);
 
   const data = useMemo(() => {
@@ -144,17 +125,6 @@ export default function PerformancePage() {
             const tradeTfs = tfVal.split(',').map((s: string) => s.trim());
             const matched = tradeTfs.some((tf: string) => selectedTfs.includes(tf));
             if (!matched) return;
-          }
-          if (selectedChecklists.length > 0) {
-            const t = evt.data;
-            let matchedAny = false;
-            for (const c of selectedChecklists) {
-              if (t.checklists && t.checklists.includes(c)) {
-                matchedAny = true;
-                break;
-              }
-            }
-            if (!matchedAny) return;
           }
           if (selectedPlan !== 'ALL') {
             const t = evt.data;
@@ -528,7 +498,7 @@ export default function PerformancePage() {
       matrixSorted,
       isAggregated: shouldAggregate
     };
-  }, [trades, funding, selectedYear, selectedTfs, selectedPlan, selectedChecklists, selectedMetric]);
+  }, [trades, funding, selectedYear, selectedTfs, selectedPlan, selectedMetric]);
 
   const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
     id: 'lastBalancePointPlugin',
@@ -844,67 +814,6 @@ export default function PerformancePage() {
               <option value="On Plan">On Plan</option>
               <option value="Off Plan">Off Plan</option>
             </select>
-          </div>
-          <div className="flex items-center gap-2" ref={checklistRef}>
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Checklist:</span>
-            <div className="relative">
-              <button
-                onClick={() => setIsChecklistMenuOpen(!isChecklistMenuOpen)}
-                className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer min-w-[100px] justify-between transition-colors"
-              >
-                <span className="truncate max-w-[120px]">
-                  {selectedChecklists.length === 0 
-                    ? "ALL" 
-                    : selectedChecklists.length <= 2 
-                      ? selectedChecklists.join(", ") 
-                      : `${selectedChecklists.length} Selected`}
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isChecklistMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isChecklistMenuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                  <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
-                    <span className="text-[10px] font-bold text-stone-400 uppercase">Select Filters</span>
-                    {selectedChecklists.length > 0 && (
-                      <button 
-                        onClick={() => setSelectedChecklists([])}
-                        className="text-[10px] font-bold text-orange-400 hover:text-orange-500 transition-colors"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-64 overflow-y-auto p-1.5">
-                    {availableChecklists.map(cl => {
-                      const isSelected = selectedChecklists.includes(cl);
-                      return (
-                        <div 
-                          key={cl}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedChecklists(selectedChecklists.filter(i => i !== cl));
-                            } else {
-                              setSelectedChecklists([...selectedChecklists, cl]);
-                            }
-                          }}
-                          className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
-                            isSelected ? 'bg-orange-50 text-orange-400' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-                          }`}
-                        >
-                          <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected ? 'bg-orange-400 border-orange-400' : 'border-stone-200'
-                          }`}>
-                            {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                          </div>
-                          <span className="truncate">{cl}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>

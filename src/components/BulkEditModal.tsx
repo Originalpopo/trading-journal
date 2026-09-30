@@ -1,17 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { X, CheckCircle2, XCircle, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, type LucideIcon } from "lucide-react";
+import { X, CheckCircle2, XCircle, ClipboardCheck, type LucideIcon } from "lucide-react";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
-import { CHECKLIST_NAMES, applyChecklistChanges, setChecklistChange, type ChecklistChange } from "@/lib/checklists";
+import { CHECKLIST_NAMES, applyChecklistChanges, type ChecklistChange } from "@/lib/checklists";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
 const CHECKLIST_ICONS: Record<string, LucideIcon> = {
   'On Plan': ClipboardCheck,
-  'Follow': TrendingUp,
-  'Reversal': TrendingDown,
-  'Entry 1st': Target,
-  'Entry 2nd': Focus,
 };
 
 const TIMEFRAMES = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
@@ -22,7 +18,7 @@ interface BulkEditModalProps {
   onClose: (applied: boolean) => void;
 }
 
-// Edits checklists and timeframe of several trades at once. Every item starts at "Keep", so only
+// Edits "On Plan" and timeframe of several trades at once. Every item starts at "Keep", so only
 // what the user explicitly changes is written.
 export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModalProps) {
   const updateTrades = useJournalStore(state => state.updateTrades);
@@ -83,7 +79,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
 
         <div className="space-y-6 overflow-y-auto">
           <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">Checklists</label>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">Plan</label>
             <div className="space-y-2">
               {CHECKLIST_NAMES.map(name => {
                 const Icon = CHECKLIST_ICONS[name];
@@ -105,7 +101,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                         <button
                           key={opt.value}
                           type="button"
-                          onClick={() => setChanges(prev => setChecklistChange(prev, name, opt.value))}
+                          onClick={() => setChanges(prev => ({ ...prev, [name]: opt.value }))}
                           className={`text-[11px] font-bold px-3 py-1 rounded-md transition ${
                             change === opt.value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-600'
                           }`}
@@ -118,7 +114,6 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                 );
               })}
             </div>
-            <p className="text-[11px] text-stone-400 font-medium mt-2">Turning Follow or Reversal on turns the other one off.</p>
           </div>
 
           <div>

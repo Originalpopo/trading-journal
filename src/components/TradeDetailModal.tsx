@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
-import { Edit2, Trash2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Target, Focus, ClipboardCheck, TrendingUp, TrendingDown } from "lucide-react";
+import { Edit2, Trash2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
@@ -81,6 +81,8 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   const profit = isFunding ? (f.deposit > 0 ? f.deposit : -(f.withdraw || 0)) : t.profit;
   const symbol = isFunding ? (f.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW') : t.symbol;
   const notes = isFunding ? f.notes : t.strategy;
+  // Older trades mark "On Plan" only through isOnPlan.
+  const isOnPlan = !isFunding && (t.checklists?.includes('On Plan') || t.isOnPlan !== false);
 
   let isBE = false;
   let rawRisk = 0;
@@ -148,6 +150,15 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                       {t.side}
                     </span>
                   </>
+                )}
+                {isOnPlan ? (
+                  <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-orange-50 text-orange-400 border-orange-200 text-[10px] font-bold uppercase tracking-wider">
+                    <CheckCircle2 className="w-3 h-3" /> On Plan
+                  </span>
+                ) : (
+                  <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-stone-50 text-stone-400 border-stone-200 opacity-70 text-[10px] font-bold uppercase tracking-wider">
+                    <XCircle className="w-3 h-3" /> Off Plan
+                  </span>
                 )}
               </div>
             )}
@@ -241,25 +252,6 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                     </div>
                  </div>
               )}
-
-              {/* Right Column: Checklists */}
-              <div className="flex-1 flex flex-row flex-wrap items-center bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 gap-4">
-                  {['On Plan', 'Follow', 'Reversal', 'Entry 1st', 'Entry 2nd'].map((item, idx) => {
-                    const isChecked = item === 'On Plan' ? (t.checklists?.includes(item) || t.isOnPlan !== false) : (t.checklists && t.checklists.includes(item));
-                    const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'Entry 1st' ? Target : item === 'Entry 2nd' ? Focus : CheckCircle2;
-                    return isChecked ? (
-                      <div key={idx} className="flex items-center gap-1.5 text-orange-400">
-                        <ItemIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span className="text-xs font-bold text-stone-900 truncate">{item}</span>
-                      </div>
-                    ) : (
-                      <div key={idx} className="flex items-center gap-1.5 opacity-50 text-stone-400">
-                        <ItemIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span className="text-xs font-bold truncate">{item}</span>
-                      </div>
-                    );
-                  })}
-              </div>
             </div>
           )}
 

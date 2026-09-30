@@ -72,17 +72,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
     setIsSubmitting(true);
 
     let defaultTf = "none";
-    let defaultChecklists = ["On Plan", "Follow"];
+    const defaultChecklists = ["On Plan"];
     if (trades.length > 0) {
       const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
-
-      const lastChecklists = sortedTrades[0].checklists || [];
-      const newChecklists = ['On Plan'];
-      if (lastChecklists.includes('Follow')) newChecklists.push('Follow');
-      if (lastChecklists.includes('Reversal')) newChecklists.push('Reversal');
-      if (newChecklists.length === 1) newChecklists.push('Follow');
-      defaultChecklists = newChecklists;
-
       const withTf = sortedTrades.find(t => t.tf && t.tf !== "none");
       if (withTf) defaultTf = withTf.tf!;
     }

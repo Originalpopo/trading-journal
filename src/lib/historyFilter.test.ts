@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { filterHistoryRows, EMPTY_FILTERS, isFilterActive, type HistoryRow } from './historyFilter.ts';
-import { applyChecklistChanges, setChecklistChange } from './checklists.ts';
+import { applyChecklistChanges } from './checklists.ts';
 
 const rows: HistoryRow[] = [
   { id: 'win', time: '2026-01-05T10:00:00', isFunding: false, symbol: 'XAUUSD', side: 'BUY', profit: 20, risk: 10, strategy: 'clean breakout' },
@@ -39,13 +39,12 @@ test('search matches symbol and notes, case-insensitively', () => {
 });
 
 test('bulk checklist changes add and remove items', () => {
-  assert.deepEqual(applyChecklistChanges(['On Plan', 'Follow'], { 'Entry 1st': 'add', 'On Plan': 'remove' }), ['Follow', 'Entry 1st']);
-  assert.deepEqual(applyChecklistChanges(['On Plan'], { 'On Plan': 'keep' }), ['On Plan']);
+  assert.deepEqual(applyChecklistChanges(['On Plan'], { 'On Plan': 'remove' }), []);
+  assert.deepEqual(applyChecklistChanges([], { 'On Plan': 'add' }), ['On Plan']);
   assert.deepEqual(applyChecklistChanges(['On Plan'], { 'On Plan': 'add' }), ['On Plan']); // no duplicates
+  assert.deepEqual(applyChecklistChanges(['On Plan'], { 'On Plan': 'keep' }), ['On Plan']);
 });
 
-test('Follow and Reversal stay mutually exclusive in bulk edits', () => {
-  assert.deepEqual(applyChecklistChanges(['On Plan', 'Follow'], { Reversal: 'add' }), ['On Plan', 'Reversal']);
-  assert.deepEqual(setChecklistChange({}, 'Follow', 'add'), { Follow: 'add', Reversal: 'remove' });
-  assert.deepEqual(setChecklistChange({}, 'Follow', 'remove'), { Follow: 'remove' });
+test('bulk changes keep hidden legacy checklist tags', () => {
+  assert.deepEqual(applyChecklistChanges(['On Plan', 'Follow', 'Entry 1st'], { 'On Plan': 'remove' }), ['Follow', 'Entry 1st']);
 });

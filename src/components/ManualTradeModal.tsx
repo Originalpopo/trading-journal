@@ -9,7 +9,7 @@ import { deriveResultType } from "@/lib/stats";
 import { initialStopOf, mostCommonRisk } from "@/lib/risk";
 import { pointValueOf, medianPointValue } from "@/lib/tradeZones";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
-import { X, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
+import { X, CheckCircle2, XCircle } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -96,7 +96,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
   // would reset the form whenever a snapshot arrives.
   let risk = "";
   let tf = "15m";
-  let checklists = ['On Plan', 'Follow'];
+  const checklists = ['On Plan'];
   const trades = useJournalStore.getState().trades;
   if (trades.length > 0) {
     const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
@@ -105,12 +105,6 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       const lastTf = firstTf(sortedTrades[0].tf);
       tf = lastTf === 'none' ? '15m' : lastTf;
     }
-
-    const lastChecklists = sortedTrades[0].checklists || [];
-    checklists = ['On Plan'];
-    if (lastChecklists.includes('Follow')) checklists.push('Follow');
-    if (lastChecklists.includes('Reversal')) checklists.push('Reversal');
-    if (checklists.length === 1) checklists.push('Follow');
   }
   // 1R now varies per trade (it follows each trade's stop), so a new entry starts from the default.
   const defaultRisk = useJournalStore.getState().preferences.defaultRisk
@@ -477,64 +471,56 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           </div>
 
           {entryType === "TRADE" && (
-            <div className="mb-4">
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
-              <div className="flex gap-2 flex-wrap h-full items-start">
-                {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    onClick={() => setTf(item)}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${
-                      tf === item 
-                        ? 'bg-orange-400 text-white shadow-sm' 
-                        : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
+            <div className="mb-4 flex flex-wrap items-end gap-x-8 gap-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
+                <div className="flex gap-2 flex-wrap h-full items-start">
+                  {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
+                    <button
+                      type="button"
+                      key={item}
+                      onClick={() => setTf(item)}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+                        tf === item
+                          ? 'bg-orange-400 text-white shadow-sm'
+                          : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Plan</label>
+                <div className="inline-flex items-center bg-stone-100 p-0.5 rounded-lg border border-stone-200">
+                  {[{ onPlan: true, label: 'On Plan', Icon: CheckCircle2 }, { onPlan: false, label: 'Off Plan', Icon: XCircle }].map(({ onPlan, label, Icon }) => {
+                    const isActive = checklists.includes('On Plan') === onPlan;
+                    return (
+                      <button
+                        type="button"
+                        key={label}
+                        onClick={() => {
+                          // Only "On Plan" is edited here; tags from older checklists stay on the trade.
+                          const others = checklists.filter(c => c !== 'On Plan');
+                          setChecklists(onPlan ? ['On Plan', ...others] : others);
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-md transition ${
+                          isActive
+                            ? (onPlan ? 'bg-orange-50 text-orange-400 border border-orange-200 shadow-sm' : 'bg-white text-stone-500 border border-stone-200 shadow-sm')
+                            : 'text-stone-400 border border-transparent hover:text-stone-600'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
-          
-          <div className={`mt-4 ${entryType === "TRADE" ? "" : "hidden"}`}>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Checklists</label>
-            <div className="flex gap-2 flex-wrap h-full items-start">
-              {['On Plan', 'Follow', 'Reversal', 'Entry 1st', 'Entry 2nd'].map((item) => {
-                const isChecked = checklists.includes(item);
-                const ItemIcon = item === 'On Plan' ? ClipboardCheck : item === 'Follow' ? TrendingUp : item === 'Reversal' ? TrendingDown : item === 'Entry 1st' ? Target : item === 'Entry 2nd' ? Focus : CheckCircle2;
-                return (
-                  <button
-                    type="button"
-                    key={item}
-                    onClick={() => {
-                      if (isChecked) {
-                        setChecklists(checklists.filter(t => t !== item));
-                      } else {
-                        let updated = [...checklists];
-                        if (item === 'Follow') {
-                          updated = updated.filter(t => t !== 'Reversal');
-                        } else if (item === 'Reversal') {
-                          updated = updated.filter(t => t !== 'Follow');
-                        }
-                        updated.push(item);
-                        setChecklists(updated);
-                      }
-                    }}
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                      isChecked 
-                        ? 'bg-orange-400 text-white shadow-sm' 
-                        : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
-                    }`}
-                  >
-                    <ItemIcon className="w-3.5 h-3.5 shrink-0" />
-                    <span>{item}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           <div className="mt-4">
             <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>

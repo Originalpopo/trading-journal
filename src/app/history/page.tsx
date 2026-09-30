@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, Edit2, Trash2, Upload, ClipboardCheck, Target, Focus, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, Edit2, Trash2, Upload, ClipboardCheck } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -270,7 +270,7 @@ export default function HistoryPage() {
                 className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-stone-500 hover:bg-white transition">Clear</button>
               <button onClick={() => setIsBulkEditOpen(true)}
                 className="px-4 py-1.5 rounded-lg text-[11px] font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-sm transition flex items-center gap-1.5">
-                <Edit2 className="w-3.5 h-3.5" /> Edit checklists / TF
+                <Edit2 className="w-3.5 h-3.5" /> Edit On Plan / TF
               </button>
             </div>
           </div>
@@ -293,7 +293,7 @@ export default function HistoryPage() {
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Checklists</th>
+                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
@@ -379,26 +379,6 @@ export default function HistoryPage() {
                           <span title="On Plan" className="text-orange-400"><ClipboardCheck className="w-4 h-4" /></span>
                         ) : (
                           <span title="On Plan (Not Selected)" className="text-stone-300"><ClipboardCheck className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('Follow') ? (
-                          <span title="Follow" className="text-orange-400"><TrendingUp className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="Counter (Follow Not Selected)" className="text-stone-300"><TrendingUp className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('Reversal') ? (
-                          <span title="Reversal" className="text-orange-400"><TrendingDown className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="Reversal (Not Selected)" className="text-stone-300"><TrendingDown className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('Entry 1st') ? (
-                          <span title="Entry 1st" className="text-orange-400"><Target className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="Entry 1st (Not Selected)" className="text-stone-300"><Target className="w-4 h-4" /></span>
-                        )}
-                        {t.checklists && t.checklists.includes('Entry 2nd') ? (
-                          <span title="Entry 2nd" className="text-orange-400"><Focus className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="Entry 2nd (Not Selected)" className="text-stone-300"><Focus className="w-4 h-4" /></span>
                         )}
                       </div>
                     </td>
