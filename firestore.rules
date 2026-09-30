@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Paste into Firebase Console > Firestore Database > Rules, then replace OWNER_UID
+// with the UID shown on the app's Settings page (or on the "no access" screen).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == "OWNER_UID";
+    }
+  }
+}

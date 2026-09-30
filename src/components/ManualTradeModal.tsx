@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
 import { Trash2, X, HelpCircle, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
@@ -14,7 +14,6 @@ interface ManualTradeModalProps {
 }
 
 export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: ManualTradeModalProps) {
-  const { trades } = useJournalStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [entryType, setEntryType] = useState("TRADE");
@@ -118,6 +117,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         let defaultRisk = "";
         let defaultTf = "15m";
         let defaultChecklists = ['On Plan', 'Follow'];
+        // Read trades once on open; subscribing to them would reset the form whenever a snapshot arrives.
+        const trades = useJournalStore.getState().trades;
         if (trades.length > 0) {
           const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
           
@@ -152,7 +153,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         setEntryTime(nowStr);
       }
     }
-  }, [isOpen, tradeToEdit, trades]);
+  }, [isOpen, tradeToEdit]);
 
 
 
@@ -224,13 +225,26 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           isOnPlan: checklists.includes('On Plan'),
           tf,
           checklists,
-          ...(entryPrice && { entryPrice: parseFloat(entryPrice), entryType: orderEntryType }),
-          ...(exitPrice && { exitPrice: parseFloat(exitPrice), exitType: orderExitType }),
-          ...(tpPrice && { tpPrice: parseFloat(tpPrice) }),
-          ...(slPrice && { slPrice: parseFloat(slPrice) })
         };
-        await setDoc(doc(db, "trades", tId), data, { merge: true });
-        finalData = { ...(tradeToEdit || {}), id: tId, ...data, isFunding: false };
+
+        // Optional fields left empty must be deleted, otherwise the merge keeps the old value.
+        const optionalFields = {
+          entryPrice: entryPrice ? parseFloat(entryPrice) : undefined,
+          entryType: entryPrice ? orderEntryType : undefined,
+          exitPrice: exitPrice ? parseFloat(exitPrice) : undefined,
+          exitType: exitPrice ? orderExitType : undefined,
+          tpPrice: tpPrice ? parseFloat(tpPrice) : undefined,
+          slPrice: slPrice ? parseFloat(slPrice) : undefined,
+        };
+        const optionalForDb = Object.fromEntries(
+          Object.entries(optionalFields).map(([key, val]) => [key, val === undefined ? deleteField() : val])
+        );
+
+        await setDoc(doc(db, "trades", tId), { ...data, ...optionalForDb }, { merge: true });
+        finalData = Object.fromEntries(
+          Object.entries({ ...(tradeToEdit || {}), id: tId, ...data, ...optionalFields, isFunding: false })
+            .filter(([, val]) => val !== undefined)
+        );
       }
 
       onClose(finalData);

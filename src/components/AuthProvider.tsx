@@ -1,68 +1,76 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
+import { db, auth, googleProvider } from "@/lib/firebase";
 import { PinScreen } from "./PinScreen";
+import { LoginScreen } from "./LoginScreen";
 
 interface AuthSettings {
   pin: string;
   hint: string;
 }
 
-const DEFAULT_SETTINGS: AuthSettings = {
-  pin: "3060",
-  hint: "โทรศัพท์บ้านเก่า",
-};
+type AuthStatus = "loading" | "signedOut" | "denied" | "error" | "locked" | "unlocked";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [globalSettings, setGlobalSettings] = useState<AuthSettings>(DEFAULT_SETTINGS);
+  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [user, setUser] = useState<User | null>(null);
+  const [globalSettings, setGlobalSettings] = useState<AuthSettings | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const docRef = doc(db, "settings", "auth");
-        const docSnap = await getDoc(docRef);
-
-        let currentSettings = DEFAULT_SETTINGS;
-
-        if (docSnap.exists()) {
-          currentSettings = docSnap.data() as AuthSettings;
-        } else {
-          // Initialize defaults in Firebase if it doesn't exist
-          await setDoc(docRef, DEFAULT_SETTINGS);
-        }
-
-        setGlobalSettings(currentSettings);
-
-        const localPin = localStorage.getItem("tradejournal_pin");
-        if (localPin === currentSettings.pin) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error("Error fetching auth settings:", error);
-      } finally {
-        setIsLoading(false);
+    // Google sign-in protects the data (Firestore rules); the PIN is only a quick lock on top of it.
+    return onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (!u) {
+        setStatus("signedOut");
+        return;
       }
-    };
 
-    checkAuth();
+      setStatus("loading");
+      try {
+        const docSnap = await getDoc(doc(db, "settings", "auth"));
+        const settings = docSnap.exists() ? (docSnap.data() as AuthSettings) : null;
+        setGlobalSettings(settings);
+
+        if (!settings?.pin) {
+          setStatus("unlocked");
+        } else {
+          const localPin = localStorage.getItem("tradejournal_pin");
+          setStatus(localPin === settings.pin ? "unlocked" : "locked");
+        }
+      } catch (error: any) {
+        console.error("Error fetching auth settings:", error);
+        if (error?.code === "permission-denied") {
+          setStatus("denied");
+        } else {
+          setErrorMessage(error?.message);
+          setStatus("error");
+        }
+      }
+    });
   }, []);
 
+  const handleSignIn = async () => {
+    await signInWithPopup(auth, googleProvider);
+  };
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+  };
+
   const handleUnlock = (enteredPin: string) => {
-    if (enteredPin === globalSettings.pin) {
+    if (globalSettings && enteredPin === globalSettings.pin) {
       localStorage.setItem("tradejournal_pin", enteredPin);
-      setIsAuthenticated(true);
+      setStatus("unlocked");
       return true;
     }
     return false;
   };
 
-  if (isLoading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
@@ -70,8 +78,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
-    return <PinScreen hint={globalSettings.hint} onUnlock={handleUnlock} />;
+  if (status === "signedOut" || status === "denied" || status === "error") {
+    return (
+      <LoginScreen
+        mode={status === "signedOut" ? "signIn" : status}
+        email={user?.email}
+        uid={user?.uid}
+        message={errorMessage}
+        onSignIn={handleSignIn}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  if (status === "locked") {
+    return <PinScreen hint={globalSettings?.hint || ""} onUnlock={handleUnlock} />;
   }
 
   return <>{children}</>;

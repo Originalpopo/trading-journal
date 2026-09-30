@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCdTWVtcP0-YHV9nQLxzK79aU4lVBhLpnE",
@@ -13,5 +14,7 @@ const firebaseConfig = {
 // Initialize Firebase only if it hasn't been initialized already (important for Next.js SSR/HMR)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
-export { app, db };
+export { app, db, auth, googleProvider };

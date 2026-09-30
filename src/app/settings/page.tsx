@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Lock, Save, FolderOpen } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { db, auth } from "@/lib/firebase";
+import { Lock, Save, UserCircle, LogOut, Copy, Check } from "lucide-react";
 
 export default function SettingsPage() {
+  const currentUser = auth.currentUser;
+  const [isUidCopied, setIsUidCopied] = useState(false);
   const [pin, setPin] = useState("");
   const [hint, setHint] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -19,12 +22,9 @@ export default function SettingsPage() {
 
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setPin(data.pin || "3060");
-          setHint(data.hint || "โทรศัพท์บ้านเก่า");
-          setPin("3060");
-          setHint("โทรศัพท์บ้านเก่า");
+          setPin(data.pin || "");
+          setHint(data.hint || "");
         }
-
 
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -81,6 +81,49 @@ export default function SettingsPage() {
       <div className="bg-white rounded-2xl p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
           <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+            <UserCircle className="w-5 h-5 text-orange-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-stone-950">Account</h3>
+            <p className="text-sm text-stone-500 font-medium">Only the account whose UID is set in the Firestore rules can read or write data.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1 min-w-0">
+            <p className="text-sm font-bold text-stone-950">{currentUser?.email || "-"}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-mono text-stone-500 break-all select-all">UID: {currentUser?.uid || "-"}</p>
+              {currentUser && (
+                <button
+                  type="button"
+                  title="Copy UID"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(currentUser.uid);
+                    setIsUidCopied(true);
+                    setTimeout(() => setIsUidCopied(false), 1500);
+                  }}
+                  className="text-stone-400 hover:text-orange-400 transition shrink-0"
+                >
+                  {isUidCopied ? <Check className="w-3.5 h-3.5 text-orange-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => signOut(auth)}
+            className="px-6 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 shrink-0"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
             <Lock className="w-5 h-5 text-orange-400" />
           </div>
           <div>
@@ -98,7 +141,7 @@ export default function SettingsPage() {
                 maxLength={4}
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                placeholder="e.g. 3060"
+                placeholder="4 digits"
                 className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium"
               />
               <p className="text-xs text-stone-400 font-medium">Numbers only. Exactly 4 digits.</p>
@@ -110,7 +153,7 @@ export default function SettingsPage() {
                 type="text"
                 value={hint}
                 onChange={(e) => setHint(e.target.value)}
-                placeholder="e.g. โทรศัพท์บ้านเก่า"
+                placeholder="Something only you would recognize"
                 className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition"
               />
               <p className="text-xs text-stone-400 font-medium">Visible to anyone who tries to log in.</p>
