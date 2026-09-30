@@ -412,7 +412,7 @@ export default function HistoryPage() {
                       {isPrivacyMode ? '***' : riskText}
                     </td>
                     <td className="py-4 px-4 text-right font-bold text-stone-500">
-                      {t.rr ? format2Decimals(t.rr) + ' R' : '-'}
+                      {t.rr ? (t.riskIsEstimate ? '≈' : '') + format2Decimals(t.rr) + ' R' : '-'}
                     </td>
                     <td className={`py-4 px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
                       {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}

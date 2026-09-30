@@ -206,7 +206,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
-                  <span className="text-xs font-extrabold text-stone-950">{isPrivacyMode ? '***' : (rawRisk > 0 ? `$${format2Decimals(rawRisk)}` : '-')}</span>
+                  <span className="text-xs font-extrabold text-stone-950">{isPrivacyMode ? '***' : (rawRisk > 0 ? `${t.riskIsEstimate ? "≈" : ""}$${format2Decimals(rawRisk)}${t.riskIsEstimate ? " (default 1R)" : ""}` : '-')}</span>
                 </div>
               </div>
 

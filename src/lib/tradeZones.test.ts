@@ -34,6 +34,13 @@ test('stop trailed into profit on a sell', () => {
   near(z.movedSl!, 4144.79);
 });
 
+test('an initial stop entered by the user replaces the 1R estimate', () => {
+  const z = tradeZones({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, risk: 1.5, slPrice: 4179.15, initialSlPrice: 4178.24 })!;
+  near(z.sl, 4178.24);
+  assert.equal(z.slIsEstimate, false);
+  near(z.movedSl!, 4179.15);
+});
+
 test('closed exactly at entry: 1R uses the fallback point value', () => {
   const z = tradeZones({ side: 'BUY', entryPrice: 4000, exitPrice: 4000, profit: 0, risk: 1.5, slPrice: 4000 }, 1)!;
   near(z.sl, 3998.5);

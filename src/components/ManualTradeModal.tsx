@@ -6,6 +6,8 @@ import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
 import { deriveResultType } from "@/lib/stats";
+import { initialStopOf, mostCommonRisk } from "@/lib/risk";
+import { pointValueOf, medianPointValue } from "@/lib/tradeZones";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { X, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
 
@@ -30,6 +32,7 @@ interface FormState {
   exitPrice: string;
   tpPrice: string;
   slPrice: string;
+  initialSl: string;
   orderEntryType: string;
   orderExitType: string;
 }
@@ -46,7 +49,7 @@ const toInputTime = (value?: string) => {
 const firstTf = (tf: string) => (tf.includes(',') ? tf.split(',')[0].trim() : tf);
 
 const BLANK_TRADE_FIELDS = {
-  entryPrice: "", exitPrice: "", tpPrice: "", slPrice: "",
+  entryPrice: "", exitPrice: "", tpPrice: "", slPrice: "", initialSl: "",
   orderEntryType: "Limit", orderExitType: "Limit",
 };
 
@@ -81,6 +84,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       exitPrice: t.exitPrice?.toString() || "",
       tpPrice: t.tpPrice?.toString() || "",
       slPrice: t.slPrice?.toString() || "",
+      initialSl: initialStopOf(t)?.price.toString() || "",
       orderEntryType: t.entryType || "Limit",
       orderExitType: t.exitType || "Limit",
       entryTime: toInputTime(t.entryTime || t.time),
@@ -107,10 +111,11 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
     if (lastChecklists.includes('Follow')) checklists.push('Follow');
     if (lastChecklists.includes('Reversal')) checklists.push('Reversal');
     if (checklists.length === 1) checklists.push('Follow');
-
-    const withRisk = sortedTrades.find(t => t.risk && t.risk > 0);
-    if (withRisk) risk = withRisk.risk.toString();
   }
+  // 1R now varies per trade (it follows each trade's stop), so a new entry starts from the default.
+  const defaultRisk = useJournalStore.getState().preferences.defaultRisk
+    ?? mostCommonRisk(trades.filter(t => t.riskIsEstimate !== false));
+  if (defaultRisk) risk = defaultRisk.toString();
 
   const now = toInputTime(new Date().toISOString());
   return {
@@ -138,16 +143,22 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [exitPrice, setExitPrice] = useState("");
   const [tpPrice, setTpPrice] = useState("");
   const [slPrice, setSlPrice] = useState("");
+  const [initialSl, setInitialSl] = useState("");
   const [orderEntryType, setOrderEntryType] = useState("Limit");
   const [orderExitType, setOrderExitType] = useState("Limit");
   // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
   const timesEditedRef = useRef(false);
+  // Set once the user types the first stop or the risk, so 1R is no longer the default guess.
+  const initialSlEditedRef = useRef(false);
+  const riskEditedRef = useRef(false);
   // The form as it was opened, to tell whether closing would throw away changes.
   const [initialForm, setInitialForm] = useState<FormState | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     timesEditedRef.current = false;
+    initialSlEditedRef.current = false;
+    riskEditedRef.current = false;
     const f = buildInitialForm(tradeToEdit);
     setInitialForm(f);
     setEntryType(f.entryType);
@@ -164,13 +175,33 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     setExitPrice(f.exitPrice);
     setTpPrice(f.tpPrice);
     setSlPrice(f.slPrice);
+    setInitialSl(f.initialSl);
     setOrderEntryType(f.orderEntryType);
     setOrderExitType(f.orderExitType);
   }, [isOpen, tradeToEdit]);
 
   const currentForm: FormState = {
     entryType, symbol, side, amount, time, risk, entryTime, strategy, tf, checklists,
-    entryPrice, exitPrice, tpPrice, slPrice, orderEntryType, orderExitType,
+    entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType,
+  };
+
+  // The first stop must be on the losing side of the entry.
+  const initialSlNum = parseFloat(initialSl);
+  const entryNum = parseFloat(entryPrice);
+  const sideDir = side === 'SELL' ? -1 : 1;
+  const hasInitialSl = Number.isFinite(initialSlNum);
+  const validInitialSl = hasInitialSl && Number.isFinite(entryNum) && sideDir * (entryNum - initialSlNum) > 0;
+
+  // Typing the first stop sets 1R to the distance to it.
+  const handleInitialSlChange = (value: string) => {
+    initialSlEditedRef.current = true;
+    setInitialSl(value);
+    const stop = parseFloat(value);
+    if (!Number.isFinite(stop) || !Number.isFinite(entryNum) || sideDir * (entryNum - stop) <= 0) return;
+    const pointValue = pointValueOf({ entryPrice: entryNum, exitPrice: parseFloat(exitPrice), profit: parseFloat(amount) })
+      ?? medianPointValue(useJournalStore.getState().trades.filter(t => t.symbol === symbol.toUpperCase().trim()))
+      ?? 1;
+    setRisk((Math.round(Math.abs(entryNum - stop) * pointValue * 100) / 100).toString());
   };
   const isDirty = initialForm !== null && (Object.keys(currentForm) as (keyof FormState)[]).some(key =>
     key === 'checklists'
@@ -247,6 +278,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           ...((!tradeToEdit || timesEditedRef.current) && { exitTimeConfidence: 'manual' as const }),
         };
 
+        // A first stop the user typed is theirs; one prefilled from the broker keeps its origin.
+        const prevTrade = tradeToEdit && !tradeToEdit.isFunding ? (tradeToEdit as Trade) : undefined;
+        const initialSlSource = validInitialSl
+          ? (initialSlEditedRef.current ? 'manual' : (prevTrade?.initialSlSource || (prevTrade && initialStopOf(prevTrade)?.source) || 'manual'))
+          : undefined;
+
         // Optional fields left empty must be deleted, otherwise the merge keeps the old value.
         const optionalFields = {
           entryPrice: entryPrice ? parseFloat(entryPrice) : undefined,
@@ -255,6 +292,10 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           exitType: exitPrice ? orderExitType : undefined,
           tpPrice: tpPrice ? parseFloat(tpPrice) : undefined,
           slPrice: slPrice ? parseFloat(slPrice) : undefined,
+          initialSlPrice: validInitialSl ? initialSlNum : undefined,
+          initialSlSource,
+          // 1R is only a guess while neither the first stop nor the risk was given.
+          riskIsEstimate: validInitialSl || riskEditedRef.current ? false : prevTrade?.riskIsEstimate,
         };
         const optionalForDb = Object.fromEntries(
           Object.entries(optionalFields).map(([key, val]) => [key, val === undefined ? deleteField() : val])
@@ -371,9 +412,23 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Stop Loss</label>
-              <input type="number" step="0.01" value={slPrice} onChange={(e) => setSlPrice(e.target.value)} placeholder="Optional"
-                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              <label className="flex justify-between text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
+                <span>Stop Loss</span>
+                <span className="normal-case tracking-normal">last · first placed</span>
+              </label>
+              <div className="flex gap-2">
+                <input type="number" step="0.01" value={slPrice} onChange={(e) => setSlPrice(e.target.value)} placeholder="Last"
+                  title="Where the stop ended up (e.g. moved to break-even)"
+                  className="w-full min-w-0 bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+                <input type="number" step="0.01" value={initialSl} onChange={(e) => handleInitialSlChange(e.target.value)} placeholder="1st SL"
+                  title="Where the stop was first placed. 1R is measured to it; entering it sets Risk."
+                  className={`w-full min-w-0 bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${
+                    hasInitialSl && !validInitialSl ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'
+                  }`} />
+              </div>
+              {hasInitialSl && !validInitialSl && (
+                <p className="text-[10px] font-bold text-red-900 mt-1">The first stop must be on the losing side of the entry price.</p>
+              )}
             </div>
           </div>
 
@@ -415,7 +470,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                   <span>Risk ($)</span>
                   <span className={liveRRClass}>RR: {liveRRStr}</span>
                 </label>
-                <input type="number" step="0.01" value={risk} onChange={(e) => setRisk(e.target.value)} placeholder="Optional"
+                <input type="number" step="0.01" value={risk} onChange={(e) => { riskEditedRef.current = true; setRisk(e.target.value); }} placeholder="Optional"
                   className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
               </div>
             )}
@@ -491,7 +546,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={isSubmitting}
+          <button onClick={handleSubmit} disabled={isSubmitting || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Saving..." : "Save"}
           </button>

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { parseRobustDate } from '@/lib/utils';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
 
@@ -32,6 +32,12 @@ export interface Trade {
   entryTime?: string;
   exitTime?: string;
   exitTimeConfidence?: ExitTimeConfidence;
+  // The stop the trade was opened with (slPrice is where it ended up). 'broker' when read from the
+  // broker's history, 'manual' when entered by the user because the stop was moved.
+  initialSlPrice?: number;
+  initialSlSource?: 'broker' | 'manual';
+  // True when `risk` is the default 1R because the initial stop is unknown.
+  riskIsEstimate?: boolean;
   orderId?: string;
   positionId?: string;
   entryType?: string;
@@ -60,13 +66,20 @@ export interface Note {
   updatedAt?: string;
 }
 
+export interface Preferences {
+  // $ risk (1R) used when a trade's initial stop is unknown.
+  defaultRisk?: number;
+}
+
 interface JournalState {
   trades: Trade[];
   funding: Funding[];
   notes: Note[];
+  preferences: Preferences;
   isLoading: boolean;
   isPrivacyMode: boolean;
   setIsPrivacyMode: (val: boolean) => void;
+  updatePreferences: (prefs: Partial<Preferences>) => Promise<void>;
   initializeListeners: () => () => void;
   addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
@@ -81,10 +94,15 @@ export const useJournalStore = create<JournalState>((set) => ({
   trades: [],
   funding: [],
   notes: [],
+  preferences: {},
   isLoading: true,
   isPrivacyMode: false,
 
   setIsPrivacyMode: (val) => set({ isPrivacyMode: val }),
+
+  updatePreferences: async (prefs) => {
+    await setDoc(doc(db, 'settings', 'preferences'), prefs, { merge: true });
+  },
 
   initializeListeners: () => {
     set({ isLoading: true });
@@ -105,6 +123,10 @@ export const useJournalStore = create<JournalState>((set) => ({
           legacyChartMigrationStarted = false;
         });
       }
+    });
+
+    const unsubscribePreferences = onSnapshot(doc(db, 'settings', 'preferences'), (snapshot) => {
+      set({ preferences: (snapshot.data() as Preferences) || {} });
     });
 
     const unsubscribeFunding = onSnapshot(collection(db, 'funding'), (snapshot) => {
@@ -130,6 +152,7 @@ export const useJournalStore = create<JournalState>((set) => ({
       unsubscribeTrades();
       unsubscribeFunding();
       unsubscribeNotes();
+      unsubscribePreferences();
     };
   },
   addTrade: async (trade) => {

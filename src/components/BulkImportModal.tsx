@@ -8,6 +8,8 @@ import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils"
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil } from "lucide-react";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
+import { useDefaultRisk } from "@/lib/defaultRisk";
+import { medianPointValue } from "@/lib/tradeZones";
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -46,13 +48,21 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const error = importError || parseError;
 
   const [exitEdits, setExitEdits] = useState<Record<string, string>>({});
+  const [initialStopEdits, setInitialStopEdits] = useState<Record<string, string>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editingStopKey, setEditingStopKey] = useState<string | null>(null);
 
-  const plan = useMemo(() => planImport(parsedTrades, trades, exitEdits), [parsedTrades, trades, exitEdits]);
+  const defaultRisk = useDefaultRisk();
+  const fallbackPointValue = useMemo(() => medianPointValue([...trades, ...parsedTrades]), [trades, parsedTrades]);
+  const plan = useMemo(
+    () => planImport(parsedTrades, trades, { exitTimes: exitEdits, initialStops: initialStopEdits }, { defaultRisk, fallbackPointValue }),
+    [parsedTrades, trades, exitEdits, initialStopEdits, defaultRisk, fallbackPointValue],
+  );
   const newCount = plan.filter(r => r.action === 'new').length;
   const updateCount = plan.filter(r => r.action === 'update').length;
   const uncertainCount = plan.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
-  const hasInvalidEdit = plan.some(r => r.invalidExit);
+  const unknownStopCount = plan.filter(r => r.result.riskIsEstimate).length;
+  const hasInvalidEdit = plan.some(r => r.invalidExit || r.invalidInitialSl);
 
   useEscapeToClose(isOpen, onClose);
 
@@ -61,7 +71,6 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const handleImport = async () => {
     setIsSubmitting(true);
 
-    let defaultRisk = 0;
     let defaultTf = "none";
     let defaultChecklists = ["On Plan", "Follow"];
     if (trades.length > 0) {
@@ -74,15 +83,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
       if (newChecklists.length === 1) newChecklists.push('Follow');
       defaultChecklists = newChecklists;
 
-      for (const t of sortedTrades) {
-        if (defaultTf === "none" && t.tf && t.tf !== "none") {
-          defaultTf = t.tf;
-        }
-        if (defaultRisk === 0 && t.risk && t.risk > 0) {
-          defaultRisk = t.risk;
-        }
-        if (defaultTf !== "none" && defaultRisk > 0) break;
-      }
+      const withTf = sortedTrades.find(t => t.tf && t.tf !== "none");
+      if (withTf) defaultTf = withTf.tf!;
     }
 
     let importCount = 0;
@@ -101,18 +103,18 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
           continue;
         }
 
-        const t = row.parsed;
-        let resultType = "";
-        if (t.profit! > 0) resultType = "TP";
-        else if (t.profit! < 0) resultType = "SL";
-        else resultType = "BE";
+        // For new rows `result` already carries 1R (from the stop, the user, or the default).
+        const t = row.result;
 
         const newTrade: Omit<Trade, 'id'> = {
           time: t.time || new Date().toISOString(),
           profit: t.profit || 0,
-          risk: defaultRisk,
-          rr: defaultRisk > 0 ? (t.profit || 0) / defaultRisk : 0,
-          resultType,
+          risk: t.risk || 0,
+          rr: t.rr || 0,
+          resultType: t.resultType || "BE",
+          riskIsEstimate: t.riskIsEstimate,
+          initialSlPrice: t.initialSlPrice,
+          initialSlSource: t.initialSlSource,
           strategy: "",
           isOnPlan: true,
           symbol: t.symbol || "UNKNOWN",
@@ -196,6 +198,12 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                     {`${uncertainCount} ${uncertainCount > 1 ? 'trades' : 'trade'} hit SL without a TP, so the exit time can't be read from the broker data. Click the exit time to set it.`}
                   </p>
                 )}
+                {unknownStopCount > 0 && (
+                  <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 w-full">
+                    <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                    {`${unknownStopCount} ${unknownStopCount > 1 ? 'trades' : 'trade'} had the stop moved, so the first stop is gone from the broker data and 1R uses the default $${defaultRisk.toFixed(2)}. Click "1st SL" to enter where it was.`}
+                  </p>
+                )}
               </div>
               <div className="overflow-x-auto border border-stone-100 rounded-xl">
                 <table className="w-full text-left text-sm whitespace-nowrap">
@@ -209,13 +217,16 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">Entry Price</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">TP</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">SL</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right" title="Where the stop ended up">Last SL</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right" title="Where the stop was first placed; 1R is measured to it">1st SL</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">Exit Price</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">P&L</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">1R</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">R</th>
                     </tr>
                   </thead>
                   <tbody className="text-[11px] divide-y divide-stone-50">
-                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, previousExitTime, invalidExit }) => {
+                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, previousExitTime, previousRisk, invalidExit, invalidInitialSl }) => {
                       const entry = splitTime(result.entryTime);
                       const exitTime = result.exitTime || result.time;
                       const exit = splitTime(exitTime);
@@ -281,9 +292,59 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.entryPrice?.toFixed(2) || '-'}</td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.tpPrice?.toFixed(2) || '-'}</td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.slPrice?.toFixed(2) || '-'}</td>
+                          <td className="px-4 py-4 text-right font-bold text-stone-500">
+                            {editingStopKey === key ? (
+                              <input
+                                type="number"
+                                step="0.01"
+                                autoFocus
+                                placeholder="price"
+                                value={initialStopEdits[key] ?? ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setInitialStopEdits(prev => ({ ...prev, [key]: value }));
+                                }}
+                                onBlur={() => setEditingStopKey(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Escape') {
+                                    e.preventDefault(); // Esc closes the price editor, not the whole import
+                                    setEditingStopKey(null);
+                                  }
+                                }}
+                                className={`w-24 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none text-right ${invalidInitialSl ? 'border-red-900' : 'border-orange-400'}`}
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setEditingStopKey(key)}
+                                title="Where the stop was first placed. Click to enter it."
+                                className="group inline-flex items-center gap-1.5 hover:text-orange-400 transition"
+                              >
+                                {result.initialSlPrice
+                                  ? <>
+                                      {result.initialSlPrice.toFixed(2)}
+                                      {result.initialSlSource === 'manual' && <span className="text-[9px] font-bold text-orange-400">yours</span>}
+                                    </>
+                                  : <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-400"><AlertTriangle className="w-3 h-3" /> moved</span>}
+                                <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
+                              </button>
+                            )}
+                            {invalidInitialSl && <p className="text-[9px] font-bold text-red-900 mt-1">Wrong side of entry</p>}
+                          </td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.exitPrice?.toFixed(2) || '-'}</td>
                           <td className={`px-4 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
                             {t.profit! < 0 ? '-' : (t.profit! > 0 ? '+' : '')}${Math.abs(t.profit || 0).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-4 text-right font-bold text-stone-500 leading-tight">
+                            <span title={result.riskIsEstimate ? "Default 1R: the first stop is unknown" : "Distance to the first stop"}>
+                              {result.riskIsEstimate ? '≈' : ''}${(result.risk || 0).toFixed(2)}
+                            </span>
+                            {previousRisk !== undefined && (
+                              <p className="text-[9px] text-stone-300 line-through" title="1R currently saved">${Number(previousRisk).toFixed(2)}</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-right font-bold text-stone-500">
+                            {result.riskIsEstimate ? '≈' : ''}{(result.rr || 0).toFixed(2)}R
                           </td>
                         </tr>
                       );

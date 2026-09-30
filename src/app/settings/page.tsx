@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
 import { Lock, Save, UserCircle, LogOut, Copy, Check } from "lucide-react";
+import DefaultRiskSetting from "@/components/DefaultRiskSetting";
 
 export default function SettingsPage() {
   const currentUser = auth.currentUser;
@@ -77,6 +78,8 @@ export default function SettingsPage() {
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Settings</h2>
         </div>
       </div>
+
+      <DefaultRiskSetting />
 
       <div className="bg-white rounded-2xl p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">

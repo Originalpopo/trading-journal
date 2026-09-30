@@ -8,6 +8,7 @@ export interface ZoneTrade {
   exitPrice?: number;
   tpPrice?: number;
   slPrice?: number;
+  initialSlPrice?: number; // entered by the user when the broker no longer shows it
   profit?: number;
   risk?: number | string;
   rr?: number;
@@ -53,11 +54,13 @@ export function tradeZones(t: ZoneTrade, fallbackPointValue: number | null = nul
   // one the trade was opened with; one at or past the entry was moved (break-even or trailing), and
   // the original is gone, so it is drawn at 1R from the trade's $ risk instead.
   const slOnRiskSide = !!t.slPrice && dir * (entry - t.slPrice) > 0;
-  const movedSl = t.slPrice && !slOnRiskSide ? t.slPrice : null;
+  const knownInitial = t.initialSlPrice && dir * (entry - t.initialSlPrice) > 0 ? t.initialSlPrice : null;
+  const movedSl = t.slPrice && (!slOnRiskSide || (knownInitial && Math.abs(t.slPrice - knownInitial) > 1e-9)) ? t.slPrice : null;
 
   let sl: number;
   let slIsEstimate = false;
-  if (slOnRiskSide) sl = t.slPrice!;
+  if (knownInitial) sl = knownInitial;
+  else if (slOnRiskSide) sl = t.slPrice!;
   else if (riskDistance) {
     sl = entry - dir * riskDistance;
     slIsEstimate = true;
