@@ -166,10 +166,10 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={() => onClose()}>
-      <div className="bg-white border-0 rounded-3xl w-full max-w-5xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white border-0 rounded-3xl w-fit min-w-[min(100%,64rem)] max-w-full p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100 flex-wrap gap-4">
           <h3 className="text-2xl font-black text-stone-950 tracking-tight">
-            Bulk Import from TradingView
+            Import from TradingView
           </h3>
 
           <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition ml-auto">
