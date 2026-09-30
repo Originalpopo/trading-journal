@@ -5,6 +5,7 @@ import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
+import { deriveResultType } from "@/lib/stats";
 import { Trash2, X, HelpCircle, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
 
 interface ManualTradeModalProps {
@@ -188,18 +189,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         };
       } else {
         const tId = tradeToEdit?.id || "M_T_" + Date.now();
-        let rr = parsedRisk > 0 ? parsedAmount / parsedRisk : 0;
-        
-        let resType = "";
-        if (parsedRisk > 0) {
-            if (rr >= -0.4 && rr <= 0.4) resType = "BE";
-            else if (rr > 0) resType = "TP";
-            else resType = "SL";
-        } else {
-            if (parsedAmount === 0) resType = "BE";
-            else if (parsedAmount > 0) resType = "TP";
-            else resType = "SL";
-        }
+        const rr = parsedRisk > 0 ? parsedAmount / parsedRisk : 0;
+        const resType = deriveResultType(parsedAmount, parsedRisk);
 
         let calculatedDuration = 0;
         if (entryTime && timeVal) {

@@ -4,6 +4,7 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
+import { classifyTrade } from "@/lib/stats";
 
 export default function CalendarPage() {
   const { trades, isLoading, isPrivacyMode } = useJournalStore();
@@ -47,18 +48,9 @@ export default function CalendarPage() {
 
         mTotalTradesAll++;
 
-        let isBE = false;
-        const rawRisk = t.risk || 0;
-        if (rawRisk > 0) {
-          const calculatedRR = (t.profit || 0) / rawRisk;
-          isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
-        } else {
-          isBE = (t.resultType === 'BE' || t.profit === 0);
-        }
-        if (!isBE) {
-          if (t.profit > 0 || t.resultType === 'TP') mWins++;
-          else if (t.profit < 0 || t.resultType === 'SL') mLosses++;
-        }
+        const outcome = classifyTrade(t);
+        if (outcome === 'win') mWins++;
+        else if (outcome === 'loss') mLosses++;
       }
     });
 

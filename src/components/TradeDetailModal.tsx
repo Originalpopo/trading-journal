@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
+import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 import { X, Edit2, Trash2, ExternalLink, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
 
@@ -97,14 +98,10 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   if (isFunding) {
     badgeText = profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
   } else {
-    rawRisk = parseFloat((t.risk || 0).toString());
-    if (rawRisk > 0) {
-      const rr = t.profit / rawRisk;
-      isBE = (rr >= -0.4 && rr <= 0.4);
-    } else {
-      isBE = (t.resultType === 'BE' || t.profit === 0);
-    }
-    badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
+    rawRisk = parseRisk(t.risk);
+    const outcome = classifyTrade(t);
+    isBE = outcome === 'be';
+    badgeText = outcomeLabel(outcome);
 
     const sec = calculateDurationInSeconds(t);
     durationDisplay = formatDurationDetailed(sec);

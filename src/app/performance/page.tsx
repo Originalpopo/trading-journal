@@ -4,6 +4,7 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check, CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
 import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
+import { classifyTrade, summarizeTrades, healthTierFromProfitFactor } from "@/lib/stats";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,16 +31,6 @@ ChartJS.register(
   Legend,
   Filler
 );
-
-function calculateStandardDeviation(values: number[], mean: number) {
-  if (values.length === 0) return 0;
-  const squareDiffs = values.map(val => {
-    const diff = val - mean;
-    return diff * diff;
-  });
-  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
-  return Math.sqrt(avgSquareDiff);
-}
 
 const formatCurrencyHelper = (val: number, isPrivacyMode?: boolean) => {
   if (isPrivacyMode) return '***';
@@ -211,27 +202,8 @@ export default function PerformancePage() {
     const perfPnlColors = ['transparent'];
 
     let tradeCount = 0;
-    let grossProfit = 0, grossLoss = 0, grossBE = 0;
-    let runningNetProfit = 0;
-    let totalTrades = 0;
-    let profitTradesCount = 0, lossTradesCount = 0, beTradesCount = 0;
     let longTrades = 0, longWon = 0;
     let shortTrades = 0, shortWon = 0;
-    let largestProfit = 0, largestLoss = 0;
-    let sumBE = 0, largestBE = 0;
-
-    let currentWinCount = 0, currentLossCount = 0;
-    let currentWinAmt = 0, currentLossAmt = 0;
-
-    let maxConsWinCount = 0, maxConsLossCount = 0;
-    let maxConsWinAmt = 0, maxConsLossAmt = 0;
-    let countAtMaxWinAmt = 0, countAtMaxLossAmt = 0;
-    let amtAtMaxWinCount = 0, amtAtMaxLossCount = 0;
-
-    let totalWinStreaksCount = 0, sumOfWinStreaks = 0;
-    let totalLossStreaksCount = 0, sumOfLossStreaks = 0;
-
-    let allProfits: number[] = [];
 
     let onPlanTrades = 0, onPlanWins = 0, onPlanLosses = 0, onPlanBE = 0, onPlanPnL = 0;
     let offPlanTrades = 0, offPlanWins = 0, offPlanLosses = 0, offPlanBE = 0, offPlanPnL = 0;
@@ -286,22 +258,11 @@ export default function PerformancePage() {
         let hr = entryTimeObj.getHours();
         const rrVal = t.rr || 0;
         const pnl = t.profit || 0;
-        
-        let isBE = false;
-        const rawRisk = parseFloat(t.risk || 0);
-        if (rawRisk > 0) {
-          const calculatedRR = pnl / rawRisk;
-          isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
-        } else {
-          isBE = (t.resultType === 'BE' || pnl === 0);
-        }
 
-        runningNetProfit += pnl;
-        totalTrades++;
-        allProfits.push(pnl);
-
-        const isWin = !isBE && (pnl > 0 || t.resultType === 'TP');
-        const isLoss = !isBE && (pnl < 0 || t.resultType === 'SL');
+        const outcome = classifyTrade(t);
+        const isBE = outcome === 'be';
+        const isWin = outcome === 'win';
+        const isLoss = outcome === 'loss';
 
         const planStatus = t.isOnPlan !== false;
         if (planStatus) {
@@ -324,58 +285,6 @@ export default function PerformancePage() {
         } else if (isLoss) {
           sumDurationLosses += calculateDurationInSeconds(t);
           countDurationLosses++;
-        }
-
-        if (isBE) {
-          grossBE += pnl;
-          sumBE += pnl;
-          if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
-          beTradesCount++;
-        } else if (isWin) {
-          grossProfit += pnl;
-          profitTradesCount++;
-          if (pnl > largestProfit) largestProfit = pnl;
-
-          currentWinCount++;
-          currentWinAmt += pnl;
-          if (currentLossCount > 0) {
-            totalLossStreaksCount++;
-            sumOfLossStreaks += currentLossCount;
-            currentLossCount = 0;
-            currentLossAmt = 0;
-          }
-
-          if (currentWinCount > maxConsWinCount) {
-            maxConsWinCount = currentWinCount;
-            amtAtMaxWinCount = currentWinAmt;
-          }
-          if (currentWinAmt > maxConsWinAmt) {
-            maxConsWinAmt = currentWinAmt;
-            countAtMaxWinAmt = currentWinCount;
-          }
-
-        } else if (isLoss) {
-          grossLoss += Math.abs(pnl);
-          lossTradesCount++;
-          if (pnl < largestLoss) largestLoss = pnl;
-
-          currentLossCount++;
-          currentLossAmt += Math.abs(pnl);
-          if (currentWinCount > 0) {
-            totalWinStreaksCount++;
-            sumOfWinStreaks += currentWinCount;
-            currentWinCount = 0;
-            currentWinAmt = 0;
-          }
-
-          if (currentLossCount > maxConsLossCount) {
-            maxConsLossCount = currentLossCount;
-            amtAtMaxLossCount = currentLossAmt;
-          }
-          if (currentLossAmt > maxConsLossAmt) {
-            maxConsLossAmt = currentLossAmt;
-            countAtMaxLossAmt = currentLossCount;
-          }
         }
 
         if (t.side === 'BUY') {
@@ -534,30 +443,26 @@ export default function PerformancePage() {
       });
     }
 
-    if (currentWinCount > 0) { totalWinStreaksCount++; sumOfWinStreaks += currentWinCount; }
-    if (currentLossCount > 0) { totalLossStreaksCount++; sumOfLossStreaks += currentLossCount; }
-
     if (initialDeposit === 0) initialDeposit = carriedOverBalance > 0 ? carriedOverBalance : 1;
 
-    const netProfit = runningNetProfit;
-    const profitFactor = grossLoss === 0 ? grossProfit : (grossProfit / grossLoss);
-    const expectedPayoff = totalTrades > 0 ? (netProfit / totalTrades) : 0;
+    const summary = summarizeTrades(currentEvents.filter(evt => evt.type === 'trade').map(evt => evt.data));
+    const {
+      netProfit, profitFactor, expectedPayoff, expectancyR, sharpeRatio, totalTrades,
+      avgWin, avgLoss, avgBE, largestProfit, largestLoss, grossProfit, grossLoss,
+      maxConsWinAmt, maxConsLossAmt, countAtMaxWinAmt, countAtMaxLossAmt, avgConsWin, avgConsLoss,
+    } = summary;
+    const profitTradesCount = summary.wins;
+    const lossTradesCount = summary.losses;
+    const beTradesCount = summary.bes;
+
     const absoluteDD = (initialDeposit - minBalance) > 0 ? (initialDeposit - minBalance) : 0;
     const recoveryFactor = maxDrawdownAmt > 0 ? (netProfit / maxDrawdownAmt) : 0;
-    const avgWin = profitTradesCount > 0 ? (grossProfit / profitTradesCount) : 0;
-    const avgLoss = lossTradesCount > 0 ? (grossLoss / lossTradesCount) : 0;
-    const expectancyR = avgLoss > 0 ? (expectedPayoff / avgLoss) : 0;
-    const avgBE = beTradesCount > 0 ? (sumBE / beTradesCount) : 0;
-
-    const stdDev = calculateStandardDeviation(allProfits, totalTrades > 0 ? (netProfit / totalTrades) : 0);
-    const sharpeRatio = stdDev !== 0 ? ((netProfit / totalTrades) / stdDev) : 0;
 
     const winPct = totalTrades > 0 ? (profitTradesCount / totalTrades) * 100 : 0;
     const lossPct = totalTrades > 0 ? (lossTradesCount / totalTrades) * 100 : 0;
     const bePct = totalTrades > 0 ? (beTradesCount / totalTrades) * 100 : 0;
-    
-    const resolvedTrades = profitTradesCount + lossTradesCount;
-    const mainWinRate = resolvedTrades > 0 ? (profitTradesCount / resolvedTrades) * 100 : 0;
+
+    const mainWinRate = summary.winRate * 100;
     
     const longWinPct = longTrades > 0 ? (longWon / longTrades) * 100 : 0;
     const shortWinPct = shortTrades > 0 ? (shortWon / shortTrades) * 100 : 0;
@@ -615,8 +520,7 @@ export default function PerformancePage() {
       largestProfit, largestLoss, grossProfit, grossLoss, sharpeRatio,
       maxDrawdownAmt, absoluteDD, maxDrawdownPct, recoveryFactor,
       maxConsWinAmt, maxConsLossAmt, countAtMaxWinAmt, countAtMaxLossAmt,
-      avgConsWin: totalWinStreaksCount > 0 ? Math.round(sumOfWinStreaks / totalWinStreaksCount) : 0,
-      avgConsLoss: totalLossStreaksCount > 0 ? Math.round(sumOfLossStreaks / totalLossStreaksCount) : 0,
+      avgConsWin, avgConsLoss,
       perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
       hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr,
       activeDowNames, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
@@ -840,15 +744,7 @@ export default function PerformancePage() {
 
       <div className="flex justify-between items-center mt-2 mb-2">
         {(() => {
-            let healthTier = 3;
-            if (data.totalTrades > 0) {
-              const pf = data.profitFactor;
-              if (pf >= 2.0) healthTier = 5;
-              else if (pf >= 1.2) healthTier = 4;
-              else if (pf >= 0.8) healthTier = 3;
-              else if (pf >= 0.5) healthTier = 2;
-              else healthTier = 1;
-            }
+            const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
             return (
               <div className="flex items-center justify-center gap-1 ml-2">
                 <div title="PF < 0.5" className="flex items-center justify-center w-8 h-8 cursor-help">

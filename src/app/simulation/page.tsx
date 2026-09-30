@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
+import { classifyTrade, parseRisk } from "@/lib/stats";
 
 ChartJS.register(
   CategoryScale,
@@ -47,30 +48,23 @@ export default function SimulationPage() {
       const pnl = t.profit || 0;
       runningBalance += pnl;
 
-      let isBE = false;
-      const rawRisk = parseFloat(t.risk as any || 0);
+      const rawRisk = parseRisk(t.risk);
       if (rawRisk > 0) {
         totalRisk += rawRisk;
         riskCount++;
-        const calculatedRR = pnl / rawRisk;
-        isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
-      } else {
-        isBE = (t.resultType === 'BE' || pnl === 0);
       }
 
-      if (!isBE) {
-        if (pnl > 0 || t.resultType === 'TP') {
-          mWins++;
-          gProfit += pnl;
-          if (t.rr) {
-            totalRR += parseFloat(t.rr as any);
-            rrCount++;
-          }
+      const outcome = classifyTrade(t);
+      if (outcome === 'win') {
+        mWins++;
+        gProfit += pnl;
+        if (t.rr) {
+          totalRR += parseFloat(t.rr as any);
+          rrCount++;
         }
-        else if (pnl < 0 || t.resultType === 'SL') {
-          mLosses++;
-          gLoss += pnl;
-        }
+      } else if (outcome === 'loss') {
+        mLosses++;
+        gLoss += pnl;
       }
     });
 

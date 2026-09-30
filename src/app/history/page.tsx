@@ -9,6 +9,7 @@ import { UploadModal } from "@/components/UploadModal";
 import BulkImportModal from "@/components/BulkImportModal";
 import { Trade } from "@/store/useJournalStore";
 import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
+import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -281,17 +282,12 @@ export default function HistoryPage() {
                   );
                 }
 
-                let isBE = false;
-                const rawRisk = parseFloat(t.risk || 0);
-                if (rawRisk > 0) {
-                  const rr = t.profit / rawRisk;
-                  isBE = (rr >= -0.4 && rr <= 0.4);
-                } else {
-                  isBE = (t.resultType === 'BE' || t.profit === 0);
-                }
+                const outcome = classifyTrade(t);
+                const isBE = outcome === 'be';
+                const rawRisk = parseRisk(t.risk);
 
-                const badge = isBE ? 'bg-stone-50 text-stone-400 border-stone-200' : (t.profit > 0 ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200');
-                const badgeText = isBE ? 'BE' : (t.profit > 0 ? 'TP' : 'SL');
+                const badge = isBE ? 'bg-stone-50 text-stone-400 border-stone-200' : (outcome === 'win' ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200');
+                const badgeText = outcomeLabel(outcome);
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 const sec = calculateDurationInSeconds(t);
@@ -350,7 +346,7 @@ export default function HistoryPage() {
                     <td className="py-4 px-4 text-right font-bold text-stone-500">
                       {t.rr ? format2Decimals(t.rr) + ' R' : '-'}
                     </td>
-                    <td className={`py-4 px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (t.profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
+                    <td className={`py-4 px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
                       {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                     </td>
                     <td className="py-4 px-4 text-center flex justify-center gap-3">

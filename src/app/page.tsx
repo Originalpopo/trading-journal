@@ -17,6 +17,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
+import { summarizeTrades, healthTierFromProfitFactor } from "@/lib/stats";
 
 const dashboardLastPointsPlugin: Plugin<'line'> = {
   id: 'dashboardLastPointsPlugin',
@@ -102,16 +103,6 @@ ChartJS.register(
   Filler
 );
 
-function calculateStandardDeviation(values: number[], mean: number) {
-  if (values.length === 0) return 0;
-  const squareDiffs = values.map(val => {
-    const diff = val - mean;
-    return diff * diff;
-  });
-  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
-  return Math.sqrt(avgSquareDiff);
-}
-
 export default function Dashboard() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'twr'>('twr');
@@ -155,14 +146,6 @@ export default function Dashboard() {
     const dailyPoints = new Map<string, { balance: number, pnl: number, timestamp: number }>();
     const shouldAggregate = timelineEvents.length > 500;
 
-    let net = 0, wins = 0, losses = 0, gProfit = 0, gLoss = 0, countTP = 0, countSL = 0, countBE = 0;
-    let totalRR = 0, rrCount = 0;
-    let slTotalRR = 0, slRRCount = 0;
-    let maxTPRR = 0, maxSLRR = 0;
-    let streakL = 0, maxStreakL = 0, streakW = 0, maxStreakW = 0;
-    let netRR = 0;
-    const profits: number[] = [];
-
     timelineEvents.forEach(evt => {
       if (evt.type === 'funding') {
         runningBalance += evt.data.deposit;
@@ -193,9 +176,6 @@ export default function Dashboard() {
         }
       } else if (evt.type === 'trade') {
         const t = evt.data;
-        net += t.profit;
-        profits.push(t.profit);
-
         runningBalance += t.profit;
 
         if (runningBalance > highestBalance) highestBalance = runningBalance;
@@ -231,40 +211,10 @@ export default function Dashboard() {
           const d = new Date(evt.timeObj);
           chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
         }
-
-        let isBE = false;
-        const rawRisk = t.risk || 0;
-        if (rawRisk > 0) {
-          const calculatedRR = (t.profit || 0) / rawRisk;
-          isBE = (calculatedRR >= -0.4 && calculatedRR <= 0.4);
-        } else {
-          isBE = (t.resultType === 'BE' || (t.profit || 0) === 0);
-        }
-        netRR += (t.rr || 0);
-
-        if (isBE) {
-          countBE++;
-        }
-        else if (t.profit > 0 || t.resultType === 'TP') {
-          wins++; gProfit += t.profit; countTP++; streakW++; streakL = 0;
-          if (streakW > maxStreakW) maxStreakW = streakW;
-          if (t.rr > 0) {
-            totalRR += t.rr;
-            rrCount++;
-            if (t.rr > maxTPRR) maxTPRR = t.rr;
-          }
-        }
-        else if (t.profit < 0 || t.resultType === 'SL') {
-          losses++; gLoss += Math.abs(t.profit); countSL++; streakL++; streakW = 0;
-          if (streakL > maxStreakL) maxStreakL = streakL;
-          if (t.rr < 0) {
-            slTotalRR += t.rr;
-            slRRCount++;
-            if (t.rr < maxSLRR) maxSLRR = t.rr;
-          }
-        }
       }
     });
+
+    const summary = summarizeTrades(timelineEvents.filter(evt => evt.type === 'trade').map(evt => evt.data));
 
     if (shouldAggregate) {
       const sortedDaily = Array.from(dailyPoints.values()).sort((a, b) => a.timestamp - b.timestamp);
@@ -285,16 +235,15 @@ export default function Dashboard() {
     let activeTwrDDValue = highestTwrBalance - twrBalance;
     let activeTwrDDPercent = highestTwrBalance > 0 ? (activeTwrDDValue / highestTwrBalance) * 100 : 0;
 
-    const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) : 0;
-    const stdDev = calculateStandardDeviation(profits, trades.length ? net / trades.length : 0);
-
     return {
-      totalFunded, totalDeposit, totalWithdraw, runningBalance, net, winRate,
-      countTP, countBE, countSL, totalTrades: trades.length,
-      netRR, gProfit, gLoss, stdDev, 
-      avgTPRR: rrCount ? (totalRR / rrCount) : 0, maxTPRR,
-      avgSLRR: slRRCount ? (slTotalRR / slRRCount) : 0, maxSLRR,
-      maxStreakW, maxStreakL,
+      totalFunded, totalDeposit, totalWithdraw, runningBalance,
+      net: summary.netProfit, winRate: summary.winRate,
+      countTP: summary.wins, countBE: summary.bes, countSL: summary.losses, totalTrades: trades.length,
+      netRR: summary.netRR, profitFactor: summary.profitFactor,
+      expectancyR: summary.expectancyR, sharpeRatio: summary.sharpeRatio,
+      avgTPRR: summary.avgTPRR, maxTPRR: summary.maxTPRR,
+      avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
+      maxStreakW: summary.maxConsWinCount, maxStreakL: summary.maxConsLossCount,
       maxDDValue, maxDDPercent, activeDDValue, activeDDPercent,
       maxEquityDDValue, maxEquityDDPercent, activeEquityDDValue, activeEquityDDPercent,
       maxTwrDDValue, maxTwrDDPercent, activeTwrDDValue, activeTwrDDPercent,
@@ -589,20 +538,15 @@ export default function Dashboard() {
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Profit Factor</span>
-              <span className="font-black text-stone-950">{(data.gLoss === 0 ? formatNumber(data.gProfit) : formatNumber(data.gProfit / data.gLoss))}</span>
+              <span className="font-black text-stone-950">{formatNumber(data.profitFactor)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Expectancy</span>
-              <span className="font-black text-stone-950">{(() => {
-                if (data.totalTrades === 0) return '0.00 R';
-                const avgLoss = data.countSL > 0 ? (data.gLoss / data.countSL) : 0;
-                const expectedPayoff = data.net / data.totalTrades;
-                return avgLoss > 0 ? `${formatNumber(expectedPayoff / avgLoss)} R` : '0.00 R';
-              })()}</span>
+              <span className="font-black text-stone-950">{formatNumber(data.expectancyR)} R</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>
-              <span className="font-black text-stone-950">{data.stdDev !== 0 ? formatNumber((data.net / data.totalTrades) / data.stdDev) : '0.00'}</span>
+              <span className="font-black text-stone-950">{formatNumber(data.sharpeRatio)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Net RR</span>
@@ -612,15 +556,7 @@ export default function Dashboard() {
             </div>
           </div>
           {(() => {
-            let healthTier = 3;
-            if (data.totalTrades > 0) {
-              const pf = data.gLoss === 0 ? data.gProfit : (data.gProfit / data.gLoss);
-              if (pf >= 2.0) healthTier = 5;
-              else if (pf >= 1.2) healthTier = 4;
-              else if (pf >= 0.8) healthTier = 3;
-              else if (pf >= 0.5) healthTier = 2;
-              else healthTier = 1;
-            }
+            const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
             return (
               <div className="flex justify-center items-center pt-4 mt-2 border-t border-stone-200">
                 <div className="flex items-center justify-center gap-1">
