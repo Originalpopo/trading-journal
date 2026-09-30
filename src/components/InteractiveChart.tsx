@@ -1,9 +1,11 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
-import type { Trade } from "@/store/useJournalStore";
+import { createChart, IChartApi, ISeriesApi, LineStyle, UTCTimestamp } from "lightweight-charts";
+import { type Trade, useJournalStore } from "@/store/useJournalStore";
+import { tradeZones, medianPointValue } from "@/lib/tradeZones";
 import { Loader2, AlertCircle } from "lucide-react";
 import { type Candle, normalizeChartTf, legacyChartDataToMap, loadCachedCandles, saveCachedCandles } from "@/lib/chartCache";
+import { candleIndexAt, computePriceOffset, shiftCandles, type PriceAnchor } from "@/lib/chartAlign";
 
 interface InteractiveChartProps {
   trade: Trade;
@@ -13,13 +15,6 @@ const TF_SEQUENCE = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
 
 // lightweight-charts labels its time axis in UTC; shift timestamps so it shows the viewer's local time.
 const toLocalChartTime = (utcSec: number) => (utcSec - new Date(utcSec * 1000).getTimezoneOffset() * 60) as UTCTimestamp;
-
-// Index of the candle whose period contains `timeSec` (candles sorted by time).
-const candleIndexAt = (candles: { time: number }[], timeSec: number) => {
-  let idx = -1;
-  for (let i = 0; i < candles.length && candles[i].time <= timeSec; i++) idx = i;
-  return idx;
-};
 
 const mapTimeframe = (tf?: string) => {
   if (!tf || tf === 'none') return '15min'; // default
@@ -41,6 +36,10 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   
   const baseTf = normalizeChartTf(trade.tf);
   const [selectedTf, setSelectedTf] = useState<string>(baseTf.includes('s') ? '1m' : baseTf);
+  // Candles are shifted to the broker's prices unless the user asks for the feed's own prices.
+  const [showRawPrices, setShowRawPrices] = useState(false);
+  const [priceOffset, setPriceOffset] = useState(0);
+  const [feedsDisagree, setFeedsDisagree] = useState(false);
 
   // Candles already loaded for this trade, per timeframe. Seeded from candles an older version stored
   // on the trade itself (until those are migrated into the chartCache collection).
@@ -232,6 +231,21 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       const entryCandleTime = chartData[entryIdx].time;
       const exitCandleTime = chartData[exitIdx].time;
 
+      // Line the candles up with the broker's fills (entry, and exit when its time is trustworthy).
+      const anchors: PriceAnchor[] = [];
+      if (trade.entryPrice && resolvedEntryTimeStr) anchors.push({ timeSec: rawEntryTime, price: trade.entryPrice });
+      if (trade.exitPrice && resolvedExitTimeStr && trade.exitTimeConfidence !== 'uncertain') {
+        anchors.push({ timeSec: rawExitTime, price: trade.exitPrice });
+      }
+      const alignment = computePriceOffset(chartData, anchors);
+      const offset = alignment?.offset ?? 0;
+      setPriceOffset(offset);
+      setFeedsDisagree(alignment ? !alignment.fitsAll : false);
+      const displayCandles = showRawPrices ? chartData : shiftCandles(chartData, offset);
+
+      // Point value of the trade itself, or the typical one when it closed exactly at entry.
+      const zones = tradeZones(trade, medianPointValue(useJournalStore.getState().trades.filter(t => t.symbol === trade.symbol)));
+
       if (trade.entryPrice && resolvedEntryTimeStr) {
         const areaData = chartData.slice(entryIdx, exitIdx + 1);
         if (areaData.length === 1) {
@@ -240,70 +254,10 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
            else if (idx > 0) areaData.unshift(chartData[idx - 1]);
         }
 
-        if (areaData.length > 1) {
-          let tpP = trade.entryPrice;
-          let slP = trade.entryPrice;
-
-          if (isBuy) {
-            const isWin = trade.exitPrice && trade.exitPrice > trade.entryPrice;
-            const isLoss = trade.exitPrice && trade.exitPrice < trade.entryPrice;
-
-            if (isLoss) {
-              slP = trade.exitPrice as number;
-              const riskSize = trade.entryPrice - slP;
-              if (trade.tpPrice && trade.tpPrice > trade.entryPrice) {
-                tpP = trade.tpPrice;
-              } else {
-                tpP = trade.entryPrice + (5 * riskSize);
-              }
-            } else if (isWin) {
-              tpP = trade.exitPrice as number;
-              const rewardSize = tpP - trade.entryPrice;
-              if (trade.slPrice && trade.slPrice < trade.entryPrice) {
-                slP = trade.slPrice;
-              } else {
-                if (trade.rr && trade.rr > 0) {
-                  slP = trade.entryPrice - (rewardSize / trade.rr);
-                } else {
-                  slP = trade.entryPrice - (rewardSize / 5);
-                }
-              }
-            } else {
-              tpP = trade.tpPrice || trade.entryPrice * 1.002;
-              slP = trade.slPrice || trade.entryPrice * 0.999;
-            }
-          } else { // SHORT
-            const isWin = trade.exitPrice && trade.exitPrice < trade.entryPrice;
-            const isLoss = trade.exitPrice && trade.exitPrice > trade.entryPrice;
-
-            if (isLoss) {
-              slP = trade.exitPrice as number;
-              const riskSize = slP - trade.entryPrice;
-              if (trade.tpPrice && trade.tpPrice < trade.entryPrice) {
-                tpP = trade.tpPrice;
-              } else {
-                tpP = trade.entryPrice - (5 * riskSize);
-              }
-            } else if (isWin) {
-              tpP = trade.exitPrice as number;
-              const rewardSize = trade.entryPrice - tpP;
-              if (trade.slPrice && trade.slPrice > trade.entryPrice) {
-                slP = trade.slPrice;
-              } else {
-                if (trade.rr && trade.rr > 0) {
-                  slP = trade.entryPrice + (rewardSize / trade.rr);
-                } else {
-                  slP = trade.entryPrice + (rewardSize / 5);
-                }
-              }
-            } else {
-              tpP = trade.tpPrice || trade.entryPrice * 0.998;
-              slP = trade.slPrice || trade.entryPrice * 1.001;
-            }
-          }
-
-          // Reward Box
+        if (areaData.length > 1 && zones) {
+          // Reward Box. Left out of autoscale: a far target would squash the candles into a thin line.
           const rewardSeries = chart.addBaselineSeries({
+            autoscaleInfoProvider: () => null,
             baseValue: { type: 'price', price: trade.entryPrice },
             topFillColor1: 'rgba(226, 232, 240, 0.4)',
             topFillColor2: 'rgba(226, 232, 240, 0.4)',
@@ -316,23 +270,25 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             priceLineVisible: false,
             lastValueVisible: false,
           });
-          rewardSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: tpP })));
+          rewardSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: zones!.tp })));
 
-          // Risk Box
+          // Risk Box: entry to the first stop. Fainter when that stop is only estimated at 1R.
+          const riskFill = zones.slIsEstimate ? 'rgba(254, 202, 202, 0.18)' : 'rgba(254, 202, 202, 0.3)';
+          const riskLine = zones.slIsEstimate ? 'rgba(252, 165, 165, 0.3)' : 'rgba(252, 165, 165, 0.5)';
           const riskSeries = chart.addBaselineSeries({
             baseValue: { type: 'price', price: trade.entryPrice },
-            topFillColor1: 'rgba(254, 202, 202, 0.3)',
-            topFillColor2: 'rgba(254, 202, 202, 0.3)',
-            topLineColor: 'rgba(252, 165, 165, 0.5)',
-            bottomFillColor1: 'rgba(254, 202, 202, 0.3)',
-            bottomFillColor2: 'rgba(254, 202, 202, 0.3)',
-            bottomLineColor: 'rgba(252, 165, 165, 0.5)',
+            topFillColor1: riskFill,
+            topFillColor2: riskFill,
+            topLineColor: riskLine,
+            bottomFillColor1: riskFill,
+            bottomFillColor2: riskFill,
+            bottomLineColor: riskLine,
             lineWidth: 1,
             crosshairMarkerVisible: false,
             priceLineVisible: false,
             lastValueVisible: false,
           });
-          riskSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: slP })));
+          riskSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: zones!.sl })));
         }
       }
 
@@ -349,7 +305,20 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         priceLineVisible: false
       });
       seriesRef.current = series;
-      series.setData(chartData.map((c: any) => ({...c, time: toLocalChartTime(c.time)})));
+      series.setData(displayCandles.map(c => ({ ...c, time: toLocalChartTime(c.time) })));
+
+      if (zones?.movedSl) {
+        series.createPriceLine({
+          price: zones.movedSl, color: '#a8a29e', lineWidth: 1, lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true, title: 'SL moved',
+        });
+      }
+      if (zones?.slIsEstimate) {
+        series.createPriceLine({
+          price: zones.sl, color: '#fca5a5', lineWidth: 1, lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true, title: '1R (first SL unknown)',
+        });
+      }
 
       const markers: any[] = [];
       if (trade.entryPrice && resolvedEntryTimeStr) {
@@ -393,7 +362,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trade.id, trade.time, trade.entryTime, trade.exitTime, selectedTf]);
+  }, [trade.id, trade.time, trade.entryTime, trade.exitTime, selectedTf, showRawPrices]);
   
   useEffect(() => {
     const handleResize = () => {
@@ -455,6 +424,26 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             </button>
           ))}
         </div>
+
+        {Math.abs(priceOffset) >= 0.01 && (
+          <button
+            onClick={() => setShowRawPrices(!showRawPrices)}
+            title={showRawPrices
+              ? "Showing the chart feed's own prices. Click to line the candles up with your broker's fills."
+              : feedsDisagree
+                ? "The chart feed and your broker drifted apart during this trade, so the candles are lined up with your entry; the exit may sit off its candle. Click to see the feed's own prices."
+                : "The chart feed quotes slightly differently from your broker, so the candles are shifted to match your fills. Click to see the feed's own prices."}
+            className={`px-2.5 py-1 text-[10px] font-black rounded-lg border backdrop-blur-sm transition ${
+              showRawPrices
+                ? 'bg-stone-100/80 text-stone-500 border-stone-200/50 hover:text-stone-700'
+                : 'bg-orange-50/90 text-orange-400 border-orange-200 hover:bg-orange-100'
+            }`}
+          >
+            {showRawPrices
+              ? 'Raw feed prices'
+              : `Adjusted ${priceOffset > 0 ? '+' : ''}${priceOffset.toFixed(2)} to match ${feedsDisagree ? 'entry' : 'broker'}`}
+          </button>
+        )}
       </div>
 
       {loading && (
