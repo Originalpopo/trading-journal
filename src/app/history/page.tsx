@@ -8,6 +8,9 @@ import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
 import BulkImportModal from "@/components/BulkImportModal";
 import ExitConfidenceBadge from "@/components/ExitConfidenceBadge";
+import BulkEditModal from "@/components/BulkEditModal";
+import HistoryFilterBar from "@/components/HistoryFilterBar";
+import { filterHistoryRows, EMPTY_FILTERS, type HistoryFilters } from "@/lib/historyFilter";
 import { Trade } from "@/store/useJournalStore";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
@@ -28,6 +31,14 @@ export default function HistoryPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailTrade, setSelectedDetailTrade] = useState<any | null>(null);
   const [cameFromDetail, setCameFromDetail] = useState(false);
+
+  const [filters, setFiltersState] = useState<HistoryFilters>(EMPTY_FILTERS);
+  const setFilters = (next: HistoryFilters) => {
+    setFiltersState(next);
+    setCurrentPage(1);
+  };
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
 
   useEffect(() => {
     if (selectedDetailTrade) {
@@ -157,9 +168,28 @@ export default function HistoryPage() {
     return data.sort((a, b) => new Date(b.time.replace(' ', 'T')).getTime() - new Date(a.time.replace(' ', 'T')).getTime());
   }, [trades, funding]);
 
-  const totalPages = Math.ceil(combinedData.length / rowsPerPage);
+  const filteredData = useMemo(() => filterHistoryRows(combinedData, filters), [combinedData, filters]);
+  const filteredTradeIds = filteredData.filter(r => !r.isFunding).map(r => r.id as string);
+  const selectedTrades = trades.filter(t => selectedIds.has(t.id));
+  const allFilteredSelected = filteredTradeIds.length > 0 && filteredTradeIds.every(id => selectedIds.has(id));
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAllFiltered = () => {
+    setSelectedIds(allFilteredSelected ? new Set() : new Set(filteredTradeIds));
+  };
+
+  // Prev/next in the trade detail walks through what the filters show.
+  const detailIndex = selectedDetailTrade ? filteredData.findIndex(t => t.id === selectedDetailTrade.id) : -1;
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = combinedData.slice(startIndex, startIndex + rowsPerPage);
+  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
 
   if (isLoading) {
     return (
@@ -230,11 +260,37 @@ export default function HistoryPage() {
       </div>
 
       <div className="glass-card p-6 overflow-hidden flex flex-col h-fit">
+        <HistoryFilterBar filters={filters} onChange={setFilters} shownCount={filteredData.length} totalCount={combinedData.length} />
+
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
+            <span className="text-xs font-bold text-orange-400">{selectedIds.size} trade{selectedIds.size > 1 ? 's' : ''} selected</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSelectedIds(new Set())}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-stone-500 hover:bg-white transition">Clear</button>
+              <button onClick={() => setIsBulkEditOpen(true)}
+                className="px-4 py-1.5 rounded-lg text-[11px] font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-sm transition flex items-center gap-1.5">
+                <Edit2 className="w-3.5 h-3.5" /> Edit checklists / TF
+              </button>
+            </div>
+          </div>
+        )}
+
         <div ref={containerRef} className="overflow-auto rounded-xl">
           <table className="w-full text-left text-sm whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
               <tr className="text-stone-400 border-b border-stone-100 bg-stone-50">
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest rounded-tl-xl">Time</th>
+                <th className="py-4 pl-4 pr-0 rounded-tl-xl w-8">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAllFiltered}
+                    disabled={filteredTradeIds.length === 0}
+                    title={allFilteredSelected ? "Unselect all" : `Select all ${filteredTradeIds.length} trades shown by the filters`}
+                    className="w-3.5 h-3.5 accent-orange-400 cursor-pointer align-middle"
+                  />
+                </th>
+                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Checklists</th>
@@ -262,6 +318,7 @@ export default function HistoryPage() {
                   const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                   return (
                     <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
+                      <td className="py-4 pl-4 pr-0"></td>
                       <td className="py-4 px-4 text-stone-500 text-[11px] font-semibold leading-tight">{shortTime}</td>
                       <td className="py-4 px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                         {badgeText}
@@ -295,8 +352,18 @@ export default function HistoryPage() {
                 let durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
 
 
+                const isSelected = selectedIds.has(t.id);
+
                 return (
-                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
+                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-stone-50'}`}>
+                    <td className="py-4 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelected(t.id)}
+                        className="w-3.5 h-3.5 accent-orange-400 cursor-pointer align-middle"
+                      />
+                    </td>
                     <td className="py-4 px-4 text-stone-500 text-[11px] font-semibold leading-tight">
                       {shortTime}{durationStr}
                     </td>
@@ -359,6 +426,11 @@ export default function HistoryPage() {
               })}
             </tbody>
           </table>
+          {filteredData.length === 0 && (
+            <p className="py-10 text-center text-xs font-semibold text-stone-400">
+              {combinedData.length === 0 ? "No trades yet." : "No entries match these filters."}
+            </p>
+          )}
         </div>
         <div className="pt-4 flex justify-center shrink-0">
           {renderPagination()}
@@ -389,17 +461,23 @@ export default function HistoryPage() {
           handleEdit(trade); 
         }}
         onDelete={(id, isFunding) => { setIsDetailOpen(false); handleDelete(id, isFunding); }}
-        hasPrev={selectedDetailTrade ? combinedData.findIndex(t => t.id === selectedDetailTrade.id) > 0 : false}
-        hasNext={selectedDetailTrade ? combinedData.findIndex(t => t.id === selectedDetailTrade.id) >= 0 && combinedData.findIndex(t => t.id === selectedDetailTrade.id) < combinedData.length - 1 : false}
-        currentIndex={selectedDetailTrade ? combinedData.findIndex(t => t.id === selectedDetailTrade.id) + 1 : 0}
-        totalItems={combinedData.length}
+        hasPrev={detailIndex > 0}
+        hasNext={detailIndex >= 0 && detailIndex < filteredData.length - 1}
+        currentIndex={detailIndex + 1}
+        totalItems={filteredData.length}
         onPrev={() => {
-          const idx = combinedData.findIndex(t => t.id === selectedDetailTrade?.id);
-          if (idx > 0) setSelectedDetailTrade(combinedData[idx - 1]);
+          if (detailIndex > 0) setSelectedDetailTrade(filteredData[detailIndex - 1]);
         }}
         onNext={() => {
-          const idx = combinedData.findIndex(t => t.id === selectedDetailTrade?.id);
-          if (idx >= 0 && idx < combinedData.length - 1) setSelectedDetailTrade(combinedData[idx + 1]);
+          if (detailIndex >= 0 && detailIndex < filteredData.length - 1) setSelectedDetailTrade(filteredData[detailIndex + 1]);
+        }}
+      />
+      <BulkEditModal
+        isOpen={isBulkEditOpen}
+        trades={selectedTrades}
+        onClose={(applied) => {
+          setIsBulkEditOpen(false);
+          if (applied) setSelectedIds(new Set());
         }}
       />
       <UploadModal 

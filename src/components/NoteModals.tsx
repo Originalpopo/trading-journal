@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useJournalStore, Note } from "@/store/useJournalStore";
 import { Trash2, Edit2 } from "lucide-react";
 
@@ -37,19 +38,29 @@ export function NoteFormModal({ isOpen, onClose, noteToEdit }: NoteFormModalProp
   const [icon, setIcon] = useState("note");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // The note as it was opened, to tell whether closing would throw away changes.
+  const [initial, setInitial] = useState({ title: "", content: "", icon: "note" });
+
   useEffect(() => {
     if (isOpen) {
-      if (noteToEdit) {
-        setTitle(noteToEdit.title || "");
-        setContent(noteToEdit.content || "");
-        setIcon(noteToEdit.icon || "note");
-      } else {
-        setTitle("");
-        setContent("");
-        setIcon("note");
-      }
+      const opened = noteToEdit
+        ? { title: noteToEdit.title || "", content: noteToEdit.content || "", icon: noteToEdit.icon || "note" }
+        : { title: "", content: "", icon: "note" };
+      setInitial(opened);
+      setTitle(opened.title);
+      setContent(opened.content);
+      setIcon(opened.icon);
     }
   }, [isOpen, noteToEdit]);
+
+  const isDirty = title !== initial.title || content !== initial.content || icon !== initial.icon;
+
+  // Backdrop clicks and Esc are easy to hit by accident, so they ask before discarding edits.
+  const requestClose = () => {
+    if (isDirty && !confirm("Discard your unsaved changes?")) return;
+    onClose();
+  };
+  useEscapeToClose(isOpen, requestClose);
 
   const handleSave = async () => {
     if (!title.trim() && !content.trim()) return;
@@ -84,7 +95,7 @@ export function NoteFormModal({ isOpen, onClose, noteToEdit }: NoteFormModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={requestClose}>
       <div className="bg-white border-0 bg-clip-padding rounded-2xl w-full max-w-lg p-6 shadow-xl relative" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <h3 className="text-xl font-extrabold text-stone-950 mb-6 tracking-tight">
           {noteToEdit ? "Edit Note" : "Add Note"}
@@ -143,6 +154,8 @@ interface ReadNoteModalProps {
 }
 
 export function ReadNoteModal({ isOpen, onClose, note, onEdit, onDelete }: ReadNoteModalProps) {
+  useEscapeToClose(isOpen && !!note, onClose);
+
   if (!isOpen || !note) return null;
 
   return (

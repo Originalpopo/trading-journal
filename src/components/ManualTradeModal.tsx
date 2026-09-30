@@ -6,12 +6,118 @@ import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
 import { deriveResultType } from "@/lib/stats";
+import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { X, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
   onClose: (savedTrade?: any) => void;
   tradeToEdit?: (Trade | Funding) & { isFunding?: boolean } | null;
+}
+
+interface FormState {
+  entryType: string;
+  symbol: string;
+  side: string;
+  amount: string;
+  time: string;
+  risk: string;
+  entryTime: string;
+  strategy: string;
+  tf: string;
+  checklists: string[];
+  entryPrice: string;
+  exitPrice: string;
+  tpPrice: string;
+  slPrice: string;
+  orderEntryType: string;
+  orderExitType: string;
+}
+
+// Stored time -> value for a datetime-local input (local wall clock, with seconds).
+const toInputTime = (value?: string) => {
+  if (!value) return "";
+  const d = new Date(value.replace(" ", "T"));
+  if (isNaN(d.getTime())) return "";
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 19);
+};
+
+const firstTf = (tf: string) => (tf.includes(',') ? tf.split(',')[0].trim() : tf);
+
+const BLANK_TRADE_FIELDS = {
+  entryPrice: "", exitPrice: "", tpPrice: "", slPrice: "",
+  orderEntryType: "Limit", orderExitType: "Limit",
+};
+
+function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): FormState {
+  if (tradeToEdit?.isFunding) {
+    const f = tradeToEdit as Funding;
+    return {
+      ...BLANK_TRADE_FIELDS,
+      entryType: f.deposit > 0 ? "DEPOSIT" : "WITHDRAW",
+      amount: (f.deposit > 0 ? f.deposit : (f.withdraw || 0)).toString(),
+      strategy: f.notes || "",
+      symbol: "", side: "BUY", risk: "", tf: "none", checklists: [],
+      time: toInputTime(f.time), entryTime: "",
+    };
+  }
+
+  if (tradeToEdit) {
+    const t = tradeToEdit as Trade;
+    const checklists = t.checklists ? [...t.checklists] : [];
+    if (t.isOnPlan !== false && !checklists.includes('On Plan')) checklists.push('On Plan');
+    const tf = firstTf(t.tf || "15m");
+    return {
+      entryType: "TRADE",
+      symbol: t.symbol || "",
+      side: t.side || "BUY",
+      amount: t.profit?.toString() || "",
+      strategy: t.strategy || "",
+      risk: t.risk?.toString() || "",
+      checklists,
+      tf: tf === 'none' ? '15m' : tf,
+      entryPrice: t.entryPrice?.toString() || "",
+      exitPrice: t.exitPrice?.toString() || "",
+      tpPrice: t.tpPrice?.toString() || "",
+      slPrice: t.slPrice?.toString() || "",
+      orderEntryType: t.entryType || "Limit",
+      orderExitType: t.exitType || "Limit",
+      entryTime: toInputTime(t.entryTime || t.time),
+      time: toInputTime(t.time),
+    };
+  }
+
+  // New entry: defaults come from the latest trade. Trades are read once here; subscribing to them
+  // would reset the form whenever a snapshot arrives.
+  let risk = "";
+  let tf = "15m";
+  let checklists = ['On Plan', 'Follow'];
+  const trades = useJournalStore.getState().trades;
+  if (trades.length > 0) {
+    const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
+
+    if (sortedTrades[0].tf) {
+      const lastTf = firstTf(sortedTrades[0].tf);
+      tf = lastTf === 'none' ? '15m' : lastTf;
+    }
+
+    const lastChecklists = sortedTrades[0].checklists || [];
+    checklists = ['On Plan'];
+    if (lastChecklists.includes('Follow')) checklists.push('Follow');
+    if (lastChecklists.includes('Reversal')) checklists.push('Reversal');
+    if (checklists.length === 1) checklists.push('Follow');
+
+    const withRisk = sortedTrades.find(t => t.risk && t.risk > 0);
+    if (withRisk) risk = withRisk.risk.toString();
+  }
+
+  const now = toInputTime(new Date().toISOString());
+  return {
+    ...BLANK_TRADE_FIELDS,
+    entryType: "TRADE", symbol: "", side: "BUY", amount: "", strategy: "",
+    risk, tf, checklists, time: now, entryTime: now,
+  };
 }
 
 export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: ManualTradeModalProps) {
@@ -36,128 +142,47 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [orderExitType, setOrderExitType] = useState("Limit");
   // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
   const timesEditedRef = useRef(false);
+  // The form as it was opened, to tell whether closing would throw away changes.
+  const [initialForm, setInitialForm] = useState<FormState | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      timesEditedRef.current = false;
-      if (tradeToEdit) {
-        if (tradeToEdit.isFunding) {
-          const f = tradeToEdit as Funding;
-          setEntryType(f.deposit > 0 ? "DEPOSIT" : "WITHDRAW");
-          setAmount((f.deposit > 0 ? f.deposit : (f.withdraw || 0)).toString());
-          setStrategy(f.notes || "");
-          setSymbol("");
-          setSide("BUY");
-          setRisk("");
-
-          setTf("none");
-
-          try {
-            const d = new Date(f.time.replace(" ", "T"));
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            setTime(d.toISOString().slice(0, 19));
-          } catch (e) {
-            setTime("");
-          }
-        } else {
-          const t = tradeToEdit as Trade;
-          setEntryType("TRADE");
-          setSymbol(t.symbol || "");
-          setSide(t.side || "BUY");
-          setAmount(t.profit?.toString() || "");
-          setStrategy(t.strategy || "");
-          setRisk(t.risk?.toString() || "");
-          const initialChecklists = t.checklists ? [...t.checklists] : [];
-          if (t.isOnPlan !== false && !initialChecklists.includes('On Plan')) {
-            initialChecklists.push('On Plan');
-          }
-          setChecklists(initialChecklists);
-
-          
-          let initialTf = t.tf || "15m";
-          if (initialTf.includes(',')) initialTf = initialTf.split(',')[0].trim();
-          setTf(initialTf === 'none' ? '15m' : initialTf);
-          
-          setEntryPrice(t.entryPrice?.toString() || "");
-          setExitPrice(t.exitPrice?.toString() || "");
-          setTpPrice(t.tpPrice?.toString() || "");
-          setSlPrice(t.slPrice?.toString() || "");
-          setOrderEntryType(t.entryType || "Limit");
-          setOrderExitType(t.exitType || "Limit");
-
-          try {
-            if (t.entryTime) {
-              const dEntry = new Date(t.entryTime.replace(" ", "T"));
-              dEntry.setMinutes(dEntry.getMinutes() - dEntry.getTimezoneOffset());
-              setEntryTime(dEntry.toISOString().slice(0, 19));
-            } else {
-              const dEntry = new Date(t.time.replace(" ", "T"));
-              dEntry.setMinutes(dEntry.getMinutes() - dEntry.getTimezoneOffset());
-              setEntryTime(dEntry.toISOString().slice(0, 19));
-            }
-
-            const dExit = new Date(t.time.replace(" ", "T"));
-            dExit.setMinutes(dExit.getMinutes() - dExit.getTimezoneOffset());
-            setTime(dExit.toISOString().slice(0, 19));
-          } catch (e) {
-            setTime("");
-            setEntryTime("");
-          }
-        }
-      } else {
-        setEntryType("TRADE");
-        setSymbol("");
-        setSide("BUY");
-        setAmount("");
-        setStrategy("");
-
-        setEntryPrice("");
-        setExitPrice("");
-        setTpPrice("");
-        setSlPrice("");
-        setOrderEntryType("Limit");
-        setOrderExitType("Limit");
-        
-        let defaultRisk = "";
-        let defaultTf = "15m";
-        let defaultChecklists = ['On Plan', 'Follow'];
-        // Read trades once on open; subscribing to them would reset the form whenever a snapshot arrives.
-        const trades = useJournalStore.getState().trades;
-        if (trades.length > 0) {
-          const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
-          
-          if (sortedTrades[0].tf) {
-             let lastTf = sortedTrades[0].tf;
-             if (lastTf.includes(',')) lastTf = lastTf.split(',')[0].trim();
-             defaultTf = lastTf === 'none' ? '15m' : lastTf;
-          }
-
-          const lastChecklists = sortedTrades[0].checklists || [];
-          const newChecklists = ['On Plan'];
-          if (lastChecklists.includes('Follow')) newChecklists.push('Follow');
-          if (lastChecklists.includes('Reversal')) newChecklists.push('Reversal');
-          if (newChecklists.length === 1) newChecklists.push('Follow');
-          defaultChecklists = newChecklists;
-
-          for (let t of sortedTrades) {
-            if (t.risk && t.risk > 0) {
-              defaultRisk = t.risk.toString();
-              break;
-            }
-          }
-        }
-        setRisk(defaultRisk);
-        setTf(defaultTf);
-        setChecklists(defaultChecklists);
-
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        const nowStr = now.toISOString().slice(0, 19);
-        setTime(nowStr);
-        setEntryTime(nowStr);
-      }
-    }
+    if (!isOpen) return;
+    timesEditedRef.current = false;
+    const f = buildInitialForm(tradeToEdit);
+    setInitialForm(f);
+    setEntryType(f.entryType);
+    setSymbol(f.symbol);
+    setSide(f.side);
+    setAmount(f.amount);
+    setTime(f.time);
+    setRisk(f.risk);
+    setEntryTime(f.entryTime);
+    setStrategy(f.strategy);
+    setTf(f.tf);
+    setChecklists(f.checklists);
+    setEntryPrice(f.entryPrice);
+    setExitPrice(f.exitPrice);
+    setTpPrice(f.tpPrice);
+    setSlPrice(f.slPrice);
+    setOrderEntryType(f.orderEntryType);
+    setOrderExitType(f.orderExitType);
   }, [isOpen, tradeToEdit]);
+
+  const currentForm: FormState = {
+    entryType, symbol, side, amount, time, risk, entryTime, strategy, tf, checklists,
+    entryPrice, exitPrice, tpPrice, slPrice, orderEntryType, orderExitType,
+  };
+  const isDirty = initialForm !== null && (Object.keys(currentForm) as (keyof FormState)[]).some(key =>
+    key === 'checklists'
+      ? currentForm.checklists.join('|') !== initialForm.checklists.join('|')
+      : currentForm[key] !== initialForm[key]);
+
+  // Backdrop clicks and Esc are easy to hit by accident, so they ask before discarding edits.
+  const requestClose = () => {
+    if (isDirty && !confirm("Discard your unsaved changes?")) return;
+    onClose();
+  };
+  useEscapeToClose(isOpen, requestClose);
 
 
 
@@ -264,7 +289,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={() => onClose()}>
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={requestClose}>
       <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
           <h3 className="text-2xl font-black text-stone-950 tracking-tight">

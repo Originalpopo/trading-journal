@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Upload, Trash2, Download } from "lucide-react";
+import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface UploadModalProps {
 
 export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDBRestoreUpload, onClearDatabase, onDownloadDatabase }: UploadModalProps) {
   const [pasteText, setPasteText] = useState("");
+  useEscapeToClose(isOpen, onClose);
 
   if (!isOpen) return null;
 

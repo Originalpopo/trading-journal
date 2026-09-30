@@ -7,6 +7,7 @@ import { planImport, type ImportAction } from "@/lib/importPlan";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil } from "lucide-react";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
+import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -52,6 +53,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const updateCount = plan.filter(r => r.action === 'update').length;
   const uncertainCount = plan.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
   const hasInvalidEdit = plan.some(r => r.invalidExit);
+
+  useEscapeToClose(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -236,7 +239,12 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                                   setExitEdits(prev => ({ ...prev, [key]: value }));
                                 }}
                                 onBlur={() => setEditingKey(null)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditingKey(null); }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Escape') {
+                                    e.preventDefault(); // Esc closes the time editor, not the whole import
+                                    setEditingKey(null);
+                                  }
+                                }}
                                 className={`bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none ${invalidExit ? 'border-red-900' : 'border-orange-400'}`}
                               />
                             ) : (

@@ -7,6 +7,7 @@ import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 import { Edit2, Trash2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Target, Focus, ClipboardCheck, TrendingUp, TrendingDown } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
+import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
 interface TradeDetailModalProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, hasPrev, hasNext, onPrev, onNext]);
+
+  useEscapeToClose(isOpen, onClose);
 
   if (!isOpen || !trade) return null;
 

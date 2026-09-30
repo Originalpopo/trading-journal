@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { parseRobustDate } from '@/lib/utils';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
 
@@ -70,6 +70,7 @@ interface JournalState {
   initializeListeners: () => () => void;
   addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
+  updateTrades: (updates: { id: string; data: Partial<Trade> }[]) => Promise<void>;
   deleteTrade: (id: string) => Promise<void>;
   addNote: (note: Omit<Note, 'id'>) => Promise<void>;
   updateNote: (id: string, note: Partial<Note>) => Promise<void>;
@@ -145,6 +146,18 @@ export const useJournalStore = create<JournalState>((set) => ({
       await updateDoc(tradeRef, trade);
     } catch (error) {
       console.error("Error updating trade: ", error);
+      throw error;
+    }
+  },
+  updateTrades: async (updates) => {
+    try {
+      for (let i = 0; i < updates.length; i += 500) {
+        const batch = writeBatch(db);
+        updates.slice(i, i + 500).forEach(({ id, data }) => batch.update(doc(db, 'trades', id), data));
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error("Error updating trades: ", error);
       throw error;
     }
   },
