@@ -17,7 +17,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
-import { summarizeTrades, healthTierFromProfitFactor } from "@/lib/stats";
+import { summarizeTrades, healthTierFromProfitFactor, computeDrawdowns, calcAccountGrowth } from "@/lib/stats";
 
 const dashboardLastPointsPlugin: Plugin<'line'> = {
   id: 'dashboardLastPointsPlugin',
@@ -105,7 +105,7 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
-  const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'twr'>('twr');
+  const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'trading'>('trading');
 
   const data = useMemo(() => {
     let totalFunded = 0;
@@ -120,25 +120,13 @@ export default function Dashboard() {
       totalFunded = totalDeposit - totalWithdraw;
     }
 
-    const timelineEvents: { type: string, timeObj: number, data: any }[] = [];
+    const timelineEvents: { type: 'trade' | 'funding', timeObj: number, data: any }[] = [];
     trades.forEach(t => timelineEvents.push({ type: 'trade', timeObj: new Date(t.time.replace(' ', 'T')).getTime(), data: t }));
     funding.forEach(f => timelineEvents.push({ type: 'funding', timeObj: new Date(f.time.replace(' ', 'T')).getTime(), data: f }));
     timelineEvents.sort((a, b) => a.timeObj - b.timeObj);
 
     let runningBalance = 0;
-    let highestBalance = 0;
-    let maxDDValue = 0;
-    let maxDDPercent = 0;
     let cumulativePnL = 0;
-
-    let highestEquity = 0;
-    let maxEquityDDValue = 0;
-    let maxEquityDDPercent = 0;
-
-    let twrBalance = 0;
-    let highestTwrBalance = 0;
-    let maxTwrDDValue = 0;
-    let maxTwrDDPercent = 0;
 
     const equityData = [0];
     const balanceData = [0];
@@ -150,19 +138,6 @@ export default function Dashboard() {
       if (evt.type === 'funding') {
         runningBalance += evt.data.deposit;
         runningBalance -= evt.data.withdraw;
-
-        twrBalance += evt.data.deposit;
-
-        if (runningBalance > highestBalance) highestBalance = runningBalance;
-
-        let currentDD = highestBalance - runningBalance;
-        let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
-        if (currentDD > maxDDValue) { maxDDValue = currentDD; maxDDPercent = currentDDPct; }
-
-        if (twrBalance > highestTwrBalance) highestTwrBalance = twrBalance;
-        let currentTwrDD = highestTwrBalance - twrBalance;
-        let currentTwrDDPct = highestTwrBalance > 0 ? (currentTwrDD / highestTwrBalance) * 100 : 0;
-        if (currentTwrDD > maxTwrDDValue) { maxTwrDDValue = currentTwrDD; maxTwrDDPercent = currentTwrDDPct; }
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
@@ -177,29 +152,7 @@ export default function Dashboard() {
       } else if (evt.type === 'trade') {
         const t = evt.data;
         runningBalance += t.profit;
-
-        if (runningBalance > highestBalance) highestBalance = runningBalance;
-
-        let currentDD = highestBalance - runningBalance;
-        let currentDDPct = highestBalance > 0 ? (currentDD / highestBalance) * 100 : 0;
-        if (currentDD > maxDDValue) { maxDDValue = currentDD; maxDDPercent = currentDDPct; }
-
-        twrBalance += t.profit;
-        if (twrBalance > highestTwrBalance) highestTwrBalance = twrBalance;
-        let currentTwrDD = highestTwrBalance - twrBalance;
-        let currentTwrDDPct = highestTwrBalance > 0 ? (currentTwrDD / highestTwrBalance) * 100 : 0;
-        if (currentTwrDD > maxTwrDDValue) { maxTwrDDValue = currentTwrDD; maxTwrDDPercent = currentTwrDDPct; }
-
         cumulativePnL += t.profit;
-        
-        if (cumulativePnL > highestEquity) highestEquity = cumulativePnL;
-
-        let currentEquityDD = highestEquity - cumulativePnL;
-        let currentEquityDDPct = highestEquity > 0 ? (currentEquityDD / highestEquity) * 100 : 0;
-        if (currentEquityDD > maxEquityDDValue) {
-          maxEquityDDValue = currentEquityDD;
-          maxEquityDDPercent = currentEquityDDPct;
-        }
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
@@ -215,6 +168,8 @@ export default function Dashboard() {
     });
 
     const summary = summarizeTrades(timelineEvents.filter(evt => evt.type === 'trade').map(evt => evt.data));
+    // `type` goes last: some old imported trades have their own `type` field (order type).
+    const drawdowns = computeDrawdowns(timelineEvents.map(evt => ({ ...evt.data, type: evt.type })));
 
     if (shouldAggregate) {
       const sortedDaily = Array.from(dailyPoints.values()).sort((a, b) => a.timestamp - b.timestamp);
@@ -226,27 +181,17 @@ export default function Dashboard() {
       });
     }
 
-    let activeDDValue = highestBalance - runningBalance;
-    let activeDDPercent = highestBalance > 0 ? (activeDDValue / highestBalance) * 100 : 0;
-
-    let activeEquityDDValue = highestEquity - cumulativePnL;
-    let activeEquityDDPercent = highestEquity > 0 ? (activeEquityDDValue / highestEquity) * 100 : 0;
-
-    let activeTwrDDValue = highestTwrBalance - twrBalance;
-    let activeTwrDDPercent = highestTwrBalance > 0 ? (activeTwrDDValue / highestTwrBalance) * 100 : 0;
-
     return {
       totalFunded, totalDeposit, totalWithdraw, runningBalance,
       net: summary.netProfit, winRate: summary.winRate,
+      accountGrowth: calcAccountGrowth(summary.netProfit, totalDeposit),
       countTP: summary.wins, countBE: summary.bes, countSL: summary.losses, totalTrades: trades.length,
       netRR: summary.netRR, profitFactor: summary.profitFactor,
       expectancyR: summary.expectancyR, sharpeRatio: summary.sharpeRatio,
       avgTPRR: summary.avgTPRR, maxTPRR: summary.maxTPRR,
       avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
       maxStreakW: summary.maxConsWinCount, maxStreakL: summary.maxConsLossCount,
-      maxDDValue, maxDDPercent, activeDDValue, activeDDPercent,
-      maxEquityDDValue, maxEquityDDPercent, activeEquityDDValue, activeEquityDDPercent,
-      maxTwrDDValue, maxTwrDDPercent, activeTwrDDValue, activeTwrDDPercent,
+      drawdowns,
       equityData, balanceData, chartLabels
     };
   }, [trades, funding]);
@@ -317,11 +262,12 @@ export default function Dashboard() {
     }
   };
 
-  const displayMaxDDPercent = ddMode === 'balance' ? data.maxDDPercent : (ddMode === 'twr' ? data.maxTwrDDPercent : data.maxEquityDDPercent);
-  const displayMaxDDValue = ddMode === 'balance' ? data.maxDDValue : (ddMode === 'twr' ? data.maxTwrDDValue : data.maxEquityDDValue);
-  const displayMaxDDLabel = ddMode === 'balance' ? 'Max DD' : (ddMode === 'twr' ? 'TWR MAX DD' : 'EQ. Max DD');
-  const displayActiveDDPercent = ddMode === 'balance' ? data.activeDDPercent : (ddMode === 'twr' ? data.activeTwrDDPercent : data.activeEquityDDPercent);
-  const displayActiveDDValue = ddMode === 'balance' ? data.activeDDValue : (ddMode === 'twr' ? data.activeTwrDDValue : data.activeEquityDDValue);
+  const displayDD = data.drawdowns[ddMode];
+  const displayMaxDDPercent = displayDD.maxPercent;
+  const displayMaxDDValue = displayDD.maxValue;
+  const displayMaxDDLabel = ddMode === 'balance' ? 'Max DD' : (ddMode === 'trading' ? 'Trading Max DD' : 'EQ. Max DD');
+  const displayActiveDDPercent = displayDD.activePercent;
+  const displayActiveDDValue = displayDD.activeValue;
 
   const ddScaleMax = Math.max(displayMaxDDPercent * 1.25, 10);
   const activeBarHeightPct = Math.min(100, Math.max(6, (displayActiveDDPercent / ddScaleMax) * 100));
@@ -360,7 +306,7 @@ export default function Dashboard() {
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
             <p className="text-3xl font-extrabold stat-value text-stone-950">
-              {data.totalFunded > 0 ? formatNumber((data.net / data.totalFunded) * 100) : '0.00'}%
+              {formatNumber(data.accountGrowth)}%
             </p>
           </div>
         </div>
@@ -508,14 +454,15 @@ export default function Dashboard() {
                 Equity
               </button>
               <button
-                onClick={() => setDdMode('twr')}
-                className={`text-[9px] font-bold px-3 py-1 rounded transition-all ${
-                  ddMode === 'twr' 
-                    ? 'bg-white text-stone-950 shadow-md' 
+                onClick={() => setDdMode('trading')}
+                title="Drawdown from trading only; withdrawals are not counted"
+                className={`text-[9px] font-bold px-3 py-1 rounded transition-all whitespace-nowrap ${
+                  ddMode === 'trading'
+                    ? 'bg-white text-stone-950 shadow-md'
                     : 'text-stone-400 hover:text-stone-600'
                 }`}
               >
-                TWR
+                Trading DD
               </button>
               <button
                 onClick={() => setDdMode('balance')}

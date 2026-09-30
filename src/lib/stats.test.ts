@@ -2,7 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   classifyTrade, deriveResultType, calcProfitFactor, healthTierFromProfitFactor, summarizeTrades,
+  calcAccountGrowth, computeDrawdowns,
 } from './stats.ts';
+
+const close = (actual: number, expected: number) =>
+  assert.ok(Math.abs(actual - expected) < 1e-9, `expected ${expected}, got ${actual}`);
 
 test('classifyTrade: with risk, |RR| <= 0.4 is break-even', () => {
   assert.equal(classifyTrade({ profit: 4, risk: 10 }), 'be');
@@ -119,4 +123,54 @@ test('summarizeTrades: sharpe is mean / population std dev', () => {
   const std = Math.sqrt(((10 - mean) ** 2 + (-10 - mean) ** 2 + (30 - mean) ** 2) / 3);
   assert.equal(s.stdDev, std);
   assert.equal(s.sharpeRatio, mean / std);
+});
+
+test('calcAccountGrowth: withdrawing profit does not change growth', () => {
+  // deposit 1000, make 1000, withdraw 1000 -> still +100%
+  assert.equal(calcAccountGrowth(1000, 1000), 100);
+  assert.equal(calcAccountGrowth(50, 0), 0);
+});
+
+test('computeDrawdowns: balance counts withdrawals, trading does not', () => {
+  const dd = computeDrawdowns([
+    { type: 'funding', deposit: 1000 },
+    { type: 'trade', profit: 100 },
+    { type: 'funding', withdraw: 500 },
+  ]);
+  assert.equal(dd.balance.maxValue, 500);
+  close(dd.balance.maxPercent, (500 / 1100) * 100);
+  assert.equal(dd.trading.maxValue, 0);
+  assert.equal(dd.trading.activeValue, 0);
+});
+
+test('computeDrawdowns: trading drawdown from a losing trade', () => {
+  const dd = computeDrawdowns([
+    { type: 'funding', deposit: 1000 },
+    { type: 'trade', profit: -100 },
+    { type: 'trade', profit: 50 },
+  ]);
+  assert.equal(dd.trading.maxValue, 100);
+  close(dd.trading.maxPercent, 10);
+  assert.equal(dd.trading.activeValue, 50);
+  close(dd.trading.activePercent, 5);
+});
+
+test('computeDrawdowns: equity % is measured against the balance, not the P&L peak', () => {
+  // P&L peaks at +10 then drops to +5: $5 on a $1010 account, not 50%
+  const dd = computeDrawdowns([
+    { type: 'funding', deposit: 1000 },
+    { type: 'trade', profit: 10 },
+    { type: 'trade', profit: -5 },
+  ]);
+  assert.equal(dd.equity.maxValue, 5);
+  close(dd.equity.maxPercent, (5 / 1010) * 100);
+});
+
+test('computeDrawdowns: equity loss before any profit still shows a percentage', () => {
+  const dd = computeDrawdowns([
+    { type: 'funding', deposit: 1000 },
+    { type: 'trade', profit: -20 },
+  ]);
+  assert.equal(dd.equity.maxValue, 20);
+  close(dd.equity.maxPercent, 2);
 });

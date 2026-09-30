@@ -55,6 +55,69 @@ export function healthTierFromProfitFactor(profitFactor: number, totalTrades: nu
   return 1;
 }
 
+// Net profit as a percentage of everything ever deposited. Withdrawals are not subtracted,
+// so taking profit out of the account does not inflate (or zero) the growth figure.
+export const calcAccountGrowth = (netProfit: number, totalDeposit: number) =>
+  totalDeposit > 0 ? (netProfit / totalDeposit) * 100 : 0;
+
+export type TimelineEvent =
+  | { type: 'trade'; profit?: number }
+  | { type: 'funding'; deposit?: number; withdraw?: number };
+
+export interface Drawdown {
+  maxValue: number;
+  maxPercent: number; // percent at the moment the largest dollar drawdown happened
+  activeValue: number;
+  activePercent: number;
+}
+
+// Tracks the drop from the running peak of a series. `base` is what the percentage is
+// measured against, captured whenever the series is at its peak.
+function createDrawdownTracker() {
+  let peak = 0, peakBase = 0, last = 0, maxValue = 0, maxPercent = 0;
+  const percentOf = (dd: number) => (peakBase > 0 ? (dd / peakBase) * 100 : 0);
+  return {
+    update(value: number, base: number) {
+      last = value;
+      if (value >= peak) { peak = value; peakBase = base; }
+      const dd = peak - value;
+      if (dd > maxValue) { maxValue = dd; maxPercent = percentOf(dd); }
+    },
+    result(): Drawdown {
+      const activeValue = peak - last;
+      return { maxValue, maxPercent, activeValue, activePercent: percentOf(activeValue) };
+    },
+  };
+}
+
+// Events must be in chronological order.
+// - balance: account balance including deposits and withdrawals
+// - trading: like balance, but withdrawals are not counted as a drawdown
+// - equity:  cumulative trading P&L, as a percentage of the balance at its peak
+export function computeDrawdowns(events: TimelineEvent[]) {
+  const balance = createDrawdownTracker();
+  const trading = createDrawdownTracker();
+  const equity = createDrawdownTracker();
+  let runningBalance = 0, tradingBalance = 0, cumulativePnL = 0;
+
+  for (const evt of events) {
+    if (evt.type === 'funding') {
+      runningBalance += (evt.deposit || 0) - (evt.withdraw || 0);
+      tradingBalance += evt.deposit || 0;
+    } else {
+      const pnl = evt.profit || 0;
+      runningBalance += pnl;
+      tradingBalance += pnl;
+      cumulativePnL += pnl;
+    }
+    balance.update(runningBalance, runningBalance);
+    trading.update(tradingBalance, tradingBalance);
+    equity.update(cumulativePnL, runningBalance);
+  }
+
+  return { balance: balance.result(), trading: trading.result(), equity: equity.result() };
+}
+
 export interface TradeSummary {
   totalTrades: number;
   wins: number;
