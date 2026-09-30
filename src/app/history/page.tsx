@@ -2,14 +2,14 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, HelpCircle, Edit2, Trash2, Upload, Activity, Crosshair, ClipboardCheck, ClipboardX, Target, Focus, Crown, TrendingUp, TrendingDown, EyeOff } from "lucide-react";
+import { Plus, Edit2, Trash2, Upload, ClipboardCheck, Target, Focus, TrendingUp, TrendingDown } from "lucide-react";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
 import BulkImportModal from "@/components/BulkImportModal";
 import ExitConfidenceBadge from "@/components/ExitConfidenceBadge";
 import { Trade } from "@/store/useJournalStore";
-import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
+import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

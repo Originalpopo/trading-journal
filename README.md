@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TradeJournal
 
-## Getting Started
+A personal trading journal: import trade history from TradingView (Eightcap), tag trades with
+checklists, and review performance, drawdown, calendar and per-trade charts.
 
-First, run the development server:
+Static Next.js app (`output: "export"`) deployed to GitHub Pages; data lives in Firestore and is
+read and written directly from the browser.
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000/trading-journal
+npm test         # unit tests (node --test, Node 24+)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.local` needs `NEXT_PUBLIC_TWELVEDATA_API_KEY` for the candlestick charts.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Pushing to `main` builds and deploys to GitHub Pages (`.github/workflows/nextjs.yml`). The workflow
+reads the chart API key from the repository secret `TWELVEDATA_API_KEY`.
 
-## Learn More
+## Access
 
-To learn more about Next.js, take a look at the following resources:
+- Sign-in is Google via Firebase Auth. Only the owner's UID may read or write: see
+  [`firestore.rules`](firestore.rules), which is pasted into the Firebase Console by hand.
+- The 4-digit PIN (Settings) is an extra lock on top of sign-in, not the security boundary.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Firestore collections:** `trades`, `funding`, `notes`, `settings`, and `chartCache` (candles per
+  trade and timeframe, safe to delete; they are refetched on demand).
+- **Stats rules** (break-even band, profit factor, drawdowns, ...) live in `src/lib/stats.ts`.
+- **Exit times from TradingView:** the "Update Time" of a filled Stop Loss / Take Profit is when
+  that order was last placed or moved, not when it was hit. The parser
+  (`src/lib/tradingViewParser.ts`) takes the exit time from the cancel of the other side of the
+  bracket instead, and marks each trade `exact`, `estimated` or `uncertain`. Times edited by hand
+  are marked `manual` and are never overwritten by a re-import.

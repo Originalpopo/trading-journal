@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
-import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
+import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
-import { X, Edit2, Trash2, ExternalLink, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Activity, Crosshair, Target, Focus, Crown, ClipboardCheck, Clock, Timer, LayoutGrid, ShieldAlert, Scale, TrendingUp, TrendingDown } from "lucide-react";
+import { Edit2, Trash2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Target, Focus, ClipboardCheck, TrendingUp, TrendingDown } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
 
@@ -22,19 +22,9 @@ interface TradeDetailModalProps {
   totalItems?: number;
 }
 
-export function getDriveDirectUrl(url: string): string {
-  if (!url) return '';
-  const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-  if (fileIdMatch && fileIdMatch[1]) {
-    return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
-  }
-  return url;
-}
-
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
-  const updateTrade = useJournalStore((state) => state.updateTrade);
   const isPrivacyMode = useJournalStore((state) => state.isPrivacyMode);
 
   useEffect(() => {

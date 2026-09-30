@@ -6,7 +6,7 @@ import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
 import { deriveResultType } from "@/lib/stats";
-import { Trash2, X, HelpCircle, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
+import { X, ClipboardCheck, TrendingUp, TrendingDown, Target, Focus, CheckCircle2 } from "lucide-react";
 
 interface ManualTradeModalProps {
   isOpen: boolean;

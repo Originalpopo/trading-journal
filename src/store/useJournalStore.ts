@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { parseRobustDate } from '@/lib/utils';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
+
+let legacyChartMigrationStarted = false;
 
 // How exitTime was determined: 'exact' from broker data, 'estimated' from a TP/SL placed after
 // entry, 'uncertain' when the broker data had nothing better (SL hit with no TP), 'manual' when
@@ -34,6 +37,7 @@ export interface Trade {
   entryType?: string;
   exitType?: string;
   duration?: number;
+  // Candles cached by older versions; moved to the chartCache collection on load.
   chartData?: any;
 }
 
@@ -92,6 +96,14 @@ export const useJournalStore = create<JournalState>((set) => ({
       // Sort by time
       tradesData.sort((a, b) => parseRobustDate(b.time) - parseRobustDate(a.time));
       set({ trades: tradesData });
+
+      if (!legacyChartMigrationStarted && tradesData.some(t => t.chartData)) {
+        legacyChartMigrationStarted = true;
+        migrateLegacyChartData(tradesData).catch(error => {
+          console.error("Error moving chart data out of trades:", error);
+          legacyChartMigrationStarted = false;
+        });
+      }
     });
 
     const unsubscribeFunding = onSnapshot(collection(db, 'funding'), (snapshot) => {
@@ -139,6 +151,7 @@ export const useJournalStore = create<JournalState>((set) => ({
   deleteTrade: async (id) => {
     try {
       await deleteDoc(doc(db, 'trades', id));
+      deleteCachedCandles(id).catch(error => console.error("Error deleting cached candles: ", error));
     } catch (error) {
       console.error("Error deleting trade: ", error);
       throw error;

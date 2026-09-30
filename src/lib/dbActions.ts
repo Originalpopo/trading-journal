@@ -1,5 +1,6 @@
 import { doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
+import { clearChartCache } from './chartCache';
 
 export const clearDatabase = async (
   trades: any[],
@@ -73,6 +74,8 @@ export const clearDatabase = async (
     if (count > 0) {
       await batch.commit();
     }
+
+    await clearChartCache();
 
     alert("Database successfully cleared.");
     if (onComplete) onComplete();

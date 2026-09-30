@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi } from "lightweight-charts";
-import { Trade, useJournalStore } from "@/store/useJournalStore";
+import { createChart, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
+import type { Trade } from "@/store/useJournalStore";
 import { Loader2, AlertCircle } from "lucide-react";
+import { type Candle, normalizeChartTf, legacyChartDataToMap, loadCachedCandles, saveCachedCandles } from "@/lib/chartCache";
 
 interface InteractiveChartProps {
   trade: Trade;
@@ -11,7 +12,7 @@ interface InteractiveChartProps {
 const TF_SEQUENCE = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
 
 // lightweight-charts labels its time axis in UTC; shift timestamps so it shows the viewer's local time.
-const toLocalChartTime = (utcSec: number) => utcSec - new Date(utcSec * 1000).getTimezoneOffset() * 60;
+const toLocalChartTime = (utcSec: number) => (utcSec - new Date(utcSec * 1000).getTimezoneOffset() * 60) as UTCTimestamp;
 
 // Index of the candle whose period contains `timeSec` (candles sorted by time).
 const candleIndexAt = (candles: { time: number }[], timeSec: number) => {
@@ -38,44 +39,12 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const updateTrade = useJournalStore((state) => state.updateTrade);
-
-  // Normalize trade.tf
-  let baseTf = '15m';
-  if (trade.tf) {
-     const tL = trade.tf.toLowerCase();
-     if (tL === '1h') baseTf = '1h';
-     else if (tL === '1m') baseTf = '1m';
-     else if (tL === '5m') baseTf = '5m';
-     else if (tL === '15m') baseTf = '15m';
-     else if (tL === '1s') baseTf = '1s';
-     else if (tL === '5s') baseTf = '5s';
-     else if (tL === '15s') baseTf = '15s';
-     else if (tL.includes('s')) baseTf = '1m'; // fallback seconds -> 1m
-     else baseTf = trade.tf; 
-  }
-
+  const baseTf = normalizeChartTf(trade.tf);
   const [selectedTf, setSelectedTf] = useState<string>(baseTf.includes('s') ? '1m' : baseTf);
 
-  const [localCache, setLocalCache] = useState<any>(() => {
-    let initialCache = trade.chartData;
-    if (Array.isArray(initialCache)) {
-      return { [baseTf]: initialCache };
-    }
-    return initialCache || {};
-  });
-
-  useEffect(() => {
-    if (trade.chartData) {
-      setLocalCache((prev: any) => {
-        let incoming = trade.chartData;
-        if (Array.isArray(incoming)) {
-          incoming = { [baseTf]: incoming };
-        }
-        return { ...prev, ...incoming };
-      });
-    }
-  }, [trade.chartData, baseTf]);
+  // Candles already loaded for this trade, per timeframe. Seeded from candles an older version stored
+  // on the trade itself (until those are migrated into the chartCache collection).
+  const candlesByTfRef = useRef<Record<string, Candle[]>>(legacyChartDataToMap(trade.chartData, trade.tf));
 
 
   const availableTfs = React.useMemo(() => {
@@ -107,18 +76,28 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
     setLoading(true);
     setError(null);
 
-    let chartDataCache = localCache;
-
-    let chartData = chartDataCache[tfToLoad];
-
     // Cached candles may predate a correction of the trade's times; refetch if they don't cover it.
-    const coversTrade = (candles: { time: number }[]) => {
+    const coversTrade = (candles?: Candle[] | null): candles is Candle[] => {
+      if (!candles || candles.length === 0) return false;
       const entrySec = new Date((trade.entryTime || trade.time).replace(' ', 'T')).getTime() / 1000;
       const exitSec = new Date((trade.exitTime || trade.time).replace(' ', 'T')).getTime() / 1000;
       return candles[0].time <= entrySec && candles[candles.length - 1].time >= exitSec;
     };
 
-    if (forceFetch || !chartData || chartData.length === 0 || !coversTrade(chartData)) {
+    let chartData: Candle[] | null | undefined = candlesByTfRef.current[tfToLoad];
+    if (!forceFetch && !coversTrade(chartData)) {
+      try {
+        const stored = await loadCachedCandles(trade.id, tfToLoad);
+        if (stored) {
+          chartData = stored;
+          candlesByTfRef.current[tfToLoad] = stored;
+        }
+      } catch (err) {
+        console.error("Failed to read cached candles:", err);
+      }
+    }
+
+    if (forceFetch || !coversTrade(chartData)) {
       try {
         const resolvedEntryTimeStr = trade.entryTime || trade.time;
         const resolvedExitTimeStr = trade.exitTime || (trade.entryTime ? trade.time : undefined);
@@ -198,7 +177,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
         if (json.status === 'error') throw new Error(json.message || "Failed to fetch data");
         
-        let fetchedChartData = [];
+        let fetchedChartData: Candle[] = [];
         if (json.values && Array.isArray(json.values)) {
           fetchedChartData = json.values.map((v: any) => ({
             time: new Date(v.datetime.replace(' ', 'T')).getTime() / 1000,
@@ -212,10 +191,9 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         chartData = fetchedChartData;
         if (chartData.length === 0) throw new Error("No data returned for this period.");
 
-        // Save back to DB
-        const newCache = { ...chartDataCache, [tfToLoad]: chartData };
-        setLocalCache(newCache);
-        await updateTrade(trade.id, { chartData: newCache });
+        candlesByTfRef.current[tfToLoad] = chartData;
+        // A failed cache write only costs a refetch next time; still draw the chart.
+        saveCachedCandles(trade.id, tfToLoad, chartData).catch(err => console.error("Failed to cache candles:", err));
 
       } catch (err: any) {
         setError(err.message);

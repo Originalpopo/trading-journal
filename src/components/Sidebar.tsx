@@ -11,16 +11,12 @@ import {
   FlaskConical, 
   StickyNote,
   Upload,
-  ClipboardPaste,
-  Trash2,
-  Download,
   Flame,
   Settings,
   Eye,
   EyeOff
 } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { handleCSVUpload, handlePasteText } from "@/lib/csvParser";
 import { clearDatabase, downloadDatabase, restoreDatabase } from "@/lib/dbActions";
 import { UploadModal } from "./UploadModal";
 import BulkImportModal from "./BulkImportModal";

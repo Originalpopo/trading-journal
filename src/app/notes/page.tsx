@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore, Note } from "@/store/useJournalStore";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { NoteFormModal, ReadNoteModal, getNoteIconSvg } from "@/components/NoteModals";
 import { Plus } from "lucide-react";
 

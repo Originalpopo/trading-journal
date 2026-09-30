@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
 
