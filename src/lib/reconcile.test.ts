@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reconcileBalance } from './reconcile.ts';
+import { reconcileBalance, hasActivityAfter, localTimestamp } from './reconcile.ts';
 
 const funding = [
   { time: '2026-07-01T09:00:00', deposit: 100, withdraw: 0 },
@@ -56,4 +56,16 @@ test('float noise in the journal total does not cause a false mismatch', () => {
 test('times written with a space instead of T are read the same way', () => {
   const r = reconcileBalance({ time: '2026-07-31 00:00:00', balance: 72.45 }, trades.map(t => ({ ...t, time: t.time.replace('T', ' ') })), funding);
   assert.equal(r.matches, true);
+});
+
+test('hasActivityAfter: only entries newer than the check count', () => {
+  assert.equal(hasActivityAfter({ time: '2026-07-31T00:00:00', balance: 0 }, trades, funding), false);
+  assert.equal(hasActivityAfter({ time: '2026-07-25T10:00:00', balance: 0 }, trades, funding), false); // same moment
+  assert.equal(hasActivityAfter({ time: '2026-07-24T00:00:00', balance: 0 }, trades, funding), true); // a trade
+  assert.equal(hasActivityAfter({ time: '2026-07-15T00:00:00', balance: 0 }, [], funding), true); // a withdrawal
+});
+
+test('localTimestamp writes the local wall clock in the stored format', () => {
+  assert.equal(localTimestamp(new Date(2026, 9, 3, 14, 5, 9)), '2026-10-03T14:05:09');
+  assert.match(localTimestamp(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
 });

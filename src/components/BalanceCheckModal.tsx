@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, CheckCircle2, AlertTriangle, Save } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { reconcileBalance } from "@/lib/reconcile";
+import { reconcileBalance, localTimestamp } from "@/lib/reconcile";
 import { hasFractionOfCent } from "@/lib/money";
 import { formatNumber } from "@/lib/utils";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
@@ -13,12 +13,6 @@ interface BalanceCheckModalProps {
   onClose: () => void;
 }
 
-// Now as a datetime-local value (local wall clock, with seconds), the way trade times are stored.
-const nowInputTime = () => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 19);
-};
 
 // The user types the balance the broker shows; the journal's own balance at that moment must equal it.
 export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModalProps) {
@@ -28,7 +22,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
   const updatePreferences = useJournalStore(state => state.updatePreferences);
 
   const [balance, setBalance] = useState("");
-  const [time, setTime] = useState(nowInputTime);
+  const [time, setTime] = useState(() => localTimestamp());
   const [isSaving, setIsSaving] = useState(false);
 
   useEscapeToClose(isOpen, onClose);

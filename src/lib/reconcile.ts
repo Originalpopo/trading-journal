@@ -46,3 +46,16 @@ export function reconcileBalance(check: BalanceCheck, trades: TimedTrade[], fund
     tradeCount,
   };
 }
+
+// True when a trade or funding entry is newer than the check, so the check no longer covers
+// everything in the journal.
+export function hasActivityAfter(check: BalanceCheck, trades: TimedTrade[], funding: TimedFunding[]): boolean {
+  const checkMs = toMs(check.time);
+  return trades.some(t => toMs(t.time) > checkMs) || funding.some(f => toMs(f.time) > checkMs);
+}
+
+// A moment as the journal stores times: local wall clock, "YYYY-MM-DDTHH:mm:ss".
+export function localTimestamp(date: Date = new Date()): string {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 19);
+}

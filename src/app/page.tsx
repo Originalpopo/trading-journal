@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useMemo, useState } from "react";
-import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium, CheckCircle2, AlertTriangle } from "lucide-react";
+import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium, CheckCircle2, AlertTriangle, Check, X } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,7 +19,7 @@ import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
 import { summarizeTrades, healthTierFromProfitFactor, computeDrawdowns, calcAccountGrowth } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
-import { reconcileBalance } from "@/lib/reconcile";
+import { reconcileBalance, hasActivityAfter, localTimestamp } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 const dashboardLastPointsPlugin: Plugin<'line'> = {
@@ -115,6 +115,10 @@ export default function Dashboard() {
     () => (balanceCheck ? reconcileBalance(balanceCheck, trades, funding) : null),
     [balanceCheck, trades, funding],
   );
+  const updatePreferences = useJournalStore(state => state.updatePreferences);
+  const [isConfirmingMatch, setIsConfirmingMatch] = useState(false);
+  // Ask again whenever the last check no longer vouches for the balance on screen.
+  const needsBrokerCheck = !balanceCheck || !brokerCheck?.matches || hasActivityAfter(balanceCheck, trades, funding);
   const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'trading'>('trading');
 
   const data = useMemo(() => {
@@ -204,6 +208,18 @@ export default function Dashboard() {
       equityData, balanceData, chartLabels
     };
   }, [trades, funding]);
+
+  // "Yes" records that the broker showed exactly the journal's balance at this moment.
+  const confirmBrokerMatch = async () => {
+    setIsConfirmingMatch(true);
+    try {
+      await updatePreferences({ balanceCheck: { time: localTimestamp(), balance: data.runningBalance } });
+    } catch {
+      alert("Failed to save the balance check.");
+    } finally {
+      setIsConfirmingMatch(false);
+    }
+  };
 
   const chartDataConfig = useMemo(() => {
     return {
@@ -300,24 +316,42 @@ export default function Dashboard() {
             <p className="text-3xl font-extrabold stat-value text-stone-950">
               {isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`}
             </p>
-            <button
-              type="button"
-              onClick={() => setIsBalanceCheckOpen(true)}
-              title="Compare the journal's balance with the balance your broker shows"
-              className={`mt-2 text-[10px] font-bold flex items-center gap-1 transition hover:opacity-70 ${
-                !brokerCheck ? 'text-stone-400 underline' : brokerCheck.matches ? 'text-orange-400' : 'text-red-900'
-              }`}
-            >
-              {!brokerCheck && 'Check against broker'}
-              {brokerCheck?.matches && (
-                <><CheckCircle2 className="w-3 h-3" /> Matched broker on {balanceCheck!.time.split('T')[0]}</>
-              )}
-              {brokerCheck && !brokerCheck.matches && (
-                <><AlertTriangle className="w-3 h-3" /> {isPrivacyMode
-                  ? 'Differs from broker'
-                  : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on {balanceCheck!.time.split('T')[0]}</>
-              )}
-            </button>
+{brokerCheck && (
+              <button
+                type="button"
+                onClick={() => setIsBalanceCheckOpen(true)}
+                title="Open the broker balance check"
+                className={`mt-2 text-[10px] font-bold flex items-center gap-1 transition hover:opacity-70 ${brokerCheck.matches ? 'text-orange-400' : 'text-red-900'}`}
+              >
+                {brokerCheck.matches
+                  ? <><CheckCircle2 className="w-3 h-3" /> Matched broker on {balanceCheck!.time.split('T')[0]}</>
+                  : <><AlertTriangle className="w-3 h-3" /> {isPrivacyMode
+                      ? 'Differs from broker'
+                      : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on {balanceCheck!.time.split('T')[0]}</>}
+              </button>
+            )}
+            {needsBrokerCheck && (
+              <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
+                <span>{isPrivacyMode ? 'Same as broker?' : `Broker shows $${formatNumber(data.runningBalance)}?`}</span>
+                <button
+                  type="button"
+                  disabled={isConfirmingMatch}
+                  onClick={confirmBrokerMatch}
+                  title="The broker's Balance is exactly this amount right now"
+                  className="px-2 py-0.5 rounded-md border bg-orange-50 text-orange-400 border-orange-200 hover:bg-orange-100 transition flex items-center gap-0.5 disabled:opacity-50"
+                >
+                  <Check className="w-3 h-3" /> Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBalanceCheckOpen(true)}
+                  title="The broker shows a different amount: enter it to see the difference"
+                  className="px-2 py-0.5 rounded-md border bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 transition flex items-center gap-0.5"
+                >
+                  <X className="w-3 h-3" /> No
+                </button>
+              </div>
+            )}
           </div>
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
