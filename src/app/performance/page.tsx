@@ -297,7 +297,8 @@ export default function PerformancePage() {
           const mMonth = entryTimeObj.getMonth();
           const dDay = entryTimeObj.getDay();
 
-          if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = subMoney(runningBalance, pnl);
+          // The balance before the month's first trade; this trade's P&L is added further down.
+          if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = runningBalance;
           moyPnL[mMonth] = addMoney(moyPnL[mMonth], pnl);
 
           dowStats[dDay] += rrVal;

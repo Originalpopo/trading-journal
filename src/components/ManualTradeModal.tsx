@@ -9,6 +9,7 @@ import { deriveResultType } from "@/lib/stats";
 import { initialStopOf, mostCommonRisk } from "@/lib/risk";
 import { pointValueOf, medianPointValue } from "@/lib/tradeZones";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
+import { hasFractionOfCent } from "@/lib/money";
 import { X, CheckCircle2, XCircle } from "lucide-react";
 
 interface ManualTradeModalProps {
@@ -313,6 +314,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   const parsedAmount = parseFloat(amount) || 0;
   const parsedRisk = parseFloat(risk) || 0;
+  // P&L, deposits and withdrawals are real money: never store a fraction of a cent.
+  const invalidAmount = hasFractionOfCent(amount);
   let liveRRStr = "0.00 R";
   let liveRRClass = "text-stone-400 normal-case tracking-normal";
   if (parsedRisk > 0) {
@@ -455,7 +458,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 {entryType === "TRADE" ? "P&L / Amount ($)" : "Amount ($)"}
               </label>
               <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+                className={`w-full bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidAmount ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'}`} />
+              {invalidAmount && <p className="text-[10px] font-bold text-red-900 mt-1">Use at most two decimals (cents).</p>}
             </div>
             
             {entryType === "TRADE" && (
@@ -532,7 +536,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={isSubmitting || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
+          <button onClick={handleSubmit} disabled={isSubmitting || invalidAmount || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Saving..." : "Save"}
           </button>

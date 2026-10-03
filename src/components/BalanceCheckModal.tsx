@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, CheckCircle2, AlertTriangle, Save } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { reconcileBalance } from "@/lib/reconcile";
+import { hasFractionOfCent } from "@/lib/money";
 import { formatNumber } from "@/lib/utils";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
@@ -35,7 +36,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
   if (!isOpen) return null;
 
   const parsedBalance = parseFloat(balance);
-  const hasMoreThanCents = /\.\d{3,}/.test(balance);
+  const hasMoreThanCents = hasFractionOfCent(balance);
   const isValid = Number.isFinite(parsedBalance) && !hasMoreThanCents && !!time;
   const checkTime = time.length === 16 ? `${time}:00` : time;
   const result = isValid ? reconcileBalance({ time: checkTime, balance: parsedBalance }, trades, funding) : null;

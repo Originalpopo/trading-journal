@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toCents, fromCents, addMoney, subMoney, sumMoney } from './money.ts';
+import { toCents, fromCents, addMoney, subMoney, sumMoney, hasFractionOfCent } from './money.ts';
 
 test('float addition drifts, cent addition does not', () => {
   assert.notEqual(0.1 + 0.2, 0.3);
@@ -30,4 +30,13 @@ test('sumMoney gives the exact total of many small amounts', () => {
   assert.equal(sumMoney(amounts), 100);
   assert.equal(sumMoney([-0.72, -0.01, -1.32]), -2.05);
   assert.equal(sumMoney([]), 0);
+});
+
+test('hasFractionOfCent accepts cent amounts and rejects anything finer', () => {
+  for (const ok of ['', '0', '5', '-0.72', '1.1', '19.99', '4.35', '1.10', '100.00', '1e2']) {
+    assert.equal(hasFractionOfCent(ok), false, ok);
+  }
+  for (const bad of ['1.005', '0.001', '-0.725', '19.999', '1e-3']) {
+    assert.equal(hasFractionOfCent(bad), true, bad);
+  }
 });
