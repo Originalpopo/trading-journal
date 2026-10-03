@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useMemo, useState } from "react";
-import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
+import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -18,6 +18,9 @@ import {
 import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
 import { summarizeTrades, healthTierFromProfitFactor, computeDrawdowns, calcAccountGrowth } from "@/lib/stats";
+import { addMoney, subMoney } from "@/lib/money";
+import { reconcileBalance } from "@/lib/reconcile";
+import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 const dashboardLastPointsPlugin: Plugin<'line'> = {
   id: 'dashboardLastPointsPlugin',
@@ -105,6 +108,13 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
+  const balanceCheck = useJournalStore(state => state.preferences.balanceCheck);
+  const [isBalanceCheckOpen, setIsBalanceCheckOpen] = useState(false);
+  // Recomputed from the saved broker balance, so a trade added or removed later shows up here.
+  const brokerCheck = useMemo(
+    () => (balanceCheck ? reconcileBalance(balanceCheck, trades, funding) : null),
+    [balanceCheck, trades, funding],
+  );
   const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'trading'>('trading');
 
   const data = useMemo(() => {
@@ -114,10 +124,10 @@ export default function Dashboard() {
 
     if (funding.length > 0) {
       funding.forEach(f => {
-        totalDeposit += Number(f.deposit || 0);
-        totalWithdraw += Number(f.withdraw || 0);
+        totalDeposit = addMoney(totalDeposit, f.deposit);
+        totalWithdraw = addMoney(totalWithdraw, f.withdraw);
       });
-      totalFunded = totalDeposit - totalWithdraw;
+      totalFunded = subMoney(totalDeposit, totalWithdraw);
     }
 
     const timelineEvents: { type: 'trade' | 'funding', timeObj: number, data: any }[] = [];
@@ -136,8 +146,7 @@ export default function Dashboard() {
 
     timelineEvents.forEach(evt => {
       if (evt.type === 'funding') {
-        runningBalance += evt.data.deposit;
-        runningBalance -= evt.data.withdraw;
+        runningBalance = subMoney(addMoney(runningBalance, evt.data.deposit), evt.data.withdraw);
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
@@ -151,8 +160,8 @@ export default function Dashboard() {
         }
       } else if (evt.type === 'trade') {
         const t = evt.data;
-        runningBalance += t.profit;
-        cumulativePnL += t.profit;
+        runningBalance = addMoney(runningBalance, t.profit);
+        cumulativePnL = addMoney(cumulativePnL, t.profit);
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
@@ -283,6 +292,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      <BalanceCheckModal isOpen={isBalanceCheckOpen} onClose={() => setIsBalanceCheckOpen(false)} />
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
@@ -290,6 +300,24 @@ export default function Dashboard() {
             <p className="text-3xl font-extrabold stat-value text-stone-950">
               {isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`}
             </p>
+            <button
+              type="button"
+              onClick={() => setIsBalanceCheckOpen(true)}
+              title="Compare the journal's balance with the balance your broker shows"
+              className={`mt-2 text-[10px] font-bold flex items-center gap-1 transition hover:opacity-70 ${
+                !brokerCheck ? 'text-stone-400 underline' : brokerCheck.matches ? 'text-orange-400' : 'text-red-900'
+              }`}
+            >
+              {!brokerCheck && 'Check against broker'}
+              {brokerCheck?.matches && (
+                <><CheckCircle2 className="w-3 h-3" /> Matched broker on {balanceCheck!.time.split('T')[0]}</>
+              )}
+              {brokerCheck && !brokerCheck.matches && (
+                <><AlertTriangle className="w-3 h-3" /> {isPrivacyMode
+                  ? 'Differs from broker'
+                  : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on {balanceCheck!.time.split('T')[0]}</>
+              )}
+            </button>
           </div>
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>

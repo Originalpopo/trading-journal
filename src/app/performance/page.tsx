@@ -5,6 +5,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check, CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
 import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, summarizeTrades, healthTierFromProfitFactor } from "@/lib/stats";
+import { addMoney, subMoney } from "@/lib/money";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -150,9 +151,9 @@ export default function PerformancePage() {
     let carriedOverBalance = 0;
     pastEvents.forEach(evt => {
       if (evt.type === 'funding') {
-        carriedOverBalance += evt.data.deposit - (evt.data.withdraw || 0);
+        carriedOverBalance = subMoney(addMoney(carriedOverBalance, evt.data.deposit), evt.data.withdraw);
       } else if (evt.type === 'trade') {
-        carriedOverBalance += evt.data.profit;
+        carriedOverBalance = addMoney(carriedOverBalance, evt.data.profit);
       }
     });
 
@@ -195,8 +196,7 @@ export default function PerformancePage() {
         if (initialDeposit === 0 && evt.data.deposit > 0) {
           initialDeposit = evt.data.deposit;
         }
-        runningBalance += evt.data.deposit;
-        runningBalance -= (evt.data.withdraw || 0);
+        runningBalance = subMoney(addMoney(runningBalance, evt.data.deposit), evt.data.withdraw);
 
         if (runningBalance > peakBalance) peakBalance = runningBalance;
         if (runningBalance < minBalance) minBalance = runningBalance;
@@ -237,13 +237,13 @@ export default function PerformancePage() {
         const planStatus = t.isOnPlan !== false;
         if (planStatus) {
           onPlanTrades++;
-          onPlanPnL += pnl;
+          onPlanPnL = addMoney(onPlanPnL, pnl);
           if (isBE) onPlanBE++;
           else if (isWin) onPlanWins++;
           else onPlanLosses++;
         } else {
           offPlanTrades++;
-          offPlanPnL += pnl;
+          offPlanPnL = addMoney(offPlanPnL, pnl);
           if (isBE) offPlanBE++;
           else if (isWin) offPlanWins++;
           else offPlanLosses++;
@@ -271,7 +271,7 @@ export default function PerformancePage() {
         tfVals.forEach((tfKey: string) => {
           const validKey = ['1h', '15m', '5m', '1m', '15s', '5s'].includes(tfKey) ? tfKey : 'none';
           tfStats[validKey].trades++;
-          tfStats[validKey].pnl += pnl;
+          tfStats[validKey].pnl = addMoney(tfStats[validKey].pnl, pnl);
           tfStats[validKey].rr += rrVal;
           if (isBE) {
             tfStats[validKey].be++;
@@ -284,7 +284,7 @@ export default function PerformancePage() {
 
         if (!isNaN(hr)) {
           hourStats[hr] += rrVal;
-          hourStatsPnL[hr] += pnl;
+          hourStatsPnL[hr] = addMoney(hourStatsPnL[hr], pnl);
           if (isBE) {
             hourBEs[hr]++;
           } else {
@@ -297,13 +297,13 @@ export default function PerformancePage() {
           const mMonth = entryTimeObj.getMonth();
           const dDay = entryTimeObj.getDay();
 
-          if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = runningBalance - pnl;
-          moyPnL[mMonth] += pnl;
+          if (moyStartBalance[mMonth] === null) moyStartBalance[mMonth] = subMoney(runningBalance, pnl);
+          moyPnL[mMonth] = addMoney(moyPnL[mMonth], pnl);
 
           dowStats[dDay] += rrVal;
-          dowStatsPnL[dDay] += pnl;
+          dowStatsPnL[dDay] = addMoney(dowStatsPnL[dDay], pnl);
           moyStats[mMonth] += rrVal;
-          moyStatsPnL[mMonth] += pnl;
+          moyStatsPnL[mMonth] = addMoney(moyStatsPnL[mMonth], pnl);
 
           if (isBE) {
             dowBEs[dDay]++;
@@ -332,7 +332,7 @@ export default function PerformancePage() {
         if (side) {
           const m = matrix[t.symbol][side];
           m.trades++;
-          m.pnl += pnl;
+          m.pnl = addMoney(m.pnl, pnl);
           if (!isBE) {
             if (isWin) m.win++;
             if (isLoss) m.loss++;
@@ -348,7 +348,7 @@ export default function PerformancePage() {
             }
             const tm = tfMatrix[tfKey][side];
             tm.trades++;
-            tm.pnl += pnl;
+            tm.pnl = addMoney(tm.pnl, pnl);
             if (!isBE) {
               if (isWin) tm.win++;
               if (isLoss) tm.loss++;
@@ -357,11 +357,11 @@ export default function PerformancePage() {
           });
         }
 
-        runningBalance += pnl;
+        runningBalance = addMoney(runningBalance, pnl);
         if (runningBalance < minBalance) minBalance = runningBalance;
         if (runningBalance > peakBalance) peakBalance = runningBalance;
 
-        let currentDD = peakBalance - runningBalance;
+        let currentDD = subMoney(peakBalance, runningBalance);
         let currentDDPct = peakBalance > 0 ? (currentDD / peakBalance) * 100 : 0;
 
         if (currentDD > maxDrawdownAmt) maxDrawdownAmt = currentDD;
@@ -373,7 +373,7 @@ export default function PerformancePage() {
           const existing = dailyPerfPoints.get(dateKey);
           if (existing) {
             existing.balance = runningBalance;
-            existing.pnl += pnl;
+            existing.pnl = addMoney(existing.pnl, pnl);
             existing.timestamp = evt.timeObj.getTime();
             existing.isFundingOnly = false;
           } else {

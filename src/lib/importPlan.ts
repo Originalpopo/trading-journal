@@ -1,5 +1,7 @@
 import type { Trade } from '@/store/useJournalStore';
 import { computeTradeRisk, type TradeRisk } from './risk.ts';
+import { toCents } from './money.ts';
+import type { ImportWarning } from './tradingViewParser.ts';
 
 export type ImportAction = 'new' | 'update' | 'same';
 
@@ -13,6 +15,7 @@ export interface ImportPlanRow {
   keptManualTimes: boolean; // existing hand-set times win over the broker data
   previousExitTime?: string; // shown struck through when importing changes the exit time
   previousRisk?: number; // shown struck through when importing changes 1R
+  previousProfit?: number; // saved P&L that disagrees with the broker's; importing replaces it
   invalidExit: boolean; // edited exit time is before the entry
   invalidInitialSl: boolean; // edited initial stop is not on the losing side of the entry
 }
@@ -93,6 +96,11 @@ export function planImport(parsedTrades: Partial<Trade>[], trades: Trade[], edit
     if (!existing.slPrice && parsed.slPrice) updates.slPrice = parsed.slPrice;
     if (!existing.entryType && parsed.entryType) updates.entryType = parsed.entryType;
     if (!existing.exitType && parsed.exitType) updates.exitType = parsed.exitType;
+    // The broker's Closed P&L is the source of truth for money.
+    if (existing.positionId && parsed.profit !== undefined && toCents(existing.profit) !== toCents(parsed.profit)) {
+      updates.profit = parsed.profit;
+    }
+    if (parsed.commission !== undefined && !sameValue(existing.commission, parsed.commission)) updates.commission = parsed.commission;
 
     // An edit made in the preview is also the user's own time, so it may replace an older one.
     const keptManualTimes = existing.exitTimeConfidence === 'manual' && parsed.exitTimeConfidence !== 'manual';
@@ -115,10 +123,30 @@ export function planImport(parsedTrades: Partial<Trade>[], trades: Trade[], edit
     const result = { ...existing, ...updates };
     const previousExitTime = (result.exitTime || result.time) !== oldExit ? oldExit : undefined;
     const previousRisk = updates.risk !== undefined ? existing.risk : undefined;
+    const previousProfit = updates.profit !== undefined ? existing.profit : undefined;
 
     return {
-      key, parsed, existing, result, keptManualTimes, previousExitTime, previousRisk, invalidExit, invalidInitialSl,
+      key, parsed, existing, result, keptManualTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl,
       ...(Object.keys(updates).length > 0 ? { action: 'update' as const, updates } : { action: 'same' as const }),
     };
   });
+}
+
+export interface ReviewedWarnings {
+  warnings: ImportWarning[]; // still need the user's attention
+  alreadySaved: ImportWarning[]; // cut-off positions the journal already holds with the same P&L
+  savedDiffers: (ImportWarning & { savedProfit: number })[]; // already saved, but with another P&L
+}
+
+// A paste that starts where the last one ended often catches the tail of a position imported
+// before. If the journal already has that position with the broker's P&L, no money is missing.
+export function reviewImportWarnings(warnings: ImportWarning[], trades: Pick<Trade, 'positionId' | 'profit'>[]): ReviewedWarnings {
+  const reviewed: ReviewedWarnings = { warnings: [], alreadySaved: [], savedDiffers: [] };
+  for (const w of warnings) {
+    const saved = w.kind === 'missingEntry' && w.positionId ? trades.find(t => t.positionId === w.positionId) : undefined;
+    if (!saved) reviewed.warnings.push(w);
+    else if (toCents(saved.profit) === toCents(w.pnl)) reviewed.alreadySaved.push(w);
+    else reviewed.savedDiffers.push({ ...w, savedProfit: saved.profit });
+  }
+  return reviewed;
 }

@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
-import { parseTradingViewData, groupOrdersIntoTrades, parseTradingViewCSVData } from "@/lib/tradingViewParser";
-import { planImport, type ImportAction } from "@/lib/importPlan";
+import { parseTradingViewData, groupOrdersIntoTrades, parseTradingViewCSVData, findImportWarnings, type ImportWarning, type ImportWarningKind } from "@/lib/tradingViewParser";
+import { sumMoney } from "@/lib/money";
+import { planImport, reviewImportWarnings, type ImportAction } from "@/lib/importPlan";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil } from "lucide-react";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
@@ -17,6 +18,33 @@ interface BulkImportModalProps {
   initialRawText: string;
 }
 
+const formatSigned = (amount: number) => `${amount < 0 ? '-' : '+'}$${Math.abs(amount).toFixed(2)}`;
+
+// What each kind of leftover order means for the journal's money, worst first.
+const WARNING_TEXT: Record<ImportWarningKind, { title: string; advice: string; isMoneyMissing: boolean }> = {
+  missingEntry: {
+    title: 'closed, but the opening order is not in what you pasted',
+    advice: 'Not imported. Copy the history from further back so the opening order is included, or the balance will be off by this amount.',
+    isMoneyMissing: true,
+  },
+  noPositionId: {
+    title: 'has P&L but no position ID',
+    advice: 'Not imported. Add it by hand or the balance will be off by this amount.',
+    isMoneyMissing: true,
+  },
+  splitClose: {
+    title: 'was closed in more than one part',
+    advice: 'Imported as one trade with the P&L of all parts added up. Check the amount against the broker.',
+    isMoneyMissing: false,
+  },
+  open: {
+    title: 'has no closing order yet',
+    advice: 'Not imported: still open, or the history ends before it closed. Import again after it closes.',
+    isMoneyMissing: false,
+  },
+};
+const WARNING_ORDER: ImportWarningKind[] = ['missingEntry', 'noPositionId', 'splitClose', 'open'];
+
 const splitTime = (time?: string) => {
   const [date, clock] = (time || '').split('T');
   return { date: date || '-', clock: clock || '' };
@@ -27,22 +55,26 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const { parsedTrades, parseError } = useMemo(() => {
-    if (!initialRawText) return { parsedTrades: [] as Partial<Trade>[], parseError: null };
+  const { parsedTrades, importWarnings, parseError } = useMemo(() => {
+    const noWarnings: ImportWarning[] = [];
+    if (!initialRawText) return { parsedTrades: [] as Partial<Trade>[], importWarnings: noWarnings, parseError: null };
     try {
       const orders = initialRawText.trim().startsWith("Symbol,Side,Type,Qty")
         ? parseTradingViewCSVData(initialRawText)
         : parseTradingViewData(initialRawText);
       const grouped = groupOrdersIntoTrades(orders);
+      const warnings = findImportWarnings(orders);
       return {
         parsedTrades: grouped,
-        parseError: grouped.length === 0
+        importWarnings: warnings,
+        // Leftover orders explain an empty result better than the generic message.
+        parseError: grouped.length === 0 && warnings.length === 0
           ? "No valid closed trades found. Please make sure to copy the full history including entry and exit orders."
           : null,
       };
     } catch (e) {
       console.error(e);
-      return { parsedTrades: [] as Partial<Trade>[], parseError: "Failed to parse data. Please check the format." };
+      return { parsedTrades: [] as Partial<Trade>[], importWarnings: noWarnings, parseError: "Failed to parse data. Please check the format." };
     }
   }, [initialRawText]);
   const error = importError || parseError;
@@ -62,6 +94,10 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const updateCount = plan.filter(r => r.action === 'update').length;
   const uncertainCount = plan.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
   const unknownStopCount = plan.filter(r => r.result.riskIsEstimate).length;
+  const reviewed = useMemo(() => reviewImportWarnings(importWarnings, trades), [importWarnings, trades]);
+  const changedProfitCount =plan.filter(r => r.previousProfit !== undefined).length;
+  const commissionRows = plan.filter(r => r.result.commission);
+  const totalCommission = sumMoney(commissionRows.map(r => r.result.commission));
   const hasInvalidEdit = plan.some(r => r.invalidExit || r.invalidInitialSl);
 
   useEscapeToClose(isOpen, onClose);
@@ -124,7 +160,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
           duration: t.duration,
           positionId: t.positionId,
           entryType: t.entryType,
-          exitType: t.exitType
+          exitType: t.exitType,
+          commission: t.commission
         };
 
         // Firebase doesn't support undefined or NaN values, so we must remove them
@@ -177,6 +214,54 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
             </div>
           )}
 
+          {importWarnings.length > 0 && (
+            <div className="space-y-2">
+              {reviewed.savedDiffers.length > 0 && (
+                <div className="text-xs p-3 rounded-lg border bg-red-50 text-red-900 border-red-200">
+                  <p className="font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    {`${reviewed.savedDiffers.length} ${reviewed.savedDiffers.length > 1 ? 'positions are' : 'position is'} already in the journal with a different P&L than the broker's`}
+                  </p>
+                  <p className="font-medium mt-1 ml-6">Not changed, because the opening order is not in what you pasted. Copy the whole position to correct it.</p>
+                  <ul className="mt-1 ml-6 font-semibold opacity-80">
+                    {reviewed.savedDiffers.map(w => (
+                      <li key={w.positionId}>{w.symbol} · {w.time} · saved {formatSigned(w.savedProfit)}, broker {formatSigned(w.pnl || 0)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {reviewed.alreadySaved.length > 0 && (
+                <p className="text-[11px] font-semibold text-stone-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
+                  {`${reviewed.alreadySaved.length} partly copied ${reviewed.alreadySaved.length > 1 ? 'positions are' : 'position is'} already in the journal with the same P&L. Nothing to do.`}
+                </p>
+              )}
+              {WARNING_ORDER.map(kind => {
+                const items = reviewed.warnings.filter(w => w.kind === kind);
+                if (items.length === 0) return null;
+                const { title, advice, isMoneyMissing } = WARNING_TEXT[kind];
+                const amounts = items.filter(w => w.pnl !== undefined);
+                return (
+                  <div key={kind} className={`text-xs p-3 rounded-lg border ${isMoneyMissing ? 'bg-red-50 text-red-900 border-red-200' : 'bg-stone-50 text-stone-600 border-stone-200'}`}>
+                    <p className="font-bold flex items-center gap-2">
+                      <AlertTriangle className={`w-4 h-4 shrink-0 ${isMoneyMissing ? 'text-red-900' : 'text-orange-400'}`} />
+                      {`${items.length} ${items.length > 1 ? 'positions' : 'position'} ${title}`}
+                      {amounts.length > 0 && ` (${formatSigned(sumMoney(amounts.map(w => w.pnl)))} in total)`}
+                    </p>
+                    <p className="font-medium mt-1 ml-6">{advice}</p>
+                    <ul className="mt-1 ml-6 font-semibold opacity-80">
+                      {items.map((w, i) => (
+                        <li key={`${w.positionId || 'order'}-${i}`}>
+                          {w.symbol} · {w.time}{w.pnl !== undefined && ` · ${formatSigned(w.pnl)}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {parsedTrades.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -188,6 +273,18 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                   <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     {`${uncertainCount} ${uncertainCount > 1 ? 'trades' : 'trade'} hit SL without a TP, so the exit time can't be read from the broker data. Click the exit time to set it.`}
+                  </p>
+                )}
+                {changedProfitCount > 0 && (
+                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {`${changedProfitCount} saved ${changedProfitCount > 1 ? 'trades have' : 'trade has'} a P&L that differs from the broker's. Importing replaces it with the broker's amount (old amount shown struck through).`}
+                  </p>
+                )}
+                {commissionRows.length > 0 && (
+                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {`The broker reports $${Math.abs(totalCommission).toFixed(2)} commission on ${commissionRows.length} ${commissionRows.length > 1 ? 'trades' : 'trade'}. It is saved with each trade but not subtracted from P&L, because the export does not say whether P&L already includes it. Check the balance against the broker after importing.`}
                   </p>
                 )}
                 {unknownStopCount > 0 && (
@@ -218,7 +315,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                     </tr>
                   </thead>
                   <tbody className="text-[11px] divide-y divide-stone-50">
-                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, previousExitTime, previousRisk, invalidExit, invalidInitialSl }) => {
+                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl }) => {
                       const entry = splitTime(result.entryTime);
                       const exitTime = result.exitTime || result.time;
                       const exit = splitTime(exitTime);
@@ -326,6 +423,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.exitPrice?.toFixed(2) || '-'}</td>
                           <td className={`px-4 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
                             {t.profit! < 0 ? '-' : (t.profit! > 0 ? '+' : '')}${Math.abs(t.profit || 0).toFixed(2)}
+                            {previousProfit !== undefined && (
+                              <p className="text-[9px] text-stone-300 line-through" title="P&L currently saved">{formatSigned(previousProfit)}</p>
+                            )}
                           </td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500 leading-tight">
                             <span title={result.riskIsEstimate ? "Default 1R: the first stop is unknown" : "Distance to the first stop"}>

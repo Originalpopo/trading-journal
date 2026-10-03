@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupOrdersIntoTrades, parseTradingViewData, parseTradingViewCSVData, type ParsedOrder } from './tradingViewParser.ts';
+import { groupOrdersIntoTrades, findImportWarnings, parseTradingViewData, parseTradingViewCSVData, type ParsedOrder } from './tradingViewParser.ts';
 
 // Compact order builder: filled orders carry a position ID; exits carry P&L.
 const order = (o: Partial<ParsedOrder> & Pick<ParsedOrder, 'side' | 'type' | 'status' | 'updateTime' | 'orderId'>): ParsedOrder =>
@@ -134,4 +134,79 @@ test('parseTradingViewCSVData keeps a 0.00 exit as an exit', () => {
   const trades = groupOrdersIntoTrades(parseTradingViewCSVData(csv));
   assert.equal(trades.length, 1);
   assert.equal(trades[0].profit, 0);
+});
+
+test('a normal closed position raises no import warning', () => {
+  assert.deepEqual(findImportWarnings([
+    order({ side: 'Buy', type: 'Limit', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, orderId: '100' }),
+    order({ side: 'Sell', type: 'Take Profit', status: 'cancelled', updateTime: '2026-01-05 10:45:30', limitOrStopPrice: 2010, orderId: '101' }),
+    order({ side: 'Sell', type: 'Stop Loss', status: 'filled', updateTime: '2026-01-05 10:20:00', positionId: 'P:100', avgFillPrice: 1999.9, pnl: -0.1, orderId: '102' }),
+  ]), []);
+});
+
+test('a closing fill whose entry is cut off is reported with its P&L, not dropped silently', () => {
+  const orders = [
+    order({ side: 'Sell', type: 'Stop Loss', status: 'filled', updateTime: '2026-01-05 10:20:00', positionId: 'P:100', avgFillPrice: 1999, pnl: -0.72, orderId: '102' }),
+  ];
+  assert.equal(groupOrdersIntoTrades(orders).length, 0);
+  assert.deepEqual(findImportWarnings(orders), [
+    { kind: 'missingEntry', symbol: 'XAUUSD', time: '2026-01-05 10:20:00', positionId: 'P:100', pnl: -0.72 },
+  ]);
+});
+
+test('a position with only its entry is reported as open', () => {
+  const [w] = findImportWarnings([
+    order({ side: 'Buy', type: 'Limit', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, orderId: '100' }),
+  ]);
+  assert.equal(w.kind, 'open');
+  assert.equal(w.pnl, undefined);
+});
+
+test('a position closed in two parts is imported with the whole P&L and reported', () => {
+  const orders = [
+    order({ side: 'Buy', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, orderId: '100' }),
+    order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:10:00', positionId: 'P:100', avgFillPrice: 2001, pnl: 0.1, orderId: '110' }),
+    order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:20:00', positionId: 'P:100', avgFillPrice: 2002, pnl: 0.2, orderId: '120' }),
+  ];
+  const [t] = groupOrdersIntoTrades(orders);
+  assert.equal(t.profit, 0.3);
+  const [w] = findImportWarnings(orders);
+  assert.equal(w.kind, 'splitClose');
+  assert.equal(w.pnl, 0.3);
+});
+
+test('a filled order with P&L but no position ID is reported', () => {
+  const [w] = findImportWarnings([
+    order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:10:00', avgFillPrice: 2001, pnl: 1.5, orderId: '110' }),
+  ]);
+  assert.equal(w.kind, 'noPositionId');
+  assert.equal(w.pnl, 1.5);
+});
+
+test('commission from the broker is kept on the trade and not subtracted from P&L', () => {
+  const [t] = groupOrdersIntoTrades([
+    order({ side: 'Buy', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, commission: 0.03, orderId: '100' }),
+    order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:10:00', positionId: 'P:100', avgFillPrice: 2001, pnl: 1, commission: 0.04, orderId: '110' }),
+  ]);
+  assert.equal(t.profit, 1);
+  assert.equal(t.commission, 0.07);
+});
+
+test('zero commission adds no commission field', () => {
+  const [t] = groupOrdersIntoTrades([
+    order({ side: 'Buy', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, commission: 0, orderId: '100' }),
+    order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:10:00', positionId: 'P:100', avgFillPrice: 2001, pnl: 1, commission: 0, orderId: '110' }),
+  ]);
+  assert.equal('commission' in t, false);
+});
+
+test('the real Eightcap export: every P&L row ends up in a trade and the total is exact', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const file = 'eightcap-order-history-all-2026-07-08T07_12_37.312Z.csv';
+  if (!existsSync(file)) return; // the broker file is not kept in the repository
+  const orders = parseTradingViewCSVData(readFileSync(file, 'utf8').replace(/^﻿/, ''));
+  const trades = groupOrdersIntoTrades(orders);
+  assert.equal(trades.length, 49);
+  assert.equal(trades.reduce((cents, t) => cents + Math.round(t.profit! * 100), 0), -892);
+  assert.deepEqual(findImportWarnings(orders), []);
 });

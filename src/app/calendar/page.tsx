@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
+import { addMoney } from "@/lib/money";
 
 export default function CalendarPage() {
   const { trades, isLoading, isPrivacyMode } = useJournalStore();
@@ -42,7 +43,7 @@ export default function CalendarPage() {
       if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
         const date = d.getDate();
         if (!statsMap[date]) statsMap[date] = { pnl: 0, count: 0, rr: 0 };
-        statsMap[date].pnl += t.profit;
+        statsMap[date].pnl = addMoney(statsMap[date].pnl, t.profit);
         statsMap[date].count++;
         statsMap[date].rr += (t.rr || 0);
 
@@ -70,9 +71,9 @@ export default function CalendarPage() {
     for (let day = 1; day <= daysInMonth; day++) {
       const s = statsMap[day];
       if (s) {
-        mNet += s.pnl;
+        mNet = addMoney(mNet, s.pnl);
         mRR += s.rr;
-        currentWeekPnL += s.pnl;
+        currentWeekPnL = addMoney(currentWeekPnL, s.pnl);
         currentWeekRR += s.rr;
         currentWeekCount += s.count;
       }

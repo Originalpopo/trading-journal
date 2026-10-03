@@ -3,6 +3,7 @@ import { parseRobustDate } from '@/lib/utils';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
+import type { BalanceCheck } from '@/lib/reconcile';
 
 let legacyChartMigrationStarted = false;
 
@@ -43,6 +44,9 @@ export interface Trade {
   entryType?: string;
   exitType?: string;
   duration?: number;
+  // Commission the broker reported for the position. Informational: `profit` is the broker's
+  // Closed P&L as given and this is not subtracted from it.
+  commission?: number;
   // Candles cached by older versions; moved to the chartCache collection on load.
   chartData?: any;
 }
@@ -69,6 +73,8 @@ export interface Note {
 export interface Preferences {
   // $ risk (1R) used when a trade's initial stop is unknown.
   defaultRisk?: number;
+  // Latest broker balance the user entered, compared with the journal's own balance.
+  balanceCheck?: BalanceCheck;
 }
 
 interface JournalState {

@@ -40,13 +40,16 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
           static_site_generator: next
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+      # A failing test stops the deploy, so a broken money calculation never reaches the live site.
+      - name: Run tests
+        run: npm test
       - name: Build with Next.js
         env:
           NEXT_PUBLIC_TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}

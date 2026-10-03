@@ -1,6 +1,7 @@
 // Shared trade statistics. Every page classifies trades and computes summary metrics here,
 // so a rule change (e.g. the BE threshold) only has to be made once.
 // Kept free of app imports so it can be unit-tested with `node --test`.
+import { addMoney, subMoney } from './money.ts';
 
 export type TradeOutcome = 'win' | 'loss' | 'be';
 
@@ -80,11 +81,11 @@ function createDrawdownTracker() {
     update(value: number, base: number) {
       last = value;
       if (value >= peak) { peak = value; peakBase = base; }
-      const dd = peak - value;
+      const dd = subMoney(peak, value);
       if (dd > maxValue) { maxValue = dd; maxPercent = percentOf(dd); }
     },
     result(): Drawdown {
-      const activeValue = peak - last;
+      const activeValue = subMoney(peak, last);
       return { maxValue, maxPercent, activeValue, activePercent: percentOf(activeValue) };
     },
   };
@@ -102,13 +103,13 @@ export function computeDrawdowns(events: TimelineEvent[]) {
 
   for (const evt of events) {
     if (evt.type === 'funding') {
-      runningBalance += (evt.deposit || 0) - (evt.withdraw || 0);
-      tradingBalance += evt.deposit || 0;
+      runningBalance = subMoney(addMoney(runningBalance, evt.deposit), evt.withdraw);
+      tradingBalance = addMoney(tradingBalance, evt.deposit);
     } else {
       const pnl = evt.profit || 0;
-      runningBalance += pnl;
-      tradingBalance += pnl;
-      cumulativePnL += pnl;
+      runningBalance = addMoney(runningBalance, pnl);
+      tradingBalance = addMoney(tradingBalance, pnl);
+      cumulativePnL = addMoney(cumulativePnL, pnl);
     }
     balance.update(runningBalance, runningBalance);
     trading.update(tradingBalance, tradingBalance);
@@ -177,7 +178,7 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
   for (const t of trades) {
     const pnl = t.profit || 0;
     const rr = t.rr || 0;
-    netProfit += pnl;
+    netProfit = addMoney(netProfit, pnl);
     netRR += rr;
     profits.push(pnl);
 
@@ -185,11 +186,11 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
 
     if (outcome === 'be') {
       bes++;
-      sumBE += pnl;
+      sumBE = addMoney(sumBE, pnl);
       if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
     } else if (outcome === 'win') {
       wins++;
-      grossProfit += pnl;
+      grossProfit = addMoney(grossProfit, pnl);
       if (pnl > largestProfit) largestProfit = pnl;
       if (rr > 0) {
         tpRRSum += rr;
@@ -198,7 +199,7 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
       }
 
       currentWinCount++;
-      currentWinAmt += pnl;
+      currentWinAmt = addMoney(currentWinAmt, pnl);
       if (currentLossCount > 0) {
         lossStreaks++;
         sumOfLossStreaks += currentLossCount;
@@ -212,7 +213,7 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
       }
     } else {
       losses++;
-      grossLoss += Math.abs(pnl);
+      grossLoss = addMoney(grossLoss, Math.abs(pnl));
       if (pnl < largestLoss) largestLoss = pnl;
       if (rr < 0) {
         slRRSum += rr;
@@ -221,7 +222,7 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
       }
 
       currentLossCount++;
-      currentLossAmt += Math.abs(pnl);
+      currentLossAmt = addMoney(currentLossAmt, Math.abs(pnl));
       if (currentWinCount > 0) {
         winStreaks++;
         sumOfWinStreaks += currentWinCount;

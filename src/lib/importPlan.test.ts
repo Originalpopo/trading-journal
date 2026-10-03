@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planImport } from './importPlan.ts';
+import { planImport, reviewImportWarnings } from './importPlan.ts';
 
 // A saved trade as the app stores it; only the fields import planning looks at matter here.
 const saved = (overrides: Record<string, unknown> = {}) => ({
@@ -149,4 +149,53 @@ test('new trades with an unknown stop use the current default 1R', () => {
   const [row] = planImport([moved], [], NO_EDITS, { defaultRisk: 5, fallbackPointValue: 1 });
   assert.equal(row.result.risk, 5);
   assert.equal(row.result.riskIsEstimate, true);
+});
+
+test('re-import replaces a saved P&L that disagrees with the broker and shows the old one', () => {
+  const [row] = planImport([parsed({ profit: -1.2 })], [saved()], NO_EDITS, CTX);
+  assert.equal(row.action, 'update');
+  assert.equal(row.updates!.profit, -1.2);
+  assert.equal(row.previousProfit, -1);
+  assert.equal(row.result.profit, -1.2);
+});
+
+test('float noise in a saved P&L is not treated as a disagreement', () => {
+  const [row] = planImport([parsed({ profit: 0.3 })], [saved({ profit: 0.1 + 0.2 })], NO_EDITS, CTX);
+  assert.ok(!('profit' in (row.updates || {})));
+  assert.equal(row.previousProfit, undefined);
+});
+
+test('re-import records commission the broker reports', () => {
+  const [row] = planImport([parsed({ commission: 0.07 })], [saved()], NO_EDITS, CTX);
+  assert.equal(row.updates!.commission, 0.07);
+});
+
+const cutOff = (overrides: Record<string, unknown> = {}) => ({
+  kind: 'missingEntry', symbol: 'XAUUSD', time: '2026-10-02 07:51:13', positionId: 'XAUUSD:100', pnl: -0.73, ...overrides,
+}) as any;
+
+test('a cut-off position already saved with the same P&L is not a warning', () => {
+  const r = reviewImportWarnings([cutOff()], [saved({ profit: -0.73 })]);
+  assert.equal(r.warnings.length, 0);
+  assert.equal(r.alreadySaved.length, 1);
+  assert.equal(r.savedDiffers.length, 0);
+});
+
+test('a cut-off position that is not in the journal stays a warning', () => {
+  const r = reviewImportWarnings([cutOff()], [saved({ positionId: 'XAUUSD:999', profit: -0.73 })]);
+  assert.equal(r.warnings.length, 1);
+  assert.equal(r.alreadySaved.length, 0);
+});
+
+test('a cut-off position saved with a different P&L is reported with both amounts', () => {
+  const r = reviewImportWarnings([cutOff()], [saved({ profit: -0.7 })]);
+  assert.equal(r.warnings.length, 0);
+  assert.equal(r.savedDiffers.length, 1);
+  assert.equal(r.savedDiffers[0].savedProfit, -0.7);
+  assert.equal(r.savedDiffers[0].pnl, -0.73);
+});
+
+test('other kinds of warning are never hidden by a saved trade', () => {
+  const r = reviewImportWarnings([cutOff({ kind: 'splitClose' }), cutOff({ kind: 'noPositionId', positionId: undefined })], [saved({ profit: -0.73 })]);
+  assert.equal(r.warnings.length, 2);
 });

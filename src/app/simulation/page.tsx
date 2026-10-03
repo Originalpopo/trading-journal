@@ -16,6 +16,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade, parseRisk } from "@/lib/stats";
+import { addMoney, subMoney } from "@/lib/money";
 
 ChartJS.register(
   CategoryScale,
@@ -41,12 +42,12 @@ export default function SimulationPage() {
     let gLoss = 0;
 
     funding.forEach(f => {
-      runningBalance += f.deposit - (f.withdraw || 0);
+      runningBalance = subMoney(addMoney(runningBalance, f.deposit), f.withdraw);
     });
 
     trades.forEach(t => {
       const pnl = t.profit || 0;
-      runningBalance += pnl;
+      runningBalance = addMoney(runningBalance, pnl);
 
       const rawRisk = parseRisk(t.risk);
       if (rawRisk > 0) {
@@ -57,14 +58,14 @@ export default function SimulationPage() {
       const outcome = classifyTrade(t);
       if (outcome === 'win') {
         mWins++;
-        gProfit += pnl;
+        gProfit = addMoney(gProfit, pnl);
         if (t.rr) {
           totalRR += parseFloat(t.rr as any);
           rrCount++;
         }
       } else if (outcome === 'loss') {
         mLosses++;
-        gLoss += pnl;
+        gLoss = addMoney(gLoss, pnl);
       }
     });
 

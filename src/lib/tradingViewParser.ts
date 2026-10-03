@@ -1,5 +1,6 @@
 import type { Trade, ExitTimeConfidence } from '@/store/useJournalStore';
 import Papa from 'papaparse';
+import { sumMoney } from './money.ts';
 
 export interface ParsedOrder {
   symbol: string;
@@ -65,6 +66,7 @@ export function parseTradingViewData(raw: string): ParsedOrder[] {
 
     if (posIdRaw && posIdRaw.includes(':')) positionId = posIdRaw;
     if (pnlRaw && pnlRaw !== '') pnl = parseFloat(pnlRaw);
+    const commission = parseFloat((commRaw || '').replace(/,/g, '')) || 0;
     if (oidRaw && oidRaw !== '') orderId = oidRaw;
 
     if (!orderId && pnlRaw && pnlRaw.length >= 8 && !pnlRaw.includes('.')) {
@@ -80,7 +82,7 @@ export function parseTradingViewData(raw: string): ParsedOrder[] {
     }
 
     orders.push({
-      symbol, side, type, limitOrStopPrice, avgFillPrice, status, updateTime: timeRaw, positionId, pnl, orderId
+      symbol, side, type, limitOrStopPrice, avgFillPrice, status, updateTime: timeRaw, positionId, commission, pnl, orderId
     });
   }
 
@@ -189,8 +191,9 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
     positions.get(o.positionId)!.push(o);
   }
 
-  // Positions are never partially closed: one fill opens (no P&L), one fill closes (has P&L).
-  // Positions without both (still open, or cut off at the edge of the pasted history) are skipped.
+  // Normally one fill opens (no P&L) and one fill closes (has P&L). Positions without both (still
+  // open, or cut off at the edge of the pasted history) are skipped here and reported by
+  // findImportWarnings.
   const closedPositions = Array.from(positions.entries())
     .map(([posId, posOrders]) => ({
       posId,
@@ -219,9 +222,15 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
       exitPrice: exitOrder.avgFillPrice || exitOrder.limitOrStopPrice,
       entryType: entryOrder.type,
       exitType: exitOrder.type,
-      profit: exitOrder.pnl || 0,
+      // Every closing fill counts, so a position closed in parts still carries its whole P&L.
+      profit: sumMoney(posOrders.map(o => o.pnl)),
       duration: Math.max(0, Math.floor((toMs(exit.time) - entryMs) / 1000) || 0),
     };
+
+    // Kept beside the trade, not subtracted: the export does not say whether Closed P&L already
+    // includes it.
+    const commission = sumMoney(posOrders.map(o => o.commission));
+    if (commission !== 0) trade.commission = commission;
 
     if (exit.sibling) {
       if (orderType(exit.sibling) === 'take profit') trade.tpPrice = exit.sibling.limitOrStopPrice;
@@ -268,4 +277,50 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
   trades.sort((a, b) => new Date(b.time!).getTime() - new Date(a.time!).getTime());
 
   return trades;
+}
+
+export type ImportWarningKind =
+  | 'missingEntry' // closing fill present but its opening fill is not: real P&L that is not imported
+  | 'splitClose' // more than one closing fill; imported with the P&L of all of them added up
+  | 'noPositionId' // filled order with P&L that cannot be tied to a position: not imported
+  | 'open'; // opening fill only: still open, or the history ends before it closed
+
+export interface ImportWarning {
+  kind: ImportWarningKind;
+  symbol: string;
+  time: string;
+  positionId?: string;
+  pnl?: number; // money involved, when the broker data states it
+}
+
+// Everything in the pasted history that groupOrdersIntoTrades does not turn into a normal trade.
+// Nothing here may be dropped silently: each item is money the journal could end up missing.
+export function findImportWarnings(orders: ParsedOrder[]): ImportWarning[] {
+  const warnings: ImportWarning[] = [];
+  const positions = new Map<string, ParsedOrder[]>();
+
+  for (const o of orders) {
+    if (o.status !== 'filled') continue;
+    if (!o.positionId) {
+      if (o.pnl !== undefined) warnings.push({ kind: 'noPositionId', symbol: o.symbol, time: o.updateTime, pnl: o.pnl });
+      continue;
+    }
+    if (!positions.has(o.positionId)) positions.set(o.positionId, []);
+    positions.get(o.positionId)!.push(o);
+  }
+
+  for (const [positionId, posOrders] of positions) {
+    const entries = posOrders.filter(o => o.pnl === undefined);
+    const exits = posOrders.filter(o => o.pnl !== undefined);
+    const { symbol, updateTime: time } = posOrders[0];
+    if (exits.length === 0) {
+      warnings.push({ kind: 'open', symbol, time, positionId });
+    } else if (entries.length === 0) {
+      warnings.push({ kind: 'missingEntry', symbol, time: exits[0].updateTime, positionId, pnl: sumMoney(exits.map(o => o.pnl)) });
+    } else if (exits.length > 1) {
+      warnings.push({ kind: 'splitClose', symbol, time: exits[0].updateTime, positionId, pnl: sumMoney(exits.map(o => o.pnl)) });
+    }
+  }
+
+  return warnings;
 }
