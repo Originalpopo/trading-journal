@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Download, Info } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { buildTaxReport, taxReportCsv } from "@/lib/taxReport";
+import { buildTaxReport, taxReportCsv, type SplitMethod } from "@/lib/taxReport";
 import { formatNumber } from "@/lib/utils";
 
 const TH_BASE = "px-4 py-4 font-bold uppercase text-[10px] tracking-widest";
@@ -13,6 +13,7 @@ const TH_GROUP = "px-4 pt-3 pb-1 font-bold uppercase text-[10px] tracking-widest
 const TH_SUB = "px-4 pt-1 pb-3 font-bold uppercase text-[10px] tracking-widest text-right";
 const TD = "px-4 py-4 text-right font-bold text-stone-500";
 
+// Principal first is the method the account owner files with; pro rata is a greyed-out reference.
 // Thai explanations shown when hovering the info icon beside a column name.
 const TIP_PRINCIPAL_FIRST = "เงินต้นออกก่อน: ถือว่าเงินบาทที่ถอนกลับมาเป็นเงินต้นก่อน จนกว่าจะได้เงินต้นที่เคยส่งออกไปคืนครบ ส่วนที่เกินจากนั้นจึงนับเป็นกำไร";
 const TIP_PRO_RATA = "ตามสัดส่วน: ถือว่าเงินที่ถอนมีเงินต้นและกำไรปนกันตามสัดส่วนของพอร์ต เช่น ถอน 40% ของพอร์ต ก็ถือว่าเอาเงินต้นออกมา 40% เงินบาทที่ได้รับเกินจากนั้นนับเป็นกำไร";
@@ -41,13 +42,13 @@ export default function ReportPage() {
     );
   const latestRate = report.years.length > 0 ? report.years[report.years.length - 1].approxRate : null;
 
-  const handleExport = () => {
+  const handleExport = (method: SplitMethod) => {
     // The BOM makes Excel read the file as UTF-8.
-    const blob = new Blob(['﻿' + taxReportCsv(report)], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['﻿' + taxReportCsv(report, method)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `trading-tax-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `trading-tax-report-${method === 'principalFirst' ? 'principal-first' : 'pro-rata'}-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -69,15 +70,28 @@ export default function ReportPage() {
             Figures per calendar year. Profit counts in the year the money reached your Thai bank.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={report.years.length === 0}
-          className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs"
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleExport('principalFirst')}
+            disabled={report.years.length === 0}
+            title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบเงินต้นออกก่อน (วิธีหลัก)"
+            className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs"
+          >
+            <Download className="w-4 h-4" />
+            CSV · Principal 1st
+          </button>
+          <button
+            type="button"
+            onClick={() => handleExport('proRata')}
+            disabled={report.years.length === 0}
+            title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบตามสัดส่วน (ไว้เทียบ)"
+            className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-xl transition flex items-center gap-2 text-xs"
+          >
+            <Download className="w-4 h-4" />
+            CSV · Pro rata
+          </button>
+        </div>
       </div>
 
       {report.isComplete ? (
@@ -131,7 +145,7 @@ export default function ReportPage() {
                 </tr>
                 <tr>
                   <th className={`${TH_SUB} border-l border-stone-100`}>Principal 1st<Tip text={TIP_PRINCIPAL_FIRST} /></th>
-                  <th className={TH_SUB}>Pro rata<Tip text={TIP_PRO_RATA} /></th>
+                  <th className={`${TH_SUB} text-stone-300`}>Pro rata<Tip text={TIP_PRO_RATA} /></th>
                 </tr>
               </thead>
               <tbody className="text-[11px] divide-y divide-stone-50">
@@ -154,8 +168,8 @@ export default function ReportPage() {
                     <td className={TD}>{y.tradeCount}</td>
                     <td className={TD}>{usd(y.commissionUsd)}{approx(y.commissionUsd, y.approxRate)}</td>
                     <td className={`${TD} text-stone-950`}>{usd(y.endBalanceUsd)}{approx(y.endBalanceUsd, y.approxRate)}</td>
-                    <td className={`${TD} text-stone-950 border-l border-stone-100`}>{thb(y.profitBroughtInThb.principalFirst)}</td>
-                    <td className={`${TD} text-stone-950`}>{thb(y.profitBroughtInThb.proRata)}</td>
+                    <td className={`${TD} text-stone-950 font-extrabold border-l border-stone-100`}>{thb(y.profitBroughtInThb.principalFirst)}</td>
+                    <td className={`${TD} text-stone-300`}>{thb(y.profitBroughtInThb.proRata)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -163,8 +177,8 @@ export default function ReportPage() {
           </div>
         )}
         <p className="text-[11px] text-stone-400 font-medium mt-3">
-          Baht principal still abroad: {thb(report.principalLeftThb.principalFirst)} (principal 1st) · {thb(report.principalLeftThb.proRata)} (pro rata).
-          Pick one method with your accountant and keep using it.
+          Baht principal still abroad: {thb(report.principalLeftThb.principalFirst)}. Principal 1st is the method this journal goes by;
+          pro rata ({thb(report.principalLeftThb.proRata)} still abroad) is shown in grey for comparison only.
           {latestRate && (
             <>
               <br />
@@ -192,7 +206,7 @@ export default function ReportPage() {
                   <th className={TH}>Baht received</th>
                   <th className={TH}>Rate</th>
                   <th className={TH}>Principal 1st<Tip text={TIP_PRINCIPAL_FIRST + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"} /></th>
-                  <th className={TH}>Pro rata<Tip text={TIP_PRO_RATA + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"} /></th>
+                  <th className={`${TH} text-stone-300`}>Pro rata<Tip text={TIP_PRO_RATA + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"} /></th>
                 </tr>
               </thead>
               <tbody className="text-[11px] divide-y divide-stone-50">
@@ -209,7 +223,7 @@ export default function ReportPage() {
                       {w.principalFirst ? <>{thb(w.principalFirst.principal)} / <span className="text-stone-950">{thb(w.principalFirst.profit)}</span></> : '-'}
                     </td>
                     <td className={TD}>
-                      {w.proRata ? <>{thb(w.proRata.principal)} / <span className="text-stone-950">{thb(w.proRata.profit)}</span></> : '-'}
+                      {w.proRata ? <span className="text-stone-300">{thb(w.proRata.principal)} / {thb(w.proRata.profit)}</span> : '-'}
                     </td>
                   </tr>
                 ))}

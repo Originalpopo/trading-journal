@@ -109,13 +109,23 @@ test('no data gives an empty report', () => {
   assert.equal(r.isComplete, true);
 });
 
-test('CSV has the yearly table and the withdrawal table', () => {
-  const csv = taxReportCsv(buildTaxReport([profit], [deposit, withdraw600]));
-  const lines = csv.split('\n');
-  assert.ok(lines[0].startsWith('Year,Start balance USD'));
-  assert.equal(lines[1], '2026,0.00,1000.00,35000.00,600.00,21000.00,500.00,1,0.00,900.00,0.00,7000.00,0');
+test('CSV carries one split method: principal first', () => {
+  const lines = taxReportCsv(buildTaxReport([profit], [deposit, withdraw600]), 'principalFirst').split('\n');
+  assert.ok(lines[0].endsWith('End balance USD,Profit brought in THB (principal first),Entries missing THB'));
+  assert.equal(lines[1], '2026,0.00,1000.00,35000.00,600.00,21000.00,500.00,1,0.00,900.00,0.00,0');
   assert.equal(lines[2], '');
-  assert.equal(lines[4], '2026-06-01T09:00:00,2026-06-02,2026,600.00,21000.00,35.0000,21000.00,0.00,14000.00,7000.00');
+  assert.ok(lines[3].endsWith('Principal THB (principal first),Profit THB (principal first)'));
+  assert.equal(lines[4], '2026-06-01T09:00:00,2026-06-02,2026,600.00,21000.00,35.0000,21000.00,0.00');
+  assert.equal(lines[6], 'Baht principal still abroad (principal first),14000.00');
+  assert.ok(!lines.join('\n').includes('pro rata'));
+});
+
+test('CSV carries one split method: pro rata', () => {
+  const lines = taxReportCsv(buildTaxReport([profit], [deposit, withdraw600]), 'proRata').split('\n');
+  assert.equal(lines[1], '2026,0.00,1000.00,35000.00,600.00,21000.00,500.00,1,0.00,900.00,7000.00,0');
+  assert.equal(lines[4], '2026-06-01T09:00:00,2026-06-02,2026,600.00,21000.00,35.0000,14000.00,7000.00');
+  assert.equal(lines[6], 'Baht principal still abroad (pro rata),21000.00');
+  assert.ok(!lines.join('\n').includes('principal first'));
 });
 
 test('approximate rate: the latest real transfer up to the end of each year', () => {
@@ -130,5 +140,7 @@ test('approximate rate: the latest real transfer up to the end of each year', ()
 test('approximate rate: none until a transfer has a baht amount, and never in the CSV', () => {
   const r = buildTaxReport([profit], [{ time: '2026-01-05T09:00:00', deposit: 1000, withdraw: 0 }]);
   assert.equal(r.years[0].approxRate, null);
-  assert.ok(!/approx/i.test(taxReportCsv(buildTaxReport([profit], [deposit, withdraw600]))));
+  for (const method of ['principalFirst', 'proRata'] as const) {
+    assert.ok(!/approx/i.test(taxReportCsv(buildTaxReport([profit], [deposit, withdraw600]), method)));
+  }
 });

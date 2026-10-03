@@ -217,24 +217,33 @@ const csvCell = (value: string | number | null) => {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
-// Two tables in one file: the yearly summary, then every withdrawal with both splits.
-export function taxReportCsv(report: TaxReport): string {
+export type SplitMethod = 'principalFirst' | 'proRata';
+
+export const SPLIT_METHOD_LABEL: Record<SplitMethod, string> = {
+  principalFirst: 'principal first',
+  proRata: 'pro rata',
+};
+
+// Two tables in one file: the yearly summary, then every withdrawal. A file carries one split
+// method only, so the figures handed to an accountant cannot be mixed up.
+export function taxReportCsv(report: TaxReport, method: SplitMethod): string {
+  const label = SPLIT_METHOD_LABEL[method];
   const lines: (string | number | null)[][] = [
     ['Year', 'Start balance USD', 'Deposits USD', 'Deposits THB', 'Withdrawals USD', 'Withdrawals THB', 'Trading P&L USD',
-      'Trades', 'Commission USD', 'End balance USD', 'Profit brought in THB (principal first)', 'Profit brought in THB (pro rata)',
-      'Entries missing THB'],
+      'Trades', 'Commission USD', 'End balance USD', `Profit brought in THB (${label})`, 'Entries missing THB'],
     ...report.years.map(y => [
       String(y.year), y.startBalanceUsd, y.depositUsd, y.depositThb, y.withdrawUsd, y.withdrawThb, y.tradingPnlUsd,
-      String(y.tradeCount), y.commissionUsd, y.endBalanceUsd, y.profitBroughtInThb.principalFirst, y.profitBroughtInThb.proRata,
-      String(y.missingThb),
+      String(y.tradeCount), y.commissionUsd, y.endBalanceUsd, y.profitBroughtInThb[method], String(y.missingThb),
     ]),
     [],
     ['Withdrawal (broker time)', 'Bank date', 'Tax year', 'USD', 'THB received', 'THB per USD',
-      'Principal THB (principal first)', 'Profit THB (principal first)', 'Principal THB (pro rata)', 'Profit THB (pro rata)'],
+      `Principal THB (${label})`, `Profit THB (${label})`],
     ...report.withdrawals.map(w => [
       w.time, w.bankDate, String(w.taxYear), w.usd, w.thb, w.rate === null ? null : w.rate.toFixed(4),
-      w.principalFirst?.principal ?? null, w.principalFirst?.profit ?? null, w.proRata?.principal ?? null, w.proRata?.profit ?? null,
+      w[method]?.principal ?? null, w[method]?.profit ?? null,
     ]),
+    [],
+    [`Baht principal still abroad (${label})`, report.principalLeftThb[method]],
   ];
   return lines.map(line => line.map(csvCell).join(',')).join('\n');
 }
