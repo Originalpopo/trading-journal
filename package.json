@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
-    "firebase": "^12.14.0",
+    "firebase": "^12.19.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lightweight-charts": "^4.2.3",
     "lucide-react": "^1.18.0",
-    "next": "16.2.9",
+    "next": "^16.3.8",
     "papaparse": "^5.5.3",
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
@@ -30,7 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.3.8",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
