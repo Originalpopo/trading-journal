@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTaxReport, taxReportCsv } from './taxReport.ts';
+import { buildTaxReport, taxReportCsv, estimateIncomeTax, withdrawalSetAsides } from './taxReport.ts';
 
 // Deposit 1,000 USD for 35,000 baht, make 500 USD, withdraw 600 USD and receive 21,000 baht.
 const deposit = { time: '2026-01-05T09:00:00', deposit: 1000, withdraw: 0, thb: 35000, bankDate: '2026-01-05' };
@@ -143,4 +143,67 @@ test('approximate rate: none until a transfer has a baht amount, and never in th
   for (const method of ['principalFirst', 'proRata'] as const) {
     assert.ok(!/approx/i.test(taxReportCsv(buildTaxReport([profit], [deposit, withdraw600]), method)));
   }
+});
+
+test('estimateIncomeTax: the worked example, 600,000 baht gives 42,500', () => {
+  // 150,000 at 0% + 150,000 at 5% (7,500) + 200,000 at 10% (20,000) + 100,000 at 15% (15,000)
+  assert.equal(estimateIncomeTax(600_000), 42_500);
+});
+
+test('estimateIncomeTax: nothing up to 150,000, and each step boundary adds up', () => {
+  assert.equal(estimateIncomeTax(0), 0);
+  assert.equal(estimateIncomeTax(-5_000), 0);
+  assert.equal(estimateIncomeTax(150_000), 0);
+  assert.equal(estimateIncomeTax(150_001), 0.05);
+  assert.equal(estimateIncomeTax(300_000), 7_500);
+  assert.equal(estimateIncomeTax(500_000), 27_500);
+  assert.equal(estimateIncomeTax(750_000), 65_000);
+  assert.equal(estimateIncomeTax(1_000_000), 115_000);
+  assert.equal(estimateIncomeTax(2_000_000), 365_000);
+  assert.equal(estimateIncomeTax(5_000_000), 1_265_000);
+  assert.equal(estimateIncomeTax(6_000_000), 1_615_000); // the part above 5,000,000 at 35%
+});
+
+test('estimateIncomeTax keeps satang exact', () => {
+  assert.equal(estimateIncomeTax(200_000.5), 2_500.03); // 50,000.50 at 5% = 2,500.025, rounded
+  assert.equal(estimateIncomeTax(830.29), 0);
+});
+
+test('the tax estimate never appears in the CSV', () => {
+  const report = buildTaxReport([{ time: '2026-03-01T10:00:00', profit: 50_000 }], [
+    { time: '2026-01-05T09:00:00', deposit: 1000, withdraw: 0, thb: 35_000, bankDate: '2026-01-05' },
+    { time: '2026-06-01T09:00:00', deposit: 0, withdraw: 40_000, thb: 1_400_000, bankDate: '2026-06-01' },
+  ]);
+  assert.equal(report.years[0].profitBroughtInThb.principalFirst, 1_365_000);
+  assert.equal(estimateIncomeTax(1_365_000), 206_250);
+  for (const method of ['principalFirst', 'proRata'] as const) {
+    const csv = taxReportCsv(report, method);
+    assert.ok(!/tax est|estimate|206250|206,250/i.test(csv), method);
+  }
+});
+
+test('withdrawalSetAsides: each withdrawal carries the tax it adds, and a year sums to its estimate', () => {
+  // 35,000 baht principal, then three withdrawals in 2026 and one in 2027.
+  const report = buildTaxReport([{ time: '2026-02-01T10:00:00', profit: 60_000 }], [
+    { time: '2026-01-05T09:00:00', deposit: 1000, withdraw: 0, thb: 35_000, bankDate: '2026-01-05' },
+    { time: '2026-03-01T09:00:00', deposit: 0, withdraw: 5_000, thb: 175_000, bankDate: '2026-03-01' }, // 140,000 profit
+    { time: '2026-06-01T09:00:00', deposit: 0, withdraw: 5_000, thb: 160_000, bankDate: '2026-06-01' }, // 300,000 so far
+    { time: '2026-09-01T09:00:00', deposit: 0, withdraw: 9_000, thb: 300_000, bankDate: '2026-09-01' }, // 600,000 so far
+    { time: '2026-12-30T09:00:00', deposit: 0, withdraw: 6_000, thb: 200_000, bankDate: '2027-01-02' }, // first of 2027
+  ]);
+  assert.deepEqual(report.withdrawals.map(w => w.principalFirst!.profit), [140_000, 160_000, 300_000, 200_000]);
+  const setAsides = withdrawalSetAsides(report.withdrawals);
+  // 140,000 is inside the exempt step; the next takes the year to 300,000 (7,500), then 600,000 (42,500).
+  assert.deepEqual(setAsides, [0, 7_500, 35_000, 2_500]);
+  assert.equal(setAsides[0]! + setAsides[1]! + setAsides[2]!, estimateIncomeTax(report.years[0].profitBroughtInThb.principalFirst));
+  assert.equal(setAsides[3], estimateIncomeTax(report.years[1].profitBroughtInThb.principalFirst));
+});
+
+test('withdrawalSetAsides: a withdrawal without a baht amount has no figure and does not shift the others', () => {
+  const report = buildTaxReport([{ time: '2026-02-01T10:00:00', profit: 60_000 }], [
+    { time: '2026-01-05T09:00:00', deposit: 1000, withdraw: 0, thb: 35_000, bankDate: '2026-01-05' },
+    { time: '2026-03-01T09:00:00', deposit: 0, withdraw: 5_000 },
+    { time: '2026-06-01T09:00:00', deposit: 0, withdraw: 10_000, thb: 335_000, bankDate: '2026-06-01' },
+  ]);
+  assert.deepEqual(withdrawalSetAsides(report.withdrawals), [null, 7_500]);
 });

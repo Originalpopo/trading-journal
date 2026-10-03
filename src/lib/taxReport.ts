@@ -212,6 +212,50 @@ export function buildTaxReport(trades: TaxTrade[], funding: TaxFunding[]): TaxRe
   };
 }
 
+// Thai personal income tax steps on net income per year, as given by the account owner:
+// [upper limit of the step in baht, rate]. The last step has no upper limit.
+export const THAI_TAX_STEPS: readonly (readonly [number, number])[] = [
+  [150_000, 0],
+  [300_000, 0.05],
+  [500_000, 0.10],
+  [750_000, 0.15],
+  [1_000_000, 0.20],
+  [2_000_000, 0.25],
+  [5_000_000, 0.30],
+  [Infinity, 0.35],
+];
+
+// A rough figure for setting money aside, never for filing: it treats the profit brought in as
+// the whole net income of the year, with no other income, expenses or allowances.
+export function estimateIncomeTax(netIncomeThb: number): number {
+  let remaining = Math.max(0, toCents(netIncomeThb));
+  let lower = 0;
+  let taxCents = 0;
+  for (const [upper, rate] of THAI_TAX_STEPS) {
+    const width = upper === Infinity ? remaining : toCents(upper) - lower;
+    const inStep = Math.min(remaining, width);
+    taxCents += inStep * rate;
+    remaining -= inStep;
+    lower = toCents(upper);
+    if (remaining <= 0) break;
+  }
+  return fromCents(Math.round(taxCents));
+}
+
+// How much of each withdrawal to keep for tax: the rise in the year's estimated tax that this
+// withdrawal causes (principal-first profit, added up within its tax year). Null while the
+// withdrawal has no baht amount. The amounts of a year add up to that year's estimate.
+export function withdrawalSetAsides(withdrawals: WithdrawalRow[]): (number | null)[] {
+  const profitSoFar = new Map<number, number>(); // tax year -> cents of profit brought in
+  return withdrawals.map(w => {
+    if (!w.principalFirst) return null;
+    const before = profitSoFar.get(w.taxYear) ?? 0;
+    const after = before + toCents(w.principalFirst.profit);
+    profitSoFar.set(w.taxYear, after);
+    return fromCents(toCents(estimateIncomeTax(fromCents(after))) - toCents(estimateIncomeTax(fromCents(before))));
+  });
+}
+
 const csvCell = (value: string | number | null) => {
   const text = value === null ? '' : typeof value === 'number' ? value.toFixed(2) : value;
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;

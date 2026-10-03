@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Download, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { buildTaxReport, taxReportCsv, type SplitMethod } from "@/lib/taxReport";
+import { buildTaxReport, taxReportCsv, estimateIncomeTax, withdrawalSetAsides, type SplitMethod } from "@/lib/taxReport";
 import { formatNumber } from "@/lib/utils";
 
 const TH_BASE = "px-4 py-4 font-bold uppercase text-[10px] tracking-widest";
@@ -14,17 +14,16 @@ const TH_SUB = "px-4 pt-1 pb-3 font-bold uppercase text-[10px] tracking-widest t
 const TD = "px-4 py-4 text-right font-bold text-stone-500";
 
 // Principal first is the method the account owner files with; pro rata is a greyed-out reference.
-// Thai explanations shown when hovering the info icon beside a column name.
+// Thai explanations shown when the pointer rests on a column name.
 const TIP_PRINCIPAL_FIRST = "เงินต้นออกก่อน: ถือว่าเงินบาทที่ถอนกลับมาเป็นเงินต้นก่อน จนกว่าจะได้เงินต้นที่เคยส่งออกไปคืนครบ ส่วนที่เกินจากนั้นจึงนับเป็นกำไร";
 const TIP_PRO_RATA = "ตามสัดส่วน: ถือว่าเงินที่ถอนมีเงินต้นและกำไรปนกันตามสัดส่วนของพอร์ต เช่น ถอน 40% ของพอร์ต ก็ถือว่าเอาเงินต้นออกมา 40% เงินบาทที่ได้รับเกินจากนั้นนับเป็นกำไร";
+const TIP_TAX_ESTIMATE = "ยอดที่ควรกันไว้จ่ายภาษีของปีนั้น (โดยประมาณ ไม่ใช่ยอดที่ต้องจ่ายจริง): คิดจากคอลัมน์ Principal 1st ด้วยอัตราก้าวหน้า (150,000 บาทแรกยกเว้น แล้ว 5% 10% 15% 20% 25% 30% 35% ตามขั้น) นับเฉพาะกำไรจากการเทรด ไม่รวมรายได้อื่น ค่าใช้จ่าย หรือค่าลดหย่อน และไม่อยู่ในไฟล์ CSV";
+const TIP_SET_ASIDE = "ควรกันจากการถอนครั้งนี้: ภาษีโดยประมาณของปีที่เพิ่มขึ้นเพราะการถอนครั้งนี้ รวมทุกครั้งในปีเดียวกันจะเท่ากับช่อง Est. tax ของปีนั้น ไม่อยู่ในไฟล์ CSV";
 const TIP_PROFIT_IN = "กำไรที่นำเข้าไทย (บาท): ยอดที่ใช้ยื่นภาษีของปีนั้น นับตามวันที่เงินเข้าบัญชีธนาคารไทย เลือกใช้วิธีเดียวและใช้วิธีเดิมทุกปี";
 
-function Tip({ text }: { text: string }) {
-  return (
-    <span title={text} className="inline-flex align-middle ml-1 cursor-help text-stone-300 hover:text-orange-400 transition">
-      <Info className="w-3 h-3" />
-    </span>
-  );
+// A column name that explains itself when the pointer rests on it.
+function Hint({ text, children }: { text: string; children: React.ReactNode }) {
+  return <span title={text} className="cursor-help">{children}</span>;
 }
 
 export default function ReportPage() {
@@ -40,6 +39,7 @@ export default function ReportPage() {
     rate === null ? null : (
       <><br /><span className="text-[9px] font-medium text-stone-400 opacity-70">{isPrivacyMode ? '***' : `≈${value < 0 ? '-' : ''}฿${formatNumber(Math.abs(value) * rate.rate)}`}</span></>
     );
+  const setAsides = useMemo(() => withdrawalSetAsides(report.withdrawals), [report]);
   const latestRate = report.years.length > 0 ? report.years[report.years.length - 1].approxRate : null;
 
   const handleExport = (method: SplitMethod) => {
@@ -141,11 +141,12 @@ export default function ReportPage() {
                   <th rowSpan={2} className={TH}>Trades</th>
                   <th rowSpan={2} className={TH}>Comm.</th>
                   <th rowSpan={2} className={TH}>End</th>
-                  <th colSpan={2} className={`${TH_GROUP} border-l border-stone-100`}>Taxable profit (฿)<Tip text={TIP_PROFIT_IN} /></th>
+                  <th colSpan={2} className={`${TH_GROUP} border-l border-stone-100`}><Hint text={TIP_PROFIT_IN}>Taxable profit (฿)</Hint></th>
+                  <th rowSpan={2} className={`${TH} border-l border-stone-100`}><Hint text={TIP_TAX_ESTIMATE}>Est. tax (฿)</Hint></th>
                 </tr>
                 <tr>
-                  <th className={`${TH_SUB} border-l border-stone-100`}>Principal 1st<Tip text={TIP_PRINCIPAL_FIRST} /></th>
-                  <th className={`${TH_SUB} text-stone-300`}>Pro rata<Tip text={TIP_PRO_RATA} /></th>
+                  <th className={`${TH_SUB} border-l border-stone-100`}><Hint text={TIP_PRINCIPAL_FIRST}>Principal 1st</Hint></th>
+                  <th className={`${TH_SUB} text-stone-300`}><Hint text={TIP_PRO_RATA}>Pro rata</Hint></th>
                 </tr>
               </thead>
               <tbody className="text-[11px] divide-y divide-stone-50">
@@ -170,6 +171,9 @@ export default function ReportPage() {
                     <td className={`${TD} text-stone-950`}>{usd(y.endBalanceUsd)}{approx(y.endBalanceUsd, y.approxRate)}</td>
                     <td className={`${TD} text-stone-950 font-extrabold border-l border-stone-100`}>{thb(y.profitBroughtInThb.principalFirst)}</td>
                     <td className={`${TD} text-stone-300`}>{thb(y.profitBroughtInThb.proRata)}</td>
+                    <td className={`${TD} border-l border-stone-100 font-medium text-stone-400`}>
+                      {isPrivacyMode ? '***' : `≈฿${formatNumber(estimateIncomeTax(y.profitBroughtInThb.principalFirst))}`}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -205,8 +209,9 @@ export default function ReportPage() {
                   <th className={TH}>USD</th>
                   <th className={TH}>Baht received</th>
                   <th className={TH}>Rate</th>
-                  <th className={TH}>Principal 1st<Tip text={TIP_PRINCIPAL_FIRST + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"} /></th>
-                  <th className={`${TH} text-stone-300`}>Pro rata<Tip text={TIP_PRO_RATA + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"} /></th>
+                  <th className={TH}><Hint text={TIP_PRINCIPAL_FIRST + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"}>Principal 1st</Hint></th>
+                  <th className={`${TH} text-stone-300`}><Hint text={TIP_PRO_RATA + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"}>Pro rata</Hint></th>
+                  <th className={`${TH} border-l border-stone-100`}><Hint text={TIP_SET_ASIDE}>Set aside (฿)</Hint></th>
                 </tr>
               </thead>
               <tbody className="text-[11px] divide-y divide-stone-50">
@@ -224,6 +229,9 @@ export default function ReportPage() {
                     </td>
                     <td className={TD}>
                       {w.proRata ? <span className="text-stone-300">{thb(w.proRata.principal)} / {thb(w.proRata.profit)}</span> : '-'}
+                    </td>
+                    <td className={`${TD} border-l border-stone-100 font-medium text-stone-400`}>
+                      {setAsides[i] === null ? '-' : isPrivacyMode ? '***' : `≈฿${formatNumber(setAsides[i]!)}`}
                     </td>
                   </tr>
                 ))}
