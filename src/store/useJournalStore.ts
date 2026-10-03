@@ -56,6 +56,10 @@ export interface Funding {
   time: string;
   deposit: number;
   withdraw: number;
+  // Baht that actually left or reached the Thai bank account for this transfer, and the day the
+  // bank shows it (a withdrawal can arrive days after the broker deducts it). Tax follows these.
+  thb?: number;
+  bankDate?: string;
   notes: string;
   images?: string[];
 }

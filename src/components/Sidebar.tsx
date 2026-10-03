@@ -13,6 +13,7 @@ import {
   Upload,
   Flame,
   Settings,
+  Receipt,
   Eye,
   EyeOff
 } from "lucide-react";
@@ -119,6 +120,7 @@ export default function Sidebar() {
     { name: "History", href: "/history", icon: History },
     { name: "Calendar", href: "/calendar", icon: Calendar },
     { name: "Simulation", href: "/simulation", icon: FlaskConical },
+    { name: "Tax Report", href: "/report", icon: Receipt },
     { name: "Notes", href: "/notes", icon: StickyNote },
     { name: "Settings", href: "/settings", icon: Settings },
   ];

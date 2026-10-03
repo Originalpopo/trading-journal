@@ -192,6 +192,19 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                   {badgeText}
                 </p>
               </div>
+              <div className="flex flex-col items-center text-center gap-1">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{profit > 0 ? 'Baht paid' : 'Baht received'}</p>
+                <p className={`text-xs font-bold ${f.thb ? 'text-stone-950' : 'text-red-900'}`}>
+                  {f.thb ? (isPrivacyMode ? '***' : `฿${format2Decimals(f.thb)}`) : 'Not entered yet'}
+                </p>
+                {f.thb && f.bankDate && <p className="text-[10px] font-medium text-stone-400">Bank date {f.bankDate}</p>}
+              </div>
+              <div className="flex flex-col items-center text-center gap-1">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Rate</p>
+                <p className="text-xs font-bold text-stone-950">
+                  {f.thb && profit !== 0 ? `1 USD = ${(f.thb / Math.abs(profit)).toFixed(4)} THB` : '-'}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col md:flex-row gap-6 pb-2">

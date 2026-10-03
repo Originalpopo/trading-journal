@@ -36,6 +36,8 @@ interface FormState {
   initialSl: string;
   orderEntryType: string;
   orderExitType: string;
+  thb: string;
+  bankDate: string;
 }
 
 // Stored time -> value for a datetime-local input (local wall clock, with seconds).
@@ -52,6 +54,7 @@ const firstTf = (tf: string) => (tf.includes(',') ? tf.split(',')[0].trim() : tf
 const BLANK_TRADE_FIELDS = {
   entryPrice: "", exitPrice: "", tpPrice: "", slPrice: "", initialSl: "",
   orderEntryType: "Limit", orderExitType: "Limit",
+  thb: "", bankDate: "",
 };
 
 function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): FormState {
@@ -64,6 +67,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       strategy: f.notes || "",
       symbol: "", side: "BUY", risk: "", tf: "none", checklists: [],
       time: toInputTime(f.time), entryTime: "",
+      thb: f.thb?.toString() || "", bankDate: f.bankDate || "",
     };
   }
 
@@ -90,6 +94,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       orderExitType: t.exitType || "Limit",
       entryTime: toInputTime(t.entryTime || t.time),
       time: toInputTime(t.time),
+      thb: "", bankDate: "",
     };
   }
 
@@ -141,6 +146,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [initialSl, setInitialSl] = useState("");
   const [orderEntryType, setOrderEntryType] = useState("Limit");
   const [orderExitType, setOrderExitType] = useState("Limit");
+  const [thb, setThb] = useState("");
+  const [bankDate, setBankDate] = useState("");
   // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
   const timesEditedRef = useRef(false);
   // Set once the user types the first stop or the risk, so 1R is no longer the default guess.
@@ -173,11 +180,13 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     setInitialSl(f.initialSl);
     setOrderEntryType(f.orderEntryType);
     setOrderExitType(f.orderExitType);
+    setThb(f.thb);
+    setBankDate(f.bankDate);
   }, [isOpen, tradeToEdit]);
 
   const currentForm: FormState = {
     entryType, symbol, side, amount, time, risk, entryTime, strategy, tf, checklists,
-    entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType,
+    entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType, thb, bankDate,
   };
 
   // The first stop must be on the losing side of the entry.
@@ -231,9 +240,13 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           time: timeVal,
           deposit: isDeposit ? Math.abs(parsedAmount) : 0,
           withdraw: isDeposit ? 0 : Math.abs(parsedAmount),
-          notes: strategy
+          notes: strategy,
+          thb: parsedThb > 0 ? parsedThb : undefined,
+          bankDate: parsedThb > 0 ? (bankDate || timeVal.slice(0, 10)) : undefined,
         };
-        await setDoc(doc(db, "funding", fId), data, { merge: true });
+        // Emptied optional fields must be deleted, otherwise the merge keeps the old value.
+        const dataForDb = Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val === undefined ? deleteField() : val]));
+        await setDoc(doc(db, "funding", fId), dataForDb, { merge: true });
         finalData = { 
           id: fId, 
           ...data, 
@@ -316,6 +329,11 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const parsedRisk = parseFloat(risk) || 0;
   // P&L, deposits and withdrawals are real money: never store a fraction of a cent.
   const invalidAmount = hasFractionOfCent(amount);
+  const parsedThb = parseFloat(thb) || 0;
+  const invalidThb = hasFractionOfCent(thb) || parsedThb < 0;
+  const isFundingEntry = entryType !== "TRADE";
+  // What one dollar was actually worth in this transfer, fees and the bank's spread included.
+  const impliedRate = isFundingEntry && parsedThb > 0 && Math.abs(parsedAmount) > 0 ? parsedThb / Math.abs(parsedAmount) : null;
   let liveRRStr = "0.00 R";
   let liveRRClass = "text-stone-400 normal-case tracking-normal";
   if (parsedRisk > 0) {
@@ -429,9 +447,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            {entryType === "TRADE" ? (
-              <>
+          {entryType === "TRADE" && (
+            <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Entry Time</label>
                   <input type="datetime-local" step="1" value={entryTime} onChange={(e) => { timesEditedRef.current = true; setEntryTime(e.target.value); }}
@@ -442,15 +459,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                   <input type="datetime-local" step="1" value={time} onChange={(e) => { timesEditedRef.current = true; setTime(e.target.value); }}
                     className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
                 </div>
-              </>
-            ) : (
-              <div>
-                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Date & Time</label>
-                <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className={`grid grid-cols-2 gap-4 ${entryType === "TRADE" ? "mb-4" : ""}`}>
             <div>
@@ -462,6 +472,14 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               {invalidAmount && <p className="text-[10px] font-bold text-red-900 mt-1">Use at most two decimals (cents).</p>}
             </div>
             
+            {isFundingEntry && (
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Date & Time</label>
+                <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              </div>
+            )}
+
             {entryType === "TRADE" && (
               <div>
                 <label className="flex justify-between items-end text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
@@ -473,6 +491,30 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               </div>
             )}
           </div>
+
+          {isFundingEntry && (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="flex justify-between items-end text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
+                  <span>{entryType === "DEPOSIT" ? "Baht paid (THB)" : "Baht received (THB)"}</span>
+                  {impliedRate !== null && <span className="text-stone-950 normal-case tracking-normal">1 USD = {impliedRate.toFixed(4)} THB</span>}
+                </label>
+                <input type="number" step="0.01" min="0" value={thb} onChange={(e) => setThb(e.target.value)} placeholder="From the bank slip"
+                  className={`w-full bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidThb ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'}`} />
+                {invalidThb && <p className="text-[10px] font-bold text-red-900 mt-1">Enter a positive amount with at most two decimals.</p>}
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
+                  {entryType === "DEPOSIT" ? "Date it left the bank" : "Date it reached the bank"}
+                </label>
+                <input type="date" value={bankDate || time.slice(0, 10)} onChange={(e) => setBankDate(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              </div>
+              <p className="col-span-2 text-[10px] font-medium text-stone-400 -mt-2">
+                Optional now, needed for tax: fill it in once the bank shows the transfer. Date & Time above is when the broker moved the money.
+              </p>
+            </div>
+          )}
 
           {entryType === "TRADE" && (
             <div className="mb-4 flex flex-wrap items-end gap-x-8 gap-y-4">
@@ -536,7 +578,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={isSubmitting || invalidAmount || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
+          <button onClick={handleSubmit} disabled={isSubmitting || invalidAmount || (isFundingEntry && invalidThb) || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Saving..." : "Save"}
           </button>
