@@ -25,7 +25,7 @@ import BulkImportModal from "./BulkImportModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { initializeListeners, trades, funding, notes, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
+  const { initializeListeners, trades, funding, dayNotes, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
   const [statusText, setStatusText] = useState("Initializing...");
   const [statusColor, setStatusColor] = useState("bg-stone-300");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -95,7 +95,7 @@ export default function Sidebar() {
     clearDatabase(
       trades,
       funding,
-      notes,
+      dayNotes,
       (status) => {
         setStatusText(status);
         setStatusColor("bg-stone-500 animate-pulse");
@@ -112,7 +112,7 @@ export default function Sidebar() {
   };
 
   const onDownloadDatabase = () => {
-    downloadDatabase(trades, funding, notes);
+    downloadDatabase(trades, funding, dayNotes);
   };
 
   const navItems = [

@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
 import type { BalanceCheck, BalanceCheckRecord } from '@/lib/reconcile';
 import type { StatementProfile } from '@/lib/statement';
+import type { DayNote } from '@/lib/dayNotes';
 
 let legacyChartMigrationStarted = false;
 
@@ -67,15 +68,6 @@ export interface Funding {
   images?: string[];
 }
 
-export interface Note {
-  id: string;
-  title: string;
-  date: string;
-  content: string;
-  icon: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 
 export interface Preferences {
   // $ risk (1R) used when a trade's initial stop is unknown.
@@ -91,7 +83,7 @@ export interface Preferences {
 interface JournalState {
   trades: Trade[];
   funding: Funding[];
-  notes: Note[];
+  dayNotes: DayNote[];
   preferences: Preferences;
   isLoading: boolean;
   isPrivacyMode: boolean;
@@ -103,15 +95,14 @@ interface JournalState {
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
   updateTrades: (updates: { id: string; data: Partial<Trade> }[]) => Promise<void>;
   deleteTrade: (id: string) => Promise<void>;
-  addNote: (note: Omit<Note, 'id'>) => Promise<void>;
-  updateNote: (id: string, note: Partial<Note>) => Promise<void>;
-  deleteNote: (id: string) => Promise<void>;
+  saveDayNote: (date: string, note: Pick<DayNote, 'content' | 'mood'>) => Promise<void>;
+  deleteDayNote: (date: string) => Promise<void>;
 }
 
 export const useJournalStore = create<JournalState>((set) => ({
   trades: [],
   funding: [],
-  notes: [],
+  dayNotes: [],
   preferences: {},
   isLoading: true,
   isPrivacyMode: false,
@@ -165,13 +156,14 @@ export const useJournalStore = create<JournalState>((set) => ({
       set({ funding: fundingData });
     });
 
-    const unsubscribeNotes = onSnapshot(collection(db, 'notes'), (snapshot) => {
-      const notesData: Note[] = [];
+    // One document per day, named by its date.
+    const unsubscribeNotes = onSnapshot(collection(db, 'dayNotes'), (snapshot) => {
+      const notesData: DayNote[] = [];
       snapshot.forEach((doc) => {
-        notesData.push({ id: doc.id, ...doc.data() } as Note);
+        notesData.push({ ...doc.data(), date: doc.id } as DayNote);
       });
-      notesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      set({ notes: notesData, isLoading: false });
+      notesData.sort((a, b) => b.date.localeCompare(a.date));
+      set({ dayNotes: notesData, isLoading: false });
     });
 
     return () => {
@@ -219,27 +211,22 @@ export const useJournalStore = create<JournalState>((set) => ({
       throw error;
     }
   },
-  addNote: async (note) => {
+  // The date is the document ID, so a day can never hold two notes.
+  saveDayNote: async (date, note) => {
     try {
-      await addDoc(collection(db, 'notes'), note);
+      const now = new Date().toISOString();
+      const isNew = !useJournalStore.getState().dayNotes.some(n => n.date === date);
+      await setDoc(doc(db, 'dayNotes', date), { ...note, date, updatedAt: now, ...(isNew && { createdAt: now }) }, { merge: true });
     } catch (error) {
-      console.error("Error adding note: ", error);
+      console.error("Error saving day note: ", error);
       throw error;
     }
   },
-  updateNote: async (id, note) => {
+  deleteDayNote: async (date) => {
     try {
-      await updateDoc(doc(db, 'notes', id), note);
+      await deleteDoc(doc(db, 'dayNotes', date));
     } catch (error) {
-      console.error("Error updating note: ", error);
-      throw error;
-    }
-  },
-  deleteNote: async (id) => {
-    try {
-      await deleteDoc(doc(db, 'notes', id));
-    } catch (error) {
-      console.error("Error deleting note: ", error);
+      console.error("Error deleting day note: ", error);
       throw error;
     }
   }

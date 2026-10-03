@@ -2,13 +2,17 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import DayNoteModal, { MoodIcon } from "@/components/DayNoteModal";
+import { dayKey } from "@/lib/dayNotes";
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
 import { addMoney } from "@/lib/money";
 
 export default function CalendarPage() {
-  const { trades, isLoading, isPrivacyMode } = useJournalStore();
+  const { trades, dayNotes, isLoading, isPrivacyMode } = useJournalStore();
+  const [openNote, setOpenNote] = useState<{ date: string; edit: boolean } | null>(null);
+  const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const changeMonth = (offset: number) => {
@@ -213,18 +217,48 @@ export default function CalendarPage() {
               }
 
               const { day, isToday, stats } = cell;
+              const date = dayKey(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+              const note = notesByDay.get(date);
               let bgColor = "bg-white";
               if (stats) {
                 bgColor = stats.pnl > 0 ? "bg-orange-50" : (stats.pnl < 0 ? "bg-red-50" : "bg-stone-50");
               }
 
               return (
-                <div key={cell.id} className={`${bgColor} min-h-[110px] p-3 flex flex-col`}>
-                  {isToday ? (
-                    <span className="text-xs font-bold bg-orange-400 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm mb-1">{day}</span>
-                  ) : (
-                    <span className="text-xs font-bold text-stone-400">{day}</span>
-                  )}
+                <div
+                  key={cell.id}
+                  className={`${bgColor} group min-h-[110px] p-3 flex flex-col select-none`}
+                  title={note ? "Double-click to edit the note" : "Double-click to write a note"}
+                  onDoubleClick={() => setOpenNote({ date, edit: true })}
+                >
+                  <div className="flex items-start justify-between h-6">
+                    {isToday ? (
+                      <span className="text-xs font-bold bg-orange-400 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
+                    ) : (
+                      <span className="text-xs font-bold text-stone-400">{day}</span>
+                    )}
+                    {note ? (
+                      <button
+                        type="button"
+                        title="Read the note"
+                        onClick={() => setOpenNote({ date, edit: false })}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        className="text-orange-400 hover:text-orange-500 hover:scale-110 transition -mt-0.5 -mr-0.5"
+                      >
+                        <MoodIcon mood={note.mood} className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        title="Write a note"
+                        onClick={() => setOpenNote({ date, edit: true })}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        className="text-stone-300 hover:text-orange-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition -mt-0.5 -mr-0.5"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                   
                   {stats && (
                     <div className="mt-auto">
@@ -287,6 +321,8 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      {openNote && <DayNoteModal key={openNote.date} date={openNote.date} startEditing={openNote.edit} onClose={() => setOpenNote(null)} />}
     </div>
   );
 }

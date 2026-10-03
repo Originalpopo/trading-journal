@@ -1,12 +1,13 @@
 import { doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { clearChartCache } from './chartCache';
-import type { Trade, Funding, Note } from '@/store/useJournalStore';
+import type { Trade, Funding } from '@/store/useJournalStore';
+import type { DayNote } from './dayNotes';
 
 export const clearDatabase = async (
   trades: Trade[],
   funding: Funding[],
-  notes: Note[],
+  dayNotes: DayNote[],
   onProgress?: (status: string) => void,
   onComplete?: () => void,
   onError?: (error: unknown) => void
@@ -61,9 +62,9 @@ export const clearDatabase = async (
       count = 0;
     }
 
-    // Delete notes
-    for (const n of notes) {
-      const docRef = doc(db, "notes", n.id);
+    // Delete day notes
+    for (const n of dayNotes) {
+      const docRef = doc(db, "dayNotes", n.date);
       batch.delete(docRef);
       count++;
       if (count === 500) {
@@ -87,11 +88,11 @@ export const clearDatabase = async (
   }
 };
 
-export const downloadDatabase = (trades: Trade[], funding: Funding[], notes: Note[]) => {
+export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: DayNote[]) => {
   const data = {
     trades,
     funding,
-    notes
+    dayNotes
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -112,7 +113,7 @@ export const restoreDatabase = async (
 ) => {
   try {
     const data = JSON.parse(jsonData);
-    if (!data.trades && !data.funding && !data.notes) {
+    if (!data.trades && !data.funding && !data.dayNotes) {
       throw new Error("Invalid database format.");
     }
 
@@ -154,10 +155,11 @@ export const restoreDatabase = async (
       }
     }
 
-    // Restore notes
-    if (data.notes) {
-      for (const n of data.notes) {
-        const docRef = doc(db, "notes", n.id);
+    // Restore day notes (free-standing notes from older backups are no longer used)
+    if (data.dayNotes) {
+      for (const n of data.dayNotes) {
+        if (!n?.date) continue;
+        const docRef = doc(db, "dayNotes", n.date);
         batch.set(docRef, n);
         count++;
         notesCount++;
