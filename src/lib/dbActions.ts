@@ -1,7 +1,7 @@
 import { doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { clearChartCache } from './chartCache';
-import type { Trade, Funding } from '@/store/useJournalStore';
+import type { Trade, Funding, Preferences } from '@/store/useJournalStore';
 import type { DayNote } from './dayNotes';
 
 export const clearDatabase = async (
@@ -88,11 +88,14 @@ export const clearDatabase = async (
   }
 };
 
-export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: DayNote[]) => {
+// Preferences are part of the backup: they hold the broker balance-check history and the
+// statement details, which are evidence and cannot be rebuilt from the trades.
+export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: DayNote[], preferences: Preferences) => {
   const data = {
     trades,
     funding,
-    dayNotes
+    dayNotes,
+    preferences
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -108,12 +111,12 @@ export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: 
 export const restoreDatabase = async (
   jsonData: string,
   onProgress?: (status: string) => void,
-  onComplete?: (result: { trades: number, funding: number, notes: number }) => void,
+  onComplete?: (result: { trades: number, funding: number, notes: number, preferences: boolean }) => void,
   onError?: (error: unknown) => void
 ) => {
   try {
     const data = JSON.parse(jsonData);
-    if (!data.trades && !data.funding && !data.dayNotes) {
+    if (!data.trades && !data.funding && !data.dayNotes && !data.preferences) {
       throw new Error("Invalid database format.");
     }
 
@@ -171,11 +174,18 @@ export const restoreDatabase = async (
       }
     }
 
+    // Restore preferences. Merged, so a backup made before they were included changes nothing.
+    const hasPreferences = !!data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0;
+    if (hasPreferences) {
+      batch.set(doc(db, "settings", "preferences"), data.preferences, { merge: true });
+      count++;
+    }
+
     if (count > 0) {
       await batch.commit();
     }
 
-    if (onComplete) onComplete({ trades: tradesCount, funding: fundingCount, notes: notesCount });
+    if (onComplete) onComplete({ trades: tradesCount, funding: fundingCount, notes: notesCount, preferences: hasPreferences });
   } catch (e) {
     console.error("Error restoring DB:", e);
     alert("An error occurred while restoring the database. Ensure the file is a valid JSON database backup.");

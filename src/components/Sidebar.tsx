@@ -25,7 +25,7 @@ import BulkImportModal from "./BulkImportModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { initializeListeners, trades, funding, dayNotes, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
+  const { initializeListeners, trades, funding, dayNotes, preferences, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
   const [statusText, setStatusText] = useState("Initializing...");
   const [statusColor, setStatusColor] = useState("bg-stone-300");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -76,7 +76,7 @@ export default function Sidebar() {
             setStatusColor("bg-yellow-500");
           },
           (result) => {
-            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, and ${result.notes} notes.`);
+            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, ${result.notes} day notes${result.preferences ? ', and your settings (balance checks, statement details)' : ''}.`);
             setStatusText("Live");
             setStatusColor("bg-orange-400 shadow-md shadow-orange-400");
           },
@@ -112,7 +112,7 @@ export default function Sidebar() {
   };
 
   const onDownloadDatabase = () => {
-    downloadDatabase(trades, funding, dayNotes);
+    downloadDatabase(trades, funding, dayNotes, preferences);
   };
 
   const navItems = [

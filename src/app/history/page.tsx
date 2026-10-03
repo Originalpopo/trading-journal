@@ -20,7 +20,7 @@ import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function HistoryPage() {
-  const { trades, funding, dayNotes, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
+  const { trades, funding, dayNotes, preferences, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,7 +108,7 @@ export default function HistoryPage() {
           text,
           handleUploadStatus,
           (result) => {
-            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, and ${result.notes} notes.`);
+            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, ${result.notes} day notes${result.preferences ? ', and your settings (balance checks, statement details)' : ''}.`);
             setIsUploadModalOpen(false);
           },
           () => {
@@ -135,7 +135,7 @@ export default function HistoryPage() {
 
   const onDownloadDatabase = async () => {
     const { downloadDatabase } = await import("@/lib/dbActions");
-    downloadDatabase(trades, funding, dayNotes);
+    downloadDatabase(trades, funding, dayNotes, preferences);
   };
 
   const handleEdit = (t: any) => {
