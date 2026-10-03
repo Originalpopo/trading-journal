@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_LOT_SIZE } from "@/lib/statement";
 import { useEffect } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
@@ -54,7 +55,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   let entryShortTime = '-';
   let exitShortTime = '-';
   try {
-    const rawEntryTime = (trade as any).entryTime || trade.time;
+    const rawEntryTime = t.entryTime || trade.time;
     if (rawEntryTime) {
       const d = new Date(rawEntryTime.replace(' ', 'T'));
       if (!isNaN(d.getTime())) {
@@ -66,7 +67,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
       }
     }
 
-    const rawExitTime = (trade as any).exitTime || ((trade as any).entryTime ? trade.time : undefined);
+    const rawExitTime = t.exitTime || (t.entryTime ? trade.time : undefined);
     if (rawExitTime) {
       const d = new Date(rawExitTime.replace(' ', 'T'));
       if (!isNaN(d.getTime())) {
@@ -76,7 +77,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
         exitShortTime = rawExitTime;
       }
     }
-  } catch (e) { }
+  } catch { }
 
   const profit = isFunding ? (f.deposit > 0 ? f.deposit : -(f.withdraw || 0)) : t.profit;
   const symbol = isFunding ? (f.deposit > 0 ? 'DEPOSIT' : 'WITHDRAW') : t.symbol;
@@ -226,7 +227,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
-                  <span className="text-xs font-extrabold text-stone-950">{(t as any).tf && (t as any).tf !== 'none' ? ((t as any).tf.includes(',') ? (t as any).tf.split(',')[0].trim() : (t as any).tf) : '-'}</span>
+                  <span className="text-xs font-extrabold text-stone-950">{t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
@@ -235,33 +236,37 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </div>
 
               {/* Middle Column: Order Details */}
-              {(t as any).positionId && (
+              {t.positionId && (
                  <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4 relative">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Size</span>
+                      <span className="text-xs font-extrabold text-stone-950">{t.size ?? DEFAULT_LOT_SIZE} lot</span>
+                    </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Entry</span>
-                        {(t as any).entryType && (
-                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{(t as any).entryType}</span>
+                        {t.entryType && (
+                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.entryType}</span>
                         )}
                       </div>
-                      <span className="text-xs font-extrabold text-stone-950">{(t as any).entryPrice?.toFixed(2) || '-'}</span>
+                      <span className="text-xs font-extrabold text-stone-950">{t.entryPrice?.toFixed(2) || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Exit</span>
-                        {(t as any).exitType && (
-                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{(t as any).exitType}</span>
+                        {t.exitType && (
+                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.exitType}</span>
                         )}
                       </div>
-                      <span className="text-xs font-extrabold text-stone-950">{(t as any).exitPrice?.toFixed(2) || '-'}</span>
+                      <span className="text-xs font-extrabold text-stone-950">{t.exitPrice?.toFixed(2) || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Take Profit</span>
-                      <span className={`text-xs font-extrabold ${profit > 0 ? 'text-orange-400' : 'text-stone-950'}`}>{(t as any).tpPrice?.toFixed(2) || '-'}</span>
+                      <span className={`text-xs font-extrabold ${profit > 0 ? 'text-orange-400' : 'text-stone-950'}`}>{t.tpPrice?.toFixed(2) || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stop Loss</span>
-                      <span className={`text-xs font-extrabold ${profit < 0 ? 'text-red-900' : 'text-stone-950'}`}>{(t as any).slPrice?.toFixed(2) || '-'}</span>
+                      <span className={`text-xs font-extrabold ${profit < 0 ? 'text-red-900' : 'text-stone-950'}`}>{t.slPrice?.toFixed(2) || '-'}</span>
                     </div>
                  </div>
               )}

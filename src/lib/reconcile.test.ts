@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reconcileBalance, hasActivityAfter, localTimestamp } from './reconcile.ts';
+import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from './reconcile.ts';
 
 const funding = [
   { time: '2026-07-01T09:00:00', deposit: 100, withdraw: 0 },
@@ -68,4 +68,11 @@ test('hasActivityAfter: only entries newer than the check count', () => {
 test('localTimestamp writes the local wall clock in the stored format', () => {
   assert.equal(localTimestamp(new Date(2026, 9, 3, 14, 5, 9)), '2026-10-03T14:05:09');
   assert.match(localTimestamp(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
+});
+
+test('toCheckRecord freezes what the journal said when the check was made', () => {
+  assert.deepEqual(toCheckRecord({ time: '2026-07-31T00:00:00', balance: 72.45 }, trades, funding),
+    { time: '2026-07-31T00:00:00', balance: 72.45, journalBalance: 72.45, difference: 0 });
+  assert.deepEqual(toCheckRecord({ time: '2026-07-31T00:00:00', balance: 71.13 }, trades, funding),
+    { time: '2026-07-31T00:00:00', balance: 71.13, journalBalance: 72.45, difference: 1.32 });
 });

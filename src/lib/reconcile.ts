@@ -9,6 +9,13 @@ export interface BalanceCheck {
   balance: number;
 }
 
+// A check as it is kept in the history: what the journal said at the moment it was made, so a
+// later edit to the journal cannot rewrite what was confirmed back then.
+export interface BalanceCheckRecord extends BalanceCheck {
+  journalBalance: number;
+  difference: number; // journal minus broker at the time of the check
+}
+
 interface TimedTrade { time: string; profit?: number }
 interface TimedFunding { time: string; deposit?: number; withdraw?: number }
 
@@ -58,4 +65,9 @@ export function hasActivityAfter(check: BalanceCheck, trades: TimedTrade[], fund
 export function localTimestamp(date: Date = new Date()): string {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 19);
+}
+
+export function toCheckRecord(check: BalanceCheck, trades: TimedTrade[], funding: TimedFunding[]): BalanceCheckRecord {
+  const { journalBalance, difference } = reconcileBalance(check, trades, funding);
+  return { ...check, journalBalance, difference };
 }

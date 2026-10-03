@@ -8,6 +8,7 @@ export interface ParsedOrder {
   type: string;
   limitOrStopPrice?: number;
   avgFillPrice?: number;
+  filledQty?: number;
   status: string;
   updateTime: string;
   positionId?: string;
@@ -28,6 +29,7 @@ export function parseTradingViewData(raw: string): ParsedOrder[] {
     const side = lines[1];
     const typeLine = lines[2].split('\t');
     const type = typeLine[0];
+    const filledQty = parseFloat((typeLine[2] || '').replace(/,/g, '')) || undefined;
 
     const statusIndex = lines.findIndex(l => 
         l.toLowerCase() === 'filled' || 
@@ -82,7 +84,7 @@ export function parseTradingViewData(raw: string): ParsedOrder[] {
     }
 
     orders.push({
-      symbol, side, type, limitOrStopPrice, avgFillPrice, status, updateTime: timeRaw, positionId, commission, pnl, orderId
+      symbol, side, type, limitOrStopPrice, avgFillPrice, filledQty, status, updateTime: timeRaw, positionId, commission, pnl, orderId
     });
   }
 
@@ -100,7 +102,7 @@ const parsePnl = (raw: string | undefined): number | undefined => {
 export function parseTradingViewCSVData(csvText: string): ParsedOrder[] {
   const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   const orders: ParsedOrder[] = [];
-  for (const row of result.data as any[]) {
+  for (const row of result.data as Record<string, string>[]) {
     if (!row['Symbol'] || !row['Status']) continue;
     const limitOrStopPrice = parseFloat((row['Limit Price'] || row['Stop Price'] || '').replace(/,/g, ''));
     const avgFillPrice = parseFloat((row['Avg Fill Price'] || '').replace(/,/g, ''));
@@ -111,6 +113,7 @@ export function parseTradingViewCSVData(csvText: string): ParsedOrder[] {
       type: row['Type'].trim(),
       limitOrStopPrice: isNaN(limitOrStopPrice) ? undefined : limitOrStopPrice,
       avgFillPrice: isNaN(avgFillPrice) ? undefined : avgFillPrice,
+      filledQty: parseFloat((row['Filled Qty'] || '').replace(/,/g, '')) || undefined,
       status: row['Status'].trim().toLowerCase(),
       updateTime: (row['Update Time'] || row['Date'] || '').trim(),
       positionId: row['Position ID'] ? row['Position ID'].trim() : undefined,
@@ -231,6 +234,7 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
     // includes it.
     const commission = sumMoney(posOrders.map(o => o.commission));
     if (commission !== 0) trade.commission = commission;
+    if (entryOrder.filledQty) trade.size = entryOrder.filledQty;
 
     if (exit.sibling) {
       if (orderType(exit.sibling) === 'take profit') trade.tpPrice = exit.sibling.limitOrStopPrice;

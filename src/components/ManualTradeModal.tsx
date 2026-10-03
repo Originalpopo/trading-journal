@@ -10,6 +10,7 @@ import { initialStopOf, mostCommonRisk } from "@/lib/risk";
 import { pointValueOf, medianPointValue } from "@/lib/tradeZones";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { hasFractionOfCent } from "@/lib/money";
+import { DEFAULT_LOT_SIZE } from "@/lib/statement";
 import { X, CheckCircle2, XCircle } from "lucide-react";
 
 interface ManualTradeModalProps {
@@ -38,6 +39,7 @@ interface FormState {
   orderExitType: string;
   thb: string;
   bankDate: string;
+  size: string;
 }
 
 // Stored time -> value for a datetime-local input (local wall clock, with seconds).
@@ -54,7 +56,7 @@ const firstTf = (tf: string) => (tf.includes(',') ? tf.split(',')[0].trim() : tf
 const BLANK_TRADE_FIELDS = {
   entryPrice: "", exitPrice: "", tpPrice: "", slPrice: "", initialSl: "",
   orderEntryType: "Limit", orderExitType: "Limit",
-  thb: "", bankDate: "",
+  thb: "", bankDate: "", size: DEFAULT_LOT_SIZE.toString(),
 };
 
 function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): FormState {
@@ -95,6 +97,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       entryTime: toInputTime(t.entryTime || t.time),
       time: toInputTime(t.time),
       thb: "", bankDate: "",
+      size: (t.size ?? DEFAULT_LOT_SIZE).toString(),
     };
   }
 
@@ -148,6 +151,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [orderExitType, setOrderExitType] = useState("Limit");
   const [thb, setThb] = useState("");
   const [bankDate, setBankDate] = useState("");
+  const [size, setSize] = useState("");
   // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
   const timesEditedRef = useRef(false);
   // Set once the user types the first stop or the risk, so 1R is no longer the default guess.
@@ -182,11 +186,12 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     setOrderExitType(f.orderExitType);
     setThb(f.thb);
     setBankDate(f.bankDate);
+    setSize(f.size);
   }, [isOpen, tradeToEdit]);
 
   const currentForm: FormState = {
     entryType, symbol, side, amount, time, risk, entryTime, strategy, tf, checklists,
-    entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType, thb, bankDate,
+    entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType, thb, bankDate, size,
   };
 
   // The first stop must be on the losing side of the entry.
@@ -300,6 +305,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           exitType: exitPrice ? orderExitType : undefined,
           tpPrice: tpPrice ? parseFloat(tpPrice) : undefined,
           slPrice: slPrice ? parseFloat(slPrice) : undefined,
+          size: parsedSize > 0 ? parsedSize : undefined,
           initialSlPrice: validInitialSl ? initialSlNum : undefined,
           initialSlSource,
           // 1R is only a guess while neither the first stop nor the risk was given.
@@ -329,6 +335,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const parsedRisk = parseFloat(risk) || 0;
   // P&L, deposits and withdrawals are real money: never store a fraction of a cent.
   const invalidAmount = hasFractionOfCent(amount);
+  const parsedSize = parseFloat(size) || 0;
+  const invalidSize = size.trim() !== "" && !(parsedSize > 0);
   const parsedThb = parseFloat(thb) || 0;
   const invalidThb = hasFractionOfCent(thb) || parsedThb < 0;
   const isFundingEntry = entryType !== "TRADE";
@@ -382,13 +390,20 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="e.g. BTCUSDT"
                   className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition uppercase" />
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Side</label>
-                <select value={side} onChange={(e) => setSide(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition">
-                  <option value="BUY">BUY</option>
-                  <option value="SELL">SELL</option>
-                </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Side</label>
+                  <select value={side} onChange={(e) => setSide(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition">
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Size (lot)</label>
+                  <input type="number" step="0.01" min="0" value={size} onChange={(e) => setSize(e.target.value)}
+                    className={`w-full bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidSize ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'}`} />
+                </div>
               </div>
             </div>
           </div>
@@ -578,7 +593,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={isSubmitting || invalidAmount || (isFundingEntry && invalidThb) || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
+          <button onClick={handleSubmit} disabled={isSubmitting || invalidAmount || (!isFundingEntry && invalidSize) || (isFundingEntry && invalidThb) || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Saving..." : "Save"}
           </button>

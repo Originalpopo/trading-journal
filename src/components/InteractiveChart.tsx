@@ -147,7 +147,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         const apiKey = process.env.NEXT_PUBLIC_TWELVEDATA_API_KEY;
         if (!apiKey) throw new Error("API key not configured (NEXT_PUBLIC_TWELVEDATA_API_KEY)");
 
-        let rawSymbol = trade.symbol ? trade.symbol.trim().toUpperCase() : "";
+        const rawSymbol = trade.symbol ? trade.symbol.trim().toUpperCase() : "";
         let formattedSymbol = rawSymbol;
         let exchangeParam = "&exchange=OANDA"; 
 
@@ -194,8 +194,8 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         // A failed cache write only costs a refetch next time; still draw the chart.
         saveCachedCandles(trade.id, tfToLoad, chartData).catch(err => console.error("Failed to cache candles:", err));
 
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
         setLoading(false);
         return;
       }

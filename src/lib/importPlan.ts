@@ -100,6 +100,7 @@ export function planImport(parsedTrades: Partial<Trade>[], trades: Trade[], edit
     if (existing.positionId && parsed.profit !== undefined && toCents(existing.profit) !== toCents(parsed.profit)) {
       updates.profit = parsed.profit;
     }
+    if (parsed.size !== undefined && !sameValue(existing.size, parsed.size)) updates.size = parsed.size;
     if (parsed.commission !== undefined && !sameValue(existing.commission, parsed.commission)) updates.commission = parsed.commission;
 
     // An edit made in the preview is also the user's own time, so it may replace an older one.

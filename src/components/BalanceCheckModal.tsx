@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, CheckCircle2, AlertTriangle, Save } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { reconcileBalance, localTimestamp } from "@/lib/reconcile";
+import { reconcileBalance, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import { hasFractionOfCent } from "@/lib/money";
 import { formatNumber } from "@/lib/utils";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
@@ -19,7 +19,8 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
   const trades = useJournalStore(state => state.trades);
   const funding = useJournalStore(state => state.funding);
   const savedCheck = useJournalStore(state => state.preferences.balanceCheck);
-  const updatePreferences = useJournalStore(state => state.updatePreferences);
+  const history = useJournalStore(state => state.preferences.balanceCheckHistory);
+  const saveBalanceCheck = useJournalStore(state => state.saveBalanceCheck);
 
   const [balance, setBalance] = useState("");
   const [time, setTime] = useState(() => localTimestamp());
@@ -40,7 +41,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
     if (!isValid) return;
     setIsSaving(true);
     try {
-      await updatePreferences({ balanceCheck: { time: checkTime, balance: parsedBalance } });
+      await saveBalanceCheck(toCheckRecord({ time: checkTime, balance: parsedBalance }, trades, funding));
       setBalance("");
       onClose();
     } catch {
@@ -109,10 +110,27 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
         )}
 
         {savedCheck && savedResult && (
-          <p className="text-[11px] font-medium text-stone-400 mb-5">
+          <p className="text-[11px] font-medium text-stone-400 mb-3">
             Last saved check: ${formatNumber(savedCheck.balance)} as of {savedCheck.time.replace('T', ' ')} ·{' '}
             {savedResult.matches ? 'matches' : `off by $${formatNumber(Math.abs(savedResult.difference))}`}
           </p>
+        )}
+
+        {history && history.length > 0 && (
+          <div className="mb-5">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">History ({history.length})</p>
+            <div className="max-h-32 overflow-y-auto border border-stone-100 rounded-lg divide-y divide-stone-50">
+              {[...history].reverse().map((h, i) => (
+                <div key={`${h.time}-${i}`} className="flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-stone-500">
+                  <span>{h.time.replace('T', ' ')}</span>
+                  <span className="text-stone-950">${formatNumber(h.balance)}</span>
+                  <span className={h.difference === 0 ? 'text-orange-400' : 'text-red-900'}>
+                    {h.difference === 0 ? 'matched' : `journal ${h.difference > 0 ? '+' : '-'}$${formatNumber(Math.abs(h.difference))}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         <div className="flex gap-3 justify-end pt-4 border-t border-stone-100">

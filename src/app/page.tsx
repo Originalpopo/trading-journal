@@ -16,10 +16,10 @@ import {
   Plugin
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, tooltipPositionOf } from "@/lib/utils";
 import { summarizeTrades, healthTierFromProfitFactor, computeDrawdowns, calcAccountGrowth } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
-import { reconcileBalance, hasActivityAfter, localTimestamp } from "@/lib/reconcile";
+import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 const dashboardLastPointsPlugin: Plugin<'line'> = {
@@ -29,20 +29,20 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
     const ctx = chart.ctx;
     const meta0 = chart.getDatasetMeta(0);
     const meta1 = chart.getDatasetMeta(1);
-    let pos0: any = null;
-    let val0: any = null;
+    let pos0: { x: number; y: number } | null = null;
+    let val0 = 0;
     if (!meta0.hidden && meta0.data.length > 0) {
       const lastIdx = meta0.data.length - 1;
-      pos0 = (meta0.data[lastIdx] as any).tooltipPosition();
-      val0 = chart.data.datasets[0].data[lastIdx];
+      pos0 = tooltipPositionOf(meta0.data[lastIdx]);
+      val0 = chart.data.datasets[0].data[lastIdx] as number;
     }
 
-    let pos1: any = null;
-    let val1: any = null;
+    let pos1: { x: number; y: number } | null = null;
+    let val1 = 0;
     if (!meta1.hidden && meta1.data.length > 0) {
       const lastIdx = meta1.data.length - 1;
-      pos1 = (meta1.data[lastIdx] as any).tooltipPosition();
-      val1 = chart.data.datasets[1].data[lastIdx];
+      pos1 = tooltipPositionOf(meta1.data[lastIdx]);
+      val1 = chart.data.datasets[1].data[lastIdx] as number;
     }
 
     let yOffset0 = 0;
@@ -115,7 +115,7 @@ export default function Dashboard() {
     () => (balanceCheck ? reconcileBalance(balanceCheck, trades, funding) : null),
     [balanceCheck, trades, funding],
   );
-  const updatePreferences = useJournalStore(state => state.updatePreferences);
+  const saveBalanceCheck = useJournalStore(state => state.saveBalanceCheck);
   const [isConfirmingMatch, setIsConfirmingMatch] = useState(false);
   // Ask again whenever the last check no longer vouches for the balance on screen.
   const needsBrokerCheck = !balanceCheck || !brokerCheck?.matches || hasActivityAfter(balanceCheck, trades, funding);
@@ -213,7 +213,7 @@ export default function Dashboard() {
   const confirmBrokerMatch = async () => {
     setIsConfirmingMatch(true);
     try {
-      await updatePreferences({ balanceCheck: { time: localTimestamp(), balance: data.runningBalance } });
+      await saveBalanceCheck(toCheckRecord({ time: localTimestamp(), balance: data.runningBalance }, trades, funding));
     } catch {
       alert("Failed to save the balance check.");
     } finally {

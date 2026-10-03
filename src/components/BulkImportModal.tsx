@@ -161,7 +161,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
           positionId: t.positionId,
           entryType: t.entryType,
           exitType: t.exitType,
-          commission: t.commission
+          commission: t.commission,
+          size: t.size
         };
 
         // Firebase doesn't support undefined or NaN values, so we must remove them

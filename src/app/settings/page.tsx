@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
 import { Lock, Save, UserCircle, LogOut, Copy, Check } from "lucide-react";
 import DefaultRiskSetting from "@/components/DefaultRiskSetting";
+import StatementProfileSetting from "@/components/StatementProfileSetting";
 
 export default function SettingsPage() {
   const currentUser = auth.currentUser;
@@ -80,6 +81,8 @@ export default function SettingsPage() {
       </div>
 
       <DefaultRiskSetting />
+
+      <StatementProfileSetting />
 
       <div className="bg-white rounded-2xl p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">

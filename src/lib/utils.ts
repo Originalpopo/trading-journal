@@ -36,7 +36,7 @@ export const parseRobustDate = (dateStr: string): number => {
   return 0;
 };
 
-export const calculateDurationInSeconds = (t: any): number => {
+export const calculateDurationInSeconds = (t: { time?: string; entryTime?: string; exitTime?: string; duration?: number }): number => {
   let sec = 0;
   try {
     const rawEntryTime = t.entryTime || t.time;
@@ -52,7 +52,7 @@ export const calculateDurationInSeconds = (t: any): number => {
     if (sec === 0 && t.duration) {
       sec = t.duration;
     }
-  } catch (e) {}
+  } catch {}
   return sec;
 };
 
@@ -73,3 +73,7 @@ export const formatDurationDetailed = (sec: number): string => {
   if (s > 0 || parts.length === 0) parts.push(`${s}s`);
   return parts.join(' ');
 };
+
+// Chart.js types tooltipPosition() as needing an argument, but every element accepts none.
+export const tooltipPositionOf = (element: unknown): { x: number; y: number } =>
+  (element as { tooltipPosition(): { x: number; y: number } }).tooltipPosition();

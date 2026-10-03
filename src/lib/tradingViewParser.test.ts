@@ -210,3 +210,27 @@ test('the real Eightcap export: every P&L row ends up in a trade and the total i
   assert.equal(trades.reduce((cents, t) => cents + Math.round(t.profit! * 100), 0), -892);
   assert.deepEqual(findImportWarnings(orders), []);
 });
+
+test('the lot size of the opening order is kept on the trade, from both input formats', () => {
+  const [fromOrders] = groupOrdersIntoTrades([
+    order({ side: 'Buy', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, filledQty: 0.03, orderId: '100' }),
+    order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:10:00', positionId: 'P:100', avgFillPrice: 2001, filledQty: 0.03, pnl: 3, orderId: '110' }),
+  ]);
+  assert.equal(fromOrders.size, 0.03);
+
+  const csv = [
+    'Symbol,Side,Type,Qty,Filled Qty,Limit Price,Stop Price,Avg Fill Price,Status,Update Time,Position ID,Commission,Closed P&L,Order ID',
+    'XAUUSD,Sell,Market,0.01,0.01,,,4001.00,Filled,2026-01-02 10:10:00,XAUUSD:9,0.0,1.00,95',
+    'XAUUSD,Buy,Market,0.01,0.01,,,4000.00,Filled,2026-01-02 10:00:00,XAUUSD:9,0.0,,91',
+  ].join('\n');
+  assert.equal(groupOrdersIntoTrades(parseTradingViewCSVData(csv))[0].size, 0.01);
+
+  const pasted = [
+    'XAUUSD', 'Buy', 'Stop Loss\t0.01\t0.01\t\t', '2,005.00', '2,005.10', 'filled',
+    '2026-01-05 12:00:00\tXAUUSD:200\t0.0\t-5.1\t-5.1\t202\t',
+    '',
+    'XAUUSD', 'Sell', 'Limit\t0.01\t0.01\t', '2,000.00', '2,000.00', 'filled',
+    '2026-01-05 12:00:00\tXAUUSD:200\t0.0\t\t\t200\t',
+  ].join('\n');
+  assert.equal(groupOrdersIntoTrades(parseTradingViewData(pasted))[0].size, 0.01);
+});

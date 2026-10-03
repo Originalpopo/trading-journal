@@ -2,7 +2,9 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, Edit2, Trash2, Upload, ClipboardCheck } from "lucide-react";
+import { Plus, Edit2, Trash2, Upload } from "lucide-react";
+import { CHECKLIST_NAMES } from "@/lib/checklists";
+import { CHECKLIST_ICONS } from "@/components/checklistIcons";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
@@ -20,7 +22,7 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 export default function HistoryPage() {
   const { trades, funding, notes, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -311,7 +313,7 @@ export default function HistoryPage() {
                     shortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' +
                                 d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                   }
-                } catch (e) { }
+                } catch { }
 
                 if (t.isFunding) {
                   const badge = t.profit > 0 ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200';
@@ -349,7 +351,7 @@ export default function HistoryPage() {
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 const sec = calculateDurationInSeconds(t);
-                let durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
+                const durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
 
 
                 const isSelected = selectedIds.has(t.id);
@@ -375,11 +377,16 @@ export default function HistoryPage() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-2">
-                        {(t.checklists && t.checklists.includes('On Plan')) || t.isOnPlan !== false ? (
-                          <span title="On Plan" className="text-orange-400"><ClipboardCheck className="w-4 h-4" /></span>
-                        ) : (
-                          <span title="On Plan (Not Selected)" className="text-stone-300"><ClipboardCheck className="w-4 h-4" /></span>
-                        )}
+                        {CHECKLIST_NAMES.map(name => {
+                          const Icon = CHECKLIST_ICONS[name];
+                          // Trades saved before checklists existed count as on plan unless marked otherwise.
+                          const isSelected = t.checklists?.includes(name) || (name === 'On Plan' && t.isOnPlan !== false);
+                          return (
+                            <span key={name} title={isSelected ? name : `${name} (Not Selected)`} className={isSelected ? 'text-orange-400' : 'text-stone-300'}>
+                              <Icon className="w-4 h-4" />
+                            </span>
+                          );
+                        })}
                       </div>
                     </td>
                     <td className="py-4 px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]">

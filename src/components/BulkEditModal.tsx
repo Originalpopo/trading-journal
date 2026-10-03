@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { X, CheckCircle2, XCircle, ClipboardCheck, type LucideIcon } from "lucide-react";
+import { X, CheckCircle2, XCircle } from "lucide-react";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
 import { CHECKLIST_NAMES, applyChecklistChanges, type ChecklistChange } from "@/lib/checklists";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
-
-const CHECKLIST_ICONS: Record<string, LucideIcon> = {
-  'On Plan': ClipboardCheck,
-};
+import { CHECKLIST_ICONS } from "./checklistIcons";
 
 const TIMEFRAMES = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
 

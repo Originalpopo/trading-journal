@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { parseRobustDate } from '@/lib/utils';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch, setDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
-import type { BalanceCheck } from '@/lib/reconcile';
+import type { BalanceCheck, BalanceCheckRecord } from '@/lib/reconcile';
+import type { StatementProfile } from '@/lib/statement';
 
 let legacyChartMigrationStarted = false;
 
@@ -44,11 +45,13 @@ export interface Trade {
   entryType?: string;
   exitType?: string;
   duration?: number;
+  // Lot size of the opening order, from the broker history (trades saved earlier have none).
+  size?: number;
   // Commission the broker reported for the position. Informational: `profit` is the broker's
   // Closed P&L as given and this is not subtracted from it.
   commission?: number;
   // Candles cached by older versions; moved to the chartCache collection on load.
-  chartData?: any;
+  chartData?: unknown;
 }
 
 export interface Funding {
@@ -79,6 +82,10 @@ export interface Preferences {
   defaultRisk?: number;
   // Latest broker balance the user entered, compared with the journal's own balance.
   balanceCheck?: BalanceCheck;
+  // Every check ever saved, oldest first: evidence that the journal agreed with the broker.
+  balanceCheckHistory?: BalanceCheckRecord[];
+  // Who the account belongs to, printed on the monthly statement.
+  statementProfile?: StatementProfile;
 }
 
 interface JournalState {
@@ -90,6 +97,7 @@ interface JournalState {
   isPrivacyMode: boolean;
   setIsPrivacyMode: (val: boolean) => void;
   updatePreferences: (prefs: Partial<Preferences>) => Promise<void>;
+  saveBalanceCheck: (record: BalanceCheckRecord) => Promise<void>;
   initializeListeners: () => () => void;
   addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
@@ -112,6 +120,14 @@ export const useJournalStore = create<JournalState>((set) => ({
 
   updatePreferences: async (prefs) => {
     await setDoc(doc(db, 'settings', 'preferences'), prefs, { merge: true });
+  },
+
+  // Sets the latest check and appends it to the history in one write.
+  saveBalanceCheck: async (record) => {
+    await setDoc(doc(db, 'settings', 'preferences'), {
+      balanceCheck: { time: record.time, balance: record.balance },
+      balanceCheckHistory: arrayUnion(record),
+    }, { merge: true });
   },
 
   initializeListeners: () => {

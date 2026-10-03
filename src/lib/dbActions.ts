@@ -1,14 +1,15 @@
 import { doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { clearChartCache } from './chartCache';
+import type { Trade, Funding, Note } from '@/store/useJournalStore';
 
 export const clearDatabase = async (
-  trades: any[],
-  funding: any[],
-  notes: any[],
+  trades: Trade[],
+  funding: Funding[],
+  notes: Note[],
   onProgress?: (status: string) => void,
   onComplete?: () => void,
-  onError?: (error: any) => void
+  onError?: (error: unknown) => void
 ) => {
   if (!confirm("Are you SURE you want to clear the entire database?\nThis will delete all trades and funding data!")) {
     return;
@@ -86,7 +87,7 @@ export const clearDatabase = async (
   }
 };
 
-export const downloadDatabase = (trades: any[], funding: any[], notes: any[]) => {
+export const downloadDatabase = (trades: Trade[], funding: Funding[], notes: Note[]) => {
   const data = {
     trades,
     funding,
@@ -107,7 +108,7 @@ export const restoreDatabase = async (
   jsonData: string,
   onProgress?: (status: string) => void,
   onComplete?: (result: { trades: number, funding: number, notes: number }) => void,
-  onError?: (error: any) => void
+  onError?: (error: unknown) => void
 ) => {
   try {
     const data = JSON.parse(jsonData);

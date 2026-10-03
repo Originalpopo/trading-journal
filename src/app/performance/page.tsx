@@ -3,7 +3,7 @@
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check, CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
-import { formatNumber, formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
+import { formatNumber, formatDurationDetailed, calculateDurationInSeconds, tooltipPositionOf } from "@/lib/utils";
 import { classifyTrade, summarizeTrades, healthTierFromProfitFactor } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
 import {
@@ -110,13 +110,13 @@ export default function PerformancePage() {
     const matrix: any = {};
     const tfMatrix: any = {};
 
-    let allTimelineEvents: any[] = [];
+    const allTimelineEvents: any[] = [];
     trades.forEach(t => allTimelineEvents.push({ type: 'trade', timeObj: new Date(t.time.replace(' ', 'T')), data: t }));
     funding.forEach(f => allTimelineEvents.push({ type: 'funding', timeObj: new Date(f.time.replace(' ', 'T')), data: f }));
     allTimelineEvents.sort((a, b) => a.timeObj.getTime() - b.timeObj.getTime());
 
-    let pastEvents: any[] = [];
-    let currentEvents: any[] = [];
+    const pastEvents: any[] = [];
+    const currentEvents: any[] = [];
 
     allTimelineEvents.forEach(evt => {
       if (!isNaN(evt.timeObj.getTime()) && evt.timeObj.getTime() > 0) {
@@ -218,14 +218,14 @@ export default function PerformancePage() {
 
           let dateStr = "Funding";
           if (evt.data.time) {
-            try { dateStr = evt.data.time.split(' ')[0]; } catch (e) { }
+            try { dateStr = evt.data.time.split(' ')[0]; } catch { }
           }
           perfBalanceLabels.push(dateStr);
         }
       } else if (evt.type === 'trade') {
         const t = evt.data;
         const entryTimeObj = new Date((t.entryTime || t.time).replace(' ', 'T'));
-        let hr = entryTimeObj.getHours();
+        const hr = entryTimeObj.getHours();
         const rrVal = t.rr || 0;
         const pnl = t.profit || 0;
 
@@ -362,8 +362,8 @@ export default function PerformancePage() {
         if (runningBalance < minBalance) minBalance = runningBalance;
         if (runningBalance > peakBalance) peakBalance = runningBalance;
 
-        let currentDD = subMoney(peakBalance, runningBalance);
-        let currentDDPct = peakBalance > 0 ? (currentDD / peakBalance) * 100 : 0;
+        const currentDD = subMoney(peakBalance, runningBalance);
+        const currentDDPct = peakBalance > 0 ? (currentDD / peakBalance) * 100 : 0;
 
         if (currentDD > maxDrawdownAmt) maxDrawdownAmt = currentDD;
         if (currentDDPct > maxDrawdownPct) maxDrawdownPct = currentDDPct;
@@ -388,7 +388,7 @@ export default function PerformancePage() {
           tradeCount++;
           let dateStr = "Trade " + tradeCount;
           if (t.time) {
-            try { dateStr = t.time.split(' ')[0]; } catch (e) { }
+            try { dateStr = t.time.split(' ')[0]; } catch { }
           }
           perfBalanceLabels.push(dateStr);
         }
@@ -455,7 +455,7 @@ export default function PerformancePage() {
     const hourlyLossesArr = hours.map(h => hourLosses[h]);
     const hourlyBEsArr = hours.map(h => hourBEs[h]);
 
-    const activeDowKeys = Object.keys(dowStats).filter(k => (selectedMetric === 'RR' ? dowStats[k as any as number] : dowStatsPnL[k as any as number]) !== 0 || dowWins[k as any as number] > 0 || dowLosses[k as any as number] > 0 || dowBEs[k as any as number] > 0).map(Number);
+    const activeDowKeys = Object.keys(dowStats).filter(k => (selectedMetric === 'RR' ? dowStats[Number(k)] : dowStatsPnL[Number(k)]) !== 0 || dowWins[Number(k)] > 0 || dowLosses[Number(k)] > 0 || dowBEs[Number(k)] > 0).map(Number);
     const activeDowNames = activeDowKeys.map(k => dowNames[k]);
     const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
     const dowColors = activeDowData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
@@ -463,7 +463,7 @@ export default function PerformancePage() {
     const activeDowLosses = activeDowKeys.map(k => dowLosses[k]);
     const activeDowBEs = activeDowKeys.map(k => dowBEs[k]);
 
-    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[k as any as number] : moyStatsPnL[k as any as number]) !== 0 || moyPnL[k as any as number] !== 0 || moyWins[k as any as number] > 0 || moyLosses[k as any as number] > 0 || moyBEs[k as any as number] > 0).map(Number);
+    const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[Number(k)] : moyStatsPnL[Number(k)]) !== 0 || moyPnL[Number(k)] !== 0 || moyWins[Number(k)] > 0 || moyLosses[Number(k)] > 0 || moyBEs[Number(k)] > 0).map(Number);
     const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
     const moyRRData = activeMoyKeys.map(k => {
       if (selectedMetric === 'RR') return moyStats[k];
@@ -509,7 +509,7 @@ export default function PerformancePage() {
       if (!meta.hidden && meta.data.length > 0) {
         const lastElement = meta.data[meta.data.length - 1];
         const lastVal = chart.data.datasets[0].data[meta.data.length - 1] as number;
-        const position = (lastElement as any).tooltipPosition();
+        const position = tooltipPositionOf(lastElement);
 
         ctx.save();
         ctx.beginPath();
@@ -546,7 +546,7 @@ export default function PerformancePage() {
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
               
-              const position = (element as any).tooltipPosition();
+              const position = tooltipPositionOf(element);
               ctx.fillText(sum.toString(), position.x, position.y - 12);
             });
           }
@@ -566,7 +566,7 @@ export default function PerformancePage() {
             const val = dataset.data[index] as number;
             const text = selectedMetric === 'RR' ? formatNumber(val) + ' R' : selectedMetric === 'GAIN' ? formatNumber(val) + '%' : (isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(val));
 
-            const position = (element as any).tooltipPosition();
+            const position = tooltipPositionOf(element);
             const yOffset = val >= 0 ? -12 : 14;
             ctx.fillText(text, position.x, position.y + yOffset);
           });
@@ -594,7 +594,7 @@ export default function PerformancePage() {
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
               
-              const position = (element as any).tooltipPosition();
+              const position = tooltipPositionOf(element);
               ctx.fillText(sum.toString(), position.x, position.y - 12);
             });
           }
@@ -617,7 +617,7 @@ export default function PerformancePage() {
             else if (selectedMetric === 'GAIN') text += '%';
             else text = isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(Math.abs(val));
 
-            const position = (element as any).tooltipPosition();
+            const position = tooltipPositionOf(element);
             const yOffset = val >= 0 ? -12 : 14;
             ctx.fillText(text, position.x, position.y + yOffset);
           });

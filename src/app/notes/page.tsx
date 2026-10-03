@@ -46,7 +46,7 @@ function truncateThaiText(text: string, maxLength: number) {
 export default function NotesPage() {
   const { notes, isLoading, deleteNote } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
-  const [notesPerPage, setNotesPerPage] = useState(8);
+  const [notesPerPage] = useState(8);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);

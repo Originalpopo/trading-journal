@@ -21,9 +21,10 @@ export function LoginScreen({ mode, email, uid, message, onSignIn, onSignOut }: 
     setSignInError(null);
     try {
       await onSignIn();
-    } catch (error: any) {
-      if (error?.code !== "auth/popup-closed-by-user" && error?.code !== "auth/cancelled-popup-request") {
-        setSignInError(error?.message || "Sign in failed.");
+    } catch (error) {
+      const { code, message } = (error ?? {}) as { code?: string; message?: string };
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        setSignInError(message || "Sign in failed.");
       }
     } finally {
       setIsBusy(false);

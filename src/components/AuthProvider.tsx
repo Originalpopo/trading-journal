@@ -41,12 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const localPin = localStorage.getItem("tradejournal_pin");
           setStatus(localPin === settings.pin ? "unlocked" : "locked");
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching auth settings:", error);
-        if (error?.code === "permission-denied") {
+        if ((error as { code?: string } | null)?.code === "permission-denied") {
           setStatus("denied");
         } else {
-          setErrorMessage(error?.message);
+          setErrorMessage((error as { message?: string } | null)?.message);
           setStatus("error");
         }
       }
