@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Upload, Trash2, Download } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
+import BackupReminder from "./BackupReminder";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -109,7 +110,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
           <div className="h-px bg-stone-200 flex-1"></div>
         </div>
 
-        <div className="flex gap-4 mb-3">
+        <div className="flex gap-4 mb-2">
           <button
             onClick={() => {
               if (window.confirm("Are you sure you want to clear the database?")) {
@@ -133,6 +134,9 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
             <Download className="w-5 h-5" />
             <span>Download Backup</span>
           </button>
+        </div>
+        <div className="flex justify-end mb-3 min-h-[15px]">
+          <BackupReminder />
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-stone-100">

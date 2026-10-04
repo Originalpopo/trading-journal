@@ -78,6 +78,8 @@ export interface Preferences {
   balanceCheckHistory?: BalanceCheckRecord[];
   // Who the account belongs to, printed on the monthly statement.
   statementProfile?: StatementProfile;
+  // When a backup file was last downloaded (ISO time), for the backup reminder.
+  lastBackupAt?: string;
 }
 
 interface JournalState {

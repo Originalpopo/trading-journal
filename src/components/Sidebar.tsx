@@ -21,6 +21,7 @@ import {
 import { useJournalStore } from "@/store/useJournalStore";
 import { clearDatabase, downloadDatabase, restoreDatabase } from "@/lib/dbActions";
 import { UploadModal } from "./UploadModal";
+import { BackupDueDot } from "./BackupReminder";
 import BulkImportModal from "./BulkImportModal";
 
 export default function Sidebar() {
@@ -190,12 +191,13 @@ export default function Sidebar() {
         <button
           title="Upload / Database"
           onClick={() => setIsUploadModalOpen(true)}
-          className={`bg-white border border-stone-200 hover:border-orange-200 hover:text-orange-400 text-stone-500 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
+          className={`relative bg-white border border-stone-200 hover:border-orange-200 hover:text-orange-400 text-stone-500 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"
           }`}
         >
           <Upload className="w-4 h-4 shrink-0" />
           {!isCollapsed && <span>Upload</span>}
+          <BackupDueDot />
         </button>
 
 

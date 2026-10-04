@@ -1,4 +1,4 @@
-import { doc, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { clearChartCache } from './chartCache';
 import type { Trade, Funding, Preferences } from '@/store/useJournalStore';
@@ -91,11 +91,12 @@ export const clearDatabase = async (
 // Preferences are part of the backup: they hold the broker balance-check history and the
 // statement details, which are evidence and cannot be rebuilt from the trades.
 export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: DayNote[], preferences: Preferences) => {
+  const lastBackupAt = new Date().toISOString();
   const data = {
     trades,
     funding,
     dayNotes,
-    preferences
+    preferences: { ...preferences, lastBackupAt }
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -106,6 +107,10 @@ export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: 
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+
+  // Remembered so the backup reminder can say how old the latest backup is.
+  setDoc(doc(db, "settings", "preferences"), { lastBackupAt }, { merge: true })
+    .catch(e => console.error("Error recording the backup time:", e));
 };
 
 export const restoreDatabase = async (

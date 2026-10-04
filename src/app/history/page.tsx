@@ -8,6 +8,7 @@ import { CHECKLIST_ICONS } from "@/components/checklistIcons";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
+import { BackupDueDot } from "@/components/BackupReminder";
 import BulkImportModal from "@/components/BulkImportModal";
 import ExitConfidenceBadge from "@/components/ExitConfidenceBadge";
 import BulkEditModal from "@/components/BulkEditModal";
@@ -253,10 +254,11 @@ export default function HistoryPage() {
           </button>
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="bg-white border border-stone-200 hover:border-orange-300 hover:text-orange-400 text-stone-500 px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32"
+            className="relative bg-white border border-stone-200 hover:border-orange-300 hover:text-orange-400 text-stone-500 px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32"
           >
             <Upload className="w-3.5 h-3.5" />
             Upload
+            <BackupDueDot />
           </button>
         </div>
       </div>
