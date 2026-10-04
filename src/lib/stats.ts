@@ -37,6 +37,11 @@ export const outcomeLabel = (outcome: TradeOutcome) => OUTCOME_LABELS[outcome];
 // The resultType stored on a trade, derived the same way trades are classified.
 export const deriveResultType = (profit: number, risk: number) => outcomeLabel(classifyTrade({ profit, risk }));
 
+// Whether a trade followed the plan. Older trades mark it only through isOnPlan, and a trade
+// that says nothing counts as on plan.
+export const isOnPlan = (t: { checklists?: string[]; isOnPlan?: boolean }): boolean =>
+  !!t.checklists?.includes('On Plan') || t.isOnPlan !== false;
+
 export function calcStandardDeviation(values: number[], mean: number): number {
   if (values.length === 0) return 0;
   const avgSquareDiff = values.reduce((sum, val) => sum + (val - mean) * (val - mean), 0) / values.length;

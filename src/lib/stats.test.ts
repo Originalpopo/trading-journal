@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   classifyTrade, deriveResultType, calcProfitFactor, healthTierFromProfitFactor, summarizeTrades,
-  calcAccountGrowth, computeDrawdowns,
+  calcAccountGrowth, computeDrawdowns, isOnPlan,
 } from './stats.ts';
 
 const close = (actual: number, expected: number) =>
@@ -173,4 +173,14 @@ test('computeDrawdowns: equity loss before any profit still shows a percentage',
   ]);
   assert.equal(dd.equity.maxValue, 20);
   close(dd.equity.maxPercent, 2);
+});
+
+test('isOnPlan: the checklist tag or the older flag, and on plan when a trade says nothing', () => {
+  assert.equal(isOnPlan({ checklists: ['On Plan'], isOnPlan: true }), true);
+  assert.equal(isOnPlan({ checklists: [], isOnPlan: false }), false);
+  assert.equal(isOnPlan({ checklists: ['Follow'], isOnPlan: false }), false);
+  assert.equal(isOnPlan({ isOnPlan: true }), true);
+  assert.equal(isOnPlan({}), true);
+  // The tag wins when the two disagree, as in the History table and the trade popup.
+  assert.equal(isOnPlan({ checklists: ['On Plan'], isOnPlan: false }), true);
 });
