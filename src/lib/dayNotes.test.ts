@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dayKey, dayKeyOfTime, summarizeDay, searchDayNotes, normalizeMood, MOOD_IDS } from './dayNotes.ts';
+import { dayKey, dayKeyOfTime, summarizeDay, tradesOfDay, searchDayNotes, normalizeMood, MOOD_IDS } from './dayNotes.ts';
 
 test('dayKey writes the local date', () => {
   assert.equal(dayKey(new Date(2026, 9, 3, 23, 59)), '2026-10-03');
@@ -36,6 +36,13 @@ test('summarizeDay: a day without trades is all zeros', () => {
 test('summarizeDay adds money exactly', () => {
   const many = Array.from({ length: 30 }, () => ({ time: '2026-05-05T10:00:00', profit: 0.1 }));
   assert.equal(summarizeDay(many, '2026-05-05').pnl, 3);
+});
+
+test('tradesOfDay lists the day\'s trades from the earliest close', () => {
+  const shuffled = [trades[2], trades[3], trades[0], trades[1]];
+  assert.deepEqual(tradesOfDay(shuffled, '2026-10-01').map(t => t.profit), [-1.37, 18.99, 0.08]);
+  assert.deepEqual(tradesOfDay(shuffled, '2026-10-02').map(t => t.profit), [-0.85]);
+  assert.deepEqual(tradesOfDay(shuffled, '2026-10-05'), []);
 });
 
 const notes = [

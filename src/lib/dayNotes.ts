@@ -62,6 +62,13 @@ export function summarizeDay(trades: DayTrade[], key: string): DaySummary {
   return { count, pnl: fromCents(pnlCents), rr, wins, losses, bes };
 }
 
+// The trades that closed on one day, earliest first.
+export function tradesOfDay<T extends { time: string }>(trades: T[], key: string): T[] {
+  return trades
+    .filter(t => dayKeyOfTime(t.time) === key)
+    .sort((a, b) => new Date(a.time.replace(' ', 'T')).getTime() - new Date(b.time.replace(' ', 'T')).getTime());
+}
+
 // Notes whose text or date contains the query, newest day first.
 export function searchDayNotes(notes: DayNote[], query: string): DayNote[] {
   const q = query.trim().toLowerCase();

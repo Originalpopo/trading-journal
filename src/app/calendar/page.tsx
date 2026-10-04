@@ -3,7 +3,7 @@
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import DayNoteModal, { MoodIcon } from "@/components/DayNoteModal";
+import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import { dayKey } from "@/lib/dayNotes";
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
@@ -243,7 +243,7 @@ export default function CalendarPage() {
                         title="Read the note"
                         onClick={() => setOpenNote({ date, edit: false })}
                         onDoubleClick={(e) => e.stopPropagation()}
-                        className="text-orange-400 hover:text-orange-500 hover:scale-110 transition -mt-0.5 -mr-0.5"
+                        className={`text-stone-400 ${moodTone(note.mood).hoverText} hover:scale-110 transition -mt-0.5 -mr-0.5`}
                       >
                         <MoodIcon mood={note.mood} className="w-5 h-5" />
                       </button>

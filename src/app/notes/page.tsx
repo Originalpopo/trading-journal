@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import DayNoteModal, { MoodIcon, formatDayLabel } from "@/components/DayNoteModal";
+import DayNoteModal, { MoodIcon, moodTone, formatDayLabel } from "@/components/DayNoteModal";
 import { dayKey, searchDayNotes, summarizeDay } from "@/lib/dayNotes";
 import { formatNumber } from "@/lib/utils";
 
@@ -76,7 +76,7 @@ export default function NotesPage() {
                   className="py-4 px-2 hover:bg-stone-50 transition cursor-pointer flex gap-4 items-start"
                   onClick={() => setOpen({ date: note.date, edit: false })}
                 >
-                  <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className={`w-10 h-10 rounded-full ${moodTone(note.mood).badge} flex items-center justify-center shrink-0 mt-0.5`}>
                     <MoodIcon mood={note.mood} />
                   </div>
                   <div className="flex-1 min-w-0">

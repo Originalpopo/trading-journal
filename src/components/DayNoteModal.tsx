@@ -3,19 +3,28 @@
 import { useMemo, useState } from "react";
 import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, type LucideIcon } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
-import { useJournalStore } from "@/store/useJournalStore";
-import { summarizeDay, normalizeMood, MOOD_IDS, type MoodId } from "@/lib/dayNotes";
+import { useJournalStore, type Trade } from "@/store/useJournalStore";
+import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId } from "@/lib/dayNotes";
+import { classifyTrade, outcomeLabel } from "@/lib/stats";
 import { formatNumber } from "@/lib/utils";
+import TradeDetailModal from "./TradeDetailModal";
+import ManualTradeModal from "./ManualTradeModal";
 
 // How the day felt, best to worst. The chosen face is also the note's marker on the Calendar.
-const MOODS: Record<MoodId, { label: string; Icon: LucideIcon }> = {
-  laugh: { label: "Great", Icon: Laugh },
-  smile: { label: "Good", Icon: Smile },
-  meh: { label: "Neutral", Icon: Meh },
-  annoyed: { label: "Frustrated", Icon: Annoyed },
-  frown: { label: "Sad", Icon: Frown },
-  angry: { label: "Angry", Icon: Angry },
+const MOODS: Record<MoodId, { label: string; Icon: LucideIcon; happy: boolean }> = {
+  laugh: { label: "Great", Icon: Laugh, happy: true },
+  smile: { label: "Good", Icon: Smile, happy: true },
+  meh: { label: "Neutral", Icon: Meh, happy: true },
+  annoyed: { label: "Frustrated", Icon: Annoyed, happy: false },
+  frown: { label: "Sad", Icon: Frown, happy: false },
+  angry: { label: "Angry", Icon: Angry, happy: false },
 };
+
+// The happy half reads in the main orange, the unhappy half in the red of a losing P&L.
+const HAPPY_TONE = { text: 'text-orange-400', hoverText: 'hover:text-orange-400', badge: 'bg-orange-50 text-orange-400', selected: 'text-orange-400 bg-orange-50 border-orange-400' };
+const UNHAPPY_TONE = { text: 'text-red-900', hoverText: 'hover:text-red-900', badge: 'bg-red-50 text-red-900', selected: 'text-red-900 bg-red-50 border-red-900' };
+
+export const moodTone = (mood?: string) => (MOODS[normalizeMood(mood)].happy ? HAPPY_TONE : UNHAPPY_TONE);
 
 export function MoodIcon({ mood, className = "w-5 h-5" }: { mood?: string; className?: string }) {
   const { Icon } = MOODS[normalizeMood(mood)];
@@ -25,6 +34,12 @@ export function MoodIcon({ mood, className = "w-5 h-5" }: { mood?: string; class
 export const formatDayLabel = (date: string) => {
   const d = new Date(`${date}T00:00:00`);
   return isNaN(d.getTime()) ? date : d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+// "14:15" of a stored time; empty when it cannot be read.
+const clockOf = (time?: string) => {
+  const d = time ? new Date(time.replace(' ', 'T')) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
 };
 
 interface DayNoteModalProps {
@@ -40,6 +55,7 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
   const note = useJournalStore(state => state.dayNotes.find(n => n.date === date));
   const saveDayNote = useJournalStore(state => state.saveDayNote);
   const deleteDayNote = useJournalStore(state => state.deleteDayNote);
+  const deleteTrade = useJournalStore(state => state.deleteTrade);
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
 
   const [isEditing, setIsEditing] = useState(startEditing || !note);
@@ -49,6 +65,12 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const day = useMemo(() => summarizeDay(trades, date), [trades, date]);
+  const dayTrades = useMemo(() => tradesOfDay(trades, date), [trades, date]);
+
+  // A trade of the day opened on top of the note, looked up by id so edits show at once.
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
+  const detailIndex = dayTrades.findIndex(t => t.id === detailId);
   const isDirty = isEditing && (content !== (note?.content ?? "") || mood !== savedMood);
 
   // Backdrop clicks and Esc are easy to hit by accident, so they ask before discarding edits.
@@ -83,14 +105,26 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
     }
   };
 
+  const handleDeleteTrade = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this trade?")) return;
+    setDetailId(null);
+    try {
+      await deleteTrade(id);
+    } catch {
+      alert("Failed to delete the trade.");
+    }
+  };
+
   const pnlClass = day.pnl > 0 ? 'text-orange-400' : day.pnl < 0 ? 'text-red-900' : 'text-stone-400';
 
   return (
-    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={requestClose}>
+    <>
+    {/* m-0: a page's space-y gap would otherwise shorten this backdrop while a trade is open on top. */}
+    <div className="fixed inset-0 m-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={requestClose}>
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center shrink-0">
+            <div className={`w-10 h-10 rounded-full ${moodTone(isEditing ? mood : note?.mood).badge} flex items-center justify-center shrink-0`}>
               <MoodIcon mood={isEditing ? mood : note?.mood} />
             </div>
             <div className="min-w-0">
@@ -124,6 +158,34 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
           </div>
         </div>
 
+        {dayTrades.length > 0 && (
+          <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
+            {dayTrades.map(t => {
+              const outcome = classifyTrade(t);
+              const tone = outcome === 'win' ? 'text-orange-400' : outcome === 'loss' ? 'text-red-900' : 'text-stone-400';
+              const entryClock = clockOf(t.entryTime);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  title="Open this trade"
+                  onClick={() => setDetailId(t.id)}
+                  className="w-full shrink-0 flex items-center gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
+                >
+                  <span className="text-stone-400 tabular-nums w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
+                  <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
+                  <span className="text-stone-500 flex-1 min-w-0 truncate">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span>
+                  <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
+                  {!isPrivacyMode && (
+                    <span className={`${tone} tabular-nums w-16 shrink-0 text-right`}>{t.profit < 0 ? '-' : ''}${formatNumber(Math.abs(t.profit))}</span>
+                  )}
+                  <span className={`${tone} tabular-nums w-16 shrink-0 text-right`}>{formatNumber(t.rr)} R</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {isEditing ? (
           <div className="flex-1 min-h-0 flex flex-col gap-4">
             <div className="shrink-0">
@@ -135,7 +197,7 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
                     type="button"
                     title={MOODS[id].label}
                     onClick={() => setMood(id)}
-                    className={`h-10 pl-2.5 pr-3.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold transition border-2 ${mood === id ? 'text-orange-400 bg-orange-50 border-orange-400' : 'text-stone-400 bg-stone-50 hover:bg-stone-100 border-transparent'}`}
+                    className={`h-10 pl-2.5 pr-3.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold transition border-2 ${mood === id ? moodTone(id).selected :'text-stone-400 bg-stone-50 hover:bg-stone-100 border-transparent'}`}
                   >
                     <MoodIcon mood={id} />
                     {MOODS[id].label}
@@ -187,5 +249,20 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
         )}
       </div>
     </div>
+    <TradeDetailModal
+      isOpen={detailIndex >= 0 && !tradeToEdit}
+      onClose={() => setDetailId(null)}
+      trade={dayTrades[detailIndex] ?? null}
+      onEdit={(trade) => setTradeToEdit(trade)}
+      onDelete={(id) => handleDeleteTrade(id)}
+      hasPrev={detailIndex > 0}
+      hasNext={detailIndex >= 0 && detailIndex < dayTrades.length - 1}
+      currentIndex={detailIndex + 1}
+      totalItems={dayTrades.length}
+      onPrev={() => setDetailId(dayTrades[detailIndex - 1]?.id ?? detailId)}
+      onNext={() => setDetailId(dayTrades[detailIndex + 1]?.id ?? detailId)}
+    />
+    <ManualTradeModal isOpen={!!tradeToEdit} onClose={() => setTradeToEdit(null)} tradeToEdit={tradeToEdit} />
+    </>
   );
 }
