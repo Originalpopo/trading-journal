@@ -344,9 +344,10 @@ export default function Dashboard() {
               <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
             )}
           </div>
-          {/* The broker check sits in the gap under the card, so Balance and Net Profit stay the same three lines. */}
-          <div className="absolute top-full inset-x-0 mt-1 flex justify-center">
-            {brokerCheck && (
+          {/* The broker check sits in the gap under the card, so Balance and Net Profit stay the same three lines.
+              The gap fits one line: a mismatch first, else the question when a check is due, else the last match. */}
+          <div className="absolute top-full inset-x-0 mt-1 flex justify-center whitespace-nowrap">
+            {brokerCheck && (!needsBrokerCheck || !brokerCheck.matches) && (
               <button
                 type="button"
                 onClick={() => setIsBalanceCheckOpen(true)}
@@ -360,7 +361,7 @@ export default function Dashboard() {
                       : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on {balanceCheck!.time.split('T')[0]}</>}
               </button>
             )}
-            {needsBrokerCheck && (
+            {needsBrokerCheck && (!brokerCheck || brokerCheck.matches) && (
               <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
                 <span>{isPrivacyMode ? 'Same as broker?' : `Broker shows $${formatNumber(data.runningBalance)}?`}</span>
                 <button
@@ -539,7 +540,7 @@ export default function Dashboard() {
 
               {/* Active DD Bar */}
               <div 
-                className="w-full bg-stone-300 rounded-lg transition-all duration-700 ease-out relative z-10"
+                className="w-full bg-stone-300/50 rounded-lg transition-all duration-700 ease-out relative z-10"
                 style={{ height: `${activeBarHeightPct}%` }}
               />
             </div>
