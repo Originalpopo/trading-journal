@@ -66,9 +66,6 @@ export default function ReportPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Tax Report</h2>
-          <p className="text-sm text-stone-500 font-medium mt-1">
-            Figures per calendar year. Profit counts in the year the money reached your Thai bank.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <button

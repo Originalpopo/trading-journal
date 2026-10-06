@@ -325,11 +325,11 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mt-2 mb-2">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-3 mt-2 mb-2">
         {(() => {
             const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
             return (
-              <div className="flex items-center justify-center gap-1 ml-2">
+              <div className="flex items-center justify-center gap-1 md:ml-2">
                 <div title="PF < 0.5" className="flex items-center justify-center w-8 h-8 cursor-help">
                   <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-8 h-8 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
                 </div>
@@ -348,11 +348,11 @@ export default function PerformancePage() {
               </div>
             );
         })()}
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year:</span>
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
               {availableYears.map(y => (
                  <option key={y} value={y.toString()}>{y}</option>
               ))}
@@ -363,7 +363,7 @@ export default function PerformancePage() {
             <div className="relative">
               <button
                 onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
-                className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer min-w-[70px] justify-between transition-colors"
+                className="bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer min-w-[70px] justify-between transition-colors"
               >
                 <span className="truncate max-w-[100px]">
                   {selectedTfs.length === 0 
@@ -422,7 +422,7 @@ export default function PerformancePage() {
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Plan:</span>
             <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
               <option value="ALL">ALL</option>
               <option value="On Plan">On Plan</option>
               <option value="Off Plan">Off Plan</option>

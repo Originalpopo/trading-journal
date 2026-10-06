@@ -37,7 +37,6 @@ export default function NotesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Notes</h2>
-          <p className="text-sm text-stone-500 font-medium mt-1">One note per day, next to that day&apos;s result. Any day can be opened from the Calendar.</p>
         </div>
         <button
           onClick={() => setOpen({ date: today, edit: true })}

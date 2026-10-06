@@ -24,7 +24,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className={`text-[11px] font-bold px-3 py-1 rounded-md transition ${
+          className={`text-[11px] font-bold px-3 py-1.5 md:py-1 rounded-md transition ${
             value === opt.value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-600'
           }`}
         >
@@ -67,7 +67,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
               key={r}
               type="button"
               onClick={() => toggleResult(r)}
-              className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase transition ${
+              className={`px-2.5 py-1.5 md:py-1 border rounded-md text-[10px] font-black uppercase transition ${
                 filters.results.includes(r) ? RESULT_STYLES[r] : 'bg-white text-stone-300 border-stone-200 hover:text-stone-500'
               }`}
             >
@@ -86,7 +86,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
           type="button"
           onClick={() => set({ needsCheck: !filters.needsCheck })}
           title="Trades whose exit time couldn't be read from the broker data"
-          className={`flex items-center gap-1 px-2.5 py-1 border rounded-md text-[10px] font-black uppercase transition ${
+          className={`flex items-center gap-1 px-2.5 py-1.5 md:py-1 border rounded-md text-[10px] font-black uppercase transition ${
             filters.needsCheck ? 'bg-red-50 text-red-900 border-red-200' : 'bg-white text-stone-300 border-stone-200 hover:text-stone-500'
           }`}
         >

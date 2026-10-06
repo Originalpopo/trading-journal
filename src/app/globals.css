@@ -26,6 +26,13 @@ body {
     @apply bg-orange-400;
 }
 
+/* iPhone Safari zooms the page in on any field whose text is smaller than 16px, and does not zoom back. */
+@media (max-width: 767px) {
+    input, select, textarea {
+        font-size: 16px;
+    }
+}
+
 .glass-card {
     @apply bg-white border border-stone-200 rounded-[1.25rem] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)];
 }

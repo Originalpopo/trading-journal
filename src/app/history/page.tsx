@@ -263,7 +263,7 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <div className="glass-card p-6 overflow-hidden flex flex-col h-fit">
+      <div className="glass-card p-3 md:p-6 overflow-hidden flex flex-col h-fit">
         <HistoryFilterBar filters={filters} onChange={setFilters} shownCount={filteredData.length} totalCount={combinedData.length} />
 
         {selectedIds.size > 0 && (
@@ -284,7 +284,7 @@ export default function HistoryPage() {
           <table className="w-full text-left text-sm whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
               <tr className="text-stone-400 border-b border-stone-100 bg-stone-50">
-                <th className="py-4 pl-4 pr-0 rounded-tl-xl w-8">
+                <th className="py-4 pl-2 md:pl-4 pr-0 rounded-tl-xl w-8">
                   <input
                     type="checkbox"
                     checked={allFilteredSelected}
@@ -294,26 +294,28 @@ export default function HistoryPage() {
                     className="w-3.5 h-3.5 accent-orange-400 cursor-pointer align-middle"
                   />
                 </th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">RR</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] text-right">Net PNL ($)</th>
-                <th className="py-4 px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">Actions</th>
+                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
+                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
+                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
+                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
+                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
+                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
+                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
+                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">RR</th>
+                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right"><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
+                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">Actions</th>
               </tr>
             </thead>
             <tbody className="text-[11px] divide-y divide-stone-50">
               {paginatedData.map((t, idx) => {
                 let shortTime = t.time;
+                let phoneTime = t.time;
                 try {
                   const d = new Date(t.time.replace(' ', 'T'));
                   if (!isNaN(d.getTime())) {
                     shortTime = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' +
                                 d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    phoneTime = shortTime.slice(0, -3);
                   }
                 } catch { }
 
@@ -322,21 +324,21 @@ export default function HistoryPage() {
                   const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                   return (
                     <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
-                      <td className="py-4 pl-4 pr-0"></td>
-                      <td className="py-4 px-4 text-stone-500 text-[11px] font-semibold leading-tight">{shortTime}</td>
-                      <td className="py-4 px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
+                      <td className="py-4 pl-2 md:pl-4 pr-0"></td>
+                      <td className="py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight"><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
+                      <td className="py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                         {badgeText}
                       </td>
-                      <td className="py-4 px-4 text-center text-stone-500">-</td>
-                      <td className="py-4 px-4 text-center">-</td>
-                      <td className="py-4 px-4 text-center text-stone-500">-</td>
-                      <td className="py-4 px-4 text-center"><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
-                      <td className="py-4 px-4 text-right font-bold text-stone-500">-</td>
-                      <td className="py-4 px-4 text-right font-bold text-stone-500">-</td>
-                      <td className={`py-4 px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
+                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
+                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center">-</td>
+                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
+                      <td className="py-4 px-1 md:px-4 text-center"><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
+                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
+                      <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
+                      <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
                         {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                       </td>
-                      <td className="py-4 px-4 text-center flex justify-center gap-3">
+                      <td className="hidden md:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
                         <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
                       </td>
@@ -360,7 +362,7 @@ export default function HistoryPage() {
 
                 return (
                   <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-stone-50'}`}>
-                    <td className="py-4 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-4 pl-2 md:pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -368,16 +370,16 @@ export default function HistoryPage() {
                         className="w-3.5 h-3.5 accent-orange-400 cursor-pointer align-middle"
                       />
                     </td>
-                    <td className="py-4 px-4 text-stone-500 text-[11px] font-semibold leading-tight">
-                      {shortTime}{durationStr}
+                    <td className="py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight">
+                      <span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span>{durationStr}
                     </td>
-                    <td className="py-4 px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
+                    <td className="py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                       {t.symbol}
                     </td>
-                    <td className="py-4 px-4 text-center font-bold text-stone-500">
+                    <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center font-bold text-stone-500">
                       {t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="hidden md:table-cell py-4 px-1 md:px-4">
                       <div className="flex items-center justify-center gap-2">
                         {CHECKLIST_NAMES.map(name => {
                           const Icon = CHECKLIST_ICONS[name];
@@ -391,22 +393,22 @@ export default function HistoryPage() {
                         })}
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]">
+                    <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]">
                       {t.side}
                     </td>
-                    <td className="py-4 px-4 text-center">
+                    <td className="py-4 px-1 md:px-4 text-center">
                       <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
-                    <td className="py-4 px-4 text-right font-bold text-stone-500">
+                    <td className="hidden md:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">
                       {isPrivacyMode ? '***' : riskText}
                     </td>
-                    <td className="py-4 px-4 text-right font-bold text-stone-500">
+                    <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">
                       {t.rr ? (t.riskIsEstimate ? '≈' : '') + format2Decimals(t.rr) + ' R' : '-'}
                     </td>
-                    <td className={`py-4 px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
+                    <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
                       {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                     </td>
-                    <td className="py-4 px-4 text-center flex justify-center gap-3">
+                    <td className="hidden md:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
                       <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
                     </td>

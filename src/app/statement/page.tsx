@@ -33,7 +33,8 @@ const confirmationText = (confirmed: Confirmation | null) =>
 // The statement itself, the same on screen, in the preview and on paper.
 function StatementDocument({ statement, profile, confirmed }: { statement: Statement; profile: StatementProfile; confirmed: Confirmation | null }) {
   return (
-    <>
+    // Laid out by its own width, not the screen's: the A4 preview keeps its columns on a phone.
+    <div className="@container">
       <div className="text-center mb-6">
         <h3 className="text-xl font-black text-stone-950 tracking-tight">Monthly Account Statement</h3>
         <p className="text-[11px] font-medium text-stone-400 mt-1">
@@ -41,7 +42,7 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
         </p>
       </div>
 
-      <div className="grid grid-cols-5 gap-4 text-xs pb-5 mb-5 border-b border-stone-200">
+      <div className="grid grid-cols-2 @2xl:grid-cols-5 gap-4 text-xs pb-5 mb-5 border-b border-stone-200">
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Name</p><p className="font-bold text-stone-950">{profile.name || '-'}</p></div>
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Broker</p><p className="font-bold text-stone-950">{profile.broker || '-'}</p></div>
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Account</p><p className="font-bold text-stone-950">{profile.accountNo || '-'}</p></div>
@@ -50,7 +51,7 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
       </div>
 
       <h4 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-3">Summary</h4>
-      <div className="grid grid-cols-2 gap-x-12 text-xs mb-6">
+      <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-x-12 gap-y-4 text-xs mb-6">
         <div className="space-y-1.5">
           <div className="flex justify-between"><span className="font-bold text-stone-400">Opening balance</span><span className="font-bold text-stone-950">{formatNumber(statement.openingBalance)}</span></div>
           <div className="flex justify-between"><span className="font-bold text-stone-400">Deposits</span><span className="font-bold text-stone-950">{formatNumber(statement.deposits)}</span></div>
@@ -110,7 +111,7 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
       {statement.rows.some(r => r.timeIsEstimate) && (
         <p className="text-[10px] font-medium text-stone-400 mt-2">* Close time estimated: the broker&apos;s export did not state it exactly for this trade.</p>
       )}
-    </>
+    </div>
   );
 }
 
@@ -198,11 +199,8 @@ export default function StatementPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Monthly Statement</h2>
-            <p className="text-sm text-stone-500 font-medium mt-1">
-              Your own record of the account in USD. Save it as a PDF at each month end and keep it with the bank slips.
-            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <select
               value={current ? `${current.year}-${current.month}` : ''}
               onChange={(e) => setSelected(e.target.value)}
@@ -234,7 +232,7 @@ export default function StatementPage() {
           </p>
         )}
 
-        <div className="glass-card p-8">
+        <div className="glass-card p-4 md:p-8">
           {statement
             ? <StatementDocument statement={statement} profile={profile} confirmed={confirmed} />
             : <p className="text-sm text-stone-400 font-medium">No trades or funding yet.</p>}
@@ -245,15 +243,15 @@ export default function StatementPage() {
         <div className="fixed inset-0 z-[100] bg-stone-300 overflow-auto print:static print:bg-white print:overflow-visible">
           {/* A4 landscape: the transactions table is too wide for a portrait page. */}
           <style>{`@page { size: A4 landscape; margin: 12mm; }`}</style>
-          <div className="sticky top-0 left-0 z-10 bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between gap-4 print:hidden">
-            <p className="text-xs font-bold text-stone-950">
+          <div className="sticky top-0 left-0 z-10 bg-white border-b border-stone-200 px-3 md:px-6 py-3 flex items-center justify-end md:justify-between gap-4 print:hidden">
+            <p className="hidden md:block text-xs font-bold text-stone-950">
               Preview · {MONTH_NAMES[statement.month - 1]} {statement.year}
               <span className="font-medium text-stone-400 ml-2">A4 landscape</span>
             </p>
             <div className="flex items-center gap-2 shrink-0">
               <button type="button" onClick={handleSavePdf} disabled={isSavingPdf}
                 title="บันทึกเป็นไฟล์ PDF ลงเครื่องทันที ไม่ผ่านหน้าต่างพิมพ์"
-                className="px-5 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs">
+                className="px-3 md:px-5 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs">
                 <FileDown className="w-4 h-4" /> {isSavingPdf ? "Saving..." : "Save as PDF"}
               </button>
               <button type="button" onClick={() => window.print()}

@@ -288,8 +288,8 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
         {/* Footer Actions */}
         <div className="px-6 md:px-8 pb-6 bg-white shrink-0 border-0 border-transparent" style={{ outline: 'none' }}>
           <div className="flex items-center justify-between pt-4 border-t border-stone-200">
-            <div className="flex items-center gap-3">
-              <button 
+            <div className="flex items-center gap-2 md:gap-3">
+              <button
                 onClick={() => onDelete(trade.id, !!isFunding)}
                 title="Delete Trade"
                 className="p-2.5 bg-stone-100 hover:bg-red-50 text-stone-600 hover:text-red-900 rounded-xl transition">
@@ -297,14 +297,15 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </button>
               <button 
                 onClick={() => onEdit({ ...trade })}
-                className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
+                title="Edit"
+                className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-2.5 md:px-5 py-2.5 rounded-xl transition">
                 <Edit2 className="w-4 h-4" />
-                Edit
+                <span className="hidden md:inline">Edit</span>
               </button>
             </div>
             {(onPrev || onNext) && (
-              <div className="flex items-center gap-4">
-                <button 
+              <div className="flex items-center gap-2 md:gap-4">
+                <button
                   onClick={onPrev}
                   disabled={!hasPrev}
                   className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
@@ -325,7 +326,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             )}
             <button 
               onClick={onClose}
-              className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-6 py-2.5 rounded-xl transition shadow-md shadow-stone-900/20">
+              className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-4 md:px-6 py-2.5 rounded-xl transition shadow-md shadow-stone-900/20">
               Close
             </button>
           </div>
