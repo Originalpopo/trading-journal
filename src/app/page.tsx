@@ -17,7 +17,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { formatNumber, tooltipPositionOf } from "@/lib/utils";
-import { summarizeTrades, healthTierFromProfitFactor, computeDrawdowns, calcAccountGrowth } from "@/lib/stats";
+import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
@@ -129,7 +129,8 @@ export default function Dashboard() {
   const [isConfirmingMatch, setIsConfirmingMatch] = useState(false);
   // Ask again whenever the last check no longer vouches for the balance on screen.
   const needsBrokerCheck = !balanceCheck || !brokerCheck?.matches || hasActivityAfter(balanceCheck, trades, funding);
-  const [ddMode, setDdMode] = useState<'equity' | 'balance' | 'trading'>('trading');
+  const [ddMode, setDdMode] = useState<'r' | 'usd'>('r');
+  const [now] = useState(() => Date.now()); // for "days below the peak"
 
   const data = useMemo(() => {
     let totalFunded = 0;
@@ -192,7 +193,7 @@ export default function Dashboard() {
 
     const summary = summarizeTrades(timelineEvents.filter(evt => evt.type === 'trade').map(evt => evt.data));
     // `type` goes last: some old imported trades have their own `type` field (order type).
-    const drawdowns = computeDrawdowns(timelineEvents.map(evt => ({ ...evt.data, type: evt.type })));
+    const drawdowns = computePnlDrawdown(timelineEvents.map(evt => ({ ...evt.data, type: evt.type, time: evt.timeObj })));
 
     if (shouldAggregate) {
       const sortedDaily = Array.from(dailyPoints.values()).sort((a, b) => a.timestamp - b.timestamp);
@@ -297,16 +298,28 @@ export default function Dashboard() {
     }
   };
 
+  // Measured on the trading result alone, in R (comparable at any account size) or in dollars.
   const displayDD = data.drawdowns[ddMode];
-  const displayMaxDDPercent = displayDD.maxPercent;
-  const displayMaxDDValue = displayDD.maxValue;
-  const displayMaxDDLabel = ddMode === 'balance' ? 'Max DD' : (ddMode === 'trading' ? 'Trading Max DD' : 'EQ. Max DD');
-  const displayActiveDDPercent = displayDD.activePercent;
-  const displayActiveDDValue = displayDD.activeValue;
+  const isRMode = ddMode === 'r';
+  const ddMax = isRMode ? displayDD.max : displayDD.maxPercent;
+  const ddActive = isRMode ? displayDD.active : displayDD.activePercent;
+  const ddUnit = isRMode ? ' R' : '%';
+  const ddDays = displayDD.peakTime ? Math.max(0, Math.floor((now - displayDD.peakTime) / 86_400_000)) : 0;
+  const belowPeakText = displayDD.active > 0
+    ? `${displayDD.tradesBelowPeak} trade${displayDD.tradesBelowPeak === 1 ? '' : 's'}${ddDays > 0 ? ` · ${ddDays} day${ddDays === 1 ? '' : 's'}` : ''} below the peak`
+    : 'At the peak';
 
-  const ddScaleMax = Math.max(displayMaxDDPercent * 1.25, 10);
-  const activeBarHeightPct = Math.min(100, Math.max(6, (displayActiveDDPercent / ddScaleMax) * 100));
-  const maxCapBottomPct = Math.min(95, Math.max(activeBarHeightPct, (displayMaxDDPercent / ddScaleMax) * 100));
+  // The gauge shows only the drawdown still under way: where it is now, and the deepest it has been.
+  // Both clear at a new peak. A full gauge is the drawdown before this one, or this one once it is deeper.
+  const ddActiveMax = isRMode ? displayDD.activeMax : displayDD.activeMaxPercent;
+  const isInDrawdown = displayDD.active > 0;
+  const ddPrevious = isRMode ? displayDD.previousMax : displayDD.previousMaxPercent;
+  const ddScaleMax = Math.max(ddPrevious, ddActiveMax);
+  const activeBarHeightPct = isInDrawdown ? Math.min(100, Math.max(6, (ddActive / ddScaleMax) * 100)) : 0;
+  const gaugeNote = ddPrevious > 0
+    ? `Full = the previous drawdown, ${formatNumber(ddPrevious)}${ddUnit} at its deepest`
+    : 'Full = the deepest point of this drawdown (there is no earlier one yet)';
+  const maxCapBottomPct = Math.min(95, Math.max(activeBarHeightPct, (ddActiveMax / ddScaleMax) * 100));
 
   if (isLoading) {
     return (
@@ -485,21 +498,28 @@ export default function Dashboard() {
           <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[200px] mb-8">
             <div className="flex flex-col justify-between z-10 flex-1 pr-2 py-1">
               <div>
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{displayMaxDDLabel}</p>
-                <p className="text-2xl font-extrabold text-red-950">{formatNumber(displayMaxDDPercent)}%</p>
-                <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayMaxDDValue)}`}</p>
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Max DD</p>
+                <p className="text-2xl font-extrabold text-red-950">{formatNumber(ddMax)}{ddUnit}</p>
+                {!isRMode && (
+                  <p className="text-[11px] font-bold text-stone-500" title="The largest drop in dollars. It can be a different drop from the deepest percentage.">
+                    {isPrivacyMode ? '***' : `$${formatNumber(displayDD.max)}`}
+                  </p>
+                )}
               </div>
-              
+
               <div className="w-full border-t border-stone-200 my-auto"></div>
 
               <div>
                 <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
-                <p className="text-2xl font-extrabold text-red-900">{formatNumber(displayActiveDDPercent)}%</p>
-                <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayActiveDDValue)}`}</p>
+                <p className="text-2xl font-extrabold text-red-900">{formatNumber(ddActive)}{ddUnit}</p>
+                {!isRMode && (
+                  <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayDD.active)}`}</p>
+                )}
+                <p className="text-[10px] font-bold text-stone-400 mt-1">{belowPeakText}</p>
               </div>
             </div>
 
-            <div className="w-16 h-full bg-stone-50 rounded-xl p-1.5 border border-stone-200 flex flex-col justify-end items-center relative z-10 shadow-inner">
+            <div title={gaugeNote} className="w-16 h-full bg-stone-50 rounded-xl p-1.5 border border-stone-200 flex flex-col justify-end items-center relative z-10 shadow-inner">
               <div className="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none opacity-10">
                 <div className="w-full border-b border-stone-950"></div>
                 <div className="w-full border-b border-stone-950"></div>
@@ -510,15 +530,16 @@ export default function Dashboard() {
                 <div className="w-full border-b border-stone-950"></div>
               </div>
 
-              {/* Max DD Cap (Peak Indicator) */}
-              <div 
-                className="absolute left-1.5 right-1.5 h-1.5 bg-red-950 rounded-full shadow-[0_0_8px_rgba(69,10,10,0.4)] transition-all duration-700 ease-out z-20"
+              {/* Deepest point of the drawdown still under way */}
+              {isInDrawdown && <div 
+                className="absolute left-1.5 right-1.5 h-1.5 bg-red-900 rounded-full shadow-[0_0_8px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out z-20"
                 style={{ bottom: `${maxCapBottomPct}%` }}
-              />
+                title={`Deepest point of this drawdown: ${formatNumber(ddActiveMax)}${ddUnit}`}
+              />}
 
               {/* Active DD Bar */}
               <div 
-                className="w-full bg-red-900 rounded-lg shadow-[0_0_12px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out relative z-10"
+                className="w-full bg-stone-300 rounded-lg transition-all duration-700 ease-out relative z-10"
                 style={{ height: `${activeBarHeightPct}%` }}
               />
             </div>
@@ -526,37 +547,20 @@ export default function Dashboard() {
           
           <div className="absolute bottom-4 left-0 right-0 flex justify-center">
             <div className="flex items-center bg-stone-100 p-0.5 rounded-md border border-stone-200 shadow-sm">
-              <button
-                onClick={() => setDdMode('equity')}
-                className={`text-[9px] font-bold px-3 py-1 rounded transition-all ${
-                  ddMode === 'equity' 
-                    ? 'bg-white text-stone-950 shadow-md' 
-                    : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                Equity
-              </button>
-              <button
-                onClick={() => setDdMode('trading')}
-                title="Drawdown from trading only; withdrawals are not counted"
-                className={`text-[9px] font-bold px-3 py-1 rounded transition-all whitespace-nowrap ${
-                  ddMode === 'trading'
-                    ? 'bg-white text-stone-950 shadow-md'
-                    : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                Trading DD
-              </button>
-              <button
-                onClick={() => setDdMode('balance')}
-                className={`text-[9px] font-bold px-3 py-1 rounded transition-all ${
-                  ddMode === 'balance' 
-                    ? 'bg-white text-stone-950 shadow-md' 
-                    : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                Balance
-              </button>
+              {([['r', 'R', 'Drawdown of your cumulative R'], ['usd', '$', 'Drawdown of your cumulative profit and loss in dollars']] as const).map(([mode, label, hint]) => (
+                <button
+                  key={mode}
+                  onClick={() => setDdMode(mode)}
+                  title={`${hint}; deposits and withdrawals are not counted`}
+                  className={`text-[10px] font-bold px-5 py-1.5 md:py-1 rounded transition-all ${
+                    ddMode === mode
+                      ? 'bg-white text-stone-950 shadow-md'
+                      : 'text-stone-400 hover:text-stone-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   classifyTrade, deriveResultType, calcProfitFactor, healthTierFromProfitFactor, summarizeTrades,
-  calcAccountGrowth, computeDrawdowns, isOnPlan,
+  calcAccountGrowth, computePnlDrawdown, isOnPlan,
 } from './stats.ts';
 
 const close = (actual: number, expected: number) =>
@@ -131,48 +131,112 @@ test('calcAccountGrowth: withdrawing profit does not change growth', () => {
   assert.equal(calcAccountGrowth(50, 0), 0);
 });
 
-test('computeDrawdowns: balance counts withdrawals, trading does not', () => {
-  const dd = computeDrawdowns([
+test('computePnlDrawdown: deposits and withdrawals neither cause nor heal a drawdown', () => {
+  const dd = computePnlDrawdown([
     { type: 'funding', deposit: 1000 },
     { type: 'trade', profit: 100 },
     { type: 'funding', withdraw: 500 },
+    { type: 'trade', profit: -40 },
+    { type: 'funding', deposit: 2000 },
   ]);
-  assert.equal(dd.balance.maxValue, 500);
-  close(dd.balance.maxPercent, (500 / 1100) * 100);
-  assert.equal(dd.trading.maxValue, 0);
-  assert.equal(dd.trading.activeValue, 0);
+  assert.equal(dd.usd.max, 40);
+  assert.equal(dd.usd.active, 40);
 });
 
-test('computeDrawdowns: trading drawdown from a losing trade', () => {
-  const dd = computeDrawdowns([
-    { type: 'funding', deposit: 1000 },
-    { type: 'trade', profit: -100 },
-    { type: 'trade', profit: 50 },
-  ]);
-  assert.equal(dd.trading.maxValue, 100);
-  close(dd.trading.maxPercent, 10);
-  assert.equal(dd.trading.activeValue, 50);
-  close(dd.trading.activePercent, 5);
-});
-
-test('computeDrawdowns: equity % is measured against the balance, not the P&L peak', () => {
+test('computePnlDrawdown: % is measured against the balance, not the P&L peak', () => {
   // P&L peaks at +10 then drops to +5: $5 on a $1010 account, not 50%
-  const dd = computeDrawdowns([
+  const dd = computePnlDrawdown([
     { type: 'funding', deposit: 1000 },
     { type: 'trade', profit: 10 },
     { type: 'trade', profit: -5 },
   ]);
-  assert.equal(dd.equity.maxValue, 5);
-  close(dd.equity.maxPercent, (5 / 1010) * 100);
+  assert.equal(dd.usd.max, 5);
+  close(dd.usd.maxPercent, (5 / 1010) * 100);
 });
 
-test('computeDrawdowns: equity loss before any profit still shows a percentage', () => {
-  const dd = computeDrawdowns([
+test('computePnlDrawdown: a loss before any profit still shows a percentage', () => {
+  const dd = computePnlDrawdown([
     { type: 'funding', deposit: 1000 },
     { type: 'trade', profit: -20 },
   ]);
-  assert.equal(dd.equity.maxValue, 20);
-  close(dd.equity.maxPercent, 2);
+  assert.equal(dd.usd.max, 20);
+  close(dd.usd.maxPercent, 2);
+});
+
+test('computePnlDrawdown: the deepest % and the largest $ drop can be different drops', () => {
+  const dd = computePnlDrawdown([
+    { type: 'funding', deposit: 100 },
+    { type: 'trade', profit: -50 }, // 50% of 100
+    { type: 'trade', profit: 50 },
+    { type: 'funding', deposit: 9900 },
+    { type: 'trade', profit: -200 }, // 2% of 10000
+  ]);
+  assert.equal(dd.usd.max, 200);
+  close(dd.usd.maxPercent, 50);
+  close(dd.usd.activePercent, 2);
+});
+
+test('computePnlDrawdown: R drawdown follows the R of each trade, not its dollars', () => {
+  const dd = computePnlDrawdown([
+    { type: 'funding', deposit: 100 },
+    { type: 'trade', profit: 3, rr: 2.1 },
+    { type: 'trade', profit: -1.5, rr: -1.1 },
+    { type: 'trade', profit: -1.2, rr: -1 },
+    { type: 'trade', profit: 0.4, rr: 0.3 },
+  ]);
+  assert.equal(dd.r.max, 2.1);
+  assert.equal(dd.r.active, 1.8);
+});
+
+test('computePnlDrawdown: counts the trades since the latest peak and remembers when it was', () => {
+  const dd = computePnlDrawdown([
+    { type: 'funding', deposit: 100, time: 1 },
+    { type: 'trade', profit: 5, rr: 1, time: 2 },
+    { type: 'trade', profit: -1, rr: -1, time: 3 },
+    { type: 'funding', deposit: 50, time: 4 },
+    { type: 'trade', profit: -1, rr: -1, time: 5 },
+  ]);
+  assert.equal(dd.usd.tradesBelowPeak, 2);
+  assert.equal(dd.usd.peakTime, 2);
+  assert.equal(dd.r.tradesBelowPeak, 2);
+});
+
+test('computePnlDrawdown: the deepest point of the current drawdown resets at a new peak', () => {
+  const trade = (rr: number) => ({ type: 'trade' as const, profit: rr, rr });
+  const start = [{ type: 'funding' as const, deposit: 100 }, trade(-1), trade(-1), trade(-1)];
+  const after3 = computePnlDrawdown(start).r;
+  assert.equal(after3.active, 3);
+  assert.equal(after3.activeMax, 3);
+
+  const after4 = computePnlDrawdown([...start, trade(2)]).r;
+  assert.equal(after4.active, 1);
+  assert.equal(after4.activeMax, 3);
+
+  const after5 = computePnlDrawdown([...start, trade(2), trade(2)]).r;
+  assert.equal(after5.active, 0);
+  assert.equal(after5.activeMax, 0);
+  assert.equal(after5.max, 3);
+  assert.equal(after3.previousMax, 0);
+  assert.equal(after5.previousMax, 3);
+
+  // The next drawdown is compared with the one before it, not with the worst ever.
+  const next = computePnlDrawdown([...start, trade(2), trade(2), trade(-1), trade(1), trade(-0.5)]).r;
+  assert.equal(next.active, 0.5);
+  assert.equal(next.previousMax, 1);
+  assert.equal(next.max, 3);
+});
+
+test('computePnlDrawdown: back at the peak, nothing is active', () => {
+  const dd = computePnlDrawdown([
+    { type: 'funding', deposit: 100, time: 1 },
+    { type: 'trade', profit: -1, rr: -0.1, time: 2 },
+    { type: 'trade', profit: -2, rr: -0.2, time: 3 },
+    { type: 'trade', profit: 3, rr: 0.3, time: 4 },
+  ]);
+  assert.equal(dd.usd.active, 0);
+  assert.equal(dd.r.active, 0);
+  assert.equal(dd.r.tradesBelowPeak, 0);
+  assert.equal(dd.r.peakTime, 4);
 });
 
 test('isOnPlan: the checklist tag or the older flag, and on plan when a trade says nothing', () => {

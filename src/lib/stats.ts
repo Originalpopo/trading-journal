@@ -67,61 +67,78 @@ export const calcAccountGrowth = (netProfit: number, totalDeposit: number) =>
   totalDeposit > 0 ? (netProfit / totalDeposit) * 100 : 0;
 
 export type TimelineEvent =
-  | { type: 'trade'; profit?: number }
-  | { type: 'funding'; deposit?: number; withdraw?: number };
+  | { type: 'trade'; profit?: number; rr?: number; time?: number }
+  | { type: 'funding'; deposit?: number; withdraw?: number; time?: number };
 
 export interface Drawdown {
-  maxValue: number;
-  maxPercent: number; // percent at the moment the largest dollar drawdown happened
-  activeValue: number;
+  max: number; // largest drop from a peak, in the series' own unit ($ or R)
+  maxPercent: number; // deepest drop as a percentage; not necessarily the same drop as `max`
+  active: number; // how far the series is below its latest peak now
   activePercent: number;
+  activeMax: number; // deepest point of the drawdown still under way; 0 again once a new peak is reached
+  activeMaxPercent: number;
+  previousMax: number; // deepest point of the last drawdown that was fully recovered; 0 if there is none yet
+  previousMaxPercent: number;
+  tradesBelowPeak: number; // trades taken since the latest peak
+  peakTime?: number; // when the latest peak was reached
 }
 
 // Tracks the drop from the running peak of a series. `base` is what the percentage is
 // measured against, captured whenever the series is at its peak.
 function createDrawdownTracker() {
-  let peak = 0, peakBase = 0, last = 0, maxValue = 0, maxPercent = 0;
+  let peak = 0, peakBase = 0, peakTime: number | undefined, last = 0;
+  let max = 0, maxPercent = 0, activeMax = 0, tradesBelowPeak = 0;
+  let previousMax = 0, previousMaxPercent = 0;
+  const dropTo = (value: number) => Math.round((peak - value) * 100) / 100;
   const percentOf = (dd: number) => (peakBase > 0 ? (dd / peakBase) * 100 : 0);
   return {
-    update(value: number, base: number) {
+    update(value: number, base: number, time: number | undefined, isTrade: boolean) {
       last = value;
-      if (value >= peak) { peak = value; peakBase = base; }
-      const dd = subMoney(peak, value);
-      if (dd > maxValue) { maxValue = dd; maxPercent = percentOf(dd); }
+      if (value >= peak) {
+        if (activeMax > 0) { previousMax = activeMax; previousMaxPercent = percentOf(activeMax); }
+        peak = value; peakBase = base; peakTime = time; tradesBelowPeak = 0; activeMax = 0;
+      }
+      else if (isTrade) tradesBelowPeak++;
+      const dd = dropTo(value);
+      max = Math.max(max, dd);
+      activeMax = Math.max(activeMax, dd);
+      maxPercent = Math.max(maxPercent, percentOf(dd));
     },
     result(): Drawdown {
-      const activeValue = subMoney(peak, last);
-      return { maxValue, maxPercent, activeValue, activePercent: percentOf(activeValue) };
+      const active = dropTo(last);
+      return {
+        max, maxPercent, active, activePercent: percentOf(active),
+        activeMax, activeMaxPercent: percentOf(activeMax), previousMax, previousMaxPercent, tradesBelowPeak, peakTime,
+      };
     },
   };
 }
 
+// Drawdown of the trading result alone: deposits and withdrawals neither cause nor heal it.
 // Events must be in chronological order.
-// - balance: account balance including deposits and withdrawals
-// - trading: like balance, but withdrawals are not counted as a drawdown
-// - equity:  cumulative trading P&L, as a percentage of the balance at its peak
-export function computeDrawdowns(events: TimelineEvent[]) {
-  const balance = createDrawdownTracker();
-  const trading = createDrawdownTracker();
-  const equity = createDrawdownTracker();
-  let runningBalance = 0, tradingBalance = 0, cumulativePnL = 0;
+// - usd: cumulative P&L in dollars; its percentages are of the account balance at the P&L peak
+// - r:   cumulative R, which stays comparable whatever the account size
+export function computePnlDrawdown(events: TimelineEvent[]) {
+  const usd = createDrawdownTracker();
+  const r = createDrawdownTracker();
+  let runningBalance = 0, cumulativePnL = 0, cumulativeR = 0;
 
   for (const evt of events) {
+    const isTrade = evt.type === 'trade';
     if (evt.type === 'funding') {
       runningBalance = subMoney(addMoney(runningBalance, evt.deposit), evt.withdraw);
-      tradingBalance = addMoney(tradingBalance, evt.deposit);
     } else {
       const pnl = evt.profit || 0;
       runningBalance = addMoney(runningBalance, pnl);
-      tradingBalance = addMoney(tradingBalance, pnl);
       cumulativePnL = addMoney(cumulativePnL, pnl);
+      // Rounded so that a sum of R values can return exactly to its earlier peak.
+      cumulativeR = Math.round((cumulativeR + (evt.rr || 0)) * 1e6) / 1e6;
     }
-    balance.update(runningBalance, runningBalance);
-    trading.update(tradingBalance, tradingBalance);
-    equity.update(cumulativePnL, runningBalance);
+    usd.update(cumulativePnL, runningBalance, evt.time, isTrade);
+    r.update(cumulativeR, 0, evt.time, isTrade);
   }
 
-  return { balance: balance.result(), trading: trading.result(), equity: equity.result() };
+  return { usd: usd.result(), r: r.result() };
 }
 
 export interface TradeSummary {
