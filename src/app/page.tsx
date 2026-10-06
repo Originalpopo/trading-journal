@@ -341,7 +341,7 @@ export default function Dashboard() {
               {isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-bold text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
+              <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
             )}
           </div>
           {/* The broker check sits in the gap under the card, so Balance and Net Profit stay the same three lines. */}
@@ -390,7 +390,7 @@ export default function Dashboard() {
               {isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-bold text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
+              <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
             )}
           </div>
           <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
