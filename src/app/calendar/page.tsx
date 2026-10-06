@@ -9,6 +9,15 @@ import { formatNumber } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
 import { addMoney } from "@/lib/money";
 
+// Below Tailwind's md breakpoint the day cells are about 46px wide.
+const isPhone = () => window.matchMedia('(max-width: 767px)').matches;
+
+// A day's P&L for a phone cell: no "$", and whole dollars from 1,000 up so it still fits. The day popup has the exact figure.
+const cellMoney = (pnl: number) => {
+  const abs = Math.abs(pnl);
+  return `${pnl < 0 ? '-' : ''}${abs >= 1000 ? Math.round(abs).toLocaleString('en-US') : formatNumber(abs)}`;
+};
+
 export default function CalendarPage() {
   const { trades, dayNotes, isLoading, isPrivacyMode } = useJournalStore();
   const [openNote, setOpenNote] = useState<{ date: string; edit: boolean } | null>(null);
@@ -154,14 +163,14 @@ export default function CalendarPage() {
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Calendar</h2>
         </div>
       </div>
-      <div className="glass-card p-8">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
-          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+      <div className="glass-card p-3 md:p-8">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 gap-4 md:gap-6">
+          <div className="flex items-center justify-center gap-2 md:gap-4 flex-wrap">
             <div className="flex items-center">
               <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
                 <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
               </button>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-stone-950 min-w-[180px] md:min-w-[240px] text-center tracking-tight">
+              <h2 className="text-xl md:text-3xl font-extrabold text-stone-950 min-w-[160px] md:min-w-[240px] text-center tracking-tight">
                 {data.monthLabel}
               </h2>
               <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
@@ -177,29 +186,29 @@ export default function CalendarPage() {
               </select>
             </div>
           </div>
-          <div className="flex gap-4 md:gap-6 overflow-visible flex-wrap md:flex-nowrap items-center w-full md:w-auto justify-around md:justify-end">
-            <div className="flex flex-col justify-center items-center text-center shrink-0 flex-1 md:flex-none px-2 py-1">
+          <div className="flex md:gap-6 items-center w-full md:w-auto justify-around md:justify-end">
+            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Trades</span>
-              <span className="text-lg font-black text-stone-400">{data.mTotalTradesAll}</span>
+              <span className="text-sm md:text-lg font-black text-stone-400">{data.mTotalTradesAll}</span>
             </div>
             <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
-            <div className="flex flex-col justify-center items-center text-center shrink-0 flex-1 md:flex-none px-2 py-1">
+            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">PnL</span>
-              <span className={`text-lg font-black ${data.mNet > 0 ? 'text-orange-400' : data.mNet < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+              <span className={`text-sm md:text-lg font-black ${data.mNet > 0 ? 'text-orange-400' : data.mNet < 0 ? 'text-red-900' : 'text-stone-400'}`}>
                 {isPrivacyMode ? '***' : `${data.mNet < 0 ? '-' : ''}$${formatNumber(Math.abs(data.mNet))}`}
               </span>
             </div>
             <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
-            <div className="flex flex-col justify-center items-center text-center shrink-0 flex-1 md:flex-none px-2 py-1">
+            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">RR</span>
-              <span className="text-lg font-black text-stone-400">
+              <span className="text-sm md:text-lg font-black text-stone-400">
                 {formatNumber(data.mRR)} R
               </span>
             </div>
             <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
-            <div className="flex flex-col justify-center items-center text-center shrink-0 flex-1 md:flex-none px-2 py-1">
+            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Win Rate</span>
-              <span className="text-lg font-black text-orange-400">{formatNumber(data.winRate)}%</span>
+              <span className="text-sm md:text-lg font-black text-orange-400">{formatNumber(data.winRate)}%</span>
             </div>
           </div>
         </div>
@@ -207,13 +216,13 @@ export default function CalendarPage() {
         <div className="flex flex-col xl:flex-row gap-4">
           <div className="calendar-grid flex-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(dayName => (
-              <div key={dayName} className="bg-stone-50 p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">
+              <div key={dayName} className="bg-stone-50 px-0 py-2 md:p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">
                 {dayName}
               </div>
             ))}
             {data.daysArray.map((cell: any) => {
               if (cell.type === 'empty') {
-                return <div key={cell.id} className="bg-stone-50/50 min-h-[110px]"></div>;
+                return <div key={cell.id} className="bg-stone-50/50 min-h-[68px] md:min-h-[110px]"></div>;
               }
 
               const { day, isToday, stats } = cell;
@@ -227,13 +236,15 @@ export default function CalendarPage() {
               return (
                 <div
                   key={cell.id}
-                  className={`${bgColor} group min-h-[110px] p-3 flex flex-col select-none`}
+                  className={`${bgColor} group min-h-[68px] md:min-h-[110px] p-1 md:p-3 flex flex-col select-none touch-manipulation`}
                   title={note ? "Double-click to edit the note" : "Double-click to write a note"}
                   onDoubleClick={() => setOpenNote({ date, edit: true })}
+                  // A phone has no hover or double-click: one tap opens the day.
+                  onClick={() => { if (isPhone()) setOpenNote({ date, edit: false }); }}
                 >
-                  <div className="flex items-start justify-between h-6">
+                  <div className="flex items-start justify-between h-5 md:h-6">
                     {isToday ? (
-                      <span className="text-xs font-bold bg-orange-400 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
+                      <span className="text-xs font-bold bg-orange-400 text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
                     ) : (
                       <span className="text-xs font-bold text-stone-400">{day}</span>
                     )}
@@ -241,11 +252,11 @@ export default function CalendarPage() {
                       <button
                         type="button"
                         title="Read the note"
-                        onClick={() => setOpenNote({ date, edit: false })}
+                        onClick={(e) => { e.stopPropagation(); setOpenNote({ date, edit: false }); }}
                         onDoubleClick={(e) => e.stopPropagation()}
-                        className={`text-stone-400 ${moodTone(note.mood).hoverText} hover:scale-110 transition -mt-0.5 -mr-0.5`}
+                        className={`text-stone-400 ${moodTone(note.mood).hoverText} hover:scale-110 transition md:-mt-0.5 md:-mr-0.5`}
                       >
-                        <MoodIcon mood={note.mood} className="w-5 h-5" />
+                        <MoodIcon mood={note.mood} className="w-4 h-4 md:w-5 md:h-5" />
                       </button>
                     ) : (
                       <button
@@ -253,7 +264,7 @@ export default function CalendarPage() {
                         title="Write a note"
                         onClick={() => setOpenNote({ date, edit: true })}
                         onDoubleClick={(e) => e.stopPropagation()}
-                        className="text-stone-300 hover:text-orange-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition -mt-0.5 -mr-0.5"
+                        className="hidden md:block text-stone-300 hover:text-orange-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition -mt-0.5 -mr-0.5"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -261,7 +272,22 @@ export default function CalendarPage() {
                   </div>
                   
                   {stats && (
-                    <div className="mt-auto">
+                    <div className="mt-auto md:hidden text-center leading-tight">
+                      <div className={`text-[10px] font-black tracking-tighter tabular-nums ${
+                        (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' :
+                        (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
+                      }`}>
+                        {isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl)}
+                      </div>
+                      {!isPrivacyMode && (
+                        <div className={`text-[9px] font-bold tracking-tighter tabular-nums ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                          {formatNumber(stats.rr)}R
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {stats && (
+                    <div className="mt-auto hidden md:block">
                       <div className={`text-base font-black ${
                         (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' : 
                         (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
@@ -290,27 +316,28 @@ export default function CalendarPage() {
           </div>
 
           <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-stone-200 gap-[1px] border border-stone-200 rounded-xl overflow-hidden">
-            <div className="bg-orange-50 p-3 text-center text-[10px] font-black text-orange-400 uppercase tracking-widest shrink-0 flex items-center justify-center min-h-[41px]">
+            <div className="bg-orange-50 p-3 text-center text-[10px] font-black text-orange-400 uppercase tracking-widest shrink-0 flex items-center justify-center xl:min-h-[41px]">
               Summary
             </div>
-            {data.weeklySummaries.map((cell: any) => {
+            {data.weeklySummaries.map((cell: any, index: number) => {
               let bgBorder = "bg-stone-50/50";
               if (cell.pnl > 0) bgBorder = "bg-orange-50";
               else if (cell.pnl < 0) bgBorder = "bg-red-50";
 
               return (
-                <div key={cell.id} className={`${bgBorder} min-h-[110px] p-3 flex flex-col justify-center items-center flex-1`}>
+                <div key={cell.id} className={`${bgBorder} px-4 py-2.5 xl:p-3 xl:min-h-[110px] flex xl:flex-col justify-end xl:justify-center items-center gap-4 xl:gap-0 flex-1`}>
+                  <span className="xl:hidden mr-auto text-[10px] font-black text-stone-400 uppercase tracking-widest">Week {index + 1}</span>
                   {cell.pnl !== 0 && (
                     <>
                       {!isPrivacyMode && (
-                        <div className={`text-base font-black ${cell.pnl > 0 ? 'text-orange-400' : 'text-red-900'} mb-1`}>
+                        <div className={`text-sm xl:text-base font-black ${cell.pnl > 0 ? 'text-orange-400' : 'text-red-900'} xl:mb-1`}>
                           {cell.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(cell.pnl))}
                         </div>
                       )}
-                      <div className={`${isPrivacyMode ? 'text-base mb-1' : 'text-xs'} font-black ${cell.rr > 0 ? 'text-orange-400' : cell.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
+                      <div className={`${isPrivacyMode ? 'text-sm xl:text-base xl:mb-1' : 'text-xs'} font-black ${cell.rr > 0 ? 'text-orange-400' : cell.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
                         {formatNumber(cell.rr)} R
                       </div>
-                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-1">
+                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter xl:mt-1">
                         Trades : {cell.count}
                       </div>
                     </>

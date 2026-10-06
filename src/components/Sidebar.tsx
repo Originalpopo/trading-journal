@@ -16,7 +16,8 @@ import {
   Receipt,
   FileText,
   Eye,
-  EyeOff
+  EyeOff,
+  Ellipsis
 } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { clearDatabase, downloadDatabase, restoreDatabase } from "@/lib/dbActions";
@@ -33,6 +34,7 @@ export default function Sidebar() {
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [tvRawText, setTvRawText] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = initializeListeners();
@@ -128,8 +130,15 @@ export default function Sidebar() {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
+  // Phones have no room for a side rail: the four everyday pages sit in a bottom bar, the rest behind "More".
+  const MOBILE_PRIMARY = ["/", "/history", "/calendar", "/performance"];
+  const mobilePrimary = MOBILE_PRIMARY.map(href => navItems.find(item => item.href === href)!);
+  const mobileMore = navItems.filter(item => !MOBILE_PRIMARY.includes(item.href));
+  const isMoreActive = isMoreOpen || mobileMore.some(item => item.href === pathname);
+
   return (
-    <aside className={`print:hidden bg-white border-r border-stone-200 flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <>
+    <aside className={`print:hidden bg-white border-r border-stone-200 hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       <div className={`p-6 pb-8 flex items-center ${isCollapsed ? "justify-center px-4" : "gap-2"}`}>
         <button 
           onClick={(e) => {
@@ -220,7 +229,91 @@ export default function Sidebar() {
           </div>
         )}
       </div>
-      <UploadModal 
+    </aside>
+
+    {isMoreOpen && (
+      <div className="md:hidden print:hidden fixed inset-0 z-40 bg-stone-900/50" onClick={() => setIsMoreOpen(false)}>
+        <div
+          className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="grid grid-cols-3 gap-2">
+            {mobileMore.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMoreOpen(false)}
+                  className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+                    isActive ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+            <button
+              onClick={() => setIsPrivacyMode(!isPrivacyMode)}
+              className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+                isPrivacyMode ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
+              }`}
+            >
+              {isPrivacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              Privacy
+            </button>
+            <button
+              onClick={() => { setIsMoreOpen(false); setIsUploadModalOpen(true); }}
+              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-stone-50 text-stone-500 font-semibold transition"
+            >
+              <Upload className="w-5 h-5" />
+              Upload
+              <BackupDueDot />
+            </button>
+          </div>
+          <div className="mt-3 text-xs font-semibold flex items-center justify-center text-stone-600 bg-stone-50 py-2.5 rounded-xl border border-stone-100">
+            <span className={`w-2.5 h-2.5 rounded-full mr-2 shrink-0 ${statusColor}`}></span>
+            <span className="truncate">{statusText}</span>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <nav className="md:hidden print:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-stone-200 pb-[env(safe-area-inset-bottom)]">
+      <div className="grid grid-cols-5 h-16">
+        {mobilePrimary.map((item) => {
+          const isActive = !isMoreOpen && pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              onClick={() => setIsMoreOpen(false)}
+              className={`flex flex-col items-center justify-center gap-1 text-[10px] transition ${
+                isActive ? "text-orange-400 font-bold" : "text-stone-400 font-semibold"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              {item.name}
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => setIsMoreOpen(!isMoreOpen)}
+          className={`flex flex-col items-center justify-center gap-1 text-[10px] transition ${
+            isMoreActive ? "text-orange-400 font-bold" : "text-stone-400 font-semibold"
+          }`}
+        >
+          <Ellipsis className="w-5 h-5" />
+          More
+        </button>
+      </div>
+    </nav>
+
+      {/* Outside the aside: it is display:none on phones, which would hide these popups too. */}
+      <UploadModal
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         onPasteSubmit={onPasteSubmit} 
@@ -236,6 +329,6 @@ export default function Sidebar() {
           initialRawText={tvRawText}
         />
       )}
-    </aside>
+    </>
   );
 }

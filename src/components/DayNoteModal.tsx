@@ -139,21 +139,21 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
           </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-3 mb-5 shrink-0">
-          <div className="bg-stone-50 rounded-xl p-3 text-center">
+        <div className="grid grid-cols-4 gap-2 md:gap-3 mb-5 shrink-0">
+          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
             <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Trades</p>
             <p className="text-sm font-black text-stone-950">{day.count}</p>
           </div>
-          <div className="bg-stone-50 rounded-xl p-3 text-center">
+          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
             <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">P&L</p>
             <p className={`text-sm font-black ${pnlClass}`}>{day.count === 0 ? '-' : isPrivacyMode ? '***' : `${day.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(day.pnl))}`}</p>
           </div>
-          <div className="bg-stone-50 rounded-xl p-3 text-center">
+          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
             <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">RR</p>
             <p className={`text-sm font-black ${day.rr > 0 ? 'text-orange-400' : day.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>{day.count === 0 ? '-' : `${formatNumber(day.rr)} R`}</p>
           </div>
-          <div className="bg-stone-50 rounded-xl p-3 text-center" title="Wins / break-evens / losses">
-            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">TP / BE / SL</p>
+          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center" title="Wins / break-evens / losses">
+            <p className="text-[9px] font-black text-stone-400 uppercase md:tracking-widest mb-0.5">TP / BE / SL</p>
             <p className="text-sm font-black text-stone-950">{day.count === 0 ? '-' : `${day.wins} / ${day.bes} / ${day.losses}`}</p>
           </div>
         </div>
@@ -170,16 +170,16 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
                   type="button"
                   title="Open this trade"
                   onClick={() => setDetailId(t.id)}
-                  className="w-full shrink-0 flex items-center gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
+                  className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
                 >
-                  <span className="text-stone-400 tabular-nums w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
+                  <span className="text-stone-400 tabular-nums w-[76px] md:w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
                   <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
-                  <span className="text-stone-500 flex-1 min-w-0 truncate">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span>
+                  <span className="text-stone-500 flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
                   <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
                   {!isPrivacyMode && (
-                    <span className={`${tone} tabular-nums w-16 shrink-0 text-right`}>{t.profit < 0 ? '-' : ''}${formatNumber(Math.abs(t.profit))}</span>
+                    <span className={`${tone} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{t.profit < 0 ? '-' : ''}${formatNumber(Math.abs(t.profit))}</span>
                   )}
-                  <span className={`${tone} tabular-nums w-16 shrink-0 text-right`}>{formatNumber(t.rr)} R</span>
+                  <span className={`${tone} tabular-nums w-12 md:w-16 shrink-0 text-right`}>{formatNumber(t.rr)} R</span>
                 </button>
               );
             })}
@@ -208,7 +208,8 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
             <div className="flex-1 min-h-0 flex flex-col">
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Note</label>
               <textarea
-                autoFocus
+                // Not on a phone: the keyboard would cover the day's trades as soon as a day is tapped.
+                autoFocus={!window.matchMedia('(max-width: 767px)').matches}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 // Start at the end so a later addition continues the day's note.
