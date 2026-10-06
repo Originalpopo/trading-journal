@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium, CheckCircle2, AlertTriangle, Check, X } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -19,6 +19,7 @@ import { Line } from 'react-chartjs-2';
 import { formatNumber, tooltipPositionOf } from "@/lib/utils";
 import { summarizeTrades, healthTierFromProfitFactor, computeDrawdowns, calcAccountGrowth } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
+import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
@@ -108,6 +109,15 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
+
+  // Today's reference rate, for the rough baht figures under Balance and Net Profit.
+  const [bahtRate, setBahtRate] = useState<BahtRate | null>(null);
+  useEffect(() => {
+    let isMounted = true;
+    loadBahtRate().then(rate => { if (isMounted) setBahtRate(rate); });
+    return () => { isMounted = false; };
+  }, []);
+  const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
   const balanceCheck = useJournalStore(state => state.preferences.balanceCheck);
   const [isBalanceCheckOpen, setIsBalanceCheckOpen] = useState(false);
   // Recomputed from the saved broker balance, so a trade added or removed later shows up here.
@@ -311,17 +321,24 @@ export default function Dashboard() {
       <BalanceCheckModal isOpen={isBalanceCheckOpen} onClose={() => setIsBalanceCheckOpen(false)} />
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+          <div className="relative">
+          <div className="glass-card p-6 h-full flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
             <p className="text-3xl font-extrabold stat-value text-stone-950">
               {isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`}
             </p>
-{brokerCheck && (
+            {bahtRate && !isPrivacyMode && (
+              <p className="text-xs font-bold text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
+            )}
+          </div>
+          {/* The broker check sits in the gap under the card, so Balance and Net Profit stay the same three lines. */}
+          <div className="absolute top-full inset-x-0 mt-1 flex justify-center">
+            {brokerCheck && (
               <button
                 type="button"
                 onClick={() => setIsBalanceCheckOpen(true)}
                 title="Open the broker balance check"
-                className={`mt-2 text-[10px] font-bold flex items-center gap-1 transition hover:opacity-70 ${brokerCheck.matches ? 'text-orange-400' : 'text-red-900'}`}
+                className={`text-[10px] font-bold flex items-center gap-1 transition hover:opacity-70 ${brokerCheck.matches ? 'text-orange-400' : 'text-red-900'}`}
               >
                 {brokerCheck.matches
                   ? <><CheckCircle2 className="w-3 h-3" /> Matched broker on {balanceCheck!.time.split('T')[0]}</>
@@ -331,7 +348,7 @@ export default function Dashboard() {
               </button>
             )}
             {needsBrokerCheck && (
-              <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
                 <span>{isPrivacyMode ? 'Same as broker?' : `Broker shows $${formatNumber(data.runningBalance)}?`}</span>
                 <button
                   type="button"
@@ -353,11 +370,15 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+          </div>
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
             <p className={`text-3xl font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
               {isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`}
             </p>
+            {bahtRate && !isPrivacyMode && (
+              <p className="text-xs font-bold text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
+            )}
           </div>
           <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
