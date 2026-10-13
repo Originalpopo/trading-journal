@@ -78,20 +78,19 @@ export default function NotesPage() {
                   <div className={`w-10 h-10 rounded-full ${moodTone(note.mood).badge} flex items-center justify-center shrink-0 mt-0.5`}>
                     <MoodIcon mood={note.mood} />
                   </div>
+                  {/* The preview keeps to its own column, two lines at most; the whole note opens on click. */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline gap-4 mb-1">
-                      <h4 className="text-sm font-bold text-stone-900 truncate">{formatDayLabel(note.date)}</h4>
-                      <span className="text-xs font-bold shrink-0 text-stone-400">
-                        {day.count === 0 ? 'No trades' : (
-                          <>
-                            <span className={pnlClass}>{isPrivacyMode ? `${formatNumber(day.rr)} R` : `${day.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(day.pnl))}`}</span>
-                            {' · '}{day.count} {day.count > 1 ? 'trades' : 'trade'}
-                          </>
-                        )}
-                      </span>
-                    </div>
-                    <p className="text-sm text-stone-500 line-clamp-2 whitespace-pre-line">{note.content}</p>
+                    <h4 className="text-sm font-bold text-stone-900 truncate mb-1">{formatDayLabel(note.date)}</h4>
+                    <p className="text-sm text-stone-500 line-clamp-2 whitespace-pre-line max-w-2xl">{note.content}</p>
                   </div>
+                  <span className="text-xs font-bold shrink-0 text-stone-400 mt-0.5">
+                    {day.count === 0 ? 'No trades' : (
+                      <>
+                        <span className={pnlClass}>{isPrivacyMode ? `${formatNumber(day.rr)} R` : `${day.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(day.pnl))}`}</span>
+                        {' · '}{day.count} {day.count > 1 ? 'trades' : 'trade'}
+                      </>
+                    )}
+                  </span>
                 </div>
               );
             })
