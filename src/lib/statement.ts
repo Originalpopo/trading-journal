@@ -163,8 +163,9 @@ export function statementCsv(statement: Statement, profile: StatementProfile): s
     ['Closing balance', money(statement.closingBalance)],
     ['Trades', statement.tradeCount],
     [],
-    ['Close time', 'Open time', 'Type', 'Position ID', 'Symbol', 'Size', 'Open price', 'Close price', 'Commission', 'Amount', 'Balance', 'Note'],
-    ...statement.rows.map(r => [
+    ['No.', 'Close time', 'Open time', 'Type', 'Position ID', 'Symbol', 'Size', 'Open price', 'Close price', 'Commission', 'Amount', 'Balance', 'Note'],
+    ...statement.rows.map((r, i) => [
+      i + 1,
       r.time.replace('T', ' '),
       r.openTime ? r.openTime.replace('T', ' ') : '',
       r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind,

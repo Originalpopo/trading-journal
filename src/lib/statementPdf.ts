@@ -30,18 +30,16 @@ export function buildStatementPdf(statement: Statement, { profile, confirmation 
 
   doc.setFont('helvetica', 'bold').setFontSize(15).setTextColor(12, 10, 9);
   doc.text('Monthly Account Statement', pageWidth / 2, margin + 4, { align: 'center' });
-  doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(120, 113, 108);
-  doc.text("Prepared by the account holder from the broker's order history. Not issued by the broker.", pageWidth / 2, margin + 9, { align: 'center' });
 
   autoTable(doc, {
-    startY: margin + 14,
+    startY: margin + 10,
     margin: { left: margin, right: margin },
     theme: 'plain',
     styles: { fontSize: 9, cellPadding: 1 },
     headStyles: { fontSize: 7, textColor: [120, 113, 108], fontStyle: 'bold' },
     bodyStyles: { fontStyle: 'bold', textColor: [12, 10, 9] },
-    head: [['NAME', 'BROKER', 'ACCOUNT', 'PERIOD', 'CURRENCY']],
-    body: [[pdfSafe(profile.name || '-'), pdfSafe(profile.broker || '-'), pdfSafe(profile.accountNo || '-'), period, 'USD']],
+    head: [['NAME', 'BROKER', 'ACCOUNT', 'CURRENCY', 'PERIOD']],
+    body: [[pdfSafe(profile.name || '-'), pdfSafe(profile.broker || '-'), pdfSafe(profile.accountNo || '-'), 'USD', period]],
   });
 
   const afterHeader = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
@@ -83,11 +81,12 @@ export function buildStatementPdf(statement: Statement, { profile, confirmation 
     styles: { fontSize: 8, cellPadding: 1.6, textColor: [68, 64, 60] },
     headStyles: { fillColor: [245, 245, 244], textColor: [120, 113, 108], fontSize: 7, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [255, 255, 255] },
-    columnStyles: { 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right', fontStyle: 'bold', textColor: [12, 10, 9] }, 9: { halign: 'right', textColor: [12, 10, 9] } },
-    head: [['CLOSE TIME', 'OPEN TIME', 'TYPE', 'POSITION ID', 'SYMBOL', 'SIZE', 'OPEN PRICE', 'CLOSE PRICE', 'AMOUNT', 'BALANCE']],
+    columnStyles: { 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' }, 9: { halign: 'right', fontStyle: 'bold', textColor: [12, 10, 9] }, 10: { halign: 'right', textColor: [12, 10, 9] } },
+    head: [['NO.', 'CLOSE TIME', 'OPEN TIME', 'TYPE', 'POSITION ID', 'SYMBOL', 'SIZE', 'OPEN PRICE', 'CLOSE PRICE', 'AMOUNT', 'BALANCE']],
     body: statement.rows.length === 0
-      ? [[{ content: 'No transactions in this period.', colSpan: 10 }]]
-      : statement.rows.map(r => [
+      ? [[{ content: 'No transactions in this period.', colSpan: 11 }]]
+      : statement.rows.map((r, i) => [
+          String(i + 1),
           clock(r.time) + (r.timeIsEstimate ? ' *' : ''),
           clock(r.openTime),
           r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind,
@@ -105,7 +104,7 @@ export function buildStatementPdf(statement: Statement, { profile, confirmation 
         data.cell.styles.fillColor = [245, 245, 244];
         data.cell.styles.fontStyle = 'bold';
       }
-      if (data.section === 'head' && data.column.index >= 5) data.cell.styles.halign = 'right';
+      if (data.section === 'head' && data.column.index >= 6) data.cell.styles.halign = 'right';
     },
   });
 

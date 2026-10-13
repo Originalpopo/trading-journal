@@ -39,7 +39,7 @@ export default function StatementProfileSetting() {
         <div>
           <h3 className="text-lg font-bold text-stone-950">Statement Details</h3>
           <p className="text-sm text-stone-500 font-medium">
-            Shown at the top of the monthly statement. Saved in your private database only.
+            แสดงที่ส่วนหัวของ Monthly Statement และบันทึกไว้ในฐานข้อมูลส่วนตัวของคุณเท่านั้น
           </p>
         </div>
       </div>

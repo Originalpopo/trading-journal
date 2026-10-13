@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, AlertTriangle, X } from "lucide-react";
+import { useState } from "react";
+import { Search, AlertTriangle, X, SlidersHorizontal } from "lucide-react";
 import { EMPTY_FILTERS, isFilterActive, type HistoryFilters, type ResultLabel } from "@/lib/historyFilter";
 
 interface HistoryFilterBarProps {
@@ -40,9 +41,38 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
   const toggleResult = (r: ResultLabel) =>
     set({ results: filters.results.includes(r) ? filters.results.filter(x => x !== r) : [...filters.results, r] });
   const active = isFilterActive(filters);
+  // Folded away until it is needed; filters left on stay visible on the button's row.
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-stone-400">
+        <button
+          type="button"
+          onClick={() => setIsOpen(open => !open)}
+          aria-expanded={isOpen}
+          className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-[11px] font-bold transition ${
+            isOpen || active ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
+        </button>
+        {active && (
+          <>
+            <span className="text-stone-500">Showing {shownCount} of {totalCount}</span>
+            <button
+              type="button"
+              onClick={() => onChange(EMPTY_FILTERS)}
+              className="flex items-center gap-1 text-orange-400 hover:text-orange-500 transition"
+            >
+              <X className="w-3 h-3" /> Clear filters
+            </button>
+          </>
+        )}
+      </div>
+
+      {isOpen && (
+      <>
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -111,19 +141,9 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
           onChange={(e) => set({ to: e.target.value })}
           className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 text-stone-700 focus:outline-none focus:border-orange-400"
         />
-        {active && (
-          <>
-            <span className="ml-2 text-stone-500">Showing {shownCount} of {totalCount}</span>
-            <button
-              type="button"
-              onClick={() => onChange(EMPTY_FILTERS)}
-              className="flex items-center gap-1 text-orange-400 hover:text-orange-500 transition"
-            >
-              <X className="w-3 h-3" /> Clear filters
-            </button>
-          </>
-        )}
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -38,8 +38,8 @@ export default function DefaultRiskSetting() {
         <div>
           <h3 className="text-lg font-bold text-stone-950">Risk (1R)</h3>
           <p className="text-sm text-stone-500 font-medium">
-            Imported trades measure 1R to the stop you first placed. When the stop was moved before it was hit, that first stop is
-            no longer in the broker history, so this amount is used instead (shown with ≈) until you enter the first stop.
+            เทรดที่ import จะวัด 1R จากจุดเข้าถึง SL แรกที่วางไว้ ถ้า SL ถูกเลื่อนก่อนโดน และไม่มี Notifications log ของเทรดนั้น
+            SL แรกจะไม่เหลืออยู่ใน History ของโบรกเกอร์ ระบบจึงใช้จำนวนเงินนี้แทน (แสดงด้วย ≈) จนกว่าคุณจะกรอก SL แรก
           </p>
         </div>
       </div>

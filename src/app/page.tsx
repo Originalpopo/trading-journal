@@ -213,7 +213,7 @@ export default function Dashboard() {
       netRR: summary.netRR, profitFactor: summary.profitFactor,
       // A stop moved to break-even and hit is about 0R whatever 1R was, so only the others matter.
       estimatedRCount: trades.filter(t => t.riskIsEstimate && t.resultType !== 'BE').length,
-      expectancyR: summary.expectancyR, sharpeRatio: summary.sharpeRatio,
+      expectancyR: summary.expectancyR, expectedPayoff: summary.expectedPayoff, sharpeRatio: summary.sharpeRatio,
       avgTPRR: summary.avgTPRR, maxTPRR: summary.maxTPRR,
       avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
       maxStreakW: summary.maxConsWinCount, maxStreakL: summary.maxConsLossCount,
@@ -518,7 +518,7 @@ export default function Dashboard() {
                 {!isRMode && (
                   <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayDD.active)}`}</p>
                 )}
-                <p className="text-[10px] font-bold text-stone-400 mt-1">{belowPeakText}</p>
+                <p className="text-[10px] font-normal text-stone-400 mt-1">{belowPeakText}</p>
               </div>
             </div>
 
@@ -579,7 +579,15 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Expectancy</span>
-              <span className="font-black text-stone-950">{formatNumber(data.expectancyR)} R</span>
+              {/* The average trade in the dollars it really made, and in R, as if every trade risked the same. */}
+              <span className="font-black text-stone-950">
+                {!isPrivacyMode && (
+                  <span className="mr-1.5 text-[11px] font-bold text-stone-400" title="Average profit per trade in dollars">
+                    {data.expectedPayoff < 0 ? '-' : ''}${formatNumber(Math.abs(data.expectedPayoff))}
+                  </span>
+                )}
+                {formatNumber(data.expectancyR)} R
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>

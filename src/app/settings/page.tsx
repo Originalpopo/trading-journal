@@ -91,7 +91,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <h3 className="text-lg font-bold text-stone-950">Account</h3>
-            <p className="text-sm text-stone-500 font-medium">Only the account whose UID is set in the Firestore rules can read or write data.</p>
+            <p className="text-sm text-stone-500 font-medium">เฉพาะบัญชีที่มี UID ตรงกับที่ตั้งไว้ใน Firestore rules เท่านั้นที่อ่านหรือเขียนข้อมูลได้</p>
           </div>
         </div>
 
@@ -134,7 +134,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <h3 className="text-lg font-bold text-stone-950">Security & App Lock</h3>
-            <p className="text-sm text-stone-500 font-medium">Configure the PIN used to access this application across all devices.</p>
+            <p className="text-sm text-stone-500 font-medium">ตั้ง PIN ที่ใช้เข้าแอปนี้บนทุกอุปกรณ์</p>
           </div>
         </div>
 

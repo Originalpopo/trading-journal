@@ -233,6 +233,29 @@ export default function CalendarPage() {
                 bgColor = stats.pnl > 0 ? "bg-orange-50" : (stats.pnl < 0 ? "bg-red-50" : "bg-stone-50");
               }
 
+              // The day's note: its mood face when there is one, else a "+" that shows on hover.
+              const noteControl = note ? (
+                <button
+                  type="button"
+                  title="Read the note"
+                  onClick={(e) => { e.stopPropagation(); setOpenNote({ date, edit: false }); }}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  className={`text-stone-400 md:opacity-40 md:hover:opacity-100 ${moodTone(note.mood).hoverText} hover:scale-110 transition`}
+                >
+                  <MoodIcon mood={note.mood} className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  title="Write a note"
+                  onClick={() => setOpenNote({ date, edit: true })}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  className="hidden md:block text-stone-300 hover:text-orange-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              );
+
               return (
                 <div
                   key={cell.id}
@@ -248,27 +271,8 @@ export default function CalendarPage() {
                     ) : (
                       <span className="text-xs font-bold text-stone-400">{day}</span>
                     )}
-                    {note ? (
-                      <button
-                        type="button"
-                        title="Read the note"
-                        onClick={(e) => { e.stopPropagation(); setOpenNote({ date, edit: false }); }}
-                        onDoubleClick={(e) => e.stopPropagation()}
-                        className={`text-stone-400 ${moodTone(note.mood).hoverText} hover:scale-110 transition md:-mt-0.5 md:-mr-0.5`}
-                      >
-                        <MoodIcon mood={note.mood} className="w-4 h-4 md:w-5 md:h-5" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        title="Write a note"
-                        onClick={() => setOpenNote({ date, edit: true })}
-                        onDoubleClick={(e) => e.stopPropagation()}
-                        className="hidden md:block text-stone-300 hover:text-orange-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition -mt-0.5 -mr-0.5"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    )}
+                    {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
+                    <span className="md:hidden">{noteControl}</span>
                   </div>
                   
                   {stats && (
@@ -286,8 +290,10 @@ export default function CalendarPage() {
                       )}
                     </div>
                   )}
-                  {stats && (
-                    <div className="mt-auto hidden md:block">
+                  <div className="mt-auto hidden md:flex items-end justify-between gap-1">
+                    <div className="min-w-0">
+                    {stats && (
+                    <>
                       <div className={`text-base font-black ${
                         (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' : 
                         (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
@@ -298,18 +304,19 @@ export default function CalendarPage() {
                           `${stats.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(stats.pnl))}`
                         )}
                       </div>
-                      <div className="flex justify-between items-center w-full mt-2">
-                        {!isPrivacyMode && (
-                          <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
-                            {formatNumber(stats.rr)} R
-                          </div>
-                        )}
-                        <div className={`text-[9px] font-bold text-stone-400 uppercase tracking-tighter ${isPrivacyMode ? 'ml-auto' : ''}`}>
-                          Trades : {stats.count}
+                      {!isPrivacyMode && (
+                        <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight mt-1`}>
+                          {formatNumber(stats.rr)} R
                         </div>
+                      )}
+                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-0.5">
+                        Trades : {stats.count}
                       </div>
+                    </>
+                    )}
                     </div>
-                  )}
+                    {noteControl}
+                  </div>
                 </div>
               );
             })}

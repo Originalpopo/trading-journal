@@ -91,6 +91,6 @@ test('CSV holds the header, the summary and every row', () => {
   assert.equal(lines[7], 'Opening balance,33.73');
   assert.equal(lines[9], 'Withdrawals,-30.00');
   assert.equal(lines[12], 'Closing balance,43.03');
-  assert.equal(lines[16], '2026-10-01 00:00:00,,buy,XAUUSD:3,XAUUSD,0.02,4000,4020,0.00,40.00,73.73,close time estimated');
-  assert.equal(lines[17], '2026-10-20 09:00:00,,withdrawal,,,,,,,-30.00,43.73,');
+  assert.equal(lines[16], '1,2026-10-01 00:00:00,,buy,XAUUSD:3,XAUUSD,0.02,4000,4020,0.00,40.00,73.73,close time estimated');
+  assert.equal(lines[17], '2,2026-10-20 09:00:00,,withdrawal,,,,,,,-30.00,43.73,');
 });

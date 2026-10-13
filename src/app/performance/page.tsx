@@ -452,6 +452,8 @@ export default function PerformancePage() {
           <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Expectancy</span>
             <span className="text-xl font-black text-stone-950">{formatNumber(data.expectancyR)} R</span>
+            {/* The same average trade in the dollars it really made. */}
+            <span className="text-[11px] font-normal text-stone-400 mt-0.5" title="Average profit per trade in dollars">{formatCurrency(data.expectedPayoff)} per trade</span>
           </div>
         </div>
 

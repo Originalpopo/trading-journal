@@ -37,17 +37,14 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
     <div className="@container">
       <div className="text-center mb-6">
         <h3 className="text-xl font-black text-stone-950 tracking-tight">Monthly Account Statement</h3>
-        <p className="text-[11px] font-medium text-stone-400 mt-1">
-          Prepared by the account holder from the broker&apos;s order history. Not issued by the broker.
-        </p>
       </div>
 
       <div className="grid grid-cols-2 @2xl:grid-cols-5 gap-4 text-xs pb-5 mb-5 border-b border-stone-200">
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Name</p><p className="font-bold text-stone-950">{profile.name || '-'}</p></div>
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Broker</p><p className="font-bold text-stone-950">{profile.broker || '-'}</p></div>
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Account</p><p className="font-bold text-stone-950">{profile.accountNo || '-'}</p></div>
-        <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Period</p><p className="font-bold text-stone-950">{MONTH_NAMES[statement.month - 1]} {statement.year}</p></div>
         <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Currency</p><p className="font-bold text-stone-950">USD</p></div>
+        <div><p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Period</p><p className="font-bold text-stone-950">{MONTH_NAMES[statement.month - 1]} {statement.year}</p></div>
       </div>
 
       <h4 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-3">Summary</h4>
@@ -77,6 +74,7 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
           <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-stone-50 text-stone-400 border-b border-stone-100">
               <tr>
+                <th className={TH_LEFT}>No.</th>
                 <th className={TH_LEFT}>Close time</th>
                 <th className={TH_LEFT}>Open time</th>
                 <th className={TH_LEFT}>Type</th>
@@ -92,7 +90,8 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
             <tbody className="text-[11px] divide-y divide-stone-50">
               {statement.rows.map((r, i) => (
                 <tr key={`${r.time}-${i}`} className={`break-inside-avoid ${r.kind === 'trade' ? '' : 'bg-stone-50 print:bg-transparent'}`}>
-                  <td className={TD_LEFT}>{clock(r.time)}{r.timeIsEstimate && <span title="Close time estimated: the broker data did not state it exactly"> *</span>}</td>
+                  <td className={TD_LEFT}>{i + 1}</td>
+                  <td className={TD_LEFT}>{clock(r.time)}{r.timeIsEstimate && <span title="เวลาปิดเป็นค่าประมาณ: ข้อมูลจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอน"> *</span>}</td>
                   <td className={TD_LEFT}>{clock(r.openTime)}</td>
                   <td className={`${TD_LEFT} ${r.kind === 'trade' ? '' : 'font-extrabold text-stone-950'}`}>{r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind}</td>
                   <td className={TD_LEFT}>{r.reference?.split(':').pop() || ''}</td>
@@ -109,7 +108,7 @@ function StatementDocument({ statement, profile, confirmed }: { statement: State
         </div>
       )}
       {statement.rows.some(r => r.timeIsEstimate) && (
-        <p className="text-[10px] font-medium text-stone-400 mt-2">* Close time estimated: the broker&apos;s export did not state it exactly for this trade.</p>
+        <p className="text-[10px] font-medium text-stone-400 mt-2">* เวลาปิดเป็นค่าประมาณ: ข้อมูลที่ส่งออกจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอนของเทรดนี้</p>
       )}
     </div>
   );
