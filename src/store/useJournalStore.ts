@@ -6,8 +6,15 @@ import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
 import type { BalanceCheck, BalanceCheckRecord } from '@/lib/reconcile';
 import type { StatementProfile } from '@/lib/statement';
 import type { DayNote } from '@/lib/dayNotes';
+import { withDerivedRisk, resolveDefaultRisk } from '@/lib/risk';
 
 let legacyChartMigrationStarted = false;
+
+// Trades as stored. The app never reads these: `trades` in the store is always this list with
+// risk, R and TP/SL/BE worked out again, so a stored figure can never go stale.
+let storedTrades: Trade[] = [];
+const deriveTrades = (preferences: Preferences): Trade[] =>
+  withDerivedRisk(storedTrades, resolveDefaultRisk(preferences.defaultRisk, storedTrades));
 
 // How exitTime was determined: 'exact' from broker data, 'estimated' from a TP/SL placed after
 // entry, 'uncertain' when the broker data had nothing better (SL hit with no TP), 'manual' when
@@ -36,11 +43,17 @@ export interface Trade {
   exitTime?: string;
   exitTimeConfidence?: ExitTimeConfidence;
   // The stop the trade was opened with (slPrice is where it ended up). 'broker' when read from the
-  // broker's history, 'manual' when entered by the user because the stop was moved.
+  // broker's order history, 'log' from its notifications log, 'manual' when entered by the user
+  // because the stop was moved.
   initialSlPrice?: number;
-  initialSlSource?: 'broker' | 'manual';
+  initialSlSource?: 'broker' | 'manual' | 'log';
   // True when `risk` is the default 1R because the initial stop is unknown.
   riskIsEstimate?: boolean;
+  // Price the entry order was placed at (entryPrice is where it filled). 1R is measured from it.
+  entryOrderPrice?: number;
+  // Entry and exit times were read from the notifications log, so they are when the orders really
+  // filled; an import of the order history alone never overwrites them.
+  timesFromLog?: boolean;
   orderId?: string;
   positionId?: string;
   entryType?: string;
@@ -101,7 +114,7 @@ interface JournalState {
   deleteDayNote: (date: string) => Promise<void>;
 }
 
-export const useJournalStore = create<JournalState>((set) => ({
+export const useJournalStore = create<JournalState>((set, get) => ({
   trades: [],
   funding: [],
   dayNotes: [],
@@ -133,7 +146,8 @@ export const useJournalStore = create<JournalState>((set) => ({
       });
       // Sort by time
       tradesData.sort((a, b) => parseRobustDate(b.time) - parseRobustDate(a.time));
-      set({ trades: tradesData });
+      storedTrades = tradesData;
+      set({ trades: deriveTrades(get().preferences) });
 
       if (!legacyChartMigrationStarted && tradesData.some(t => t.chartData)) {
         legacyChartMigrationStarted = true;
@@ -145,7 +159,8 @@ export const useJournalStore = create<JournalState>((set) => ({
     });
 
     const unsubscribePreferences = onSnapshot(doc(db, 'settings', 'preferences'), (snapshot) => {
-      set({ preferences: (snapshot.data() as Preferences) || {} });
+      const preferences = (snapshot.data() as Preferences) || {};
+      set({ preferences, trades: deriveTrades(preferences) });
     });
 
     const unsubscribeFunding = onSnapshot(collection(db, 'funding'), (snapshot) => {

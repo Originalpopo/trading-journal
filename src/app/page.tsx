@@ -211,6 +211,8 @@ export default function Dashboard() {
       accountGrowth: calcAccountGrowth(summary.netProfit, totalDeposit),
       countTP: summary.wins, countBE: summary.bes, countSL: summary.losses, totalTrades: trades.length,
       netRR: summary.netRR, profitFactor: summary.profitFactor,
+      // A stop moved to break-even and hit is about 0R whatever 1R was, so only the others matter.
+      estimatedRCount: trades.filter(t => t.riskIsEstimate && t.resultType !== 'BE').length,
       expectancyR: summary.expectancyR, sharpeRatio: summary.sharpeRatio,
       avgTPRR: summary.avgTPRR, maxTPRR: summary.maxTPRR,
       avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
@@ -589,6 +591,11 @@ export default function Dashboard() {
                 {formatNumber(data.netRR)} R
               </span>
             </div>
+            {data.estimatedRCount > 0 && (
+              <p className="text-[10px] font-semibold text-stone-400 text-right" title="Their first stop is unknown, so R uses the default 1R. Enter the first stop on the trade (marked ≈ in History) to make it exact.">
+                ≈ {data.estimatedRCount} {data.estimatedRCount > 1 ? 'trades' : 'trade'} on a default 1R
+              </p>
+            )}
           </div>
           {(() => {
             const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);

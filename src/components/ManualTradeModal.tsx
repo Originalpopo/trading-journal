@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
-import { deriveResultType } from "@/lib/stats";
-import { initialStopOf, mostCommonRisk } from "@/lib/risk";
-import { pointValueOf, medianPointValue } from "@/lib/tradeZones";
+import { initialStopOf, mostCommonRisk, buildRiskContext, deriveTradeRisk, resolveDefaultRisk } from "@/lib/risk";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { hasFractionOfCent } from "@/lib/money";
 import { DEFAULT_LOT_SIZE } from "@/lib/statement";
@@ -155,16 +153,16 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
   const timesEditedRef = useRef(false);
   // Set once the user types the first stop or the risk, so 1R is no longer the default guess.
-  const initialSlEditedRef = useRef(false);
-  const riskEditedRef = useRef(false);
+  const [initialSlEdited, setInitialSlEdited] = useState(false);
+  const [riskEdited, setRiskEdited] = useState(false);
   // The form as it was opened, to tell whether closing would throw away changes.
   const [initialForm, setInitialForm] = useState<FormState | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     timesEditedRef.current = false;
-    initialSlEditedRef.current = false;
-    riskEditedRef.current = false;
+    setInitialSlEdited(false);
+    setRiskEdited(false);
     const f = buildInitialForm(tradeToEdit);
     setInitialForm(f);
     setEntryType(f.entryType);
@@ -194,24 +192,52 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType, thb, bankDate, size,
   };
 
+  const prevTrade = tradeToEdit && !tradeToEdit.isFunding ? (tradeToEdit as Trade) : undefined;
+  // The price the entry order was placed at is not in the form; it holds while the fill is untouched.
+  const entryNum = parseFloat(entryPrice);
+  const entryOrderPrice = prevTrade?.entryOrderPrice && prevTrade.entryPrice === entryNum ? prevTrade.entryOrderPrice : undefined;
+
   // The first stop must be on the losing side of the entry.
   const initialSlNum = parseFloat(initialSl);
-  const entryNum = parseFloat(entryPrice);
+  const entryRef = entryOrderPrice ?? entryNum;
   const sideDir = side === 'SELL' ? -1 : 1;
   const hasInitialSl = Number.isFinite(initialSlNum);
-  const validInitialSl = hasInitialSl && Number.isFinite(entryNum) && sideDir * (entryNum - initialSlNum) > 0;
+  const validInitialSl = hasInitialSl && Number.isFinite(entryRef) && sideDir * (entryRef - initialSlNum) > 0;
 
-  // Typing the first stop sets 1R to the distance to it.
   const handleInitialSlChange = (value: string) => {
-    initialSlEditedRef.current = true;
+    setInitialSlEdited(true);
     setInitialSl(value);
-    const stop = parseFloat(value);
-    if (!Number.isFinite(stop) || !Number.isFinite(entryNum) || sideDir * (entryNum - stop) <= 0) return;
-    const pointValue = pointValueOf({ entryPrice: entryNum, exitPrice: parseFloat(exitPrice), profit: parseFloat(amount) })
-      ?? medianPointValue(useJournalStore.getState().trades.filter(t => t.symbol === symbol.toUpperCase().trim()))
-      ?? 1;
-    setRisk((Math.round(Math.abs(entryNum - stop) * pointValue * 100) / 100).toString());
   };
+
+  // A first stop the user typed is theirs; one prefilled from the broker keeps its origin.
+  const initialSlSource = validInitialSl
+    ? (initialSlEdited ? 'manual' : (prevTrade?.initialSlSource || (prevTrade && initialStopOf(prevTrade)?.source) || 'manual'))
+    : undefined;
+
+  // Risk, R and TP/SL/BE of the trade as the form stands, worked out the way the journal does.
+  // Trades are read once per opening; subscribing would recompute on every snapshot.
+  const riskContext = useMemo(() => {
+    const { trades, preferences } = useJournalStore.getState();
+    return buildRiskContext(trades, resolveDefaultRisk(preferences.defaultRisk, trades));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+  const optionalNumber = (value: string) => (value ? parseFloat(value) : undefined);
+  const formRisk = deriveTradeRisk({
+    symbol: symbol.toUpperCase().trim(),
+    side,
+    size: parseFloat(size) > 0 ? parseFloat(size) : undefined,
+    profit: parseFloat(amount) || 0,
+    risk: parseFloat(risk) || 0,
+    entryPrice: optionalNumber(entryPrice),
+    entryOrderPrice,
+    exitPrice: optionalNumber(exitPrice),
+    slPrice: optionalNumber(slPrice),
+    exitType: exitPrice ? orderExitType : undefined,
+    initialSlPrice: validInitialSl ? initialSlNum : undefined,
+    initialSlSource,
+    // 1R is only a guess while neither the first stop nor the risk was given.
+    riskIsEstimate: validInitialSl || riskEdited ? false : prevTrade?.riskIsEstimate,
+  }, riskContext);
   const isDirty = initialForm !== null && (Object.keys(currentForm) as (keyof FormState)[]).some(key =>
     key === 'checklists'
       ? currentForm.checklists.join('|') !== initialForm.checklists.join('|')
@@ -233,7 +259,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     try {
       const timeVal = time;
       const parsedAmount = parseFloat(amount) || 0;
-      const parsedRisk = parseFloat(risk) || 0;
 
 
       let finalData: any;
@@ -261,8 +286,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         };
       } else {
         const tId = tradeToEdit?.id || "M_T_" + Date.now();
-        const rr = parsedRisk > 0 ? parsedAmount / parsedRisk : 0;
-        const resType = deriveResultType(parsedAmount, parsedRisk);
 
         let calculatedDuration = 0;
         if (entryTime && timeVal) {
@@ -281,21 +304,15 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           symbol: symbol.toUpperCase().trim(),
           side,
           profit: parsedAmount,
-          risk: parsedRisk,
-          rr: rr,
-          resultType: resType,
+          risk: formRisk.risk,
+          rr: formRisk.rr,
+          resultType: formRisk.resultType,
           strategy,
           isOnPlan: checklists.includes('On Plan'),
           tf,
           checklists,
           ...((!tradeToEdit || timesEditedRef.current) && { exitTimeConfidence: 'manual' as const }),
         };
-
-        // A first stop the user typed is theirs; one prefilled from the broker keeps its origin.
-        const prevTrade = tradeToEdit && !tradeToEdit.isFunding ? (tradeToEdit as Trade) : undefined;
-        const initialSlSource = validInitialSl
-          ? (initialSlEditedRef.current ? 'manual' : (prevTrade?.initialSlSource || (prevTrade && initialStopOf(prevTrade)?.source) || 'manual'))
-          : undefined;
 
         // Optional fields left empty must be deleted, otherwise the merge keeps the old value.
         const optionalFields = {
@@ -309,7 +326,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           initialSlPrice: validInitialSl ? initialSlNum : undefined,
           initialSlSource,
           // 1R is only a guess while neither the first stop nor the risk was given.
-          riskIsEstimate: validInitialSl || riskEditedRef.current ? false : prevTrade?.riskIsEstimate,
+          riskIsEstimate: validInitialSl || riskEdited ? false : prevTrade?.riskIsEstimate,
         };
         const optionalForDb = Object.fromEntries(
           Object.entries(optionalFields).map(([key, val]) => [key, val === undefined ? deleteField() : val])
@@ -332,7 +349,6 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   };
 
   const parsedAmount = parseFloat(amount) || 0;
-  const parsedRisk = parseFloat(risk) || 0;
   // P&L, deposits and withdrawals are real money: never store a fraction of a cent.
   const invalidAmount = hasFractionOfCent(amount);
   const parsedSize = parseFloat(size) || 0;
@@ -344,8 +360,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const impliedRate = isFundingEntry && parsedThb > 0 && Math.abs(parsedAmount) > 0 ? parsedThb / Math.abs(parsedAmount) : null;
   let liveRRStr = "0.00 R";
   let liveRRClass = "text-stone-400 normal-case tracking-normal";
-  if (parsedRisk > 0) {
-    const rr = parsedAmount / parsedRisk;
+  if (formRisk.risk > 0) {
+    const rr = formRisk.rr;
     liveRRStr = `${formatNumber(rr)} R`;
     liveRRClass = rr >= 0 ? "text-orange-400 normal-case tracking-normal" : "text-red-900 normal-case tracking-normal";
   }
@@ -501,8 +517,13 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                   <span>Risk ($)</span>
                   <span className={liveRRClass}>RR: {liveRRStr}</span>
                 </label>
-                <input type="number" step="0.01" value={risk} onChange={(e) => { riskEditedRef.current = true; setRisk(e.target.value); }} placeholder="Optional"
-                  className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+                {validInitialSl ? (
+                  <input type="number" value={formRisk.risk} readOnly title="Measured from the entry to the first stop"
+                    className="w-full bg-stone-100 border border-stone-200 text-stone-500 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none" />
+                ) : (
+                  <input type="number" step="0.01" value={risk} onChange={(e) => { setRiskEdited(true); setRisk(e.target.value); }} placeholder="Optional"
+                    className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+                )}
               </div>
             )}
           </div>

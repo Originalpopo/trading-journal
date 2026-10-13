@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
-import { parseTradingViewData, groupOrdersIntoTrades, parseTradingViewCSVData, findImportWarnings, type ImportWarning, type ImportWarningKind } from "@/lib/tradingViewParser";
+import { parseTradingViewData, groupOrdersIntoTrades, findImportWarnings, type ImportWarning, type ImportWarningKind, type LinkedTrade } from "@/lib/tradingViewParser";
+import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog } from "@/lib/notificationsLog";
+import { buildRiskContext } from "@/lib/risk";
 import { sumMoney } from "@/lib/money";
 import { planImport, reviewImportWarnings, type ImportAction } from "@/lib/importPlan";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
@@ -10,12 +12,12 @@ import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil } from "lucide-reac
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useDefaultRisk } from "@/lib/defaultRisk";
-import { medianPointValue } from "@/lib/tradeZones";
 
 interface BulkImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialRawText: string;
+  initialLogText?: string;
 }
 
 const formatSigned = (amount: number) => `${amount < 0 ? '-' : '+'}$${Math.abs(amount).toFixed(2)}`;
@@ -50,23 +52,29 @@ const splitTime = (time?: string) => {
   return { date: date || '-', clock: clock || '' };
 };
 
-export default function BulkImportModal({ isOpen, onClose, initialRawText }: BulkImportModalProps) {
+export default function BulkImportModal({ isOpen, onClose, initialRawText, initialLogText = "" }: BulkImportModalProps) {
   const { addTrade, updateTrade, trades } = useJournalStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const { parsedTrades, importWarnings, parseError } = useMemo(() => {
-    const noWarnings: ImportWarning[] = [];
-    if (!initialRawText) return { parsedTrades: [] as Partial<Trade>[], importWarnings: noWarnings, parseError: null };
+  const { parsedTrades, importWarnings, parseError, logEventCount } = useMemo(() => {
+    const nothing = { parsedTrades: [] as LinkedTrade[], importWarnings: [] as ImportWarning[], logEventCount: 0 };
+    // Either box may hold either paste: the log is told apart by its wording.
+    const pastes = [initialRawText, initialLogText].filter(text => text.trim());
+    const historyText = pastes.find(text => !looksLikeNotificationsLog(text)) || "";
+    const logText = pastes.find(looksLikeNotificationsLog) || "";
+    if (!historyText) {
+      return { ...nothing, parseError: logText ? "The Notifications log has no P&L. Paste the History tab as well." : null };
+    }
     try {
-      const orders = initialRawText.trim().startsWith("Symbol,Side,Type,Qty")
-        ? parseTradingViewCSVData(initialRawText)
-        : parseTradingViewData(initialRawText);
-      const grouped = groupOrdersIntoTrades(orders);
+      const orders = parseTradingViewData(historyText);
+      const logEvents = parseNotificationsLog(logText);
+      const grouped = applyNotificationsLog(groupOrdersIntoTrades(orders), logEvents);
       const warnings = findImportWarnings(orders);
       return {
         parsedTrades: grouped,
         importWarnings: warnings,
+        logEventCount: logEvents.length,
         // Leftover orders explain an empty result better than the generic message.
         parseError: grouped.length === 0 && warnings.length === 0
           ? "No valid closed trades found. Please make sure to copy the full history including entry and exit orders."
@@ -74,9 +82,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
       };
     } catch (e) {
       console.error(e);
-      return { parsedTrades: [] as Partial<Trade>[], importWarnings: noWarnings, parseError: "Failed to parse data. Please check the format." };
+      return { ...nothing, parseError: "Failed to parse data. Please check the format." };
     }
-  }, [initialRawText]);
+  }, [initialRawText, initialLogText]);
   const error = importError || parseError;
 
   const [exitEdits, setExitEdits] = useState<Record<string, string>>({});
@@ -85,15 +93,20 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
   const [editingStopKey, setEditingStopKey] = useState<string | null>(null);
 
   const defaultRisk = useDefaultRisk();
-  const fallbackPointValue = useMemo(() => medianPointValue([...trades, ...parsedTrades]), [trades, parsedTrades]);
+  const riskContext = useMemo(() => buildRiskContext([...trades, ...parsedTrades], defaultRisk), [trades, parsedTrades, defaultRisk]);
   const plan = useMemo(
-    () => planImport(parsedTrades, trades, { exitTimes: exitEdits, initialStops: initialStopEdits }, { defaultRisk, fallbackPointValue }),
-    [parsedTrades, trades, exitEdits, initialStopEdits, defaultRisk, fallbackPointValue],
+    () => planImport(parsedTrades, trades, { exitTimes: exitEdits, initialStops: initialStopEdits }, riskContext),
+    [parsedTrades, trades, exitEdits, initialStopEdits, riskContext],
   );
   const newCount = plan.filter(r => r.action === 'new').length;
   const updateCount = plan.filter(r => r.action === 'update').length;
   const uncertainCount = plan.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
-  const unknownStopCount = plan.filter(r => r.result.riskIsEstimate).length;
+  // A stop moved to break-even and then hit is about 0R whatever 1R was; only a trade that went on
+  // to make money needs its first stop.
+  const unknownStopCount = plan.filter(r => r.result.riskIsEstimate && r.result.resultType !== 'BE').length;
+  const loggedCount = plan.filter(r => r.parsed.timesFromLog && !r.keptLogTimes).length;
+  // Only new trades: older ones in the same paste were dealt with when they were imported.
+  const noLogCount = plan.filter(r => r.action === 'new' && !r.result.timesFromLog).length;
   const reviewed = useMemo(() => reviewImportWarnings(importWarnings, trades), [importWarnings, trades]);
   const changedProfitCount =plan.filter(r => r.previousProfit !== undefined).length;
   const commissionRows = plan.filter(r => r.result.commission);
@@ -151,6 +164,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
           tf: defaultTf,
           checklists: defaultChecklists,
           entryPrice: t.entryPrice,
+          entryOrderPrice: t.entryOrderPrice,
+          timesFromLog: t.timesFromLog,
           exitPrice: t.exitPrice,
           slPrice: t.slPrice,
           tpPrice: t.tpPrice,
@@ -288,10 +303,22 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                     {`The broker reports $${Math.abs(totalCommission).toFixed(2)} commission on ${commissionRows.length} ${commissionRows.length > 1 ? 'trades' : 'trade'}. It is saved with each trade but not subtracted from P&L, because the export does not say whether P&L already includes it. Check the balance against the broker after importing.`}
                   </p>
                 )}
-                {unknownStopCount > 0 && (
+                {logEventCount > 0 && (
                   <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 w-full">
-                    <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
-                    {`${unknownStopCount} ${unknownStopCount > 1 ? 'trades' : 'trade'} had the stop moved, so the first stop is gone from the broker data and 1R uses the default $${defaultRisk.toFixed(2)}. Click "1st SL" to enter where it was.`}
+                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
+                    {`Notifications log: ${loggedCount} of ${parsedTrades.length} ${parsedTrades.length > 1 ? 'trades' : 'trade'} got the real fill times and first stop from it.`}
+                  </p>
+                )}
+                {noLogCount > 0 && (
+                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {`${noLogCount} new ${noLogCount > 1 ? 'trades are' : 'trade is'} not in a Notifications log, so the entry time shown is when the order was placed. Check the exit time and the 1st SL here.`}
+                  </p>
+                )}
+                {unknownStopCount > 0 && (
+                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {`${unknownStopCount} winning ${unknownStopCount > 1 ? 'trades' : 'trade'} had the stop moved and ${unknownStopCount > 1 ? 'are' : 'is'} not in the Notifications log, so the first stop is unknown and R uses the default 1R of $${defaultRisk.toFixed(2)}. Click "1st SL" to enter where it was.`}
                   </p>
                 )}
               </div>
@@ -316,7 +343,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                     </tr>
                   </thead>
                   <tbody className="text-[11px] divide-y divide-stone-50">
-                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl }) => {
+                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl }) => {
                       const entry = splitTime(result.entryTime);
                       const exitTime = result.exitTime || result.time;
                       const exit = splitTime(exitTime);
@@ -327,7 +354,13 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                           <td className="px-4 py-4">
                             <span className={`px-2 py-0.5 border rounded-md text-[9px] font-black uppercase ${actionLabel[action].className}`}>{actionLabel[action].text}</span>
                           </td>
-                          <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">{entry.clock}<br/><span className="text-[9px] opacity-70">{entry.date}</span></td>
+                          <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">
+                            <span className="inline-flex items-center gap-1.5">
+                              {entry.clock}
+                              {result.timesFromLog && <span className="text-[9px] font-bold text-orange-400" title="When the entry really filled, from the Notifications log">{keptLogTimes ? 'log, kept' : 'log'}</span>}
+                            </span>
+                            <br/><span className="text-[9px] opacity-70">{entry.date}</span>
+                          </td>
                           <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">
                             {isEditing ? (
                               <input
@@ -414,6 +447,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText }: Bul
                                   ? <>
                                       {result.initialSlPrice.toFixed(2)}
                                       {result.initialSlSource === 'manual' && <span className="text-[9px] font-bold text-orange-400">yours</span>}
+                                      {result.initialSlSource === 'log' && <span className="text-[9px] font-bold text-orange-400">log</span>}
                                     </>
                                   : <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-400"><AlertTriangle className="w-3 h-3" /> moved</span>}
                                 <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />

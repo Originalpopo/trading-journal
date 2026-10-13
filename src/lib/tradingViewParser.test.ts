@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupOrdersIntoTrades, findImportWarnings, parseTradingViewData, parseTradingViewCSVData, type ParsedOrder } from './tradingViewParser.ts';
+import { groupOrdersIntoTrades, findImportWarnings, parseTradingViewData, type ParsedOrder } from './tradingViewParser.ts';
 
 // Compact order builder: filled orders carry a position ID; exits carry P&L.
 const order = (o: Partial<ParsedOrder> & Pick<ParsedOrder, 'side' | 'type' | 'status' | 'updateTime' | 'orderId'>): ParsedOrder =>
@@ -125,17 +125,6 @@ test('parseTradingViewData reads the pasted TradingView history format', () => {
   assert.equal(t.exitTimeConfidence, 'exact');
 });
 
-test('parseTradingViewCSVData keeps a 0.00 exit as an exit', () => {
-  const csv = [
-    'Symbol,Side,Type,Qty,Filled Qty,Limit Price,Stop Price,Avg Fill Price,Status,Update Time,Position ID,Commission,Closed P&L,Order ID',
-    'XAUUSD,Sell,Stop Loss,0.01,0.01,,2000,2000,Filled,2026-01-05 10:05:00,XAUUSD:1,0.0,0.0,3',
-    'XAUUSD,Buy,Limit,0.01,0.01,2000,,2000,Filled,2026-01-05 10:00:00,XAUUSD:1,0.0,,1',
-  ].join('\n');
-  const trades = groupOrdersIntoTrades(parseTradingViewCSVData(csv));
-  assert.equal(trades.length, 1);
-  assert.equal(trades[0].profit, 0);
-});
-
 test('a normal closed position raises no import warning', () => {
   assert.deepEqual(findImportWarnings([
     order({ side: 'Buy', type: 'Limit', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, orderId: '100' }),
@@ -200,30 +189,12 @@ test('zero commission adds no commission field', () => {
   assert.equal('commission' in t, false);
 });
 
-test('the real Eightcap export: every P&L row ends up in a trade and the total is exact', async () => {
-  const { readFileSync, existsSync } = await import('node:fs');
-  const file = 'eightcap-order-history-all-2026-07-08T07_12_37.312Z.csv';
-  if (!existsSync(file)) return; // the broker file is not kept in the repository
-  const orders = parseTradingViewCSVData(readFileSync(file, 'utf8').replace(/^﻿/, ''));
-  const trades = groupOrdersIntoTrades(orders);
-  assert.equal(trades.length, 49);
-  assert.equal(trades.reduce((cents, t) => cents + Math.round(t.profit! * 100), 0), -892);
-  assert.deepEqual(findImportWarnings(orders), []);
-});
-
 test('the lot size of the opening order is kept on the trade, from both input formats', () => {
   const [fromOrders] = groupOrdersIntoTrades([
     order({ side: 'Buy', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:00:00', positionId: 'P:100', avgFillPrice: 2000, filledQty: 0.03, orderId: '100' }),
     order({ side: 'Sell', type: 'Market', status: 'filled', updateTime: '2026-01-05 10:10:00', positionId: 'P:100', avgFillPrice: 2001, filledQty: 0.03, pnl: 3, orderId: '110' }),
   ]);
   assert.equal(fromOrders.size, 0.03);
-
-  const csv = [
-    'Symbol,Side,Type,Qty,Filled Qty,Limit Price,Stop Price,Avg Fill Price,Status,Update Time,Position ID,Commission,Closed P&L,Order ID',
-    'XAUUSD,Sell,Market,0.01,0.01,,,4001.00,Filled,2026-01-02 10:10:00,XAUUSD:9,0.0,1.00,95',
-    'XAUUSD,Buy,Market,0.01,0.01,,,4000.00,Filled,2026-01-02 10:00:00,XAUUSD:9,0.0,,91',
-  ].join('\n');
-  assert.equal(groupOrdersIntoTrades(parseTradingViewCSVData(csv))[0].size, 0.01);
 
   const pasted = [
     'XAUUSD', 'Buy', 'Stop Loss\t0.01\t0.01\t\t', '2,005.00', '2,005.10', 'filled',
@@ -233,4 +204,34 @@ test('the lot size of the opening order is kept on the trade, from both input fo
     '2026-01-05 12:00:00\tXAUUSD:200\t0.0\t\t\t200\t',
   ].join('\n');
   assert.equal(groupOrdersIntoTrades(parseTradingViewData(pasted))[0].size, 0.01);
+});
+
+test('entry filled past its own stop: the stop still carries the entry time, so it was never moved', () => {
+  // Sell limit 4126.44 filled at 4127.56, above the stop it was placed with
+  const [t] = groupOrdersIntoTrades([
+    order({ side: 'Sell', type: 'Limit', status: 'filled', updateTime: '2026-10-08 20:45:38', positionId: 'P:700', limitOrStopPrice: 4126.44, avgFillPrice: 4127.56, orderId: '700' }),
+    order({ side: 'Buy', type: 'Stop Loss', status: 'filled', updateTime: '2026-10-08 20:45:38', positionId: 'P:700', limitOrStopPrice: 4127.52, avgFillPrice: 4127.74, pnl: -0.18, orderId: '702' }),
+  ]);
+  assert.equal(t.entryOrderPrice, 4126.44);
+  assert.equal(t.initialSlPrice, 4127.52);
+  assert.equal(t.initialSlSource, 'broker');
+});
+
+test('a stop dragged to the fill is not taken for the first stop', () => {
+  // Sell limit 4196.30 filled at 4196.37; the stop was moved there later (its time differs)
+  const [t] = groupOrdersIntoTrades([
+    order({ side: 'Sell', type: 'Limit', status: 'filled', updateTime: '2026-10-09 14:08:15', positionId: 'P:800', limitOrStopPrice: 4196.30, avgFillPrice: 4196.37, orderId: '800' }),
+    order({ side: 'Buy', type: 'Stop Loss', status: 'filled', updateTime: '2026-10-09 15:05:34', positionId: 'P:800', limitOrStopPrice: 4196.37, avgFillPrice: 4196.47, pnl: -0.1, orderId: '802' }),
+  ]);
+  assert.equal(t.initialSlPrice, undefined);
+});
+
+test('a stop added after the entry filled is measured from the fill, not the order price', () => {
+  // Sell limit 4129.52 filled at 4129.73; the stop went on 18 seconds later, 1.50 above the fill
+  const [t] = groupOrdersIntoTrades([
+    order({ side: 'Sell', type: 'Limit', status: 'filled', updateTime: '2026-10-08 20:48:23', positionId: 'P:900', limitOrStopPrice: 4129.52, avgFillPrice: 4129.73, orderId: '900' }),
+    order({ side: 'Buy', type: 'Stop Loss', status: 'filled', updateTime: '2026-10-08 20:48:41', positionId: 'P:900', limitOrStopPrice: 4131.23, avgFillPrice: 4131.23, pnl: -1.5, orderId: '1242' }),
+  ]);
+  assert.equal(t.entryOrderPrice, undefined);
+  assert.equal(t.entryPrice, 4129.73);
 });

@@ -31,6 +31,7 @@ export default function HistoryPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [tvRawText, setTvRawText] = useState("");
+  const [tvLogText, setTvLogText] = useState("");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDetailTrade, setSelectedDetailTrade] = useState<any | null>(null);
   const [cameFromDetail, setCameFromDetail] = useState(false);
@@ -74,26 +75,10 @@ export default function HistoryPage() {
     console.log("Upload status:", status);
   };
 
-  const onFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        setIsUploadModalOpen(false);
-        setTvRawText(text);
-        setIsBulkImportOpen(true);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const onPasteSubmit = async (text: string) => {
+  const onPasteSubmit = async (text: string, logText: string) => {
     setIsUploadModalOpen(false);
     setTvRawText(text);
+    setTvLogText(logText);
     setIsBulkImportOpen(true);
   };
 
@@ -475,7 +460,6 @@ export default function HistoryPage() {
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         onPasteSubmit={onPasteSubmit} 
-        onFileUpload={onFileUpload}
         onDBRestoreUpload={onDBRestoreUpload}
         onClearDatabase={onClearDatabase}
         onDownloadDatabase={onDownloadDatabase}
@@ -486,6 +470,7 @@ export default function HistoryPage() {
           isOpen={isBulkImportOpen}
           onClose={() => setIsBulkImportOpen(false)}
           initialRawText={tvRawText}
+          initialLogText={tvLogText}
         />
       )}
     </div>

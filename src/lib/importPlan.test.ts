@@ -23,7 +23,7 @@ const saved = (overrides: Record<string, unknown> = {}) => ({
 }) as any;
 
 const NO_EDITS = { exitTimes: {}, initialStops: {} };
-const CTX = { defaultRisk: 1.5, fallbackPointValue: 1 };
+const CTX = { defaultRisk: 1.5, fallbackPointValue: 1, contractSizes: {} };
 
 const parsed = (overrides: Record<string, unknown> = {}) => ({
   positionId: 'XAUUSD:100',
@@ -139,14 +139,14 @@ test('a known 1R is never replaced by the default guess', () => {
 test('changing the default 1R later does not rewrite past trades', () => {
   const moved = parsed({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, slPrice: 4179.15 });
   const existing = saved({ profit: 19.54, risk: 1.5, rr: 19.54 / 1.5, resultType: 'TP', riskIsEstimate: true });
-  const [row] = planImport([moved], [existing], NO_EDITS, { defaultRisk: 5, fallbackPointValue: 1 });
+  const [row] = planImport([moved], [existing], NO_EDITS, { defaultRisk: 5, fallbackPointValue: 1, contractSizes: {} });
   assert.equal(row.result.risk, 1.5);
   assert.ok(!row.updates || !('risk' in row.updates));
 });
 
 test('new trades with an unknown stop use the current default 1R', () => {
   const moved = parsed({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, slPrice: 4179.15 });
-  const [row] = planImport([moved], [], NO_EDITS, { defaultRisk: 5, fallbackPointValue: 1 });
+  const [row] = planImport([moved], [], NO_EDITS, { defaultRisk: 5, fallbackPointValue: 1, contractSizes: {} });
   assert.equal(row.result.risk, 5);
   assert.equal(row.result.riskIsEstimate, true);
 });

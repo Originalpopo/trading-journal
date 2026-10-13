@@ -1,5 +1,4 @@
 import type { Trade, ExitTimeConfidence } from '@/store/useJournalStore';
-import Papa from 'papaparse';
 import { sumMoney } from './money.ts';
 
 export interface ParsedOrder {
@@ -91,40 +90,6 @@ export function parseTradingViewData(raw: string): ParsedOrder[] {
   return orders;
 }
 
-// An exit at exactly 0.00 is still an exit, so only an empty cell means "no P&L".
-const parsePnl = (raw: string | undefined): number | undefined => {
-  const cleaned = (raw || '').replace(/,/g, '').trim();
-  if (cleaned === '') return undefined;
-  const val = parseFloat(cleaned);
-  return isNaN(val) ? undefined : val;
-};
-
-export function parseTradingViewCSVData(csvText: string): ParsedOrder[] {
-  const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-  const orders: ParsedOrder[] = [];
-  for (const row of result.data as Record<string, string>[]) {
-    if (!row['Symbol'] || !row['Status']) continue;
-    const limitOrStopPrice = parseFloat((row['Limit Price'] || row['Stop Price'] || '').replace(/,/g, ''));
-    const avgFillPrice = parseFloat((row['Avg Fill Price'] || '').replace(/,/g, ''));
-    
-    orders.push({
-      symbol: row['Symbol'].trim(),
-      side: row['Side'].trim(),
-      type: row['Type'].trim(),
-      limitOrStopPrice: isNaN(limitOrStopPrice) ? undefined : limitOrStopPrice,
-      avgFillPrice: isNaN(avgFillPrice) ? undefined : avgFillPrice,
-      filledQty: parseFloat((row['Filled Qty'] || '').replace(/,/g, '')) || undefined,
-      status: row['Status'].trim().toLowerCase(),
-      updateTime: (row['Update Time'] || row['Date'] || '').trim(),
-      positionId: row['Position ID'] ? row['Position ID'].trim() : undefined,
-      commission: parseFloat((row['Commission'] || '').replace(/,/g, '')) || 0,
-      pnl: parsePnl(row['Closed P&L'] || row['Closed P&L ($)']),
-      orderId: row['Order ID'] ? row['Order ID'].trim() : undefined
-    });
-  }
-  return orders;
-}
-
 const toMs = (time: string) => new Date(time.replace(' ', 'T')).getTime();
 const orderType = (o: ParsedOrder) => o.type.toLowerCase();
 const orderIdNum = (o: ParsedOrder) => (o.orderId ? parseInt(o.orderId, 10) : NaN);
@@ -172,8 +137,11 @@ function resolveExitTime(
   return { time: exit.updateTime, confidence: 'uncertain' };
 }
 
-export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
-  const trades: Partial<Trade>[] = [];
+// A trade read from the order history, with the order IDs that tie it to the notifications log.
+export type LinkedTrade = Partial<Trade> & { entryOrderId?: string; exitOrderId?: string; slOrderId?: string };
+
+export function groupOrdersIntoTrades(orders: ParsedOrder[]): LinkedTrade[] {
+  const trades: LinkedTrade[] = [];
   const filledOrders = orders.filter(o => o.status === 'filled' && o.positionId);
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
 
@@ -213,8 +181,10 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
     const nextEntryMs = entryTimesMs.find(t => t > entryMs) ?? Infinity;
     const exit = resolveExitTime(entryOrder, exitOrder, cancelledOrders, unfilledBracketIds, nextEntryMs);
 
-    const trade: Partial<Trade> = {
+    const trade: LinkedTrade = {
       positionId: posId,
+      entryOrderId: entryOrder.orderId,
+      exitOrderId: exitOrder.orderId,
       symbol: entryOrder.symbol,
       side: entryOrder.side === 'Buy' ? 'BUY' : 'SELL',
       time: exit.time.replace(' ', 'T'),
@@ -236,15 +206,20 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
     if (commission !== 0) trade.commission = commission;
     if (entryOrder.filledQty) trade.size = entryOrder.filledQty;
 
+    let slOrder: ParsedOrder | undefined;
     if (exit.sibling) {
       if (orderType(exit.sibling) === 'take profit') trade.tpPrice = exit.sibling.limitOrStopPrice;
-      else trade.slPrice = exit.sibling.limitOrStopPrice;
+      else {
+        trade.slPrice = exit.sibling.limitOrStopPrice;
+        slOrder = exit.sibling;
+      }
     }
 
     // Find SL/TP within filled orders
     for (const o of posOrders) {
       if (o.type.toLowerCase() === 'stop loss') {
         trade.slPrice = o.limitOrStopPrice || o.avgFillPrice;
+        slOrder = o;
       }
       if (o.type.toLowerCase() === 'take profit') {
         trade.tpPrice = o.limitOrStopPrice || o.avgFillPrice;
@@ -254,7 +229,10 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
     // Check cancelled orders with matching updateTime
     const exitTimeMatched = cancelledOrders.filter(o => o.updateTime === exitOrder.updateTime);
     for (const o of exitTimeMatched) {
-      if (o.type.toLowerCase() === 'stop loss' && !trade.slPrice) trade.slPrice = o.limitOrStopPrice;
+      if (o.type.toLowerCase() === 'stop loss' && !trade.slPrice) {
+        trade.slPrice = o.limitOrStopPrice;
+        slOrder = o;
+      }
       if (o.type.toLowerCase() === 'take profit' && !trade.tpPrice) trade.tpPrice = o.limitOrStopPrice;
     }
 
@@ -269,9 +247,30 @@ export function groupOrdersIntoTrades(orders: ParsedOrder[]): Partial<Trade>[] {
         });
 
         for (const o of proximityOrders) {
-          if (o.type.toLowerCase() === 'stop loss' && !trade.slPrice) trade.slPrice = o.limitOrStopPrice;
+          if (o.type.toLowerCase() === 'stop loss' && !trade.slPrice) {
+            trade.slPrice = o.limitOrStopPrice;
+            slOrder = o;
+          }
           if (o.type.toLowerCase() === 'take profit' && !trade.tpPrice) trade.tpPrice = o.limitOrStopPrice;
         }
+      }
+    }
+
+    if (slOrder?.orderId) trade.slOrderId = slOrder.orderId;
+    // Risk was planned from the price the order was placed at, when the fill is reported apart
+    // from it. A stop added after the entry had filled was set against the fill instead.
+    const stopIdGap = slOrder ? orderIdNum(slOrder) - orderIdNum(entryOrder) : 0;
+    const stopAddedLater = !!slOrder && stopIdGap !== 1 && stopIdGap !== 2;
+    if (entryOrder.limitOrStopPrice && entryOrder.avgFillPrice && !stopAddedLater) trade.entryOrderPrice = entryOrder.limitOrStopPrice;
+    // A stop still carrying the entry order's time was never moved. When the entry filled past it
+    // (the price gapped), it sits on the winning side of the fill and would otherwise pass for a
+    // stop moved to break-even.
+    if (slOrder && trade.slPrice && trade.entryPrice && trade.entryOrderPrice && slOrder.updateTime === entryOrder.updateTime) {
+      const dir = trade.side === 'BUY' ? 1 : -1;
+      const pastFill = dir * (trade.entryPrice - trade.slPrice) <= 0;
+      if (pastFill && dir * (trade.entryOrderPrice - trade.slPrice) > 0) {
+        trade.initialSlPrice = trade.slPrice;
+        trade.initialSlSource = 'broker';
       }
     }
     

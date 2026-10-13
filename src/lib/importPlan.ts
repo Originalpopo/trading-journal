@@ -1,7 +1,7 @@
 import type { Trade } from '@/store/useJournalStore';
-import { computeTradeRisk, type TradeRisk } from './risk.ts';
+import { deriveTradeRisk, type RiskContext } from './risk.ts';
 import { toCents } from './money.ts';
-import type { ImportWarning } from './tradingViewParser.ts';
+import type { ImportWarning, LinkedTrade } from './tradingViewParser.ts';
 
 export type ImportAction = 'new' | 'update' | 'same';
 
@@ -13,6 +13,7 @@ export interface ImportPlanRow {
   updates?: Partial<Trade>;
   result: Partial<Trade>; // the trade as it will be after importing
   keptManualTimes: boolean; // existing hand-set times win over the broker data
+  keptLogTimes: boolean; // existing times from the notifications log win over the order history's
   previousExitTime?: string; // shown struck through when importing changes the exit time
   previousRisk?: number; // shown struck through when importing changes 1R
   previousProfit?: number; // saved P&L that disagrees with the broker's; importing replaces it
@@ -20,18 +21,15 @@ export interface ImportPlanRow {
   invalidInitialSl: boolean; // edited initial stop is not on the losing side of the entry
 }
 
-export interface RiskContext {
-  defaultRisk: number; // 1R when the initial stop is unknown
-  fallbackPointValue: number | null; // $ per 1.00 move, for trades that closed exactly at entry
-}
-
 export interface ImportEdits {
   exitTimes: Record<string, string>; // row key -> datetime-local value
   initialStops: Record<string, string>; // row key -> price typed by the user
 }
 
-const TIME_FIELDS = ['time', 'entryTime', 'exitTime', 'duration', 'exitTimeConfidence'] as const;
+const TIME_FIELDS = ['time', 'entryTime', 'exitTime', 'duration', 'exitTimeConfidence', 'timesFromLog'] as const;
 const RISK_FIELDS = ['risk', 'rr', 'resultType', 'riskIsEstimate', 'initialSlPrice', 'initialSlSource'] as const;
+// Facts the broker states that a saved trade may lack (older imports and hand-made entries).
+const FILL_IF_MISSING = ['tpPrice', 'slPrice', 'entryType', 'exitType', 'entryPrice', 'exitPrice', 'side'] as const;
 
 const toMs = (time: string) => new Date(time.replace(' ', 'T')).getTime();
 
@@ -54,70 +52,81 @@ const sameValue = (a: unknown, b: unknown) =>
   typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-9 : a === b;
 
 // Decide per parsed trade whether it is new, fixes an existing trade, or is already up to date.
-// Re-importing refreshes times (they used to be wrong for SL/TP exits) unless the user set them by
-// hand, and 1R from the broker's stop unless the user entered the initial stop. Checklists, notes
-// and TF are never touched.
-export function planImport(parsedTrades: Partial<Trade>[], trades: Trade[], edits: ImportEdits, riskContext: RiskContext): ImportPlanRow[] {
-  return parsedTrades.map((raw, idx) => {
+// What the user set by hand (times, the initial stop, a typed risk) and what the notifications log
+// said (fill times, the initial stop) outlive a later import of the order history alone, which
+// knows less. Checklists, notes and TF are never touched. Risk, R and TP/SL/BE are worked out from
+// the trade as it will be after the import, so they always agree with its P&L and stop.
+export function planImport(parsedTrades: LinkedTrade[], trades: Trade[], edits: ImportEdits, riskContext: RiskContext): ImportPlanRow[] {
+  return parsedTrades.map((linked, idx) => {
+    // The order IDs only tie a trade to the log; they are not saved.
+    const raw: Partial<Trade> = { ...linked };
+    for (const field of ['entryOrderId', 'exitOrderId', 'slOrderId']) delete (raw as Record<string, unknown>)[field];
     const key = raw.positionId || `row-${idx}`;
-    let parsed = edits.exitTimes[key] ? applyExitEdit(raw, edits.exitTimes[key]) : raw;
-    const invalidExit = !!edits.exitTimes[key] && toMs(parsed.exitTime!) < toMs(parsed.entryTime || parsed.exitTime!);
 
     const existing = trades.find(t => {
       if (raw.positionId && t.positionId) return t.positionId === raw.positionId;
       return t.time === raw.time && t.symbol === raw.symbol && t.profit === (raw.profit || 0);
     });
 
-    // Initial stop: typed in the preview, else one the user entered earlier, else the broker's.
+    let parsed = raw;
+    const keptLogTimes = !!existing?.timesFromLog && !raw.timesFromLog;
+    if (existing && keptLogTimes) {
+      parsed = {
+        ...parsed, timesFromLog: true, entryTime: existing.entryTime, time: existing.time, exitTime: existing.exitTime,
+        duration: existing.duration, exitTimeConfidence: existing.exitTimeConfidence,
+      };
+    }
+    const exitEdit = edits.exitTimes[key];
+    if (exitEdit) parsed = applyExitEdit(parsed, exitEdit);
+    const invalidExit = !!exitEdit && toMs(parsed.exitTime!) < toMs(parsed.entryTime || parsed.exitTime!);
+
+    // Initial stop: typed in the preview, else the log's, else one already known from the user or
+    // an earlier log, else whatever the order history itself can tell.
     const typedStop = parseFloat(edits.initialStops[key] || '');
     const dir = parsed.side === 'SELL' ? -1 : 1;
-    const invalidInitialSl = Number.isFinite(typedStop) && !!parsed.entryPrice && dir * (parsed.entryPrice - typedStop) <= 0;
+    const entryRef = parsed.entryOrderPrice || parsed.entryPrice;
+    const invalidInitialSl = Number.isFinite(typedStop) && !!entryRef && dir * (entryRef - typedStop) <= 0;
     if (Number.isFinite(typedStop) && !invalidInitialSl) {
       parsed = { ...parsed, initialSlPrice: typedStop, initialSlSource: 'manual' };
-    } else if (existing?.initialSlSource === 'manual' && existing.initialSlPrice) {
-      parsed = { ...parsed, initialSlPrice: existing.initialSlPrice, initialSlSource: 'manual' };
-    }
-
-    let riskInfo: Partial<TradeRisk> = computeTradeRisk(parsed, riskContext.fallbackPointValue, riskContext.defaultRisk);
-    // The default 1R only applies to new trades. An existing trade keeps the risk it already has
-    // (known from a stop, typed by the user, or the default at the time it was imported), so
-    // changing the default later never rewrites past trades.
-    if (riskInfo.riskIsEstimate && existing && parseFloat(String(existing.risk || 0)) > 0) {
-      riskInfo = existing.riskIsEstimate === false ? {} : { riskIsEstimate: true };
+    } else if (parsed.initialSlSource !== 'log' && existing?.initialSlPrice && (existing.initialSlSource === 'manual' || existing.initialSlSource === 'log')) {
+      parsed = { ...parsed, initialSlPrice: existing.initialSlPrice, initialSlSource: existing.initialSlSource };
     }
 
     if (!existing) {
-      const result = { ...parsed, ...riskInfo };
-      return { key, parsed: result, action: 'new', result, keptManualTimes: false, invalidExit, invalidInitialSl };
+      const result = { ...parsed, ...deriveTradeRisk(parsed, riskContext) };
+      return { key, parsed: result, action: 'new', result, keptManualTimes: false, keptLogTimes: false, invalidExit, invalidInitialSl };
     }
 
     const updates: Partial<Trade> = {};
-    if (!existing.tpPrice && parsed.tpPrice) updates.tpPrice = parsed.tpPrice;
-    if (!existing.slPrice && parsed.slPrice) updates.slPrice = parsed.slPrice;
-    if (!existing.entryType && parsed.entryType) updates.entryType = parsed.entryType;
-    if (!existing.exitType && parsed.exitType) updates.exitType = parsed.exitType;
+    const setUpdate = (field: string, value: unknown) => { (updates as Record<string, unknown>)[field] = value; };
+    for (const field of FILL_IF_MISSING) {
+      if (!existing[field] && parsed[field]) setUpdate(field, parsed[field]);
+    }
     // The broker's Closed P&L is the source of truth for money.
     if (existing.positionId && parsed.profit !== undefined && toCents(existing.profit) !== toCents(parsed.profit)) {
       updates.profit = parsed.profit;
     }
-    if (parsed.size !== undefined && !sameValue(existing.size, parsed.size)) updates.size = parsed.size;
-    if (parsed.commission !== undefined && !sameValue(existing.commission, parsed.commission)) updates.commission = parsed.commission;
+    for (const field of ['size', 'commission', 'entryOrderPrice'] as const) {
+      if (parsed[field] !== undefined && !sameValue(existing[field], parsed[field])) setUpdate(field, parsed[field]);
+    }
 
     // An edit made in the preview is also the user's own time, so it may replace an older one.
-    const keptManualTimes = existing.exitTimeConfidence === 'manual' && parsed.exitTimeConfidence !== 'manual';
+    const keptManualTimes = existing.exitTimeConfidence === 'manual' && !exitEdit;
     if (!keptManualTimes) {
       for (const field of TIME_FIELDS) {
-        if (parsed[field] !== undefined && existing[field] !== parsed[field]) {
-          (updates as Record<string, unknown>)[field] = parsed[field];
-        }
+        if (parsed[field] !== undefined && existing[field] !== parsed[field]) setUpdate(field, parsed[field]);
       }
     }
 
+    // The saved risk stands in for a stop that is still unknown, so changing the default 1R later
+    // never rewrites past trades.
+    const merged = {
+      ...existing, ...updates,
+      ...(parsed.initialSlPrice ? { initialSlPrice: parsed.initialSlPrice, initialSlSource: parsed.initialSlSource } : {}),
+    };
+    const derived: Record<string, unknown> = { ...deriveTradeRisk(merged, riskContext) };
     for (const field of RISK_FIELDS) {
-      const value = (riskInfo as Record<string, unknown>)[field];
-      if (value !== undefined && !sameValue(existing[field], value)) {
-        (updates as Record<string, unknown>)[field] = value;
-      }
+      if (derived[field] !== undefined && !sameValue(existing[field], derived[field])) setUpdate(field, derived[field]);
     }
 
     const oldExit = existing.exitTime || existing.time;
@@ -127,7 +136,7 @@ export function planImport(parsedTrades: Partial<Trade>[], trades: Trade[], edit
     const previousProfit = updates.profit !== undefined ? existing.profit : undefined;
 
     return {
-      key, parsed, existing, result, keptManualTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl,
+      key, parsed, existing, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl,
       ...(Object.keys(updates).length > 0 ? { action: 'update' as const, updates } : { action: 'same' as const }),
     };
   });

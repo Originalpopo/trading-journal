@@ -12,30 +12,30 @@ export interface StatTrade {
   resultType?: string;
 }
 
-// A trade whose result is within ±0.4R of zero counts as break-even.
+// For a trade that doesn't say how it was closed: a result within ±0.4R of zero is break-even.
 export const BE_RR_THRESHOLD = 0.4;
 
 export const parseRisk = (risk: number | string | undefined): number => parseFloat(String(risk || 0)) || 0;
 
+function classifyBySize(pnl: number, risk: number): TradeOutcome {
+  if (risk > 0 ? Math.abs(pnl / risk) <= BE_RR_THRESHOLD : pnl === 0) return 'be';
+  return pnl > 0 ? 'win' : 'loss';
+}
+
+const LABEL_OUTCOMES: Record<string, TradeOutcome> = { TP: 'win', SL: 'loss', BE: 'be' };
+
+// Trades loaded by the app carry a resultType worked out from how they were closed (see risk.ts),
+// and that is the outcome. Anything else is judged by the size of its result.
 export function classifyTrade(t: StatTrade): TradeOutcome {
-  const pnl = t.profit || 0;
-  const risk = parseRisk(t.risk);
-
-  const isBE = risk > 0
-    ? Math.abs(pnl / risk) <= BE_RR_THRESHOLD
-    : (t.resultType === 'BE' || pnl === 0);
-
-  if (isBE) return 'be';
-  if (pnl > 0 || t.resultType === 'TP') return 'win';
-  return 'loss';
+  return LABEL_OUTCOMES[t.resultType || ''] ?? classifyBySize(t.profit || 0, parseRisk(t.risk));
 }
 
 const OUTCOME_LABELS: Record<TradeOutcome, 'TP' | 'SL' | 'BE'> = { win: 'TP', loss: 'SL', be: 'BE' };
 
 export const outcomeLabel = (outcome: TradeOutcome) => OUTCOME_LABELS[outcome];
 
-// The resultType stored on a trade, derived the same way trades are classified.
-export const deriveResultType = (profit: number, risk: number) => outcomeLabel(classifyTrade({ profit, risk }));
+// TP/SL/BE by the size of the result alone, for a trade that doesn't say how it was closed.
+export const deriveResultType = (profit: number, risk: number) => outcomeLabel(classifyBySize(profit, risk));
 
 // Whether a trade followed the plan. Older trades mark it only through isOnPlan, and a trade
 // that says nothing counts as on plan.
@@ -159,7 +159,7 @@ export interface TradeSummary {
   winRate: number; // 0..1, BE trades excluded
   profitFactor: number;
   expectedPayoff: number;
-  expectancyR: number;
+  expectancyR: number; // average result of a trade, in R
   stdDev: number;
   sharpeRatio: number;
   netRR: number;
@@ -181,7 +181,10 @@ export interface TradeSummary {
 // BE trades do not break a winning or losing streak.
 export function summarizeTrades(trades: StatTrade[]): TradeSummary {
   let wins = 0, losses = 0, bes = 0;
+  // Gross profit and loss take in every trade, break-evens too, so that their difference is the
+  // net profit. The averages below are of winning and losing trades only.
   let netProfit = 0, grossProfit = 0, grossLoss = 0, sumBE = 0;
+  let sumWins = 0, sumLosses = 0;
   let largestProfit = 0, largestLoss = 0, largestBE = 0;
   let netRR = 0;
   let tpRRSum = 0, tpRRCount = 0, maxTPRR = 0;
@@ -201,6 +204,8 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
     const pnl = t.profit || 0;
     const rr = t.rr || 0;
     netProfit = addMoney(netProfit, pnl);
+    if (pnl > 0) grossProfit = addMoney(grossProfit, pnl);
+    else grossLoss = addMoney(grossLoss, -pnl);
     netRR += rr;
     profits.push(pnl);
 
@@ -212,7 +217,7 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
       if (Math.abs(pnl) > Math.abs(largestBE)) largestBE = pnl;
     } else if (outcome === 'win') {
       wins++;
-      grossProfit = addMoney(grossProfit, pnl);
+      sumWins = addMoney(sumWins, pnl);
       if (pnl > largestProfit) largestProfit = pnl;
       if (rr > 0) {
         tpRRSum += rr;
@@ -235,7 +240,7 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
       }
     } else {
       losses++;
-      grossLoss = addMoney(grossLoss, Math.abs(pnl));
+      sumLosses = addMoney(sumLosses, -pnl);
       if (pnl < largestLoss) largestLoss = pnl;
       if (rr < 0) {
         slRRSum += rr;
@@ -264,20 +269,20 @@ export function summarizeTrades(trades: StatTrade[]): TradeSummary {
 
   const totalTrades = trades.length;
   const expectedPayoff = totalTrades > 0 ? netProfit / totalTrades : 0;
-  const avgLoss = losses > 0 ? grossLoss / losses : 0;
+  const avgLoss = losses > 0 ? sumLosses / losses : 0;
   const stdDev = calcStandardDeviation(profits, expectedPayoff);
 
   return {
     totalTrades, wins, losses, bes,
     netProfit, grossProfit, grossLoss, sumBE,
     largestProfit, largestLoss, largestBE,
-    avgWin: wins > 0 ? grossProfit / wins : 0,
+    avgWin: wins > 0 ? sumWins / wins : 0,
     avgLoss,
     avgBE: bes > 0 ? sumBE / bes : 0,
     winRate: (wins + losses) > 0 ? wins / (wins + losses) : 0,
     profitFactor: calcProfitFactor(grossProfit, grossLoss),
     expectedPayoff,
-    expectancyR: avgLoss > 0 ? expectedPayoff / avgLoss : 0,
+    expectancyR: totalTrades > 0 ? netRR / totalTrades : 0,
     stdDev,
     sharpeRatio: stdDev !== 0 ? expectedPayoff / stdDev : 0,
     netRR,

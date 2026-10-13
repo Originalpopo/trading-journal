@@ -6,27 +6,29 @@ import BackupReminder from "./BackupReminder";
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPasteSubmit: (text: string) => void;
-  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPasteSubmit: (historyText: string, logText: string) => void;
   onDBRestoreUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearDatabase: () => void;
   onDownloadDatabase: () => void;
 }
 
-export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDBRestoreUpload, onClearDatabase, onDownloadDatabase }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload, onClearDatabase, onDownloadDatabase }: UploadModalProps) {
   const [pasteText, setPasteText] = useState("");
+  const [logText, setLogText] = useState("");
   useEscapeToClose(isOpen, onClose);
 
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    onPasteSubmit(pasteText);
+    onPasteSubmit(pasteText, logText);
     setPasteText("");
+    setLogText("");
     onClose();
   };
 
   const handleClose = () => {
     setPasteText("");
+    setLogText("");
     onClose();
   };
 
@@ -37,21 +39,41 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
         
         {/* Paste Text Section */}
         <div className="mb-3">
-          <label className="block text-sm font-bold text-stone-950 mb-2">Option 1: Paste TradingView History</label>
-          <textarea
-            value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
-            placeholder="Paste your history data here..."
-            rows={4}
-            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition resize-y mb-3"
-          />
+          <label className="block text-sm font-bold text-stone-950 mb-2">Option 1: Paste from TradingView</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <p className="text-[11px] font-bold text-stone-500 mb-1">History tab</p>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Paste the History tab here..."
+                rows={4}
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition resize-y"
+              />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-stone-500 mb-1">Notifications log tab <span className="font-medium text-stone-400">(today only)</span></p>
+              <textarea
+                value={logText}
+                onChange={(e) => setLogText(e.target.value)}
+                placeholder="Paste the Notifications log tab here..."
+                rows={4}
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition resize-y"
+              />
+            </div>
+          </div>
+          {pasteText.trim() && !logText.trim() ? (
+            <p className="text-[11px] font-bold text-red-900 mb-3">No Notifications log: entry times will be when the orders were placed, and a stop that was moved will have no first stop. You can still fix those in the preview.</p>
+          ) : (
+            <p className="text-[11px] font-medium text-stone-400 mb-3">Paste both. The log adds what the history leaves out: when each entry really filled, and where the stop was before it was moved.</p>
+          )}
           <div className="flex justify-end">
             <button
               onClick={handleSubmit}
               disabled={!pasteText.trim()}
               className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-300 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200"
             >
-              Parse Data
+              {pasteText.trim() && !logText.trim() ? "Parse without log" : "Parse Data"}
             </button>
           </div>
         </div>
@@ -62,33 +84,9 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onFileUpload, onDB
           <div className="h-px bg-stone-200 flex-1"></div>
         </div>
 
-        {/* Upload CSV Section */}
-        <div className="mb-3">
-          <label className="block text-sm font-bold text-stone-950 mb-2">Option 2: Upload CSV File</label>
-          <label className="cursor-pointer bg-stone-50 border-2 border-dashed border-stone-300 hover:border-orange-400 hover:bg-orange-50 text-stone-600 px-4 py-4 rounded-xl font-bold transition flex flex-col items-center justify-center gap-3">
-            <Upload className="w-8 h-8 text-stone-400" />
-            <span>Click to browse or drag and drop CSV</span>
-            <input 
-              type="file" 
-              accept=".csv" 
-              className="hidden" 
-              onChange={(e) => {
-                onFileUpload(e);
-                onClose();
-              }} 
-            />
-          </label>
-        </div>
-
-        <div className="flex items-center gap-4 mb-3">
-          <div className="h-px bg-stone-200 flex-1"></div>
-          <span className="text-stone-400 font-bold text-sm uppercase tracking-wider">OR</span>
-          <div className="h-px bg-stone-200 flex-1"></div>
-        </div>
-
         {/* Restore DB Section */}
         <div className="mb-3">
-          <label className="block text-sm font-bold text-stone-950 mb-2">Option 3: Restore Database (JSON)</label>
+          <label className="block text-sm font-bold text-stone-950 mb-2">Option 2: Restore Database (JSON)</label>
           <label className="cursor-pointer bg-stone-50 border-2 border-dashed border-stone-300 hover:border-orange-400 hover:bg-orange-50 text-stone-600 px-4 py-4 rounded-xl font-bold transition flex flex-col items-center justify-center gap-3">
             <Upload className="w-8 h-8 text-stone-400" />
             <span>Click to browse or drag and drop JSON backup</span>

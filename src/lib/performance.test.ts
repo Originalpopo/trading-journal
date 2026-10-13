@@ -40,7 +40,7 @@ test('all years start from zero', () => {
   assert.deepEqual(p.perfBalanceData.slice(0, 3), [0, 50, 48]);
 });
 
-test('drawdown is the drop from the highest balance', () => {
+test('drawdown is the drop of the trading result from its peak', () => {
   const p = computePerformance(trades, funding, filters());
   assert.equal(p.maxDrawdownAmt, 1.5);
   close(p.maxDrawdownPct, (1.5 / 151) * 100);
@@ -72,7 +72,8 @@ test('the timeframe filter matches any of the chosen timeframes; no timeframe is
 
 test('direction, timeframe and hold time', () => {
   const p = computePerformance(trades, funding, filters());
-  assert.deepEqual([p.longTrades, p.longWinPct, p.shortTrades, p.shortWinPct], [2, 50, 1, 0]);
+  // Of the two buys one won and one broke even; break-evens are left out of the win rate.
+  assert.deepEqual([p.longTrades, p.longWinPct, p.shortTrades, p.shortWinPct], [2, 100, 1, 0]);
   assert.deepEqual([p.tfStats['1m'].pnl, p.tfStats['5m'].pnl, p.tfStats['none'].pnl], [3, -1.5, 0.1]);
   assert.deepEqual([p.holdWin, p.holdLoss], ['30m', '10m']);
 });
@@ -114,4 +115,29 @@ test('more than 500 events are drawn one point per day', () => {
   assert.deepEqual(p.perfPnlData, [0, 3, 2.01]);
   assert.deepEqual(p.perfBalanceLabels, ['Start', '2/3/26', '3/3/26']);
   assert.equal(p.netProfit, 5.01);
+});
+
+test('a withdrawal is not a drawdown, and a deposit does not hide one', () => {
+  const t = (time: string, profit: number) => ({ time, profit, risk: 1, rr: profit, symbol: 'XAUUSD', side: 'BUY' });
+  const p = computePerformance(
+    [t('2026-01-02 10:00:00', 10), t('2026-01-04 10:00:00', -4), t('2026-01-06 10:00:00', -3)],
+    [
+      { time: '2026-01-01 09:00:00', deposit: 100, withdraw: 0 },
+      { time: '2026-01-03 09:00:00', deposit: 0, withdraw: 50 }, // taking money out loses nothing
+      { time: '2026-01-05 09:00:00', deposit: 500, withdraw: 0 }, // topping up recovers nothing
+    ],
+    filters({ selectedYear: 'ALL' }),
+  );
+  assert.equal(p.maxDrawdownAmt, 7);
+  assert.equal(p.absoluteDD, 0);
+});
+
+test('absolute drawdown is how far the result fell below where the period started', () => {
+  const t = (time: string, profit: number) => ({ time, profit, risk: 1, rr: profit, symbol: 'XAUUSD', side: 'BUY' });
+  const p = computePerformance(
+    [t('2026-01-02 10:00:00', -2), t('2026-01-03 10:00:00', -1.5), t('2026-01-04 10:00:00', 9)],
+    [{ time: '2026-01-01 09:00:00', deposit: 25, withdraw: 0 }],
+    filters({ selectedYear: 'ALL' }),
+  );
+  assert.equal(p.absoluteDD, 3.5); // not the whole 25 deposited
 });

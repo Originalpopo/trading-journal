@@ -33,6 +33,7 @@ export default function Sidebar() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [tvRawText, setTvRawText] = useState("");
+  const [tvLogText, setTvLogText] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
@@ -43,24 +44,9 @@ export default function Sidebar() {
     return () => unsubscribe();
   }, [initializeListeners]);
 
-  const onFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        setTvRawText(text);
-        setIsBulkImportOpen(true);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const onPasteSubmit = (text: string) => {
+  const onPasteSubmit = (text: string, logText: string) => {
     setTvRawText(text);
+    setTvLogText(logText);
     setIsBulkImportOpen(true);
   };
 
@@ -317,7 +303,6 @@ export default function Sidebar() {
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         onPasteSubmit={onPasteSubmit} 
-        onFileUpload={onFileUpload}
         onDBRestoreUpload={onDBRestoreUpload}
         onClearDatabase={onClearDatabase}
         onDownloadDatabase={onDownloadDatabase}
@@ -327,6 +312,7 @@ export default function Sidebar() {
           isOpen={isBulkImportOpen}
           onClose={() => setIsBulkImportOpen(false)}
           initialRawText={tvRawText}
+          initialLogText={tvLogText}
         />
       )}
     </>

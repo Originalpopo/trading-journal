@@ -8,20 +8,21 @@ import {
 const close = (actual: number, expected: number) =>
   assert.ok(Math.abs(actual - expected) < 1e-9, `expected ${expected}, got ${actual}`);
 
-test('classifyTrade: with risk, |RR| <= 0.4 is break-even', () => {
+test('classifyTrade: without a result label, |RR| <= 0.4 is break-even', () => {
   assert.equal(classifyTrade({ profit: 4, risk: 10 }), 'be');
   assert.equal(classifyTrade({ profit: -4, risk: 10 }), 'be');
   assert.equal(classifyTrade({ profit: 4.01, risk: 10 }), 'win');
   assert.equal(classifyTrade({ profit: -4.01, risk: 10 }), 'loss');
 });
 
-test('classifyTrade: with risk, stored resultType BE is ignored', () => {
-  assert.equal(classifyTrade({ profit: 20, risk: 10, resultType: 'BE' }), 'win');
+test('classifyTrade: the result label worked out for the trade is the outcome', () => {
+  assert.equal(classifyTrade({ profit: 0.09, risk: 1, resultType: 'BE' }), 'be');
+  assert.equal(classifyTrade({ profit: -0.18, risk: 1.08, resultType: 'SL' }), 'loss');
+  assert.equal(classifyTrade({ profit: 0.1, risk: 1, resultType: 'TP' }), 'win');
 });
 
-test('classifyTrade: without risk, falls back to profit sign and resultType', () => {
+test('classifyTrade: without risk, falls back to the profit sign', () => {
   assert.equal(classifyTrade({ profit: 0 }), 'be');
-  assert.equal(classifyTrade({ profit: 5, resultType: 'BE' }), 'be');
   assert.equal(classifyTrade({ profit: 0.5 }), 'win');
   assert.equal(classifyTrade({ profit: -0.5 }), 'loss');
 });
@@ -31,7 +32,7 @@ test('classifyTrade: risk stored as a string still works', () => {
   assert.equal(classifyTrade({ profit: 30, risk: '10' }), 'win');
 });
 
-test('deriveResultType matches classifyTrade', () => {
+test('deriveResultType judges by the size of the result', () => {
   assert.equal(deriveResultType(3, 10), 'BE');
   assert.equal(deriveResultType(15, 10), 'TP');
   assert.equal(deriveResultType(-10, 10), 'SL');
@@ -72,16 +73,19 @@ test('summarizeTrades: totals, rates and RR figures', () => {
     { profit: -10, risk: 10, rr: -1 },
   ];
   const s = summarizeTrades(trades);
+  // Expectancy is the average R, whatever each trade risked in dollars.
+  close(summarizeTrades([{ profit: 20, risk: 10, rr: 2 }, { profit: -1, risk: 1, rr: -1 }]).expectancyR, 0.5);
 
   assert.equal(s.totalTrades, 5);
   assert.equal(s.wins, 2);
   assert.equal(s.losses, 2);
   assert.equal(s.bes, 1);
   assert.equal(s.netProfit, 32);
-  assert.equal(s.grossProfit, 50);
+  assert.equal(s.grossProfit, 52); // the break-even's +2 counts as money made
   assert.equal(s.grossLoss, 20);
+  assert.equal(s.grossProfit - s.grossLoss, s.netProfit);
   assert.equal(s.winRate, 0.5); // BE excluded
-  assert.equal(s.profitFactor, 2.5);
+  assert.equal(s.profitFactor, 2.6);
   assert.equal(s.avgWin, 25);
   assert.equal(s.avgLoss, 10);
   assert.equal(s.expectedPayoff, 6.4);

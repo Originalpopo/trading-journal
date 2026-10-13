@@ -1,6 +1,6 @@
 // Everything the Performance page shows, computed from the trades and funding of the chosen
 // filters. Kept free of app imports so it can be unit-tested with `node --test`.
-import { classifyTrade, summarizeTrades, isOnPlan, type StatTrade } from './stats.ts';
+import { classifyTrade, summarizeTrades, computePnlDrawdown, isOnPlan, type StatTrade } from './stats.ts';
 import { addMoney, subMoney } from './money.ts';
 import { formatDurationDetailed, calculateDurationInSeconds } from './utils.ts';
 
@@ -110,10 +110,9 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
 
   let runningBalance = carriedOverBalance;
   let initialDeposit = runningBalance;
-  let minBalance = runningBalance;
-  let peakBalance = runningBalance;
-  let maxDrawdownAmt = 0;
-  let maxDrawdownPct = 0;
+  // The trading result of the period on its own, to find how far it ever fell below its start.
+  let periodPnl = 0;
+  let lowestPeriodPnl = 0;
 
   const shouldAggregate = currentEvents.length > 500;
   const dailyPerfPoints = new Map<string, { balance: number, pnl: number, timestamp: number, isFundingOnly: boolean }>();
@@ -124,8 +123,8 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const perfPnlColors = ['transparent'];
 
   let tradeCount = 0;
-  let longTrades = 0, longWon = 0;
-  let shortTrades = 0, shortWon = 0;
+  let longTrades = 0, longWon = 0, longLost = 0;
+  let shortTrades = 0, shortWon = 0, shortLost = 0;
 
   let onPlanTrades = 0, onPlanPnL = 0;
   let offPlanTrades = 0, offPlanPnL = 0;
@@ -148,9 +147,6 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
         initialDeposit = evt.data.deposit;
       }
       runningBalance = subMoney(addMoney(runningBalance, evt.data.deposit), evt.data.withdraw);
-
-      if (runningBalance > peakBalance) peakBalance = runningBalance;
-      if (runningBalance < minBalance) minBalance = runningBalance;
 
       if (shouldAggregate) {
         const d = evt.timeObj;
@@ -204,9 +200,11 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
       if (t.side === 'BUY') {
         longTrades++;
         if (isWin) longWon++;
+        if (isLoss) longLost++;
       } else if (t.side === 'SELL') {
         shortTrades++;
         if (isWin) shortWon++;
+        if (isLoss) shortLost++;
       }
 
       const tfVals = t.tf ? t.tf.split(',').map((s: string) => s.trim()).filter(Boolean) : ['none'];
@@ -294,14 +292,8 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
       }
 
       runningBalance = addMoney(runningBalance, pnl);
-      if (runningBalance < minBalance) minBalance = runningBalance;
-      if (runningBalance > peakBalance) peakBalance = runningBalance;
-
-      const currentDD = subMoney(peakBalance, runningBalance);
-      const currentDDPct = peakBalance > 0 ? (currentDD / peakBalance) * 100 : 0;
-
-      if (currentDD > maxDrawdownAmt) maxDrawdownAmt = currentDD;
-      if (currentDDPct > maxDrawdownPct) maxDrawdownPct = currentDDPct;
+      periodPnl = addMoney(periodPnl, pnl);
+      if (periodPnl < lowestPeriodPnl) lowestPeriodPnl = periodPnl;
 
       if (shouldAggregate) {
         const d = evt.timeObj;
@@ -361,7 +353,18 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const lossTradesCount = summary.losses;
   const beTradesCount = summary.bes;
 
-  const absoluteDD = (initialDeposit - minBalance) > 0 ? (initialDeposit - minBalance) : 0;
+  // Drawdown is measured on the trading result, as on the Dashboard: a withdrawal is not a loss and
+  // a deposit does not heal one. The balance carried into the period is what the % is taken of.
+  const drawdown = computePnlDrawdown([
+    { type: 'funding', deposit: carriedOverBalance },
+    ...currentEvents.map(evt => (evt.type === 'trade'
+      ? { type: 'trade' as const, profit: evt.data.profit }
+      : { type: 'funding' as const, deposit: evt.data.deposit, withdraw: evt.data.withdraw })),
+  ]).usd;
+  const maxDrawdownAmt = drawdown.max;
+  const maxDrawdownPct = drawdown.maxPercent;
+  // How far the result of the period ever stood below where it started.
+  const absoluteDD = Math.max(0, -lowestPeriodPnl);
   const recoveryFactor = maxDrawdownAmt > 0 ? (netProfit / maxDrawdownAmt) : 0;
 
   const winPct = totalTrades > 0 ? (profitTradesCount / totalTrades) * 100 : 0;
@@ -370,8 +373,9 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
 
   const mainWinRate = summary.winRate * 100;
   
-  const longWinPct = longTrades > 0 ? (longWon / longTrades) * 100 : 0;
-  const shortWinPct = shortTrades > 0 ? (shortWon / shortTrades) * 100 : 0;
+  // Break-evens are left out, as in the main win rate.
+  const longWinPct = longWon + longLost > 0 ? (longWon / (longWon + longLost)) * 100 : 0;
+  const shortWinPct = shortWon + shortLost > 0 ? (shortWon / (shortWon + shortLost)) * 100 : 0;
   
   const totalPlanTrades = onPlanTrades + offPlanTrades;
   const onPlanPct = totalPlanTrades > 0 ? (onPlanTrades / totalPlanTrades) * 100 : 0;
