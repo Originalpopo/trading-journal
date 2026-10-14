@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check, CloudRainWind, CloudLigh
 import { formatNumber, tooltipPositionOf } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import { computePerformance, type SideMatrix } from "@/lib/performance";
+import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -112,6 +113,15 @@ function SideMatrixTable({ title, firstColumn, rows, formatCurrency }: { title: 
 export default function PerformancePage() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const formatCurrency = (val: number) => formatCurrencyHelper(val, isPrivacyMode);
+
+  // Today's reference rate, for the rough baht figure under Net Profit.
+  const [bahtRate, setBahtRate] = useState<BahtRate | null>(null);
+  useEffect(() => {
+    let isMounted = true;
+    loadBahtRate().then(rate => { if (isMounted) setBahtRate(rate); });
+    return () => { isMounted = false; };
+  }, []);
+  const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
   const [isTfMenuOpen, setIsTfMenuOpen] = useState(false);
@@ -440,6 +450,9 @@ export default function PerformancePage() {
           <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Net Profit</span>
             <span className={`text-xl font-black ${data.netProfit >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(data.netProfit)}</span>
+            {bahtRate && !isPrivacyMode && (
+              <span className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
+            )}
           </div>
           <div className="bg-orange-400 p-5 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
