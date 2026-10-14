@@ -31,6 +31,15 @@ export const formatApproxBaht = (usd: number, rate: number): string => {
   return `≈${baht < 0 ? '-' : ''}฿${Math.abs(baht).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+// A P&L as the Calendar shows it: dollars and cents, or whole baht at `rate` when one is given
+// ("-฿1,664"). Cells and lists are too narrow for satang, and the rate is only a rough one anyway.
+export const formatPnl = (usd: number, rate?: number | null): string => {
+  const value = rate ? Math.round(toBaht(usd, rate)) : usd;
+  const digits = rate ? 0 : 2;
+  const text = Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return `${value < 0 ? '-' : ''}${rate ? '฿' : '$'}${text}`;
+};
+
 const readSaved = (): BahtRate | null => {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');

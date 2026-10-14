@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRate, toBaht, formatApproxBaht, localDay } from './bahtRate.ts';
+import { parseRate, toBaht, formatApproxBaht, formatPnl, localDay } from './bahtRate.ts';
 
 test('reads the rate service answer', () => {
   assert.deepEqual(
@@ -25,6 +25,15 @@ test('converts dollars to baht, rounded to the satang', () => {
 test('formats the approximate baht figure', () => {
   assert.equal(formatApproxBaht(104.99, 33.695), '≈฿3,537.64');
   assert.equal(formatApproxBaht(-1.47, 33.695), '≈-฿49.53');
+});
+
+test('formats a P&L in dollars, or in whole baht at a rate', () => {
+  assert.equal(formatPnl(1234.5), '$1,234.50');
+  assert.equal(formatPnl(-1.47), '-$1.47');
+  assert.equal(formatPnl(49.54, 33.59), '฿1,664');
+  assert.equal(formatPnl(-1.47, 33.695), '-฿50');
+  assert.equal(formatPnl(-0.01, 33.695), '฿0');
+  assert.equal(formatPnl(0.25, null), '$0.25');
 });
 
 test('the day key is the local calendar day', () => {

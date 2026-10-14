@@ -7,6 +7,7 @@ import { useJournalStore, type Trade } from "@/store/useJournalStore";
 import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId, type DaySummary } from "@/lib/dayNotes";
 import { classifyTrade, outcomeLabel } from "@/lib/stats";
 import { formatNumber } from "@/lib/utils";
+import { formatPnl } from "@/lib/bahtRate";
 import TradeDetailModal from "./TradeDetailModal";
 import ManualTradeModal from "./ManualTradeModal";
 
@@ -52,11 +53,12 @@ interface NoteModalProps {
   onDelete: () => Promise<void>;
   onClose: () => void;
   children?: ReactNode; // what happened in the period, between the figures and the note
+  bahtRate?: number | null; // show money in whole baht at this rate instead of dollars
 }
 
 // A note beside the result of its day or week. Reads first; edits in place.
 // Mount it with a `key` of the period so each one starts from its own saved note.
-export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children }: NoteModalProps) {
+export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children, bahtRate }: NoteModalProps) {
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
   const [isEditing, setIsEditing] = useState(startEditing || !note);
   const [content, setContent] = useState(note?.content ?? "");
@@ -129,7 +131,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
           </div>
           <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
             <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">P&L</p>
-            <p className={`text-sm font-black ${pnlClass}`}>{day.count === 0 ? '-' : isPrivacyMode ? '***' : `${day.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(day.pnl))}`}</p>
+            <p className={`text-sm font-black ${pnlClass}`}>{day.count === 0 ? '-' : isPrivacyMode ? '***' : formatPnl(day.pnl, bahtRate)}</p>
           </div>
           <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
             <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">RR</p>
@@ -213,12 +215,13 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
 interface DayNoteModalProps {
   date: string; // "YYYY-MM-DD"
   startEditing: boolean; // open straight in the editor (a day without a note always does)
+  bahtRate?: number | null; // show money in whole baht at this rate instead of dollars
   onClose: () => void;
 }
 
 // The note of one day beside what was traded that day.
 // Mount it with a `key` of the date so each day starts from its own saved note.
-export default function DayNoteModal({ date, startEditing, onClose }: DayNoteModalProps) {
+export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: DayNoteModalProps) {
   const trades = useJournalStore(state => state.trades);
   const note = useJournalStore(state => state.dayNotes.find(n => n.date === date));
   const saveDayNote = useJournalStore(state => state.saveDayNote);
@@ -255,6 +258,7 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
       onSave={(n) => saveDayNote(date, n)}
       onDelete={() => deleteDayNote(date)}
       onClose={onClose}
+      bahtRate={bahtRate}
     >
         {dayTrades.length > 0 && (
           <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
@@ -275,7 +279,7 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
                   <span className="text-stone-500 flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
                   <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
                   {!isPrivacyMode && (
-                    <span className={`${tone} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{t.profit < 0 ? '-' : ''}${formatNumber(Math.abs(t.profit))}</span>
+                    <span className={`${tone} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{formatPnl(t.profit, bahtRate)}</span>
                   )}
                   <span className={`${tone} tabular-nums w-12 md:w-16 shrink-0 text-right`}>{formatNumber(t.rr)} R</span>
                 </button>

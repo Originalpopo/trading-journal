@@ -4,11 +4,13 @@ import { useMemo } from "react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { summarizeWeek, formatWeekRange } from "@/lib/weekNotes";
 import { formatNumber } from "@/lib/utils";
+import { formatPnl } from "@/lib/bahtRate";
 import { NoteModal, MoodIcon, moodTone } from "./DayNoteModal";
 
 interface WeekNoteModalProps {
   week: string; // "YYYY-MM-DD" of the week's Sunday
   startEditing: boolean; // open straight in the editor (a week without a note always does)
+  bahtRate?: number | null; // show money in whole baht at this rate instead of dollars
   onClose: () => void;
   onOpenDay: (date: string) => void; // a day of the week was picked: show its note instead
 }
@@ -18,7 +20,7 @@ const toneOf = (n: number) => (n > 0 ? 'text-orange-400' : n < 0 ? 'text-red-900
 
 // The note of one week beside that week's result, day by day. Weekends show only when something
 // happened on them. Mount it with a `key` of the week so each week starts from its own saved note.
-export default function WeekNoteModal({ week, startEditing, onClose, onOpenDay }: WeekNoteModalProps) {
+export default function WeekNoteModal({ week, startEditing, bahtRate, onClose, onOpenDay }: WeekNoteModalProps) {
   const trades = useJournalStore(state => state.trades);
   const dayNotes = useJournalStore(state => state.dayNotes);
   const note = useJournalStore(state => state.weekNotes.find(n => n.week === week));
@@ -40,6 +42,7 @@ export default function WeekNoteModal({ week, startEditing, onClose, onOpenDay }
       onSave={(n) => saveWeekNote(week, n)}
       onDelete={() => deleteWeekNote(week)}
       onClose={onClose}
+      bahtRate={bahtRate}
     >
       <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
         {days.map(d => {
@@ -60,7 +63,7 @@ export default function WeekNoteModal({ week, startEditing, onClose, onOpenDay }
                 {d.count === 0 ? 'No trades' : `${d.count} ${d.count > 1 ? 'trades' : 'trade'}`}
               </span>
               {d.count > 0 && !isPrivacyMode && (
-                <span className={`${toneOf(d.pnl)} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{d.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(d.pnl))}</span>
+                <span className={`${toneOf(d.pnl)} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{formatPnl(d.pnl, bahtRate)}</span>
               )}
               {d.count > 0 && (
                 <span className={`${toneOf(d.rr)} tabular-nums w-12 md:w-16 shrink-0 text-right`}>{formatNumber(d.rr)} R</span>

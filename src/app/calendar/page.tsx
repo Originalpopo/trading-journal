@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
@@ -11,15 +11,23 @@ import { formatNumber } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
 import { addMoney } from "@/lib/money";
 import { summarizeYear } from "@/lib/calendarYear";
+import { loadBahtRate, formatApproxBaht, formatPnl, toBaht, type BahtRate } from "@/lib/bahtRate";
 
 type CalendarView = 'month' | 'year';
 const VIEW_KEY = 'calendarView';
+type CalendarCurrency = 'USD' | 'THB';
+const CURRENCY_KEY = 'calendarCurrency';
 
 // Below Tailwind's md breakpoint the day cells are about 46px wide.
 const isPhone = () => window.matchMedia('(max-width: 767px)').matches;
 
 // A day's P&L for a phone cell: no "$", and whole dollars from 1,000 up so it still fits. The day popup has the exact figure.
-const cellMoney = (pnl: number) => {
+// In baht (with `rate`), whole baht and no "฿".
+const cellMoney = (pnl: number, rate?: number | null) => {
+  if (rate) {
+    const baht = Math.round(toBaht(pnl, rate));
+    return `${baht < 0 ? '-' : ''}${Math.abs(baht).toLocaleString('en-US')}`;
+  }
   const abs = Math.abs(pnl);
   return `${pnl < 0 ? '-' : ''}${abs >= 1000 ? Math.round(abs).toLocaleString('en-US') : formatNumber(abs)}`;
 };
@@ -40,6 +48,23 @@ export default function CalendarPage() {
     setView(next);
     try { localStorage.setItem(VIEW_KEY, next); } catch { }
   };
+  // Dollars or baht at today's reference rate, remembered on this device. Without a rate the page stays in dollars.
+  const [currency, setCurrency] = useState<CalendarCurrency>(() => {
+    try { return localStorage.getItem(CURRENCY_KEY) === 'THB' ? 'THB' : 'USD'; } catch { return 'USD'; }
+  });
+  const changeCurrency = (next: CalendarCurrency) => {
+    setCurrency(next);
+    try { localStorage.setItem(CURRENCY_KEY, next); } catch { }
+  };
+  const [bahtRate, setBahtRate] = useState<BahtRate | null>(null);
+  useEffect(() => {
+    let isMounted = true;
+    loadBahtRate().then(rate => { if (isMounted) setBahtRate(rate); });
+    return () => { isMounted = false; };
+  }, []);
+  const rate = currency === 'THB' && bahtRate ? bahtRate.rate : null;
+  const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
+
   const openMonth = (month: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), month, 1));
     changeView('month');
@@ -220,6 +245,18 @@ export default function CalendarPage() {
                   </button>
                 ))}
               </div>
+              <div className="flex bg-stone-100 rounded-lg p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
+                {(['USD', 'THB'] as const).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => changeCurrency(c)}
+                    disabled={c === 'THB' && !bahtRate}
+                    className={`px-2.5 py-1.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  >
+                    {c === 'USD' ? '$' : '฿'}
+                  </button>
+                ))}
+              </div>
               <button onClick={goToToday} className="px-4 py-2 bg-orange-400 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
                 Today
               </button>
@@ -228,7 +265,7 @@ export default function CalendarPage() {
               </select>
             </div>
           </div>
-          <div className="flex md:gap-6 items-center w-full md:w-auto justify-around md:justify-end">
+          <div className="flex md:gap-4 items-center w-full md:w-auto justify-around md:justify-end">
             <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Trades</span>
               <span className="text-sm md:text-lg font-black text-stone-400">{headline.count}</span>
@@ -236,8 +273,8 @@ export default function CalendarPage() {
             <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
             <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">PnL</span>
-              <span className={`text-sm md:text-lg font-black ${headline.net > 0 ? 'text-orange-400' : headline.net < 0 ? 'text-red-900' : 'text-stone-400'}`}>
-                {isPrivacyMode ? '***' : `${headline.net < 0 ? '-' : ''}$${formatNumber(Math.abs(headline.net))}`}
+              <span title={rate ? bahtRateNote : undefined} className={`text-sm md:text-lg font-black ${headline.net > 0 ? 'text-orange-400' : headline.net < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                {isPrivacyMode ? '***' : rate ? formatApproxBaht(headline.net, rate) : `${headline.net < 0 ? '-' : ''}$${formatNumber(Math.abs(headline.net))}`}
               </span>
             </div>
             <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
@@ -256,7 +293,7 @@ export default function CalendarPage() {
         </div>
 
         {view === 'year' ? (
-          <YearGrid year={yearData} isPrivacyMode={isPrivacyMode} onOpenMonth={openMonth} notesByWeek={notesByWeek} onOpenWeekNote={(week, edit) => setOpenWeekNote({ week, edit })} />
+          <YearGrid year={yearData} isPrivacyMode={isPrivacyMode} rate={rate} onOpenMonth={openMonth} notesByWeek={notesByWeek} onOpenWeekNote={(week, edit) => setOpenWeekNote({ week, edit })} />
         ) : (
         <div className="flex flex-col xl:flex-row gap-4">
           <div className="calendar-grid flex-1">
@@ -305,7 +342,7 @@ export default function CalendarPage() {
                         (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' :
                         (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
                       }`}>
-                        {isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl)}
+                        {isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl, rate)}
                       </div>
                       {!isPrivacyMode && (
                         <div className={`text-[9px] font-bold tracking-tighter tabular-nums ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>
@@ -325,7 +362,7 @@ export default function CalendarPage() {
                         {isPrivacyMode ? (
                           `${formatNumber(stats.rr)} R`
                         ) : (
-                          `${stats.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(stats.pnl))}`
+                          formatPnl(stats.pnl, rate)
                         )}
                       </div>
                       {!isPrivacyMode && (
@@ -374,7 +411,7 @@ export default function CalendarPage() {
                         <>
                           {!isPrivacyMode && (
                             <div className={`text-sm xl:text-base font-black ${cell.pnl > 0 ? 'text-orange-400' : cell.pnl < 0 ? 'text-red-900' : 'text-stone-400'}`}>
-                              {cell.pnl < 0 ? '-' : ''}${formatNumber(Math.abs(cell.pnl))}
+                              {formatPnl(cell.pnl, rate)}
                             </div>
                           )}
                           <div className={`${isPrivacyMode ? 'text-sm xl:text-base' : 'text-xs xl:text-[10px] xl:mt-1'} font-black xl:font-bold ${cell.rr > 0 ? 'text-orange-400' : cell.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
@@ -396,12 +433,13 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {openNote && <DayNoteModal key={openNote.date} date={openNote.date} startEditing={openNote.edit} onClose={() => setOpenNote(null)} />}
+      {openNote && <DayNoteModal key={openNote.date} date={openNote.date} startEditing={openNote.edit} bahtRate={rate} onClose={() => setOpenNote(null)} />}
       {openWeekNote && (
         <WeekNoteModal
           key={openWeekNote.week}
           week={openWeekNote.week}
           startEditing={openWeekNote.edit}
+          bahtRate={rate}
           onClose={() => setOpenWeekNote(null)}
           onOpenDay={(date) => { setOpenWeekNote(null); setOpenNote({ date, edit: false }); }}
         />
@@ -413,7 +451,6 @@ export default function CalendarPage() {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const toneOf = (n: number) => (n > 0 ? 'text-orange-400' : n < 0 ? 'text-red-900' : 'text-stone-400');
 const bgOf = (pnl: number, count: number) => (!count ? 'bg-white' : pnl > 0 ? 'bg-orange-50' : pnl < 0 ? 'bg-red-50' : 'bg-stone-50');
-const money = (pnl: number) => `${pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(pnl))}`;
 
 // One row per month, one cell per week. No notes here: those live on days. The months' totals sit
 // in their own column beside the grid, like the Summary column of the month view; every row has the
@@ -421,12 +458,13 @@ const money = (pnl: number) => `${pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(pn
 interface YearGridProps {
   year: ReturnType<typeof summarizeYear>;
   isPrivacyMode: boolean;
+  rate: number | null; // baht per dollar when the page shows baht
   onOpenMonth: (month: number) => void;
   notesByWeek: Map<string, { mood: string }>;
   onOpenWeekNote: (week: string, edit: boolean) => void;
 }
 
-function YearGrid({ year, isPrivacyMode, onOpenMonth, notesByWeek, onOpenWeekNote }: YearGridProps) {
+function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenWeekNote }: YearGridProps) {
   return (
     <div className="flex flex-col xl:flex-row gap-4">
       <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-stone-200 border border-stone-200 rounded-xl overflow-hidden">
@@ -447,7 +485,7 @@ function YearGrid({ year, isPrivacyMode, onOpenMonth, notesByWeek, onOpenWeekNot
               {/* Until the month column fits beside the grid, the total sits under the name. */}
               {m.count > 0 && (
                 <span className={`xl:hidden text-[9px] font-bold tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? m.rr : m.pnl)}`}>
-                  {isPrivacyMode ? `${formatNumber(m.rr)}R` : cellMoney(m.pnl)}
+                  {isPrivacyMode ? `${formatNumber(m.rr)}R` : cellMoney(m.pnl, rate)}
                 </span>
               )}
             </button>
@@ -477,7 +515,7 @@ function YearGrid({ year, isPrivacyMode, onOpenMonth, notesByWeek, onOpenWeekNot
                   {w.count > 0 && (
                     <div className="mt-auto md:hidden w-full text-center leading-tight">
                       <div className={`text-[10px] font-black tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? w.rr : w.pnl)}`}>
-                        {isPrivacyMode ? `${formatNumber(w.rr)}R` : cellMoney(w.pnl)}
+                        {isPrivacyMode ? `${formatNumber(w.rr)}R` : cellMoney(w.pnl, rate)}
                       </div>
                       {!isPrivacyMode && (
                         <div className={`text-[9px] font-bold tracking-tighter tabular-nums ${toneOf(w.rr)}`}>{formatNumber(w.rr)}R</div>
@@ -489,7 +527,7 @@ function YearGrid({ year, isPrivacyMode, onOpenMonth, notesByWeek, onOpenWeekNot
                     <>
                       <div className="min-w-0">
                         <div className={`text-sm font-black ${toneOf(isPrivacyMode ? w.rr : w.pnl)}`}>
-                          {isPrivacyMode ? `${formatNumber(w.rr)} R` : money(w.pnl)}
+                          {isPrivacyMode ? `${formatNumber(w.rr)} R` : formatPnl(w.pnl, rate)}
                         </div>
                         {!isPrivacyMode && (
                           <div className={`text-[10px] font-bold tracking-tight ${toneOf(w.rr)}`}>{formatNumber(w.rr)} R</div>
@@ -515,7 +553,7 @@ function YearGrid({ year, isPrivacyMode, onOpenMonth, notesByWeek, onOpenWeekNot
           <div key={m.month} className={`${bgOf(m.pnl, m.count)} flex-1 p-3 flex flex-col items-center justify-center text-center`}>
             {m.count > 0 && (
               <>
-                {!isPrivacyMode && <div className={`text-base font-black ${toneOf(m.pnl)} mb-1`}>{money(m.pnl)}</div>}
+                {!isPrivacyMode && <div className={`text-base font-black ${toneOf(m.pnl)} mb-1`}>{formatPnl(m.pnl, rate)}</div>}
                 <div className={`${isPrivacyMode ? 'text-base mb-1' : 'text-xs'} font-black tracking-tight ${toneOf(m.rr)}`}>{formatNumber(m.rr)} R</div>
                 <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-1">Trades : {m.count}</div>
               </>
