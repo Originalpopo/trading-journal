@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, type LucideIcon } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useJournalStore, type Trade } from "@/store/useJournalStore";
-import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId } from "@/lib/dayNotes";
+import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId, type DaySummary } from "@/lib/dayNotes";
 import { classifyTrade, outcomeLabel } from "@/lib/stats";
 import { formatNumber } from "@/lib/utils";
 import TradeDetailModal from "./TradeDetailModal";
@@ -42,35 +42,28 @@ const clockOf = (time?: string) => {
   return d && !isNaN(d.getTime()) ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
 };
 
-interface DayNoteModalProps {
-  date: string; // "YYYY-MM-DD"
-  startEditing: boolean; // open straight in the editor (a day without a note always does)
+interface NoteModalProps {
+  title: string;
+  kind: 'day' | 'week';
+  note?: { content: string; mood: string; updatedAt?: string };
+  startEditing: boolean; // open straight in the editor (a period without a note always does)
+  summary: DaySummary;
+  onSave: (note: { content: string; mood: MoodId }) => Promise<void>;
+  onDelete: () => Promise<void>;
   onClose: () => void;
+  children?: ReactNode; // what happened in the period, between the figures and the note
 }
 
-// The note of one day beside what was traded that day. Reads first; edits in place.
-// Mount it with a `key` of the date so each day starts from its own saved note.
-export default function DayNoteModal({ date, startEditing, onClose }: DayNoteModalProps) {
-  const trades = useJournalStore(state => state.trades);
-  const note = useJournalStore(state => state.dayNotes.find(n => n.date === date));
-  const saveDayNote = useJournalStore(state => state.saveDayNote);
-  const deleteDayNote = useJournalStore(state => state.deleteDayNote);
-  const deleteTrade = useJournalStore(state => state.deleteTrade);
+// A note beside the result of its day or week. Reads first; edits in place.
+// Mount it with a `key` of the period so each one starts from its own saved note.
+export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children }: NoteModalProps) {
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
-
   const [isEditing, setIsEditing] = useState(startEditing || !note);
   const [content, setContent] = useState(note?.content ?? "");
   const savedMood = normalizeMood(note?.mood);
   const [mood, setMood] = useState<MoodId>(savedMood);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const day = useMemo(() => summarizeDay(trades, date), [trades, date]);
-  const dayTrades = useMemo(() => tradesOfDay(trades, date), [trades, date]);
-
-  // A trade of the day opened on top of the note, looked up by id so edits show at once.
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
-  const detailIndex = dayTrades.findIndex(t => t.id === detailId);
+  const day = summary;
   const isDirty = isEditing && (content !== (note?.content ?? "") || mood !== savedMood);
 
   // Backdrop clicks and Esc are easy to hit by accident, so they ask before discarding edits.
@@ -84,7 +77,7 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
     if (!content.trim()) return;
     setIsSubmitting(true);
     try {
-      await saveDayNote(date, { content: content.trim(), mood });
+      await onSave({ content: content.trim(), mood });
       onClose();
     } catch (e) {
       console.error(e);
@@ -95,9 +88,9 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
   };
 
   const handleDelete = async () => {
-    if (!confirm("Delete the note of this day? This cannot be undone.")) return;
+    if (!confirm(`Delete the note of this ${kind}? This cannot be undone.`)) return;
     try {
-      await deleteDayNote(date);
+      await onDelete();
       onClose();
     } catch (e) {
       console.error(e);
@@ -105,21 +98,10 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
     }
   };
 
-  const handleDeleteTrade = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this trade?")) return;
-    setDetailId(null);
-    try {
-      await deleteTrade(id);
-    } catch {
-      alert("Failed to delete the trade.");
-    }
-  };
-
   const pnlClass = day.pnl > 0 ? 'text-orange-400' : day.pnl < 0 ? 'text-red-900' : 'text-stone-400';
 
   return (
-    <>
-    {/* m-0: a page's space-y gap would otherwise shorten this backdrop while a trade is open on top. */}
+    // m-0: a page's space-y gap would otherwise shorten this backdrop while a trade is open on top.
     <div className="fixed inset-0 m-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={requestClose}>
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5 shrink-0">
@@ -128,9 +110,10 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
               <MoodIcon mood={isEditing ? mood : note?.mood} />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xl font-black text-stone-950 tracking-tight leading-tight">{formatDayLabel(date)}</h3>
+              {kind === 'week' && <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Week</p>}
+              <h3 className="text-xl font-black text-stone-950 tracking-tight leading-tight">{title}</h3>
               <p className="text-[11px] font-semibold text-stone-400 mt-0.5">
-                {!note ? 'No note yet' : note.updatedAt ? `Last edited ${new Date(note.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Day note'}
+                {!note ? 'No note yet' : note.updatedAt ? `Last edited ${new Date(note.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : kind === 'week' ? 'Week note' : 'Day note'}
               </p>
             </div>
           </div>
@@ -158,38 +141,12 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
           </div>
         </div>
 
-        {dayTrades.length > 0 && (
-          <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
-            {dayTrades.map(t => {
-              const outcome = classifyTrade(t);
-              const tone = outcome === 'win' ? 'text-orange-400' : outcome === 'loss' ? 'text-red-900' : 'text-stone-400';
-              const entryClock = clockOf(t.entryTime);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  title="Open this trade"
-                  onClick={() => setDetailId(t.id)}
-                  className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
-                >
-                  <span className="text-stone-400 tabular-nums w-[76px] md:w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
-                  <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
-                  <span className="text-stone-500 flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
-                  <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
-                  {!isPrivacyMode && (
-                    <span className={`${tone} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{t.profit < 0 ? '-' : ''}${formatNumber(Math.abs(t.profit))}</span>
-                  )}
-                  <span className={`${tone} tabular-nums w-12 md:w-16 shrink-0 text-right`}>{formatNumber(t.rr)} R</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {children}
 
         {isEditing ? (
           <div className="flex-1 min-h-0 flex flex-col gap-4">
             <div className="shrink-0">
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">How the day felt</label>
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{kind === 'week' ? 'How the week felt' : 'How the day felt'}</label>
               <div className="flex flex-wrap gap-2">
                 {MOOD_IDS.map(id => (
                   <button
@@ -208,11 +165,11 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
             <div className="flex-1 min-h-0 flex flex-col">
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Note</label>
               <textarea
-                // Not on a phone: the keyboard would cover the day's trades as soon as a day is tapped.
+                // Not on a phone: the keyboard would cover what happened as soon as a day or week is tapped.
                 autoFocus={!window.matchMedia('(max-width: 767px)').matches}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                // Start at the end so a later addition continues the day's note.
+                // Start at the end so a later addition continues the note.
                 onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
                 rows={10}
                 placeholder="What happened, how it felt, what to keep or change..."
@@ -250,6 +207,83 @@ export default function DayNoteModal({ date, startEditing, onClose }: DayNoteMod
         )}
       </div>
     </div>
+  );
+}
+
+interface DayNoteModalProps {
+  date: string; // "YYYY-MM-DD"
+  startEditing: boolean; // open straight in the editor (a day without a note always does)
+  onClose: () => void;
+}
+
+// The note of one day beside what was traded that day.
+// Mount it with a `key` of the date so each day starts from its own saved note.
+export default function DayNoteModal({ date, startEditing, onClose }: DayNoteModalProps) {
+  const trades = useJournalStore(state => state.trades);
+  const note = useJournalStore(state => state.dayNotes.find(n => n.date === date));
+  const saveDayNote = useJournalStore(state => state.saveDayNote);
+  const deleteDayNote = useJournalStore(state => state.deleteDayNote);
+  const deleteTrade = useJournalStore(state => state.deleteTrade);
+  const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
+
+  const day = useMemo(() => summarizeDay(trades, date), [trades, date]);
+  const dayTrades = useMemo(() => tradesOfDay(trades, date), [trades, date]);
+
+  // A trade of the day opened on top of the note, looked up by id so edits show at once.
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
+  const detailIndex = dayTrades.findIndex(t => t.id === detailId);
+
+  const handleDeleteTrade = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this trade?")) return;
+    setDetailId(null);
+    try {
+      await deleteTrade(id);
+    } catch {
+      alert("Failed to delete the trade.");
+    }
+  };
+
+  return (
+    <>
+    <NoteModal
+      title={formatDayLabel(date)}
+      kind="day"
+      note={note}
+      startEditing={startEditing}
+      summary={day}
+      onSave={(n) => saveDayNote(date, n)}
+      onDelete={() => deleteDayNote(date)}
+      onClose={onClose}
+    >
+        {dayTrades.length > 0 && (
+          <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
+            {dayTrades.map(t => {
+              const outcome = classifyTrade(t);
+              const tone = outcome === 'win' ? 'text-orange-400' : outcome === 'loss' ? 'text-red-900' : 'text-stone-400';
+              const entryClock = clockOf(t.entryTime);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  title="Open this trade"
+                  onClick={() => setDetailId(t.id)}
+                  className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
+                >
+                  <span className="text-stone-400 tabular-nums w-[76px] md:w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
+                  <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
+                  <span className="text-stone-500 flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
+                  <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
+                  {!isPrivacyMode && (
+                    <span className={`${tone} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{t.profit < 0 ? '-' : ''}${formatNumber(Math.abs(t.profit))}</span>
+                  )}
+                  <span className={`${tone} tabular-nums w-12 md:w-16 shrink-0 text-right`}>{formatNumber(t.rr)} R</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+    </NoteModal>
     <TradeDetailModal
       isOpen={detailIndex >= 0 && !tradeToEdit}
       onClose={() => setDetailId(null)}

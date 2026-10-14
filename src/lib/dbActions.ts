@@ -3,11 +3,13 @@ import { db } from './firebase';
 import { clearChartCache } from './chartCache';
 import type { Trade, Funding, Preferences } from '@/store/useJournalStore';
 import type { DayNote } from './dayNotes';
+import type { WeekNote } from './weekNotes';
 
 export const clearDatabase = async (
   trades: Trade[],
   funding: Funding[],
   dayNotes: DayNote[],
+  weekNotes: WeekNote[],
   onProgress?: (status: string) => void,
   onComplete?: () => void,
   onError?: (error: unknown) => void
@@ -73,6 +75,16 @@ export const clearDatabase = async (
         count = 0;
       }
     }
+    // Delete week notes
+    for (const n of weekNotes) {
+      batch.delete(doc(db, "weekNotes", n.week));
+      count++;
+      if (count === 500) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    }
     if (count > 0) {
       await batch.commit();
     }
@@ -90,12 +102,13 @@ export const clearDatabase = async (
 
 // Preferences are part of the backup: they hold the broker balance-check history and the
 // statement details, which are evidence and cannot be rebuilt from the trades.
-export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: DayNote[], preferences: Preferences) => {
+export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: DayNote[], weekNotes: WeekNote[], preferences: Preferences) => {
   const lastBackupAt = new Date().toISOString();
   const data = {
     trades,
     funding,
     dayNotes,
+    weekNotes,
     preferences: { ...preferences, lastBackupAt }
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -116,7 +129,7 @@ export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: 
 export const restoreDatabase = async (
   jsonData: string,
   onProgress?: (status: string) => void,
-  onComplete?: (result: { trades: number, funding: number, notes: number, preferences: boolean }) => void,
+  onComplete?: (result: { trades: number, funding: number, notes: number, weekNotes: number, preferences: boolean }) => void,
   onError?: (error: unknown) => void
 ) => {
   try {
@@ -132,6 +145,7 @@ export const restoreDatabase = async (
     let tradesCount = 0;
     let fundingCount = 0;
     let notesCount = 0;
+    let weekNotesCount = 0;
 
     // Restore trades
     if (data.trades) {
@@ -179,6 +193,21 @@ export const restoreDatabase = async (
       }
     }
 
+    // Restore week notes (backups made before them have none)
+    if (Array.isArray(data.weekNotes)) {
+      for (const n of data.weekNotes) {
+        if (!n?.week) continue;
+        batch.set(doc(db, "weekNotes", n.week), n);
+        count++;
+        weekNotesCount++;
+        if (count === 500) {
+          await batch.commit();
+          batch = writeBatch(db);
+          count = 0;
+        }
+      }
+    }
+
     // Restore preferences. Merged, so a backup made before they were included changes nothing.
     const hasPreferences = !!data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0;
     if (hasPreferences) {
@@ -190,7 +219,7 @@ export const restoreDatabase = async (
       await batch.commit();
     }
 
-    if (onComplete) onComplete({ trades: tradesCount, funding: fundingCount, notes: notesCount, preferences: hasPreferences });
+    if (onComplete) onComplete({ trades: tradesCount, funding: fundingCount, notes: notesCount, weekNotes: weekNotesCount, preferences: hasPreferences });
   } catch (e) {
     console.error("Error restoring DB:", e);
     alert("An error occurred while restoring the database. Ensure the file is a valid JSON database backup.");

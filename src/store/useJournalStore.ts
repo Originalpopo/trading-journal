@@ -6,6 +6,7 @@ import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
 import type { BalanceCheck, BalanceCheckRecord } from '@/lib/reconcile';
 import type { StatementProfile } from '@/lib/statement';
 import type { DayNote } from '@/lib/dayNotes';
+import type { WeekNote } from '@/lib/weekNotes';
 import { withDerivedRisk, resolveDefaultRisk } from '@/lib/risk';
 
 let legacyChartMigrationStarted = false;
@@ -99,6 +100,7 @@ interface JournalState {
   trades: Trade[];
   funding: Funding[];
   dayNotes: DayNote[];
+  weekNotes: WeekNote[];
   preferences: Preferences;
   isLoading: boolean;
   isPrivacyMode: boolean;
@@ -112,12 +114,15 @@ interface JournalState {
   deleteTrade: (id: string) => Promise<void>;
   saveDayNote: (date: string, note: Pick<DayNote, 'content' | 'mood'>) => Promise<void>;
   deleteDayNote: (date: string) => Promise<void>;
+  saveWeekNote: (week: string, note: Pick<WeekNote, 'content' | 'mood'>) => Promise<void>;
+  deleteWeekNote: (week: string) => Promise<void>;
 }
 
 export const useJournalStore = create<JournalState>((set, get) => ({
   trades: [],
   funding: [],
   dayNotes: [],
+  weekNotes: [],
   preferences: {},
   isLoading: true,
   isPrivacyMode: false,
@@ -183,8 +188,19 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       set({ dayNotes: notesData, isLoading: false });
     });
 
+    // One document per week, named by its Sunday.
+    const unsubscribeWeekNotes = onSnapshot(collection(db, 'weekNotes'), (snapshot) => {
+      const notesData: WeekNote[] = [];
+      snapshot.forEach((doc) => {
+        notesData.push({ ...doc.data(), week: doc.id } as WeekNote);
+      });
+      notesData.sort((a, b) => b.week.localeCompare(a.week));
+      set({ weekNotes: notesData });
+    });
+
     return () => {
       unsubscribeTrades();
+      unsubscribeWeekNotes();
       unsubscribeFunding();
       unsubscribeNotes();
       unsubscribePreferences();
@@ -244,6 +260,25 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       await deleteDoc(doc(db, 'dayNotes', date));
     } catch (error) {
       console.error("Error deleting day note: ", error);
+      throw error;
+    }
+  },
+  // The week's Sunday is the document ID, so a week can never hold two notes.
+  saveWeekNote: async (week, note) => {
+    try {
+      const now = new Date().toISOString();
+      const isNew = !useJournalStore.getState().weekNotes.some(n => n.week === week);
+      await setDoc(doc(db, 'weekNotes', week), { ...note, week, updatedAt: now, ...(isNew && { createdAt: now }) }, { merge: true });
+    } catch (error) {
+      console.error("Error saving week note: ", error);
+      throw error;
+    }
+  },
+  deleteWeekNote: async (week) => {
+    try {
+      await deleteDoc(doc(db, 'weekNotes', week));
+    } catch (error) {
+      console.error("Error deleting week note: ", error);
       throw error;
     }
   }
