@@ -96,6 +96,41 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
   }
 };
 
+// While the equity is below its highest point, a faint dashed line marks that peak and how far away it is.
+const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: number }> = {
+  id: 'peakEquityLine',
+  afterDatasetsDraw: (chart, _args, options) => {
+    const { peak, current } = options;
+    if (peak === null || current >= peak || chart.getDatasetMeta(0).hidden) return;
+    const yScale = chart.scales.y;
+    if (!yScale) return;
+    const { left, right } = chart.chartArea;
+    const y = yScale.getPixelForValue(peak);
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(251, 146, 60, 0.2)'; // orange-400, 80% transparent
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#a8a29e';
+    ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
+    ctx.fillText(
+      isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)} · $${formatNumber(subMoney(peak, current))} to go`,
+      left + 4,
+      y - 4,
+    );
+    ctx.restore();
+  }
+};
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -152,6 +187,8 @@ export default function Dashboard() {
 
     let runningBalance = 0;
     let cumulativePnL = 0;
+    // Taken from every trade, so a peak inside a day still counts when the chart shows one point per day.
+    let peakPnL = 0;
 
     const equityData = [0];
     const balanceData = [0];
@@ -177,6 +214,7 @@ export default function Dashboard() {
         const t = evt.data;
         runningBalance = addMoney(runningBalance, t.profit);
         cumulativePnL = addMoney(cumulativePnL, t.profit);
+        if (cumulativePnL > peakPnL) peakPnL = cumulativePnL;
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
@@ -218,6 +256,7 @@ export default function Dashboard() {
       avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
       maxStreakW: summary.maxConsWinCount, maxStreakL: summary.maxConsLossCount,
       drawdowns,
+      peakPnL, currentPnL: cumulativePnL,
       equityData, balanceData, chartLabels
     };
   }, [trades, funding]);
@@ -275,13 +314,16 @@ export default function Dashboard() {
       tooltip: {
         mode: 'index' as const,
         intersect: false,
-      }
+      },
+      peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, current: data.currentPnL }
     },
     scales: {
       x: { display: false },
       y: {
         type: 'linear' as const,
         display: true,
+        // Keeps the peak line inside the chart even when the plotted daily points sit below it.
+        suggestedMax: data.peakPnL,
         position: 'left' as const,
         grid: { color: '#fafaf9', drawOnChartArea: true },
         ticks: { display: false },
@@ -416,7 +458,7 @@ export default function Dashboard() {
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
         </h3>
         <div className="flex-1 relative w-full h-full">
-          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin]} />
+          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin]} />
         </div>
       </div>
 
