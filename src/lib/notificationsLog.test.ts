@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog } from './notificationsLog.ts';
+import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog, linkSavedTrades } from './notificationsLog.ts';
 import { parseTradingViewData, groupOrdersIntoTrades } from './tradingViewParser.ts';
 import { planImport } from './importPlan.ts';
 import { buildRiskContext } from './risk.ts';
@@ -74,7 +74,7 @@ const NO_EDITS = { exitTimes: {}, initialStops: {} };
 test('parseNotificationsLog reads every event, oldest first', () => {
   const events = parseNotificationsLog(LOG);
   assert.equal(events.length, 8);
-  assert.deepEqual(events[0], { orderId: '1251731363', type: 'take profit', action: 'placed', time: '2026-10-13 10:35:56', price: 4142.34 });
+  assert.deepEqual(events[0], { orderId: '1251731363', symbol: 'XAUUSD', type: 'take profit', action: 'placed', time: '2026-10-13 10:35:56', price: 4142.34 });
   // Within one second the log's own order is kept: the fill comes before the stop it re-states.
   assert.deepEqual(events.filter(e => e.time === '2026-10-13 10:43:44').map(e => `${e.type} ${e.action}`),
     ['limit executed', 'take profit modified', 'stop loss modified']);
@@ -201,4 +201,41 @@ test('re-import that changes the P&L also changes R and the result', () => {
   assert.equal(row.updates!.profit, 3);
   assert.equal(row.updates!.rr, 2);
   assert.equal(row.updates!.resultType, 'TP');
+});
+
+
+test('a log pasted alone corrects a trade saved from the history alone', () => {
+  const history = groupOrdersIntoTrades(parseTradingViewData(MOVED_HISTORY));
+  const ctx = { ...buildRiskContext(history, 1.5), contractSizes: { XAUUSD: 100 } };
+  const [first] = planImport(history, [], NO_EDITS, ctx);
+  const saved = { id: 'doc1', ...first.result } as any;
+  const other = { id: 'doc2', positionId: 'XAUUSD:999', symbol: 'XAUUSD', profit: 5, time: '2026-10-09T12:00:00' } as any;
+
+  const events = parseNotificationsLog(MOVED_LOG);
+  const linked = linkSavedTrades([saved, other], events);
+  assert.equal(linked.length, 1);
+  assert.equal(linked[0].slOrderId, '1250421094');
+  assert.equal(linked[0].exitOrderId, '1250421094');
+
+  const [row] = planImport(applyNotificationsLog(linked, events), [saved, other], NO_EDITS, ctx);
+  assert.equal(row.action, 'update');
+  assert.equal(row.updates!.entryTime, '2026-10-09T18:55:02');
+  assert.equal(row.result.exitTime, '2026-10-09T19:36:44');
+  assert.equal(row.updates!.initialSlPrice, 4179.2);
+  assert.equal(row.updates!.riskIsEstimate, false);
+  assert.equal(row.updates!.profit, undefined);
+});
+
+test('a stop added after the fill is found by the log alone', () => {
+  const log = [
+    event('2026-10-14 09:20:00', 'Stop Loss order executed on XAUUSD (1260000050)', '4,100.00'),
+    event('2026-10-14 09:05:00', 'Stop Loss order placed on XAUUSD (1260000050)', '4,100.00'),
+    event('2026-10-14 09:00:00', 'Market order executed on XAUUSD (1260000010)', '4,110.00'),
+  ].join('\n\n');
+  const saved = { id: 'd', positionId: 'XAUUSD:1260000010', symbol: 'XAUUSD', side: 'BUY', profit: -10, time: '2026-10-14T09:20:00' } as any;
+  const events = parseNotificationsLog(log);
+  const [t] = applyNotificationsLog(linkSavedTrades([saved], events), events);
+  assert.equal(t.entryTime, '2026-10-14T09:00:00');
+  assert.equal(t.exitTime, '2026-10-14T09:20:00');
+  assert.equal(t.initialSlPrice, 4100);
 });

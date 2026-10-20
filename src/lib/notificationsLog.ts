@@ -8,6 +8,7 @@ export type LogAction = 'placed' | 'modified' | 'executed' | 'cancelled' | 'reje
 
 export interface LogEvent {
   orderId: string;
+  symbol: string;
   type: string; // 'limit', 'stop loss', 'take profit', 'market', ...
   action: LogAction;
   time: string; // 'YYYY-MM-DD HH:MM:SS'
@@ -15,7 +16,7 @@ export interface LogEvent {
 }
 
 const TIME_LINE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/;
-const EVENT_LINE = /^(.+?) order (placed|modified|executed|cancelled|rejected) on \S+ \((\d+)\)/i;
+const EVENT_LINE = /^(.+?) order (placed|modified|executed|cancelled|rejected) on (\S+) \((\d+)\)/i;
 const PRICE_LINE = /^(?:Buy|Sell)\s+[\d.,]+\s+at\s+([\d.,]+)/i;
 
 // Returns the events oldest first. The log lists the newest first, also within one second, so
@@ -33,7 +34,9 @@ export function parseNotificationsLog(raw: string): LogEvent[] {
     }
     const eventMatch = line.match(EVENT_LINE);
     if (eventMatch && time) {
-      current = { orderId: eventMatch[3], type: eventMatch[1].toLowerCase(), action: eventMatch[2].toLowerCase() as LogAction, time };
+      current = {
+        orderId: eventMatch[4], symbol: eventMatch[3], type: eventMatch[1].toLowerCase(), action: eventMatch[2].toLowerCase() as LogAction, time,
+      };
       events.push(current);
       continue;
     }
@@ -55,16 +58,68 @@ export const looksLikeNotificationsLog = (raw: string) =>
 
 const toMs = (time: string) => new Date(time.replace(' ', 'T')).getTime();
 
-// Fills in what only the log knows: when the entry and exit really filled, and where the stop was
-// when the position opened. Trades the log does not cover are returned untouched.
-export function applyNotificationsLog<T extends LinkedTrade>(trades: T[], events: LogEvent[]): T[] {
-  if (events.length === 0) return trades;
+function groupByOrder(events: LogEvent[]) {
   const byOrder = new Map<string, LogEvent[]>();
   for (const e of events) {
     if (!byOrder.has(e.orderId)) byOrder.set(e.orderId, []);
     byOrder.get(e.orderId)!.push(e);
   }
-  const executionOf = (orderId?: string) => (orderId ? byOrder.get(orderId)?.find(e => e.action === 'executed') : undefined);
+  return byOrder;
+}
+
+const findExecution = (byOrder: Map<string, LogEvent[]>, orderId?: string) =>
+  (orderId ? byOrder.get(orderId)?.find(e => e.action === 'executed') : undefined);
+
+const isProtective = (e: LogEvent) => e.type === 'stop loss' || e.type === 'take profit';
+
+// For a log pasted without the order history: ties it to trades already in the journal. A saved
+// position ID is "SYMBOL:<ID of the order that opened it>", and a TP/SL placed with that order gets
+// its ID + 1 or + 2. One added later is the first placed on the symbol while the trade was open.
+// Returns only the trades whose opening fill is in the log, with the order IDs filled in.
+export function linkSavedTrades<T extends LinkedTrade>(trades: T[], events: LogEvent[]): T[] {
+  const byOrder = groupByOrder(events);
+  // A TP/SL that came with any other order the log shows belongs to that order's position.
+  const bracketIds = new Set<string>();
+  for (const e of events) {
+    if (isProtective(e)) continue;
+    const id = parseInt(e.orderId, 10);
+    bracketIds.add(String(id + 1));
+    bracketIds.add(String(id + 2));
+  }
+
+  const linked: T[] = [];
+  for (const trade of trades) {
+    const entryOrderId = trade.positionId?.split(':').pop();
+    const entryFill = entryOrderId && /^\d+$/.test(entryOrderId) ? findExecution(byOrder, entryOrderId) : undefined;
+    if (!entryOrderId || !entryFill) continue;
+
+    const id = parseInt(entryOrderId, 10);
+    const bracket = [String(id + 1), String(id + 2)].filter(oid => byOrder.get(oid)?.some(isProtective));
+    // The saved exit is never earlier than the stop's last move, so a stop placed by then is inside it.
+    const savedExit = (trade.exitTime || trade.time || '').replace('T', ' ');
+    const addedLater = [...byOrder.entries()]
+      .filter(([oid, orderEvents]) => !bracketIds.has(oid) && isProtective(orderEvents[0]) && orderEvents[0].symbol === entryFill.symbol
+        && orderEvents[0].time >= entryFill.time && (!savedExit || orderEvents[0].time <= savedExit))
+      .map(([oid]) => oid);
+    const orderIds = [...bracket, ...addedLater];
+    const ordersOfType = (type: string) => orderIds.filter(oid => byOrder.get(oid)![0].type === type);
+
+    const exitFill = orderIds
+      .map(oid => findExecution(byOrder, oid))
+      .filter((e): e is LogEvent => !!e && e.time >= entryFill.time)
+      .sort((a, b) => a.time.localeCompare(b.time))[0];
+
+    linked.push({ ...trade, entryOrderId, exitOrderId: exitFill?.orderId, slOrderId: ordersOfType('stop loss')[0] });
+  }
+  return linked;
+}
+
+// Fills in what only the log knows: when the entry and exit really filled, and where the stop was
+// when the position opened. Trades the log does not cover are returned untouched.
+export function applyNotificationsLog<T extends LinkedTrade>(trades: T[], events: LogEvent[]): T[] {
+  if (events.length === 0) return trades;
+  const byOrder = groupByOrder(events);
+  const executionOf = (orderId?: string) => findExecution(byOrder, orderId);
 
   return trades.map(trade => {
     const entryFill = executionOf(trade.entryOrderId);

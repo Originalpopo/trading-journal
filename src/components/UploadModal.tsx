@@ -64,16 +64,18 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
           </div>
           {pasteText.trim() && !logText.trim() ? (
             <p className="text-[11px] font-bold text-red-900 mb-3">No Notifications log: entry times will be when the orders were placed, and a stop that was moved will have no first stop. You can still fix those in the preview.</p>
+          ) : logText.trim() && !pasteText.trim() ? (
+            <p className="text-[11px] font-medium text-stone-400 mb-3">Log only: it is checked against trades already in the journal and fixes their fill times and first stop. It has no P&L, so trades not in the journal yet need the History tab.</p>
           ) : (
             <p className="text-[11px] font-medium text-stone-400 mb-3">Paste both. The log adds what the history leaves out: when each entry really filled, and where the stop was before it was moved.</p>
           )}
           <div className="flex justify-end">
             <button
               onClick={handleSubmit}
-              disabled={!pasteText.trim()}
+              disabled={!pasteText.trim() && !logText.trim()}
               className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-300 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200"
             >
-              {pasteText.trim() && !logText.trim() ? "Parse without log" : "Parse Data"}
+              {pasteText.trim() && !logText.trim() ? "Parse without log" : !pasteText.trim() && logText.trim() ? "Check log against journal" : "Parse Data"}
             </button>
           </div>
         </div>

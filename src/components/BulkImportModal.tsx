@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
 import { parseTradingViewData, groupOrdersIntoTrades, findImportWarnings, type ImportWarning, type ImportWarningKind, type LinkedTrade } from "@/lib/tradingViewParser";
-import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog } from "@/lib/notificationsLog";
+import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog, linkSavedTrades } from "@/lib/notificationsLog";
 import { buildRiskContext } from "@/lib/risk";
 import { sumMoney } from "@/lib/money";
 import { planImport, reviewImportWarnings, type ImportAction } from "@/lib/importPlan";
@@ -57,21 +57,34 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const { parsedTrades, importWarnings, parseError, logEventCount } = useMemo(() => {
-    const nothing = { parsedTrades: [] as LinkedTrade[], importWarnings: [] as ImportWarning[], logEventCount: 0 };
+  const { parsedTrades, importWarnings, parseError, logEventCount, logOnly } = useMemo(() => {
+    const nothing = { parsedTrades: [] as LinkedTrade[], importWarnings: [] as ImportWarning[], logEventCount: 0, logOnly: false };
     // Either box may hold either paste: the log is told apart by its wording.
     const pastes = [initialRawText, initialLogText].filter(text => text.trim());
     const historyText = pastes.find(text => !looksLikeNotificationsLog(text)) || "";
     const logText = pastes.find(looksLikeNotificationsLog) || "";
-    if (!historyText) {
-      return { ...nothing, parseError: logText ? "The Notifications log has no P&L. Paste the History tab as well." : null };
+    if (!historyText && logText) {
+      // The log has no P&L, so on its own it can only correct trades already in the journal.
+      const logEvents = parseNotificationsLog(logText);
+      const matched = applyNotificationsLog(linkSavedTrades(trades, logEvents), logEvents);
+      return {
+        ...nothing,
+        parsedTrades: matched,
+        logEventCount: logEvents.length,
+        logOnly: true,
+        parseError: matched.length === 0
+          ? "None of the trades in this Notifications log are in the journal yet. The log has no P&L, so paste the History tab as well to add them."
+          : null,
+      };
     }
+    if (!historyText) return { ...nothing, parseError: null };
     try {
       const orders = parseTradingViewData(historyText);
       const logEvents = parseNotificationsLog(logText);
       const grouped = applyNotificationsLog(groupOrdersIntoTrades(orders), logEvents);
       const warnings = findImportWarnings(orders);
       return {
+        ...nothing,
         parsedTrades: grouped,
         importWarnings: warnings,
         logEventCount: logEvents.length,
@@ -84,7 +97,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
       console.error(e);
       return { ...nothing, parseError: "Failed to parse data. Please check the format." };
     }
-  }, [initialRawText, initialLogText]);
+  }, [initialRawText, initialLogText, trades]);
   const error = importError || parseError;
 
   const [exitEdits, setExitEdits] = useState<Record<string, string>>({});
@@ -283,7 +296,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h4 className="text-sm font-bold text-stone-950 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-orange-400" />
-                  Found {parsedTrades.length} trades: {newCount} new, {updateCount} to update
+                  {logOnly
+                    ? `Found ${parsedTrades.length} saved ${parsedTrades.length > 1 ? 'trades' : 'trade'} in the Notifications log: ${updateCount} to update`
+                    : `Found ${parsedTrades.length} trades: ${newCount} new, ${updateCount} to update`}
                 </h4>
                 {uncertainCount > 0 && (
                   <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1">
@@ -303,7 +318,13 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                     {`The broker reports $${Math.abs(totalCommission).toFixed(2)} commission on ${commissionRows.length} ${commissionRows.length > 1 ? 'trades' : 'trade'}. It is saved with each trade but not subtracted from P&L, because the export does not say whether P&L already includes it. Check the balance against the broker after importing.`}
                   </p>
                 )}
-                {logEventCount > 0 && (
+                {logOnly && (
+                  <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 w-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
+                    Log only: matched to trades already in the journal by position ID. P&L stays as saved; trades not yet in the journal need the History tab.
+                  </p>
+                )}
+                {logEventCount > 0 && !logOnly && (
                   <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 w-full">
                     <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
                     {`Notifications log: ${loggedCount} of ${parsedTrades.length} ${parsedTrades.length > 1 ? 'trades' : 'trade'} got the real fill times and first stop from it.`}
@@ -488,7 +509,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
           <button onClick={handleImport} disabled={isSubmitting || hasInvalidEdit || newCount + updateCount === 0}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
-            {isSubmitting ? "Importing..." : `Import ${newCount} new, update ${updateCount}`}
+            {isSubmitting ? "Importing..." : logOnly ? `Update ${updateCount}` : `Import ${newCount} new, update ${updateCount}`}
           </button>
         </div>
       </div>
