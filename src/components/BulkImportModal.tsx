@@ -6,12 +6,13 @@ import { parseTradingViewData, groupOrdersIntoTrades, findImportWarnings, type I
 import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog, linkSavedTrades } from "@/lib/notificationsLog";
 import { buildRiskContext } from "@/lib/risk";
 import { sumMoney } from "@/lib/money";
-import { planImport, reviewImportWarnings, type ImportAction } from "@/lib/importPlan";
-import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
-import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil } from "lucide-react";
+import { planImport, reviewImportWarnings, type ImportAction, type ImportPlanRow } from "@/lib/importPlan";
+import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil, ClipboardCheck } from "lucide-react";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useDefaultRisk } from "@/lib/defaultRisk";
+import { isOnPlan } from "@/lib/stats";
+import { applyChecklistChanges } from "@/lib/checklists";
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -45,6 +46,8 @@ const WARNING_TEXT: Record<ImportWarningKind, { title: string; advice: string; i
     isMoneyMissing: false,
   },
 };
+const TIMEFRAMES = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
+
 const WARNING_ORDER: ImportWarningKind[] = ['missingEntry', 'noPositionId', 'splitClose', 'open'];
 
 const splitTime = (time?: string) => {
@@ -104,6 +107,15 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   const [initialStopEdits, setInitialStopEdits] = useState<Record<string, string>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingStopKey, setEditingStopKey] = useState<string | null>(null);
+  // TF and On Plan typed here; the broker data never carries them.
+  const [tfEdits, setTfEdits] = useState<Record<string, string>>({});
+  const [onPlanEdits, setOnPlanEdits] = useState<Record<string, boolean>>({});
+
+  // New trades start with the TF of the latest trade that has one.
+  const defaultTf = useMemo(() => {
+    const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
+    return sortedTrades.find(t => t.tf && t.tf !== "none")?.tf || "none";
+  }, [trades]);
 
   const defaultRisk = useDefaultRisk();
   const riskContext = useMemo(() => buildRiskContext([...trades, ...parsedTrades], defaultRisk), [trades, parsedTrades, defaultRisk]);
@@ -111,8 +123,22 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
     () => planImport(parsedTrades, trades, { exitTimes: exitEdits, initialStops: initialStopEdits }, riskContext),
     [parsedTrades, trades, exitEdits, initialStopEdits, riskContext],
   );
+  const tfOf = (r: ImportPlanRow) => tfEdits[r.key] ?? (r.existing ? r.existing.tf || 'none' : defaultTf);
+  const onPlanOf = (r: ImportPlanRow) => onPlanEdits[r.key] ?? (r.existing ? isOnPlan(r.existing) : true);
+  // A saved trade whose TF or On Plan was changed here; hidden legacy checklist tags are kept.
+  const tagUpdatesOf = (r: ImportPlanRow): Partial<Trade> | null => {
+    if (!r.existing) return null;
+    const updates: Partial<Trade> = {};
+    if (tfOf(r) !== (r.existing.tf || 'none')) updates.tf = tfOf(r);
+    if (onPlanOf(r) !== isOnPlan(r.existing)) {
+      updates.isOnPlan = onPlanOf(r);
+      updates.checklists = applyChecklistChanges(r.existing.checklists || [], { 'On Plan': onPlanOf(r) ? 'add' : 'remove' });
+    }
+    return Object.keys(updates).length > 0 ? updates : null;
+  };
+  const actionOf = (r: ImportPlanRow): ImportAction => (r.action === 'same' && tagUpdatesOf(r) ? 'update' : r.action);
   const newCount = plan.filter(r => r.action === 'new').length;
-  const updateCount = plan.filter(r => r.action === 'update').length;
+  const updateCount = plan.filter(r => actionOf(r) === 'update').length;
   const uncertainCount = plan.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
   // A stop moved to break-even and then hit is about 0R whatever 1R was; only a trade that went on
   // to make money needs its first stop.
@@ -133,32 +159,26 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   const handleImport = async () => {
     setIsSubmitting(true);
 
-    let defaultTf = "none";
-    const defaultChecklists = ["On Plan"];
-    if (trades.length > 0) {
-      const sortedTrades = [...trades].sort((a, b) => new Date(b.time.replace(" ", "T")).getTime() - new Date(a.time.replace(" ", "T")).getTime());
-      const withTf = sortedTrades.find(t => t.tf && t.tf !== "none");
-      if (withTf) defaultTf = withTf.tf!;
-    }
-
     let importCount = 0;
     let updatedCount = 0;
     let unchangedCount = 0;
 
     try {
       for (const row of plan) {
-        if (row.action === 'same') {
-          unchangedCount++;
-          continue;
-        }
-        if (row.action === 'update' && row.existing && row.updates) {
-          await updateTrade(row.existing.id, row.updates);
-          updatedCount++;
+        if (row.existing) {
+          const updates = { ...(row.action === 'update' ? row.updates : {}), ...tagUpdatesOf(row) };
+          if (Object.keys(updates).length === 0) {
+            unchangedCount++;
+          } else {
+            await updateTrade(row.existing.id, updates);
+            updatedCount++;
+          }
           continue;
         }
 
         // For new rows `result` already carries 1R (from the stop, the user, or the default).
         const t = row.result;
+        const onPlan = onPlanOf(row);
 
         const newTrade: Omit<Trade, 'id'> = {
           time: t.time || new Date().toISOString(),
@@ -170,12 +190,12 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
           initialSlPrice: t.initialSlPrice,
           initialSlSource: t.initialSlSource,
           strategy: "",
-          isOnPlan: true,
+          isOnPlan: onPlan,
           symbol: t.symbol || "UNKNOWN",
           side: t.side || "BUY",
           images: [],
-          tf: defaultTf,
-          checklists: defaultChecklists,
+          tf: tfOf(row),
+          checklists: onPlan ? ["On Plan"] : [],
           entryPrice: t.entryPrice,
           entryOrderPrice: t.entryOrderPrice,
           timesFromLog: t.timesFromLog,
@@ -350,26 +370,29 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest"></th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Entry</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Exit</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Hold</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">TF</th>
+                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">Entry Price</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">TP</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right" title="Where the stop ended up">Last SL</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right" title="Where the stop was first placed; 1R is measured to it">1st SL</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">Exit Price</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">P&L</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">1R</th>
                       <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">R</th>
                     </tr>
                   </thead>
                   <tbody className="text-[11px] divide-y divide-stone-50">
-                    {plan.map(({ key, parsed: t, action, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl }) => {
+                    {plan.map((row) => {
+                      const { key, parsed: t, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl } = row;
+                      const action = actionOf(row);
                       const entry = splitTime(result.entryTime);
                       const exitTime = result.exitTime || result.time;
                       const exit = splitTime(exitTime);
                       const previous = splitTime(previousExitTime);
                       const isEditing = editingKey === key;
+                      const tf = tfOf(row);
+                      const onPlan = onPlanOf(row);
                       return (
                         <tr key={key} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
                           <td className="px-4 py-4">
@@ -426,8 +449,30 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                               </p>
                             )}
                           </td>
-                          <td className="px-4 py-4 text-stone-500 font-semibold">{formatDurationDetailed(calculateDurationInSeconds(result))}</td>
                           <td className="px-4 py-4 font-extrabold text-stone-950">{t.symbol}</td>
+                          <td className="px-4 py-4">
+                            <select
+                              value={tf}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setTfEdits(prev => ({ ...prev, [key]: value }));
+                              }}
+                              className="bg-white border border-stone-200 hover:border-orange-400 focus:border-orange-400 rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none cursor-pointer"
+                            >
+                              {!TIMEFRAMES.includes(tf) && <option value={tf}>{tf === 'none' ? '-' : tf}</option>}
+                              {TIMEFRAMES.map(item => <option key={item} value={item}>{item}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setOnPlanEdits(prev => ({ ...prev, [key]: !onPlan }))}
+                              title={onPlan ? "On Plan. Click to mark off plan." : "Off plan. Click to mark On Plan."}
+                              className="p-1 rounded hover:bg-stone-100 transition"
+                            >
+                              <ClipboardCheck className={`w-4 h-4 ${onPlan ? 'text-orange-400' : 'text-stone-300'}`} />
+                            </button>
+                          </td>
                           <td className="px-4 py-4 text-center">
                             <span className="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase bg-stone-100 text-stone-600 border-stone-200">
                               {t.side}
@@ -435,7 +480,6 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                           </td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.entryPrice?.toFixed(2) || '-'}</td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500">{t.tpPrice?.toFixed(2) || '-'}</td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500">{t.slPrice?.toFixed(2) || '-'}</td>
                           <td className="px-4 py-4 text-right font-bold text-stone-500">
                             {editingStopKey === key ? (
                               <input
@@ -476,7 +520,6 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                             )}
                             {invalidInitialSl && <p className="text-[9px] font-bold text-red-900 mt-1">Wrong side of entry</p>}
                           </td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500">{t.exitPrice?.toFixed(2) || '-'}</td>
                           <td className={`px-4 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
                             {t.profit! < 0 ? '-' : (t.profit! > 0 ? '+' : '')}${Math.abs(t.profit || 0).toFixed(2)}
                             {previousProfit !== undefined && (
