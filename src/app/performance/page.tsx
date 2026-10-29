@@ -262,6 +262,28 @@ export default function PerformancePage() {
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Performance</h2>
         </div>
+        {(() => {
+            const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
+            return (
+              <div className="flex items-center justify-center gap-1 h-9">
+                <div title="PF < 0.5" className="flex items-center justify-center w-10 h-10 cursor-help">
+                  <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-10 h-10 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-10 h-10 cursor-help">
+                  <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-10 h-10 text-stone-700 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-10 h-10 cursor-help">
+                  <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-10 h-10 text-stone-500 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-10 h-10 cursor-help">
+                  <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-10 h-10 text-orange-300 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+                <div title="PF >= 2.0" className="flex items-center justify-center w-10 h-10 cursor-help">
+                  <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-10 h-10 text-orange-400 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                </div>
+              </div>
+            );
+        })()}
       </div>
 
       <div className="glass-card p-6 h-[350px] flex flex-col w-full">
@@ -335,29 +357,7 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-3 mt-2 mb-2">
-        {(() => {
-            const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
-            return (
-              <div className="flex items-center justify-center gap-1 md:ml-2">
-                <div title="PF < 0.5" className="flex items-center justify-center w-8 h-8 cursor-help">
-                  <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-8 h-8 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-8 h-8 cursor-help">
-                  <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-8 h-8 text-stone-700 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-8 h-8 cursor-help">
-                  <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-8 h-8 text-stone-500 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-8 h-8 cursor-help">
-                  <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-8 h-8 text-orange-300 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF >= 2.0" className="flex items-center justify-center w-8 h-8 cursor-help">
-                  <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-8 h-8 text-orange-400 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-              </div>
-            );
-        })()}
+      <div className="flex flex-col md:flex-row md:justify-end items-center gap-3 mt-2 mb-2">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year:</span>

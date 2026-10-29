@@ -96,7 +96,7 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
   }
 };
 
-// While the equity is below its highest point, a faint dashed line marks that peak and how far away it is.
+// While the equity is below its highest point, a faint dashed line marks that peak.
 const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: number }> = {
   id: 'peakEquityLine',
   afterDatasetsDraw: (chart, _args, options) => {
@@ -118,12 +118,12 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: numbe
 
     ctx.setLineDash([]);
     ctx.fillStyle = '#a8a29e';
-    ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+    ctx.font = '10px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
     const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
     ctx.fillText(
-      isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)} · $${formatNumber(subMoney(peak, current))} to go`,
+      isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)}`,
       left + 4,
       y - 4,
     );
@@ -376,8 +376,31 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <BalanceCheckModal isOpen={isBalanceCheckOpen} onClose={() => setIsBalanceCheckOpen(false)} />
-      <section>
+      {/* Title and cards keep the same 24px gap as the other pages' headers. */}
+      <section className="space-y-6">
+        <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Dashboard</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
+            <p className="text-3xl font-extrabold stat-value text-stone-950">
+              {formatNumber(data.accountGrowth)}%
+            </p>
+          </div>
+          <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
+            <span className="text-3xl font-extrabold stat-value text-white">
+              {formatNumber(data.winRate * 100)}%
+            </span>
+          </div>
+          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
+            <p className={`text-3xl font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
+              {isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`}
+            </p>
+            {bahtRate && !isPrivacyMode && (
+              <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
+            )}
+          </div>
           <div className="relative">
           <div className="glass-card p-6 h-full flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
@@ -428,27 +451,6 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          </div>
-          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
-            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
-            <p className={`text-3xl font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
-              {isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`}
-            </p>
-            {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
-            )}
-          </div>
-          <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
-            <span className="text-3xl font-extrabold stat-value text-white">
-              {formatNumber(data.winRate * 100)}%
-            </span>
-          </div>
-          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
-            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
-            <p className="text-3xl font-extrabold stat-value text-stone-950">
-              {formatNumber(data.accountGrowth)}%
-            </p>
           </div>
         </div>
       </section>
