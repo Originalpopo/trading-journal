@@ -7,8 +7,7 @@ import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog
 import { buildRiskContext } from "@/lib/risk";
 import { sumMoney } from "@/lib/money";
 import { planImport, reviewImportWarnings, type ImportAction, type ImportPlanRow } from "@/lib/importPlan";
-import { X, CheckCircle2, AlertCircle, AlertTriangle, Pencil, ClipboardCheck } from "lucide-react";
-import ExitConfidenceBadge from "./ExitConfidenceBadge";
+import { X, AlertCircle, AlertTriangle, Pencil, ClipboardCheck, Info, UserRound, ScrollText, Calculator, type LucideIcon } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useDefaultRisk } from "@/lib/defaultRisk";
 import { isOnPlan } from "@/lib/stats";
@@ -24,28 +23,41 @@ interface BulkImportModalProps {
 const formatSigned = (amount: number) => `${amount < 0 ? '-' : '+'}$${Math.abs(amount).toFixed(2)}`;
 
 // What each kind of leftover order means for the journal's money, worst first.
-const WARNING_TEXT: Record<ImportWarningKind, { title: string; advice: string; isMoneyMissing: boolean }> = {
-  missingEntry: {
-    title: 'closed, but the opening order is not in what you pasted',
-    advice: 'Not imported. Copy the history from further back so the opening order is included, or the balance will be off by this amount.',
-    isMoneyMissing: true,
-  },
-  noPositionId: {
-    title: 'has P&L but no position ID',
-    advice: 'Not imported. Add it by hand or the balance will be off by this amount.',
-    isMoneyMissing: true,
-  },
-  splitClose: {
-    title: 'was closed in more than one part',
-    advice: 'Imported as one trade with the P&L of all parts added up. Check the amount against the broker.',
-    isMoneyMissing: false,
-  },
-  open: {
-    title: 'has no closing order yet',
-    advice: 'Not imported: still open, or the history ends before it closed. Import again after it closes.',
-    isMoneyMissing: false,
-  },
+const WARNING_TEXT: Record<ImportWarningKind, { label: string; advice: string; isMoneyMissing: boolean }> = {
+  missingEntry: { label: 'Opening order missing', advice: 'Not imported: copy the history from further back.', isMoneyMissing: true },
+  noPositionId: { label: 'No position ID', advice: 'Not imported: add it by hand.', isMoneyMissing: true },
+  splitClose: { label: 'Closed in parts', advice: 'Imported as one trade; check the total against the broker.', isMoneyMissing: false },
+  open: { label: 'Still open', advice: 'Not imported: import again after it closes.', isMoneyMissing: false },
 };
+
+// Where a time or stop came from, or that it needs a look, shown as an icon and explained in the
+// legend by the close button.
+type SourceKind = 'yours' | 'log' | 'risk' | 'check' | 'est';
+const Approx = ({ className }: { className?: string }) => (
+  <span className={`${className} inline-flex items-center justify-center text-[12px] font-bold leading-none`}>≈</span>
+);
+const SOURCE_MARKS: Record<SourceKind, { Icon: LucideIcon | typeof Approx; label: string; hint: string; color: string }> = {
+  yours: { Icon: UserRound, label: 'Yours', hint: 'Set by you', color: 'text-orange-400' },
+  log: { Icon: ScrollText, label: 'Log', hint: 'From the Notifications log', color: 'text-orange-400' },
+  risk: { Icon: Calculator, label: 'From risk', hint: 'Worked out from the risk you typed', color: 'text-orange-400' },
+  check: { Icon: AlertTriangle, label: 'Check exit', hint: 'Hit SL with no TP: the broker data has no reliable exit time. Click the time to set it.', color: 'text-red-900' },
+  est: { Icon: Approx, label: 'Est. exit', hint: 'Exit time estimated from a TP/SL placed after entry', color: 'text-stone-400' },
+};
+
+function SourceMark({ kind, kept }: { kind: SourceKind; kept?: boolean }) {
+  const { Icon, hint, color } = SOURCE_MARKS[kind];
+  return (
+    <span title={kept ? `${hint}, kept from the saved trade` : hint} className="inline-flex">
+      <Icon className={`w-3 h-3 ${color}`} />
+    </span>
+  );
+}
+
+// One line per notice: red only when money in the journal is or may be wrong.
+interface Notice { serious: boolean; label: string; text: string; items?: string[] }
+
+const countOf = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
 const TIMEFRAMES = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
 
 const WARNING_ORDER: ImportWarningKind[] = ['missingEntry', 'noPositionId', 'splitClose', 'open'];
@@ -107,6 +119,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   const [initialStopEdits, setInitialStopEdits] = useState<Record<string, string>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingStopKey, setEditingStopKey] = useState<string | null>(null);
+  // A remembered 1R, for when the first stop's price is not known: the stop is worked out from it.
+  const [riskEdits, setRiskEdits] = useState<Record<string, string>>({});
+  const [editingRiskKey, setEditingRiskKey] = useState<string | null>(null);
   // TF and On Plan typed here; the broker data never carries them.
   const [tfEdits, setTfEdits] = useState<Record<string, string>>({});
   const [onPlanEdits, setOnPlanEdits] = useState<Record<string, boolean>>({});
@@ -120,8 +135,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   const defaultRisk = useDefaultRisk();
   const riskContext = useMemo(() => buildRiskContext([...trades, ...parsedTrades], defaultRisk), [trades, parsedTrades, defaultRisk]);
   const plan = useMemo(
-    () => planImport(parsedTrades, trades, { exitTimes: exitEdits, initialStops: initialStopEdits }, riskContext),
-    [parsedTrades, trades, exitEdits, initialStopEdits, riskContext],
+    () => planImport(parsedTrades, trades, { exitTimes: exitEdits, initialStops: initialStopEdits, risks: riskEdits }, riskContext),
+    [parsedTrades, trades, exitEdits, initialStopEdits, riskEdits, riskContext],
   );
   const tfOf = (r: ImportPlanRow) => tfEdits[r.key] ?? (r.existing ? r.existing.tf || 'none' : defaultTf);
   const onPlanOf = (r: ImportPlanRow) => onPlanEdits[r.key] ?? (r.existing ? isOnPlan(r.existing) : true);
@@ -139,18 +154,71 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   const actionOf = (r: ImportPlanRow): ImportAction => (r.action === 'same' && tagUpdatesOf(r) ? 'update' : r.action);
   const newCount = plan.filter(r => r.action === 'new').length;
   const updateCount = plan.filter(r => actionOf(r) === 'update').length;
-  const uncertainCount = plan.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
+  // Trades imported before were dealt with then, so notices about them would only repeat.
+  const changing = plan.filter(r => actionOf(r) !== 'same');
+  const uncertainCount = changing.filter(r => r.result.exitTimeConfidence === 'uncertain').length;
   // A stop moved to break-even and then hit is about 0R whatever 1R was; only a trade that went on
   // to make money needs its first stop.
-  const unknownStopCount = plan.filter(r => r.result.riskIsEstimate && r.result.resultType !== 'BE').length;
+  const unknownStopCount = changing.filter(r => r.result.riskIsEstimate && r.result.resultType !== 'BE').length;
   const loggedCount = plan.filter(r => r.parsed.timesFromLog && !r.keptLogTimes).length;
   // Only new trades: older ones in the same paste were dealt with when they were imported.
   const noLogCount = plan.filter(r => r.action === 'new' && !r.result.timesFromLog).length;
   const reviewed = useMemo(() => reviewImportWarnings(importWarnings, trades), [importWarnings, trades]);
-  const changedProfitCount =plan.filter(r => r.previousProfit !== undefined).length;
-  const commissionRows = plan.filter(r => r.result.commission);
+  const changedProfitCount = plan.filter(r => r.previousProfit !== undefined).length;
+  const commissionRows = changing.filter(r => r.result.commission);
   const totalCommission = sumMoney(commissionRows.map(r => r.result.commission));
-  const hasInvalidEdit = plan.some(r => r.invalidExit || r.invalidInitialSl);
+  const hasInvalidEdit = plan.some(r => r.invalidExit || r.invalidInitialSl || r.invalidRisk);
+  const usedMarks = (Object.keys(SOURCE_MARKS) as SourceKind[]).filter(kind => plan.some(r => {
+    if (kind === 'log') return r.result.timesFromLog || r.result.initialSlSource === 'log';
+    if (kind === 'risk') return r.stopFromRisk;
+    if (kind === 'check') return !r.keptManualTimes && r.result.exitTimeConfidence === 'uncertain';
+    if (kind === 'est') return !r.keptManualTimes && r.result.exitTimeConfidence === 'estimated';
+    return r.keptManualTimes || r.result.exitTimeConfidence === 'manual' || (r.result.initialSlSource === 'manual' && !r.stopFromRisk);
+  }));
+
+  const notices: Notice[] = [];
+  if (reviewed.savedDiffers.length > 0) {
+    notices.push({
+      serious: true, label: 'P&L differs from saved', text: `${countOf(reviewed.savedDiffers.length, 'position')}. Not changed: paste the whole position to fix it.`,
+      items: reviewed.savedDiffers.map(w => `${w.symbol} · ${w.time} · saved ${formatSigned(w.savedProfit)}, broker ${formatSigned(w.pnl || 0)}`),
+    });
+  }
+  for (const kind of WARNING_ORDER) {
+    const items = reviewed.warnings.filter(w => w.kind === kind);
+    if (items.length === 0) continue;
+    const { label, advice, isMoneyMissing } = WARNING_TEXT[kind];
+    const amounts = items.filter(w => w.pnl !== undefined);
+    notices.push({
+      serious: isMoneyMissing, label,
+      text: `${countOf(items.length, 'position')}${amounts.length > 0 ? ` (${formatSigned(sumMoney(amounts.map(w => w.pnl)))})` : ''}. ${advice}`,
+      items: items.map(w => `${w.symbol} · ${w.time}${w.pnl !== undefined ? ` · ${formatSigned(w.pnl)}` : ''}`),
+    });
+  }
+  if (changedProfitCount > 0) {
+    notices.push({ serious: true, label: 'Broker P&L differs', text: `${countOf(changedProfitCount, 'saved trade')}. Import replaces it (old amount struck through).` });
+  }
+  if (reviewed.alreadySaved.length > 0) {
+    notices.push({ serious: false, label: 'Already saved', text: `${countOf(reviewed.alreadySaved.length, 'partly copied position')}. Nothing to do.` });
+  }
+  if (uncertainCount > 0) {
+    notices.push({ serious: false, label: 'Exit time unknown', text: `${countOf(uncertainCount, 'trade')} hit SL with no TP. Click the time to set it.` });
+  }
+  if (unknownStopCount > 0) {
+    notices.push({ serious: false, label: 'Default risk', text: `${countOf(unknownStopCount, 'trade')} with a moved stop ${unknownStopCount === 1 ? 'uses' : 'use'} ${defaultRisk.toFixed(2)}. Enter the 1st SL or Risk ($).` });
+  }
+  if (noLogCount > 0) {
+    notices.push({ serious: false, label: 'No Notifications log', text: `${countOf(noLogCount, 'new trade')}: entry time is when the order was placed.` });
+  }
+  if (logEventCount > 0 && !logOnly) {
+    notices.push({ serious: false, label: 'Notifications log', text: `fill times and 1st SL for ${loggedCount} of ${countOf(parsedTrades.length, 'trade')}.` });
+  }
+  if (logOnly) {
+    notices.push({ serious: false, label: 'Log only', text: 'matched to saved trades by position ID. P&L stays as saved.' });
+  }
+  if (commissionRows.length > 0) {
+    notices.push({ serious: false, label: 'Commission', text: `${Math.abs(totalCommission).toFixed(2)} on ${countOf(commissionRows.length, 'trade')}. Saved, not subtracted from P&L.` });
+  }
+  notices.sort((a, b) => Number(b.serious) - Number(a.serious));
 
   useEscapeToClose(isOpen, onClose);
 
@@ -250,9 +318,23 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
             Import from TradingView
           </h3>
 
-          <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition ml-auto">
-            <X className="w-6 h-6" />
-          </button>
+          <div className="ml-auto flex items-center gap-4">
+            {usedMarks.length > 0 && (
+              <div className="flex items-center gap-3 text-[10px] font-semibold text-stone-400">
+                {usedMarks.map(kind => {
+                  const { Icon, label, hint, color } = SOURCE_MARKS[kind];
+                  return (
+                    <span key={kind} title={hint} className="inline-flex items-center gap-1">
+                      <Icon className={`w-3 h-3 ${color}`} />{label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6 overflow-y-auto pr-2 flex-1">
@@ -263,128 +345,58 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
             </div>
           )}
 
-          {importWarnings.length > 0 && (
-            <div className="space-y-2">
-              {reviewed.savedDiffers.length > 0 && (
-                <div className="text-xs p-3 rounded-lg border bg-red-50 text-red-900 border-red-200">
-                  <p className="font-bold flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    {`${reviewed.savedDiffers.length} ${reviewed.savedDiffers.length > 1 ? 'positions are' : 'position is'} already in the journal with a different P&L than the broker's`}
+          {notices.length > 0 && (
+            <div className="space-y-1.5">
+              {notices.map(n => n.serious ? (
+                <div key={n.label} className="text-[11px] px-3 py-2 rounded-lg border bg-red-50 text-red-900 border-red-200">
+                  <p className="flex items-start gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                    <span><span className="font-bold">{n.label}:</span> <span className="font-medium">{n.text}</span></span>
                   </p>
-                  <p className="font-medium mt-1 ml-6">Not changed, because the opening order is not in what you pasted. Copy the whole position to correct it.</p>
-                  <ul className="mt-1 ml-6 font-semibold opacity-80">
-                    {reviewed.savedDiffers.map(w => (
-                      <li key={w.positionId}>{w.symbol} · {w.time} · saved {formatSigned(w.savedProfit)}, broker {formatSigned(w.pnl || 0)}</li>
-                    ))}
-                  </ul>
+                  {n.items && <p className="ml-5 mt-0.5 font-semibold opacity-80">{n.items.join('; ')}</p>}
                 </div>
-              )}
-              {reviewed.alreadySaved.length > 0 && (
-                <p className="text-[11px] font-semibold text-stone-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
-                  {`${reviewed.alreadySaved.length} partly copied ${reviewed.alreadySaved.length > 1 ? 'positions are' : 'position is'} already in the journal with the same P&L. Nothing to do.`}
-                </p>
-              )}
-              {WARNING_ORDER.map(kind => {
-                const items = reviewed.warnings.filter(w => w.kind === kind);
-                if (items.length === 0) return null;
-                const { title, advice, isMoneyMissing } = WARNING_TEXT[kind];
-                const amounts = items.filter(w => w.pnl !== undefined);
-                return (
-                  <div key={kind} className={`text-xs p-3 rounded-lg border ${isMoneyMissing ? 'bg-red-50 text-red-900 border-red-200' : 'bg-stone-50 text-stone-600 border-stone-200'}`}>
-                    <p className="font-bold flex items-center gap-2">
-                      <AlertTriangle className={`w-4 h-4 shrink-0 ${isMoneyMissing ? 'text-red-900' : 'text-orange-400'}`} />
-                      {`${items.length} ${items.length > 1 ? 'positions' : 'position'} ${title}`}
-                      {amounts.length > 0 && ` (${formatSigned(sumMoney(amounts.map(w => w.pnl)))} in total)`}
-                    </p>
-                    <p className="font-medium mt-1 ml-6">{advice}</p>
-                    <ul className="mt-1 ml-6 font-semibold opacity-80">
-                      {items.map((w, i) => (
-                        <li key={`${w.positionId || 'order'}-${i}`}>
-                          {w.symbol} · {w.time}{w.pnl !== undefined && ` · ${formatSigned(w.pnl)}`}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
+              ) : (
+                <div key={n.label} className="text-[11px] text-stone-500 px-1">
+                  <p className="flex items-start gap-1.5">
+                    <Info className="w-3.5 h-3.5 shrink-0 mt-px text-stone-400" />
+                    <span><span className="font-bold">{n.label}:</span> <span className="font-medium">{n.text}</span></span>
+                  </p>
+                  {n.items && <p className="ml-5 mt-0.5 text-stone-400">{n.items.join('; ')}</p>}
+                </div>
+              ))}
             </div>
           )}
 
           {parsedTrades.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <h4 className="text-sm font-bold text-stone-950 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-orange-400" />
-                  {logOnly
-                    ? `Found ${parsedTrades.length} saved ${parsedTrades.length > 1 ? 'trades' : 'trade'} in the Notifications log: ${updateCount} to update`
-                    : `Found ${parsedTrades.length} trades: ${newCount} new, ${updateCount} to update`}
-                </h4>
-                {uncertainCount > 0 && (
-                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {`${uncertainCount} ${uncertainCount > 1 ? 'trades' : 'trade'} hit SL without a TP, so the exit time can't be read from the broker data. Click the exit time to set it.`}
-                  </p>
-                )}
-                {changedProfitCount > 0 && (
-                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {`${changedProfitCount} saved ${changedProfitCount > 1 ? 'trades have' : 'trade has'} a P&L that differs from the broker's. Importing replaces it with the broker's amount (old amount shown struck through).`}
-                  </p>
-                )}
-                {commissionRows.length > 0 && (
-                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {`The broker reports $${Math.abs(totalCommission).toFixed(2)} commission on ${commissionRows.length} ${commissionRows.length > 1 ? 'trades' : 'trade'}. It is saved with each trade but not subtracted from P&L, because the export does not say whether P&L already includes it. Check the balance against the broker after importing.`}
-                  </p>
-                )}
-                {logOnly && (
-                  <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 w-full">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
-                    Log only: matched to trades already in the journal by position ID. P&L stays as saved; trades not yet in the journal need the History tab.
-                  </p>
-                )}
-                {logEventCount > 0 && !logOnly && (
-                  <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 w-full">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
-                    {`Notifications log: ${loggedCount} of ${parsedTrades.length} ${parsedTrades.length > 1 ? 'trades' : 'trade'} got the real fill times and first stop from it.`}
-                  </p>
-                )}
-                {noLogCount > 0 && (
-                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {`${noLogCount} new ${noLogCount > 1 ? 'trades are' : 'trade is'} not in a Notifications log, so the entry time shown is when the order was placed. Check the exit time and the 1st SL here.`}
-                  </p>
-                )}
-                {unknownStopCount > 0 && (
-                  <p className="text-[11px] font-semibold text-red-900 flex items-center gap-1 w-full">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {`${unknownStopCount} winning ${unknownStopCount > 1 ? 'trades' : 'trade'} had the stop moved and ${unknownStopCount > 1 ? 'are' : 'is'} not in the Notifications log, so the first stop is unknown and R uses the default 1R of $${defaultRisk.toFixed(2)}. Click "1st SL" to enter where it was.`}
-                  </p>
-                )}
-              </div>
-              <div className="overflow-x-auto border border-stone-100 rounded-xl">
+              <h4 className="text-sm font-bold text-stone-950 mb-3">
+                {logOnly
+                  ? `Found ${countOf(parsedTrades.length, 'saved trade')} in the Notifications log: ${updateCount} to update`
+                  : `Found ${parsedTrades.length} trades: ${newCount} new, ${updateCount} to update`}
+              </h4>
+              {/* No scroll box of its own: the dialog body scrolls, so the header can stick to its top. */}
+              <div className="w-max min-w-full border border-stone-100 rounded-xl">
                 <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-stone-50 text-stone-400 border-b border-stone-100">
+                  <thead className="sticky top-0 z-10 bg-stone-50 text-stone-400 shadow-[inset_0_-1px_0_var(--color-stone-100)] [&_th:first-child]:rounded-tl-xl [&_th:last-child]:rounded-tr-xl">
                     <tr>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest"></th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Entry</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Exit</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest">TF</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">Entry Price</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">TP</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right" title="Where the stop was first placed; 1R is measured to it">1st SL</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">P&L</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">1R</th>
-                      <th className="px-4 py-4 font-bold uppercase text-[10px] tracking-widest text-right">R</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center"></th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Entry</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Exit</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Symbol</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Entry Price</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">TP</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center" title="Where the stop was first placed; 1R is measured to it">1st SL</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center" title="What you lose in $ if the 1st SL is hit">Risk ($)</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">P&L</th>
+                      <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">R</th>
                     </tr>
                   </thead>
                   <tbody className="text-[11px] divide-y divide-stone-50">
                     {plan.map((row) => {
-                      const { key, parsed: t, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl } = row;
+                      const { key, parsed: t, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl, stopFromRisk, invalidRisk } = row;
                       const action = actionOf(row);
                       const entry = splitTime(result.entryTime);
                       const exitTime = result.exitTime || result.time;
@@ -395,17 +407,17 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                       const onPlan = onPlanOf(row);
                       return (
                         <tr key={key} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
-                          <td className="px-4 py-4">
+                          <td className="px-2 py-4">
                             <span className={`px-2 py-0.5 border rounded-md text-[9px] font-black uppercase ${actionLabel[action].className}`}>{actionLabel[action].text}</span>
                           </td>
-                          <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">
+                          <td className="px-2 py-4 text-stone-500 font-semibold leading-tight">
                             <span className="inline-flex items-center gap-1.5">
                               {entry.clock}
-                              {result.timesFromLog && <span className="text-[9px] font-bold text-orange-400" title="When the entry really filled, from the Notifications log">{keptLogTimes ? 'log, kept' : 'log'}</span>}
+                              {result.timesFromLog && <SourceMark kind="log" kept={keptLogTimes} />}
                             </span>
                             <br/><span className="text-[9px] opacity-70">{entry.date}</span>
                           </td>
-                          <td className="px-4 py-4 text-stone-500 font-semibold leading-tight">
+                          <td className="px-2 py-4 text-stone-500 font-semibold leading-tight">
                             {isEditing ? (
                               <input
                                 type="datetime-local"
@@ -435,8 +447,10 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                 <span className="inline-flex items-center gap-1.5">
                                   {exit.clock}
                                   {keptManualTimes || result.exitTimeConfidence === 'manual'
-                                    ? <span className="text-[9px] font-bold text-orange-400">{keptManualTimes ? 'yours, kept' : 'edited'}</span>
-                                    : <ExitConfidenceBadge confidence={result.exitTimeConfidence} />}
+                                    ? <SourceMark kind="yours" kept={keptManualTimes} />
+                                    : result.exitTimeConfidence === 'uncertain'
+                                      ? <SourceMark kind="check" />
+                                      : result.exitTimeConfidence === 'estimated' && <SourceMark kind="est" />}
                                   <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
                                 </span>
                                 <br/><span className="text-[9px] opacity-70">{exit.date}</span>
@@ -449,8 +463,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                               </p>
                             )}
                           </td>
-                          <td className="px-4 py-4 font-extrabold text-stone-950">{t.symbol}</td>
-                          <td className="px-4 py-4">
+                          <td className="px-2 py-4 font-extrabold text-stone-950">{t.symbol}</td>
+                          <td className="px-2 py-4">
                             <select
                               value={tf}
                               onChange={(e) => {
@@ -463,7 +477,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                               {TIMEFRAMES.map(item => <option key={item} value={item}>{item}</option>)}
                             </select>
                           </td>
-                          <td className="px-4 py-4 text-center">
+                          <td className="px-2 py-4 text-center">
                             <button
                               type="button"
                               onClick={() => setOnPlanEdits(prev => ({ ...prev, [key]: !onPlan }))}
@@ -473,14 +487,14 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                               <ClipboardCheck className={`w-4 h-4 ${onPlan ? 'text-orange-400' : 'text-stone-300'}`} />
                             </button>
                           </td>
-                          <td className="px-4 py-4 text-center">
+                          <td className="px-2 py-4 text-center">
                             <span className="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase bg-stone-100 text-stone-600 border-stone-200">
                               {t.side}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500">{t.entryPrice?.toFixed(2) || '-'}</td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500">{t.tpPrice?.toFixed(2) || '-'}</td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500">
+                          <td className={`px-2 py-4 font-bold text-stone-500 ${t.entryPrice ? "text-right" : "text-center"}`}>{t.entryPrice?.toFixed(2) || '-'}</td>
+                          <td className={`px-2 py-4 font-bold text-stone-500 ${t.tpPrice ? "text-right" : "text-center"}`}>{t.tpPrice?.toFixed(2) || '-'}</td>
+                          <td className="px-2 py-4 text-right font-bold text-stone-500">
                             {editingStopKey === key ? (
                               <input
                                 type="number"
@@ -491,6 +505,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   setInitialStopEdits(prev => ({ ...prev, [key]: value }));
+                                  setRiskEdits(prev => ({ ...prev, [key]: '' })); // one or the other sets the stop
                                 }}
                                 onBlur={() => setEditingStopKey(null)}
                                 onKeyDown={(e) => {
@@ -511,8 +526,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                 {result.initialSlPrice
                                   ? <>
                                       {result.initialSlPrice.toFixed(2)}
-                                      {result.initialSlSource === 'manual' && <span className="text-[9px] font-bold text-orange-400">yours</span>}
-                                      {result.initialSlSource === 'log' && <span className="text-[9px] font-bold text-orange-400">log</span>}
+                                      {result.initialSlSource === 'manual' && <SourceMark kind={stopFromRisk ? 'risk' : 'yours'} />}
+                                      {result.initialSlSource === 'log' && <SourceMark kind="log" />}
                                     </>
                                   : <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-400"><AlertTriangle className="w-3 h-3" /> moved</span>}
                                 <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
@@ -520,21 +535,52 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                             )}
                             {invalidInitialSl && <p className="text-[9px] font-bold text-red-900 mt-1">Wrong side of entry</p>}
                           </td>
-                          <td className={`px-4 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
+                          <td className="px-2 py-4 text-right font-bold text-stone-500 leading-tight">
+                            {editingRiskKey === key ? (
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                autoFocus
+                                placeholder="$"
+                                value={riskEdits[key] ?? ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setRiskEdits(prev => ({ ...prev, [key]: value }));
+                                  setInitialStopEdits(prev => ({ ...prev, [key]: '' })); // one or the other sets the stop
+                                }}
+                                onBlur={() => setEditingRiskKey(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Escape') {
+                                    e.preventDefault(); // Esc closes the risk editor, not the whole import
+                                    setEditingRiskKey(null);
+                                  }
+                                }}
+                                className={`w-20 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none text-right ${invalidRisk ? 'border-red-900' : 'border-orange-400'}`}
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setEditingRiskKey(key)}
+                                title={result.riskIsEstimate ? "Default 1R: the first stop is unknown. Click to enter the risk you used; the 1st SL is worked out from it." : "Distance to the first stop. Click to enter the risk you used instead."}
+                                className="group inline-flex items-center gap-1.5 hover:text-orange-400 transition"
+                              >
+                                {result.riskIsEstimate ? '≈' : ''}${(result.risk || 0).toFixed(2)}
+                                <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
+                              </button>
+                            )}
+                            {invalidRisk && <p className="text-[9px] font-bold text-red-900 mt-1">Can&apos;t place the stop</p>}
+                            {previousRisk !== undefined && (
+                              <p className="text-[9px] text-stone-300 line-through" title="1R currently saved">${Number(previousRisk).toFixed(2)}</p>
+                            )}
+                          </td>
+                          <td className={`px-2 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
                             {t.profit! < 0 ? '-' : (t.profit! > 0 ? '+' : '')}${Math.abs(t.profit || 0).toFixed(2)}
                             {previousProfit !== undefined && (
                               <p className="text-[9px] text-stone-300 line-through" title="P&L currently saved">{formatSigned(previousProfit)}</p>
                             )}
                           </td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500 leading-tight">
-                            <span title={result.riskIsEstimate ? "Default 1R: the first stop is unknown" : "Distance to the first stop"}>
-                              {result.riskIsEstimate ? '≈' : ''}${(result.risk || 0).toFixed(2)}
-                            </span>
-                            {previousRisk !== undefined && (
-                              <p className="text-[9px] text-stone-300 line-through" title="1R currently saved">${Number(previousRisk).toFixed(2)}</p>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-right font-bold text-stone-500">
+                          <td className="px-2 py-4 text-right font-bold text-stone-500">
                             {result.riskIsEstimate ? '≈' : ''}{(result.rr || 0).toFixed(2)}R
                           </td>
                         </tr>

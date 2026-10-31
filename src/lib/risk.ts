@@ -96,6 +96,19 @@ function resultTypeOf(t: RiskTrade, profit: number, risk: number, stop: ReturnTy
   return deriveResultType(profit, risk);
 }
 
+// The first stop that makes 1R come out at `risk` dollars: on the tick prices are quoted in when one
+// gives exactly that amount, else at the exact price.
+export function stopForRisk(entryRef: number, direction: number, risk: number, pointValue: number): number {
+  const target = round2(risk);
+  const exact = entryRef - direction * target / pointValue;
+  for (let decimals = 2; decimals <= 5; decimals++) {
+    const factor = 10 ** decimals;
+    const stop = Math.round(exact * factor) / factor;
+    if (round2(Math.abs(entryRef - stop) * pointValue) === target) return stop;
+  }
+  return exact;
+}
+
 export function deriveTradeRisk(t: RiskTrade, ctx: RiskContext): TradeRisk {
   const profit = t.profit || 0;
   const entryRef = t.entryOrderPrice || t.entryPrice;

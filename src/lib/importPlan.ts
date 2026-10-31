@@ -1,5 +1,5 @@
 import type { Trade } from '@/store/useJournalStore';
-import { deriveTradeRisk, type RiskContext } from './risk.ts';
+import { deriveTradeRisk, pointValueFor, stopForRisk, type RiskContext } from './risk.ts';
 import { toCents } from './money.ts';
 import type { ImportWarning, LinkedTrade } from './tradingViewParser.ts';
 
@@ -19,11 +19,14 @@ export interface ImportPlanRow {
   previousProfit?: number; // saved P&L that disagrees with the broker's; importing replaces it
   invalidExit: boolean; // edited exit time is before the entry
   invalidInitialSl: boolean; // edited initial stop is not on the losing side of the entry
+  stopFromRisk: boolean; // the initial stop was worked out from a 1R typed in the preview
+  invalidRisk: boolean; // typed 1R gives no stop: not above $0, or the trade's $ per point is unknown
 }
 
 export interface ImportEdits {
   exitTimes: Record<string, string>; // row key -> datetime-local value
   initialStops: Record<string, string>; // row key -> price typed by the user
+  risks?: Record<string, string>; // row key -> 1R in $ typed by the user; ignored when a price is typed
 }
 
 const TIME_FIELDS = ['time', 'entryTime', 'exitTime', 'duration', 'exitTimeConfidence', 'timesFromLog'] as const;
@@ -80,21 +83,29 @@ export function planImport(parsedTrades: LinkedTrade[], trades: Trade[], edits: 
     if (exitEdit) parsed = applyExitEdit(parsed, exitEdit);
     const invalidExit = !!exitEdit && toMs(parsed.exitTime!) < toMs(parsed.entryTime || parsed.exitTime!);
 
-    // Initial stop: typed in the preview, else the log's, else one already known from the user or
-    // an earlier log, else whatever the order history itself can tell.
+    // Initial stop: typed in the preview (as a price, or as the 1R it gave), else the log's, else one
+    // already known from the user or an earlier log, else whatever the order history itself can tell.
     const typedStop = parseFloat(edits.initialStops[key] || '');
     const dir = parsed.side === 'SELL' ? -1 : 1;
     const entryRef = parsed.entryOrderPrice || parsed.entryPrice;
     const invalidInitialSl = Number.isFinite(typedStop) && !!entryRef && dir * (entryRef - typedStop) <= 0;
+    // A remembered 1R stands in for a first stop the history no longer shows: the stop is put that
+    // far from the entry, on the losing side, so 1R comes out as typed.
+    const typedRisk = Number.isFinite(typedStop) ? NaN : parseFloat(edits.risks?.[key] || '');
+    const pointValue = pointValueFor({ ...existing, ...parsed }, riskContext);
+    const stopFromRisk = typedRisk > 0 && entryRef && pointValue ? stopForRisk(entryRef, dir, typedRisk, pointValue) : 0;
+    const invalidRisk = Number.isFinite(typedRisk) && !(stopFromRisk > 0);
     if (Number.isFinite(typedStop) && !invalidInitialSl) {
       parsed = { ...parsed, initialSlPrice: typedStop, initialSlSource: 'manual' };
+    } else if (stopFromRisk > 0) {
+      parsed = { ...parsed, initialSlPrice: stopFromRisk, initialSlSource: 'manual' };
     } else if (parsed.initialSlSource !== 'log' && existing?.initialSlPrice && (existing.initialSlSource === 'manual' || existing.initialSlSource === 'log')) {
       parsed = { ...parsed, initialSlPrice: existing.initialSlPrice, initialSlSource: existing.initialSlSource };
     }
 
     if (!existing) {
       const result = { ...parsed, ...deriveTradeRisk(parsed, riskContext) };
-      return { key, parsed: result, action: 'new', result, keptManualTimes: false, keptLogTimes: false, invalidExit, invalidInitialSl };
+      return { key, parsed: result, action: 'new', result, keptManualTimes: false, keptLogTimes: false, invalidExit, invalidInitialSl, stopFromRisk: stopFromRisk > 0, invalidRisk };
     }
 
     const updates: Partial<Trade> = {};
@@ -137,6 +148,7 @@ export function planImport(parsedTrades: LinkedTrade[], trades: Trade[], edits: 
 
     return {
       key, parsed, existing, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl,
+      stopFromRisk: stopFromRisk > 0, invalidRisk,
       ...(Object.keys(updates).length > 0 ? { action: 'update' as const, updates } : { action: 'same' as const }),
     };
   });

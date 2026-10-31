@@ -121,6 +121,40 @@ test('an initial stop on the wrong side of the entry is flagged and ignored', ()
   assert.equal(row.result.riskIsEstimate, true);
 });
 
+test('a 1R typed in the preview places the initial stop that far from the entry', () => {
+  const moved = parsed({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, slPrice: 4179.15 });
+  const [row] = planImport([moved], [saved({ profit: 19.54 })], { exitTimes: {}, initialStops: {}, risks: { 'XAUUSD:100': '1.52' } }, CTX);
+  assert.equal(row.stopFromRisk, true);
+  assert.equal(row.updates!.initialSlPrice, 4177.62);
+  assert.equal(row.updates!.initialSlSource, 'manual');
+  assert.equal(row.updates!.risk, 1.52);
+  assert.equal(row.updates!.riskIsEstimate, false);
+});
+
+test('a typed 1R comes out exact even when no 0.01 stop gives it', () => {
+  // $3 per point: 1.52 is 0.50666... points, so the stop sits between ticks.
+  const ctx = { defaultRisk: 1.5, fallbackPointValue: 1, contractSizes: { XAUUSD: 300 } };
+  const moved = parsed({ side: 'SELL', size: 0.01, entryPrice: 4180, exitPrice: 4170, profit: 30, slPrice: 4179.99 });
+  const [row] = planImport([moved], [], { exitTimes: {}, initialStops: {}, risks: { 'XAUUSD:100': '1.52' } }, ctx);
+  assert.equal(row.result.risk, 1.52);
+  assert.ok(row.result.initialSlPrice! > 4180);
+  assert.equal(row.result.riskIsEstimate, false);
+});
+
+test('a typed initial stop wins over a typed 1R', () => {
+  const moved = parsed({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, slPrice: 4179.15 });
+  const [row] = planImport([moved], [], { exitTimes: {}, initialStops: { 'XAUUSD:100': '4178.24' }, risks: { 'XAUUSD:100': '1.52' } }, CTX);
+  assert.equal(row.result.risk, 0.9);
+  assert.equal(row.stopFromRisk, false);
+});
+
+test('a typed 1R of zero is flagged and ignored', () => {
+  const moved = parsed({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, slPrice: 4179.15 });
+  const [row] = planImport([moved], [], { exitTimes: {}, initialStops: {}, risks: { 'XAUUSD:100': '0' } }, CTX);
+  assert.equal(row.invalidRisk, true);
+  assert.equal(row.result.riskIsEstimate, true);
+});
+
 test('an initial stop the user entered earlier survives a re-import', () => {
   const moved = parsed({ side: 'BUY', entryPrice: 4179.14, exitPrice: 4198.68, profit: 19.54, slPrice: 4179.15 });
   const existing = saved({ profit: 19.54, risk: 0.9, rr: 19.54 / 0.9, resultType: 'TP', riskIsEstimate: false, initialSlPrice: 4178.24, initialSlSource: 'manual' });
