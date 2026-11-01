@@ -16,7 +16,7 @@ import {
   Plugin
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { formatNumber, tooltipPositionOf } from "@/lib/utils";
+import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import HealthWeather from "@/components/HealthWeather";
 import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
@@ -24,9 +24,23 @@ import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
-const dashboardLastPointsPlugin: Plugin<'line'> = {
+const LAST_POINT_FONT = 'bold 11px "Plus Jakarta Sans", sans-serif';
+const LAST_POINT_GAP = 12; // from the dot's centre to its number
+
+// How wide a last-point number is drawn, so the chart leaves just that much room on its right.
+let measureCtx: CanvasRenderingContext2D | null = null;
+const lastPointLabelWidth = (text: string) => {
+  measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return 60;
+  measureCtx.font = LAST_POINT_FONT;
+  return measureCtx.measureText(text).width;
+};
+
+// A dot on the last point of each line, with its number beside it unless `labels` is off (phones show the numbers above the chart).
+const dashboardLastPointsPlugin: Plugin<'line', { labels?: boolean }> = {
   id: 'dashboardLastPointsPlugin',
-  afterDatasetsDraw: (chart) => {
+  afterDatasetsDraw: (chart, _args, options) => {
+    const showLabels = options.labels !== false;
     if (chart.data.datasets.length < 2) return;
     const ctx = chart.ctx;
     const meta0 = chart.getDatasetMeta(0);
@@ -70,12 +84,14 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.fillStyle = '#fb923c';
       ctx.fill();
 
-      ctx.fillStyle = '#fb923c';
-      ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
-      ctx.fillText(isPrivacyMode ? '***' : formatNumber(val0), pos0.x + 12, pos0.y + yOffset0);
+      if (showLabels) {
+        ctx.fillStyle = '#fb923c';
+        ctx.font = LAST_POINT_FONT;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
+        ctx.fillText(isPrivacyMode ? '***' : formatNumber(val0), pos0.x + LAST_POINT_GAP, pos0.y + yOffset0);
+      }
       ctx.restore();
     }
 
@@ -86,12 +102,14 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
       ctx.fillStyle = '#1c1917';
       ctx.fill();
 
-      ctx.fillStyle = '#1c1917';
-      ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
-      ctx.fillText(isPrivacyMode ? '***' : formatNumber(val1), pos1.x + 12, pos1.y + yOffset1);
+      if (showLabels) {
+        ctx.fillStyle = '#1c1917';
+        ctx.font = LAST_POINT_FONT;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
+        ctx.fillText(isPrivacyMode ? '***' : formatNumber(val1), pos1.x + LAST_POINT_GAP, pos1.y + yOffset1);
+      }
       ctx.restore();
     }
   }
@@ -166,6 +184,15 @@ export default function Dashboard() {
   // Ask again whenever the last check no longer vouches for the balance on screen.
   const needsBrokerCheck = !balanceCheck || !brokerCheck?.matches || hasActivityAfter(balanceCheck, trades, funding);
   const [ddMode, setDdMode] = useState<'r' | 'usd'>('r');
+  // Below md the chart's last numbers move to its title line, so the lines get the full width.
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsPhone(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const [now] = useState(() => Date.now()); // for "days below the peak"
 
   const data = useMemo(() => {
@@ -304,11 +331,25 @@ export default function Dashboard() {
     };
   }, [data]);
 
+  // The top cards' big figures: 30px, or smaller when a long one would not fit its card.
+  const growthText = `${formatNumber(data.accountGrowth)}%`;
+  const winRateText = `${formatNumber(data.winRate * 100)}%`;
+  const netText = isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`;
+  const balanceText = isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`;
+
+  const lastEquity = data.equityData[data.equityData.length - 1] ?? 0;
+  const lastBalance = data.balanceData[data.balanceData.length - 1] ?? 0;
+  const lastLabel = (value: number) => isPrivacyMode ? '***' : formatNumber(value);
+  // Room on the right for the dots, plus their numbers where they are drawn beside them.
+  const chartRightPadding = isPhone
+    ? 8
+    : Math.ceil(LAST_POINT_GAP + Math.max(lastPointLabelWidth(lastLabel(lastEquity)), lastPointLabelWidth(lastLabel(lastBalance))) + 8);
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     layout: {
-      padding: { right: 80, top: 35, bottom: 20 }
+      padding: { right: chartRightPadding, top: 35, bottom: 20 }
     },
     plugins: {
       legend: { display: false },
@@ -316,6 +357,7 @@ export default function Dashboard() {
         mode: 'index' as const,
         intersect: false,
       },
+      dashboardLastPointsPlugin: { labels: !isPhone },
       peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, current: data.currentPnL }
     },
     scales: {
@@ -384,32 +426,32 @@ export default function Dashboard() {
           <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+          <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
-            <p className="text-3xl font-extrabold stat-value text-stone-950">
-              {formatNumber(data.accountGrowth)}%
+            <p style={fitFontSize(growthText, '1.875rem')} className="leading-9 font-extrabold stat-value text-stone-950">
+              {growthText}
             </p>
           </div>
-          <div className="bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+          <div className="@container bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
-            <span className="text-3xl font-extrabold stat-value text-white">
-              {formatNumber(data.winRate * 100)}%
+            <span style={fitFontSize(winRateText, '1.875rem')} className="leading-9 font-extrabold stat-value text-white">
+              {winRateText}
             </span>
           </div>
-          <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
+          <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
-            <p className={`text-3xl font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
-              {isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`}
+            <p style={fitFontSize(netText, '1.875rem')} className={`leading-9 font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
+              {netText}
             </p>
             {bahtRate && !isPrivacyMode && (
               <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
             )}
           </div>
           <div className="relative">
-          <div className="glass-card p-6 h-full flex flex-col justify-center items-center text-center">
+          <div className="@container glass-card p-6 h-full flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
-            <p className="text-3xl font-extrabold stat-value text-stone-950">
-              {isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`}
+            <p style={fitFontSize(balanceText, '1.875rem')} className="leading-9 font-extrabold stat-value text-stone-950">
+              {balanceText}
             </p>
             {bahtRate && !isPrivacyMode && (
               <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
@@ -460,9 +502,16 @@ export default function Dashboard() {
       </section>
 
       <div className="glass-card p-6 h-[350px] flex flex-col">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
-        </h3>
+        {/* Large balances push the phone numbers onto a line of their own rather than squeezing the title. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
+          </h3>
+          <div className="md:hidden flex items-center gap-3 text-[11px] font-bold">
+            <span title="Equity (PnL)" className="flex items-center gap-1 text-orange-400"><span className="w-2 h-2 rounded-full bg-orange-400"></span>{lastLabel(lastEquity)}</span>
+            <span title="Balance" className="flex items-center gap-1 text-stone-900"><span className="w-2 h-2 rounded-full bg-stone-900"></span>{lastLabel(lastBalance)}</span>
+          </div>
+        </div>
         <div className="flex-1 relative w-full h-full">
           <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin]} />
         </div>
