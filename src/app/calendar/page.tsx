@@ -7,7 +7,7 @@ import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
 import { weekKeyOf } from "@/lib/weekNotes";
 import { dayKey } from "@/lib/dayNotes";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, fitFontSize } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
 import { addMoney } from "@/lib/money";
 import { summarizeYear } from "@/lib/calendarYear";
@@ -21,15 +21,16 @@ const CURRENCY_KEY = 'calendarCurrency';
 // Below Tailwind's md breakpoint the day cells are about 46px wide.
 const isPhone = () => window.matchMedia('(max-width: 767px)').matches;
 
-// A day's P&L for a phone cell: no "$", and whole dollars from 1,000 up so it still fits. The day popup has the exact figure.
-// In baht (with `rate`), whole baht and no "฿".
+// A day's P&L for a phone cell: no "$", whole dollars from 1,000 up, and K / M from 100,000 up so it still fits. The day popup has the exact figure.
+// In baht (with `rate`), whole baht and no "฿", shortened the same way.
 const cellMoney = (pnl: number, rate?: number | null) => {
-  if (rate) {
-    const baht = Math.round(toBaht(pnl, rate));
-    return `${baht < 0 ? '-' : ''}${Math.abs(baht).toLocaleString('en-US')}`;
-  }
-  const abs = Math.abs(pnl);
-  return `${pnl < 0 ? '-' : ''}${abs >= 1000 ? Math.round(abs).toLocaleString('en-US') : formatNumber(abs)}`;
+  const value = rate ? Math.round(toBaht(pnl, rate)) : pnl;
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2)}M`;
+  if (abs >= 100_000) return `${sign}${Math.round(abs / 1000)}K`;
+  if (rate || abs >= 1000) return `${sign}${Math.round(abs).toLocaleString('en-US')}`;
+  return `${sign}${formatNumber(abs)}`;
 };
 
 export default function CalendarPage() {
@@ -338,7 +339,7 @@ export default function CalendarPage() {
               return (
                 <div
                   key={cell.id}
-                  className={`${bgColor} group min-h-[68px] md:min-h-[110px] p-1 md:p-3 flex flex-col select-none touch-manipulation`}
+                  className={`${bgColor} @container group min-h-[68px] md:min-h-[110px] p-1 md:p-3 flex flex-col select-none touch-manipulation`}
                   title={note ? "Double-click to edit the note" : "Double-click to write a note"}
                   onDoubleClick={() => setOpenNote({ date, edit: true })}
                   // A phone has no hover or double-click: one tap opens the day.
@@ -373,7 +374,8 @@ export default function CalendarPage() {
                     <div className="min-w-0">
                     {stats && (
                     <>
-                      <div className={`text-base font-black ${
+                      {/* 16px, or smaller when a long figure would not fit the cell; 160 leaves room for the note icon beside it. */}
+                      <div style={fitFontSize(isPrivacyMode ? `${formatNumber(stats.rr)} R` : formatPnl(stats.pnl, rate), '1rem', 160)} className={`leading-6 font-black whitespace-nowrap ${
                         (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' : 
                         (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
                       }`}>

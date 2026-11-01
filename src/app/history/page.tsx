@@ -20,6 +20,20 @@ import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// P&L in the table: exact, but on a phone whole dollars without "$" from 1,000 up so the column still fits. The detail popup has the exact figure.
+function PnlText({ profit }: { profit: number }) {
+  const sign = profit < 0 ? '-' : '';
+  const abs = Math.abs(profit);
+  const exact = `${sign}$${format2Decimals(abs)}`;
+  if (abs < 1000) return <>{exact}</>;
+  return (
+    <>
+      <span className="md:hidden">{sign}{Math.round(abs).toLocaleString('en-US')}</span>
+      <span className="hidden md:inline">{exact}</span>
+    </>
+  );
+}
+
 export default function HistoryPage() {
   const { trades, funding, dayNotes, weekNotes, preferences, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
@@ -325,7 +339,7 @@ export default function HistoryPage() {
                       <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
                       <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
                       <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
-                        {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
+                        {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                       </td>
                       <td className="hidden lg:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
                         <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
@@ -395,7 +409,7 @@ export default function HistoryPage() {
                       {t.rr ? (t.riskIsEstimate ? '≈' : '') + format2Decimals(t.rr) + ' R' : '-'}
                     </td>
                     <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
-                      {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
+                      {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                     </td>
                     <td className="hidden lg:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
                       <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>

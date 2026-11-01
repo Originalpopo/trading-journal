@@ -3,7 +3,7 @@
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
-import { formatNumber, tooltipPositionOf } from "@/lib/utils";
+import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import HealthWeather from "@/components/HealthWeather";
 import { computePerformance, type SideMatrix } from "@/lib/performance";
@@ -427,9 +427,10 @@ export default function PerformancePage() {
         </h3>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-          <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
+          <div className="@container bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Net Profit</span>
-            <span className={`text-xl font-black ${data.netProfit >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(data.netProfit)}</span>
+            {/* 20px, or smaller when a large profit would not fit the card. */}
+            <span style={fitFontSize(formatCurrency(data.netProfit), '1.25rem')} className={`leading-7 font-black ${data.netProfit >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(data.netProfit)}</span>
             {bahtRate && !isPrivacyMode && (
               <span className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
             )}

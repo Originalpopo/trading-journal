@@ -77,3 +77,8 @@ export const formatDurationDetailed = (sec: number): string => {
 // Chart.js types tooltipPosition() as needing an argument, but every element accepts none.
 export const tooltipPositionOf = (element: unknown): { x: number; y: number } =>
   (element as { tooltipPosition(): { x: number; y: number } }).tooltipPosition();
+
+// Font size for a figure that must fit its box (the nearest @container): `max`, or smaller when the text is long.
+// A digit is drawn about 0.52-0.54em wide, so `share`cqw / length keeps it within roughly share/190 of the box.
+export const fitFontSize = (text: string, max: string, share = 170) =>
+  ({ fontSize: `min(${max}, ${Math.floor(share / Math.max(text.length, 1))}cqw)` });
