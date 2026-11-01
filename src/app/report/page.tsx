@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Download } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, PieChart } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { buildTaxReport, taxReportCsv, estimateIncomeTax, withdrawalSetAsides, type SplitMethod } from "@/lib/taxReport";
 import { formatNumber } from "@/lib/utils";
@@ -61,68 +61,66 @@ export default function ReportPage() {
     );
   }
 
+  const missingBaht = [
+    report.depositsMissingThb > 0 && `${report.depositsMissingThb} ${report.depositsMissingThb > 1 ? 'deposits' : 'deposit'}`,
+    report.withdrawalsMissingThb > 0 && `${report.withdrawalsMissingThb} ${report.withdrawalsMissingThb > 1 ? 'withdrawals' : 'withdrawal'}`,
+  ].filter(Boolean).join(' · ');
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Tax Report</h2>
         </div>
+        {/* On phones the two exports are icons only (download = Principal 1st, pie = Pro rata), so they stay on the title line. */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => handleExport('principalFirst')}
             disabled={report.years.length === 0}
             title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบเงินต้นออกก่อน (วิธีหลัก)"
-            className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs"
+            aria-label="CSV · Principal 1st"
+            className="h-9 w-9 md:w-auto md:px-6 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-lg md:rounded-xl transition shadow-lg shadow-orange-200 flex items-center justify-center gap-2 text-xs"
           >
             <Download className="w-4 h-4" />
-            CSV · Principal 1st
+            <span className="hidden md:inline">CSV · Principal 1st</span>
           </button>
           <button
             type="button"
             onClick={() => handleExport('proRata')}
             disabled={report.years.length === 0}
             title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบตามสัดส่วน (ไว้เทียบ)"
-            className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-xl transition flex items-center gap-2 text-xs"
+            aria-label="CSV · Pro rata"
+            className="h-9 w-9 md:w-auto md:px-4 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-lg md:rounded-xl transition flex items-center justify-center gap-2 text-xs"
           >
-            <Download className="w-4 h-4" />
-            CSV · Pro rata
+            <Download className="hidden md:block w-4 h-4" />
+            <PieChart className="md:hidden w-4 h-4" />
+            <span className="hidden md:inline">CSV · Pro rata</span>
           </button>
         </div>
       </div>
 
-      {report.isComplete ? (
-        <p className="text-xs font-bold text-orange-400 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" /> Every deposit and withdrawal has its baht amount.
-        </p>
-      ) : (
-        <div className="text-xs p-4 rounded-xl border bg-red-50 text-red-900 border-red-200">
-          <p className="font-bold flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            Baht amounts are missing, so the principal and profit figures below are not final
-          </p>
-          <ul className="font-medium mt-2 ml-6 list-disc space-y-1">
-            {report.depositsMissingThb > 0 && (
-              <li>
-                {`${report.depositsMissingThb} ${report.depositsMissingThb > 1 ? 'deposits have' : 'deposit has'} no "Baht paid": that`}{' '}
-                principal is not counted, which overstates profit.
-              </li>
-            )}
-            {report.withdrawalsMissingThb > 0 && (
-              <li>
-                {`${report.withdrawalsMissingThb} ${report.withdrawalsMissingThb > 1 ? 'withdrawals have' : 'withdrawal has'} no "Baht`}{' '}
-                received&quot;: they cannot be split into principal and profit.
-              </li>
-            )}
-            <li>Open the entry in History, click edit, and fill in the amount from the bank slip.</li>
-          </ul>
-        </div>
-      )}
-
       <div className="glass-card p-6">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> By Year
-        </h3>
+        {/* Whether every deposit and withdrawal has its baht amount: the figures below are final only when it does. */}
+        <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 ${report.isComplete ? 'mb-4' : 'mb-2'}`}>
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> By Year
+          </h3>
+          {report.isComplete ? (
+            <span className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" /> Baht complete
+            </span>
+          ) : (
+            <span className="text-xs font-bold px-2.5 py-1 rounded-lg border bg-red-50 text-red-900 border-red-200 flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Baht missing: {missingBaht}
+            </span>
+          )}
+        </div>
+        {!report.isComplete && (
+          <p className="text-[11px] font-semibold text-red-900 mb-4">
+            Not final: fill in the baht from the bank slip (History → edit).
+          </p>
+        )}
         {report.years.length === 0 ? (
           <p className="text-sm text-stone-400 font-medium">No trades or funding yet.</p>
         ) : (
