@@ -2,9 +2,10 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Check, CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { formatNumber, tooltipPositionOf } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
+import HealthWeather from "@/components/HealthWeather";
 import { computePerformance, type SideMatrix } from "@/lib/performance";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import {
@@ -262,28 +263,7 @@ export default function PerformancePage() {
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Performance</h2>
         </div>
-        {(() => {
-            const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
-            return (
-              <div className="flex items-center justify-center md:gap-1 h-9 shrink-0">
-                <div title="PF < 0.5" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
-                  <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-7 h-7 md:w-10 md:h-10 text-stone-900 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
-                  <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-7 h-7 md:w-10 md:h-10 text-stone-700 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
-                  <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-7 h-7 md:w-10 md:h-10 text-stone-500 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
-                  <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-7 h-7 md:w-10 md:h-10 text-orange-300 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-                <div title="PF >= 2.0" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
-                  <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-7 h-7 md:w-10 md:h-10 text-orange-400 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
-                </div>
-              </div>
-            );
-        })()}
+        <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
       </div>
 
       <div className="glass-card p-6 h-[350px] flex flex-col w-full">

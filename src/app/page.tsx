@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useEffect, useMemo, useState } from "react";
-import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium, CheckCircle2, AlertTriangle, Check, X } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Check, X } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,6 +17,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { formatNumber, tooltipPositionOf } from "@/lib/utils";
+import HealthWeather from "@/components/HealthWeather";
 import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
@@ -378,7 +379,10 @@ export default function Dashboard() {
       <BalanceCheckModal isOpen={isBalanceCheckOpen} onClose={() => setIsBalanceCheckOpen(false)} />
       {/* Title and cards keep the same 24px gap as the other pages' headers. */}
       <section className="space-y-6">
-        <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Dashboard</h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Dashboard</h2>
+          <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
@@ -649,30 +653,6 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-          {(() => {
-            const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
-            return (
-              <div className="flex justify-center items-center pt-4 mt-2 border-t border-stone-200">
-                <div className="flex items-center justify-center gap-1">
-                  <div title="PF < 0.5" className="flex items-center justify-center w-10 h-10 cursor-help">
-                    <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-10 h-10 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                  </div>
-                  <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-10 h-10 cursor-help">
-                    <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-10 h-10 text-stone-700 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                  </div>
-                  <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-10 h-10 cursor-help">
-                    <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-10 h-10 text-stone-500 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                  </div>
-                  <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-10 h-10 cursor-help">
-                    <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-10 h-10 text-orange-300 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                  </div>
-                  <div title="PF >= 2.0" className="flex items-center justify-center w-10 h-10 cursor-help">
-                    <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-10 h-10 text-orange-400 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
 
       </div>
