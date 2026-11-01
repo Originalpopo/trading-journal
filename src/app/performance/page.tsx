@@ -41,35 +41,36 @@ const formatCurrencyHelper = (val: number, isPrivacyMode?: boolean) => {
 };
 
 // Buy / Sell / All figures of each symbol or timeframe.
-function SideMatrixTable({ title, firstColumn, rows, formatCurrency }: { title: string; firstColumn: string; rows: [string, SideMatrix][]; formatCurrency: (val: number) => string }) {
+function SideMatrixTable({ title, firstColumn, shortFirstColumn, rows, formatCurrency }: { title: string; firstColumn: string; shortFirstColumn?: string; rows: [string, SideMatrix][]; formatCurrency: (val: number) => string }) {
   return (
-    <div className="glass-card p-6 overflow-hidden flex flex-col">
+    <div className="glass-card p-4 md:p-6 overflow-hidden flex flex-col">
       <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
         <span className="w-2 h-2 bg-orange-400 rounded-full"></span> {title}
       </h3>
+      {/* Below lg only the All group shows, so the table fits without scrolling sideways. */}
       <div className="overflow-x-auto">
         <table className="w-full text-center text-sm whitespace-nowrap border-collapse">
           <thead>
             <tr className="text-stone-400 bg-stone-100">
-              <th className="py-2 px-4 rounded-tl-xl"></th>
-              <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
-              <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
-              <th colSpan={4} className="py-2 px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200 rounded-tr-xl">All</th>
+              <th className="py-2 px-1.5 md:px-4 rounded-tl-xl"></th>
+              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
+              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
+              <th colSpan={4} className="py-2 px-1.5 md:px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200 rounded-tr-xl">All</th>
             </tr>
             <tr className="text-stone-400 bg-stone-100">
-              <th className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">{firstColumn}</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
-              <th className="py-2 px-4 font-bold uppercase text-[9px] text-center align-middle">Net P&L</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">{shortFirstColumn ? <><span className="md:hidden">{shortFirstColumn}</span><span className="hidden md:inline">{firstColumn}</span></> : firstColumn}</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Net P&L</th>
             </tr>
           </thead>
           <tbody className="text-[12px]">
@@ -88,19 +89,19 @@ function SideMatrixTable({ title, firstColumn, rows, formatCurrency }: { title: 
               const total = b.pnl + s.pnl;
               return (
                 <tr key={sym} className="hover:bg-stone-50 transition duration-150">
-                  <td className="py-3 px-4 font-extrabold text-stone-950 text-[11px] text-center">{sym}</td>
-                  <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{b.trades}</td>
-                  <td className="py-3 px-4 text-center font-bold text-stone-500">{bWR}</td>
-                  <td className="py-3 px-4 text-center font-bold text-stone-500">{bRR}</td>
-                  <td className={`py-3 px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
-                  <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{s.trades}</td>
-                  <td className="py-3 px-4 text-center font-bold text-stone-500">{sWR}</td>
-                  <td className="py-3 px-4 text-center font-bold text-stone-500">{sRR}</td>
-                  <td className={`py-3 px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
-                  <td className="py-3 px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{allTrades}</td>
-                  <td className="py-3 px-4 text-center font-bold text-stone-500">{allWR}</td>
-                  <td className="py-3 px-4 text-center font-bold text-stone-500">{allRR}</td>
-                  <td className={`py-3 px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
+                  <td className="py-3 px-1.5 md:px-4 font-extrabold text-stone-950 text-[11px] text-center">{sym}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{b.trades}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{bWR}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{bRR}</td>
+                  <td className={`hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{s.trades}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{sWR}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{sRR}</td>
+                  <td className={`hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
+                  <td className="py-3 px-1.5 md:px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{allTrades}</td>
+                  <td className="py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{allWR}</td>
+                  <td className="py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{allRR}</td>
+                  <td className={`py-3 px-1.5 md:px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
                 </tr>
               );
             })}
@@ -813,7 +814,7 @@ export default function PerformancePage() {
       </div>
 
       <SideMatrixTable title="Buy VS Sell Analysis" firstColumn="Symbol" rows={data.matrixSorted} formatCurrency={formatCurrency} />
-      <SideMatrixTable title="Timeframe Analysis" firstColumn="Timeframe" rows={data.tfMatrixSorted} formatCurrency={formatCurrency} />
+      <SideMatrixTable title="Timeframe Analysis" firstColumn="Timeframe" shortFirstColumn="TF" rows={data.tfMatrixSorted} formatCurrency={formatCurrency} />
     </div>
   );
 }
