@@ -285,14 +285,14 @@ export default function HistoryPage() {
                 </th>
                 <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
                 <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
-                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
-                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
+                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
+                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
                 <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
                 <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
-                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
+                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
                 <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">RR</th>
-                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right"><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
-                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">Actions</th>
+                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl lg:rounded-tr-none"><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
+                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">Actions</th>
               </tr>
             </thead>
             <tbody className="text-[11px] divide-y divide-stone-50">
@@ -318,16 +318,16 @@ export default function HistoryPage() {
                       <td className="py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                         {badgeText}
                       </td>
-                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
-                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center">-</td>
+                      <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
+                      <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-center">-</td>
                       <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
                       <td className="py-4 px-1 md:px-4 text-center"><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
-                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
+                      <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
                       <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
                       <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
                         {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                       </td>
-                      <td className="hidden md:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
+                      <td className="hidden lg:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
                         <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
                       </td>
@@ -365,10 +365,10 @@ export default function HistoryPage() {
                     <td className="py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
                       {t.symbol}
                     </td>
-                    <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center font-bold text-stone-500">
+                    <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-center font-bold text-stone-500">
                       {t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}
                     </td>
-                    <td className="hidden md:table-cell py-4 px-1 md:px-4">
+                    <td className="hidden lg:table-cell py-4 px-1 md:px-4">
                       <div className="flex items-center justify-center gap-2">
                         {CHECKLIST_NAMES.map(name => {
                           const Icon = CHECKLIST_ICONS[name];
@@ -388,7 +388,7 @@ export default function HistoryPage() {
                     <td className="py-4 px-1 md:px-4 text-center">
                       <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
-                    <td className="hidden md:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">
+                    <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">
                       {isPrivacyMode ? '***' : riskText}
                     </td>
                     <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">
@@ -397,7 +397,7 @@ export default function HistoryPage() {
                     <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
                       {isPrivacyMode ? '***' : `${t.profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(t.profit))}`}
                     </td>
-                    <td className="hidden md:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
+                    <td className="hidden lg:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
                       <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
                     </td>
