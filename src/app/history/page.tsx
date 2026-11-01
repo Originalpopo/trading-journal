@@ -234,16 +234,17 @@ export default function HistoryPage() {
         <div className="flex flex-wrap items-center gap-4">
           <button 
             onClick={() => { setTradeToEdit(null); setIsModalOpen(true); }}
-            className="bg-orange-400 hover:bg-orange-500 text-white border border-transparent px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32">
-            <Plus className="w-3.5 h-3.5" />
-            Add Manual
+            title="Add entry"
+            aria-label="Add entry"
+            className="bg-orange-400 hover:bg-orange-500 text-white border border-transparent rounded-lg transition shadow-sm flex items-center justify-center h-9 w-9">
+            <Plus className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsUploadModalOpen(true)}
             className="relative bg-white border border-stone-200 hover:border-orange-300 hover:text-orange-400 text-stone-500 px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32"
           >
             <Upload className="w-3.5 h-3.5" />
-            Upload
+            Import
             <BackupDueDot />
           </button>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Trash2, Download } from "lucide-react";
+import { Upload, Trash2, Download, ChevronDown } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import BackupReminder from "./BackupReminder";
 
@@ -15,7 +15,14 @@ interface UploadModalProps {
 export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload, onClearDatabase, onDownloadDatabase }: UploadModalProps) {
   const [pasteText, setPasteText] = useState("");
   const [logText, setLogText] = useState("");
-  useEscapeToClose(isOpen, onClose);
+  // Accordion: one section open at a time, the paste section by default.
+  const [openSection, setOpenSection] = useState<"paste" | "restore" | "actions">("paste");
+
+  const close = () => {
+    setOpenSection("paste");
+    onClose();
+  };
+  useEscapeToClose(isOpen, close);
 
   if (!isOpen) return null;
 
@@ -23,23 +30,39 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
     onPasteSubmit(pasteText, logText);
     setPasteText("");
     setLogText("");
-    onClose();
+    close();
   };
 
   const handleClose = () => {
     setPasteText("");
     setLogText("");
-    onClose();
+    close();
   };
 
+  // `extra` sits beside the chevron.
+  const sectionHeader = (section: "paste" | "restore" | "actions", title: string, extra?: React.ReactNode) => (
+    <button
+      type="button"
+      onClick={() => setOpenSection(section)}
+      aria-expanded={openSection === section}
+      className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-bold text-stone-950 text-left"
+    >
+      <span>{title}</span>
+      <span className="ml-auto">{extra}</span>
+      <ChevronDown className={`w-4 h-4 shrink-0 text-stone-400 transition-transform ${openSection === section ? "rotate-180" : ""}`} />
+    </button>
+  );
+
   return (
-    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={onClose}>
+    <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={close}>
       <div className="bg-white border-0 bg-clip-padding rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-xl font-extrabold text-stone-950 mb-4 tracking-tight">Upload Database</h3>
-        
+        <h3 className="text-xl font-extrabold text-stone-950 mb-4 tracking-tight">Import & Backup</h3>
+
         {/* Paste Text Section */}
-        <div className="mb-3">
-          <label className="block text-sm font-bold text-stone-950 mb-2">Option 1: Paste from TradingView</label>
+        <div className="mb-3 border border-stone-200 rounded-xl">
+          {sectionHeader("paste", "Paste from TradingView")}
+          {openSection === "paste" && (
+          <div className="px-4 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
               <p className="text-[11px] font-bold text-stone-500 mb-1">History tab</p>
@@ -52,7 +75,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
               />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-stone-500 mb-1">Notifications log tab <span className="font-medium text-stone-400">(today only)</span></p>
+              <p className="text-[11px] font-bold text-stone-500 mb-1">Notifications log tab</p>
               <textarea
                 value={logText}
                 onChange={(e) => setLogText(e.target.value)}
@@ -63,32 +86,63 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
             </div>
           </div>
           {pasteText.trim() && !logText.trim() ? (
-            <p className="text-[11px] font-bold text-red-900 mb-3">No Notifications log: entry times will be when the orders were placed, and a stop that was moved will have no first stop. You can still fix those in the preview.</p>
+            <p className="text-[11px] font-medium text-stone-400 mb-3">No log: entry times and first stop may be off.</p>
           ) : logText.trim() && !pasteText.trim() ? (
-            <p className="text-[11px] font-medium text-stone-400 mb-3">Log only: it is checked against trades already in the journal and fixes their fill times and first stop. It has no P&L, so trades not in the journal yet need the History tab.</p>
-          ) : (
-            <p className="text-[11px] font-medium text-stone-400 mb-3">Paste both. The log adds what the history leaves out: when each entry really filled, and where the stop was before it was moved.</p>
-          )}
+            <p className="text-[11px] font-medium text-stone-400 mb-3">Log only: updates trades already in the journal.</p>
+          ) : null}
           <div className="flex justify-end">
             <button
               onClick={handleSubmit}
               disabled={!pasteText.trim() && !logText.trim()}
-              className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-300 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200"
+              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50"
             >
-              {pasteText.trim() && !logText.trim() ? "Parse without log" : !pasteText.trim() && logText.trim() ? "Check log against journal" : "Parse Data"}
+              Import
             </button>
           </div>
+          </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-4 mb-3">
-          <div className="h-px bg-stone-200 flex-1"></div>
-          <span className="text-stone-400 font-bold text-sm uppercase tracking-wider">OR</span>
-          <div className="h-px bg-stone-200 flex-1"></div>
+        {/* Database Actions Section */}
+        <div className="mb-3 border border-stone-200 rounded-xl">
+          {sectionHeader("actions", "Database actions", <BackupReminder />)}
+          {openSection === "actions" && (
+          <div className="px-4 pb-4">
+        <div className="flex gap-4">
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to clear the database?")) {
+                onClearDatabase();
+                close();
+              }
+            }}
+            title="Clear Database"
+            aria-label="Clear Database"
+            className="shrink-0 flex items-center justify-center px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition border border-stone-200 hover:border-stone-300 shadow-sm"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={() => {
+              onDownloadDatabase();
+              close();
+            }}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-orange-50 text-orange-400 font-bold rounded-xl transition border border-orange-400 hover:border-orange-500 shadow-sm"
+          >
+            <Download className="w-5 h-5" />
+            <span className="whitespace-nowrap">Download Backup</span>
+          </button>
+        </div>
+          </div>
+          )}
         </div>
 
         {/* Restore DB Section */}
-        <div className="mb-3">
-          <label className="block text-sm font-bold text-stone-950 mb-2">Option 2: Restore Database (JSON)</label>
+        <div className="mb-3 border border-stone-200 rounded-xl">
+          {sectionHeader("restore", "Restore from backup (JSON)")}
+          {openSection === "restore" && (
+          <div className="px-4 pb-4">
           <label className="cursor-pointer bg-stone-50 border-2 border-dashed border-stone-300 hover:border-orange-400 hover:bg-orange-50 text-stone-600 px-4 py-4 rounded-xl font-bold transition flex flex-col items-center justify-center gap-3">
             <Upload className="w-8 h-8 text-stone-400" />
             <span>Click to browse or drag and drop JSON backup</span>
@@ -98,53 +152,20 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
               className="hidden" 
               onChange={(e) => {
                 onDBRestoreUpload(e);
-                onClose();
+                close();
               }} 
             />
           </label>
+          </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-4 mb-3">
-          <div className="h-px bg-stone-200 flex-1"></div>
-          <span className="text-stone-400 font-bold text-sm uppercase tracking-wider">Database Actions</span>
-          <div className="h-px bg-stone-200 flex-1"></div>
-        </div>
-
-        <div className="flex gap-4 mb-2">
-          <button
-            onClick={() => {
-              if (window.confirm("Are you sure you want to clear the database?")) {
-                onClearDatabase();
-                onClose();
-              }
-            }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition border border-stone-200 hover:border-stone-300 shadow-sm"
-          >
-            <Trash2 className="w-5 h-5" />
-            <span>Clear Database</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              onDownloadDatabase();
-              onClose();
-            }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-orange-50 text-orange-400 font-bold rounded-xl transition border border-orange-400 hover:border-orange-500 shadow-sm"
-          >
-            <Download className="w-5 h-5" />
-            <span>Download Backup</span>
-          </button>
-        </div>
-        <div className="flex justify-end mb-3 min-h-[15px]">
-          <BackupReminder />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4 border-t border-stone-100">
+        <div className="flex justify-end gap-3 pt-1">
           <button
             onClick={handleClose}
-            className="px-6 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition"
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
           >
-            Close
+            Cancel
           </button>
         </div>
       </div>

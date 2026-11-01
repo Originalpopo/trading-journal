@@ -185,14 +185,14 @@ export default function Sidebar() {
 
       <div className={`p-4 pt-3 border-t border-stone-100 flex gap-2 ${isCollapsed ? "flex-col items-center" : "flex-col"}`}>
         <button
-          title="Upload / Database"
+          title="Import & Backup"
           onClick={() => setIsUploadModalOpen(true)}
           className={`relative bg-white border border-stone-200 hover:border-orange-200 hover:text-orange-400 text-stone-500 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"
           }`}
         >
           <Upload className="w-4 h-4 shrink-0" />
-          {!isCollapsed && <span>Upload</span>}
+          {!isCollapsed && <span>Import</span>}
           <BackupDueDot />
         </button>
 
@@ -256,7 +256,7 @@ export default function Sidebar() {
               className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-stone-50 text-stone-500 font-semibold transition"
             >
               <Upload className="w-5 h-5" />
-              Upload
+              Import
               <BackupDueDot />
             </button>
           </div>
