@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
@@ -39,6 +39,8 @@ export default function CalendarPage() {
   const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
   const notesByWeek = useMemo(() => new Map(weekNotes.map(n => [n.week, n])), [weekNotes]);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [statIndex, setStatIndex] = useState(1); // PnL
+  const touchStartX = useRef<number | null>(null);
 
   // Month or year view, remembered on this device. The page only renders after sign-in, in the browser.
   const [view, setView] = useState<CalendarView>(() => {
@@ -212,83 +214,99 @@ export default function CalendarPage() {
     );
   }
 
+  // The month or year's figures: all four beside the title on a computer, one at a time on a phone.
+  const stats = [
+    { label: 'Trades', value: String(headline.count), tone: 'text-stone-400' },
+    { label: 'PnL', value: isPrivacyMode ? '***' : rate ? formatApproxBaht(headline.net, rate) : `${headline.net < 0 ? '-' : ''}$${formatNumber(Math.abs(headline.net))}`, tone: headline.net > 0 ? 'text-orange-400' : headline.net < 0 ? 'text-red-900' : 'text-stone-400', title: rate ? bahtRateNote : undefined },
+    { label: 'RR', value: `${formatNumber(headline.rr)} R`, tone: 'text-stone-400' },
+    { label: 'Win Rate', value: `${formatNumber(headline.winRate)}%`, tone: 'text-orange-400' },
+  ];
+  const shownStat = stats[statIndex];
+  const stepStat = (offset: number) => setStatIndex(i => (i + offset + stats.length) % stats.length);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+      <div className="flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Calendar</h2>
         </div>
+        <div className="hidden md:flex gap-4 items-center justify-end">
+          {stats.map((stat, i) => (
+            <div key={stat.label} className="flex items-center gap-4">
+              {i > 0 && <div className="w-[1px] bg-stone-200 h-8 shrink-0"></div>}
+              <div className="flex flex-col justify-center items-center text-center shrink-0 px-2">
+                <span className="text-[9px] leading-none font-black text-stone-400 uppercase tracking-widest mb-1">{stat.label}</span>
+                <span title={stat.title} className={`text-lg leading-none font-black ${stat.tone}`}>{stat.value}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Phone: one figure, stepped with the small arrows or a swipe, going round. */}
+        <div
+          className="md:hidden flex flex-col items-center text-center shrink-0 min-w-[120px] select-none"
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current === null) return;
+            const dx = e.changedTouches[0].clientX - touchStartX.current;
+            touchStartX.current = null;
+            if (Math.abs(dx) > 30) stepStat(dx < 0 ? 1 : -1);
+          }}
+        >
+          <div className="flex items-center gap-1 mb-1">
+            <button onClick={() => stepStat(-1)} aria-label="Previous figure" className="px-1 text-stone-300 hover:text-stone-500 transition">
+              <ChevronLeft className="w-3 h-3" strokeWidth={3} />
+            </button>
+            <span className="text-[9px] leading-none font-black text-stone-400 uppercase tracking-widest min-w-[52px]">{shownStat.label}</span>
+            <button onClick={() => stepStat(1)} aria-label="Next figure" className="px-1 text-stone-300 hover:text-stone-500 transition">
+              <ChevronRight className="w-3 h-3" strokeWidth={3} />
+            </button>
+          </div>
+          <span title={shownStat.title} className={`text-lg font-black leading-none ${shownStat.tone}`}>{shownStat.value}</span>
+        </div>
       </div>
       <div className="glass-card p-3 md:p-8">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 gap-4 md:gap-6">
-          <div className="flex items-center justify-center md:justify-start gap-2 md:gap-4 flex-wrap">
-            <div className="flex items-center md:-ml-3">
-              <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
-                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
-              </button>
-              <h2 className="text-xl md:text-3xl font-extrabold text-stone-950 min-w-[100px] md:min-w-[145px] text-center tracking-tight">
-                {headline.label}
-              </h2>
-              <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
-                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex bg-stone-100 rounded-lg p-0.5">
-                {(['month', 'year'] as const).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => changeView(v)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider transition ${view === v ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-              <div className="flex bg-stone-100 rounded-lg p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
-                {(['USD', 'THB'] as const).map(c => (
-                  <button
-                    key={c}
-                    onClick={() => changeCurrency(c)}
-                    disabled={c === 'THB' && !bahtRate}
-                    className={`px-2.5 py-1.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
-                  >
-                    {c === 'USD' ? '$' : '฿'}
-                  </button>
-                ))}
-              </div>
-              <button onClick={goToToday} className="px-4 py-2 bg-orange-400 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
-                Today
-              </button>
-              <select value={data.year} onChange={jumpToYear} className="bg-stone-50 border border-stone-200 text-stone-950 text-xs font-bold rounded-lg px-3 py-2 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-                {data.availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 gap-2 md:gap-4">
+          <div className="flex items-center md:-ml-3">
+            <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+            </button>
+            <h2 className="text-xl md:text-3xl font-extrabold text-stone-950 min-w-[100px] md:min-w-[145px] text-center tracking-tight">
+              {headline.label}
+            </h2>
+            <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+            </button>
           </div>
-          <div className="flex md:gap-4 items-center w-full md:w-auto justify-around md:justify-end">
-            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
-              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Trades</span>
-              <span className="text-sm md:text-lg font-black text-stone-400">{headline.count}</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex bg-stone-100 rounded-lg p-0.5">
+              {(['month', 'year'] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => changeView(v)}
+                  className={`px-2 md:px-3 py-1.5 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                >
+                  {v}
+                </button>
+              ))}
             </div>
-            <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
-            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
-              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">PnL</span>
-              <span title={rate ? bahtRateNote : undefined} className={`text-sm md:text-lg font-black ${headline.net > 0 ? 'text-orange-400' : headline.net < 0 ? 'text-red-900' : 'text-stone-400'}`}>
-                {isPrivacyMode ? '***' : rate ? formatApproxBaht(headline.net, rate) : `${headline.net < 0 ? '-' : ''}$${formatNumber(Math.abs(headline.net))}`}
-              </span>
+            <div className="flex bg-stone-100 rounded-lg p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
+              {(['USD', 'THB'] as const).map(c => (
+                <button
+                  key={c}
+                  onClick={() => changeCurrency(c)}
+                  disabled={c === 'THB' && !bahtRate}
+                  className={`px-2 md:px-2.5 py-1.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                >
+                  {c === 'USD' ? '$' : '฿'}
+                </button>
+              ))}
             </div>
-            <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
-            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
-              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">RR</span>
-              <span className="text-sm md:text-lg font-black text-stone-400">
-                {formatNumber(headline.rr)} R
-              </span>
-            </div>
-            <div className="w-[1px] bg-stone-200 h-8 my-auto shrink-0"></div>
-            <div className="flex flex-col justify-center items-center text-center flex-1 min-w-0 md:flex-none md:shrink-0 px-1 md:px-2 py-1">
-              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Win Rate</span>
-              <span className="text-sm md:text-lg font-black text-orange-400">{formatNumber(headline.winRate)}%</span>
-            </div>
+            <button onClick={goToToday} className="h-8 px-3 md:px-4 bg-orange-400 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition uppercase md:tracking-wider">
+              Today
+            </button>
+            <select value={data.year} onChange={jumpToYear} className="bg-stone-50 border border-stone-200 text-stone-950 text-xs font-bold rounded-lg h-8 px-2 md:px-3 py-0 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+              {data.availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
           </div>
         </div>
 

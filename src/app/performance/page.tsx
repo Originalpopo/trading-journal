@@ -258,28 +258,28 @@ export default function PerformancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+      <div className="flex items-center justify-between mb-6 gap-2 md:gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Performance</h2>
         </div>
         {(() => {
             const healthTier = healthTierFromProfitFactor(data.profitFactor, data.totalTrades);
             return (
-              <div className="flex items-center justify-center gap-1 h-9">
-                <div title="PF < 0.5" className="flex items-center justify-center w-10 h-10 cursor-help">
-                  <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-10 h-10 text-stone-900 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+              <div className="flex items-center justify-center md:gap-1 h-9 shrink-0">
+                <div title="PF < 0.5" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
+                  <CloudRainWind className={`transition-all duration-500 ${healthTier === 1 ? 'w-7 h-7 md:w-10 md:h-10 text-stone-900 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
                 </div>
-                <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-10 h-10 cursor-help">
-                  <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-10 h-10 text-stone-700 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                <div title="PF 0.5 - 0.79" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
+                  <CloudLightning className={`transition-all duration-500 ${healthTier === 2 ? 'w-7 h-7 md:w-10 md:h-10 text-stone-700 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
                 </div>
-                <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-10 h-10 cursor-help">
-                  <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-10 h-10 text-stone-500 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                <div title="PF 0.8 - 1.19" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
+                  <Cloud className={`transition-all duration-500 ${healthTier === 3 ? 'w-7 h-7 md:w-10 md:h-10 text-stone-500 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
                 </div>
-                <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-10 h-10 cursor-help">
-                  <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-10 h-10 text-orange-300 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                <div title="PF 1.2 - 1.99" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
+                  <CloudSun className={`transition-all duration-500 ${healthTier === 4 ? 'w-7 h-7 md:w-10 md:h-10 text-orange-300 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
                 </div>
-                <div title="PF >= 2.0" className="flex items-center justify-center w-10 h-10 cursor-help">
-                  <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-10 h-10 text-orange-400 drop-shadow-md hover:scale-110' : 'w-4 h-4 text-stone-400 hover:scale-110'}`} />
+                <div title="PF >= 2.0" className="flex items-center justify-center w-7 h-9 md:w-10 md:h-10 cursor-help">
+                  <SunMedium className={`transition-all duration-500 ${healthTier === 5 ? 'w-7 h-7 md:w-10 md:h-10 text-orange-400 drop-shadow-md hover:scale-110' : 'w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 hover:scale-110'}`} />
                 </div>
               </div>
             );

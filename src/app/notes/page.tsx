@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { CalendarRange, PenLine, Plus, Search } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import DayNoteModal, { MoodIcon, moodTone, formatDayLabel } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
@@ -60,6 +60,8 @@ export default function NotesPage() {
   const thisWeek = weekKeyOf(now);
   const hasToday = dayNotes.some(n => n.date === today);
   const hasThisWeek = weekNotes.some(n => n.week === thisWeek);
+  const weekLabel = hasThisWeek ? "Add to this week's note" : "Write this week's note";
+  const todayLabel = hasToday ? "Add to today's note" : "Write today's note";
 
   if (isLoading) {
     return (
@@ -71,22 +73,27 @@ export default function NotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+      <div className="flex items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Notes</h2>
         </div>
-        <div className="flex flex-wrap gap-2">
+        {/* On phones the buttons are icons only, so they stay on the title line. */}
+        <div className="flex gap-2">
           <button
             onClick={() => setOpenWeek({ week: thisWeek, edit: true })}
-            className="bg-white hover:bg-orange-50 text-orange-400 border border-orange-200 px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9">
-            <Plus className="w-3.5 h-3.5" />
-            {hasThisWeek ? "Add to this week's note" : "Write this week's note"}
+            title={weekLabel}
+            aria-label={weekLabel}
+            className="bg-white hover:bg-orange-50 text-orange-400 border border-orange-200 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-9 md:w-auto md:px-4 md:py-2">
+            <CalendarRange className="w-4 h-4 md:w-3.5 md:h-3.5" />
+            <span className="hidden md:inline">{weekLabel}</span>
           </button>
           <button
             onClick={() => setOpenDay({ date: today, edit: true })}
-            className="bg-orange-400 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9">
-            <Plus className="w-3.5 h-3.5" />
-            {hasToday ? "Add to today's note" : "Write today's note"}
+            title={todayLabel}
+            aria-label={todayLabel}
+            className="bg-orange-400 hover:bg-orange-500 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-9 md:w-auto md:px-4 md:py-2">
+            <PenLine className="w-4 h-4 md:w-3.5 md:h-3.5" />
+            <span className="hidden md:inline">{todayLabel}</span>
           </button>
         </div>
       </div>
