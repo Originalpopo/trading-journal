@@ -31,12 +31,14 @@ const confirmationText = (confirmed: Confirmation | null) =>
       : `Balance confirmed equal to the broker's: ${formatNumber(confirmed.check.balance)} on ${clock(confirmed.check.time)}`;
 
 // The statement itself, the same on screen, in the preview and on paper.
-function StatementDocument({ statement, profile, confirmed }: { statement: Statement; profile: StatementProfile; confirmed: Confirmation | null }) {
+// `periodPicker` sits under the title on the page only; the preview and the paper leave it out.
+function StatementDocument({ statement, profile, confirmed, periodPicker }: { statement: Statement; profile: StatementProfile; confirmed: Confirmation | null; periodPicker?: React.ReactNode }) {
   return (
     // Laid out by its own width, not the screen's: the A4 preview keeps its columns on a phone.
     <div className="@container">
       <div className="text-center mb-6">
         <h3 className="text-xl font-black text-stone-950 tracking-tight">Monthly Account Statement</h3>
+        {periodPicker && <div className="mt-3 flex justify-center print:hidden">{periodPicker}</div>}
       </div>
 
       <div className="grid grid-cols-2 @2xl:grid-cols-5 gap-4 text-xs pb-5 mb-5 border-b border-stone-200">
@@ -195,30 +197,24 @@ export default function StatementPage() {
     <>
       {/* Only the preview is ever printed, so the page itself stays off the paper. */}
       <div className="space-y-6 print:hidden">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Monthly Statement</h2>
+            {/* "Monthly" is dropped on phones so the title and its buttons fit one line. */}
+            <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight whitespace-nowrap"><span className="hidden md:inline">Monthly </span>Statement</h2>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              value={current ? `${current.year}-${current.month}` : ''}
-              onChange={(e) => setSelected(e.target.value)}
-              disabled={months.length === 0}
-              className="bg-white border border-stone-200 text-stone-950 text-xs font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:border-stone-500"
-            >
-              {months.length === 0 && <option value="">No activity yet</option>}
-              {months.map(m => (
-                <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>{MONTH_NAMES[m.month - 1]} {m.year}</option>
-              ))}
-            </select>
+          {/* On phones the buttons are icons only, so they stay on the title line. */}
+          <div className="flex items-center gap-2">
             <button type="button" onClick={() => setIsPreviewOpen(true)} disabled={!statement}
               title="ดูตัวอย่างหน้ากระดาษก่อนพิมพ์หรือบันทึกเป็น PDF"
-              className="px-5 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs">
-              <Eye className="w-4 h-4" /> Preview
+              aria-label="Preview"
+              className="h-9 w-9 md:w-auto md:px-5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-lg md:rounded-xl transition shadow-lg shadow-orange-200 flex items-center justify-center gap-2 text-xs">
+              <Eye className="w-4 h-4" /> <span className="hidden md:inline">Preview</span>
             </button>
             <button type="button" onClick={handleCsv} disabled={!statement}
-              className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-xl transition flex items-center gap-2 text-xs">
-              <Download className="w-4 h-4" /> CSV
+              title="CSV"
+              aria-label="CSV"
+              className="h-9 w-9 md:w-auto md:px-4 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-lg md:rounded-xl transition flex items-center justify-center gap-2 text-xs">
+              <Download className="w-4 h-4" /> <span className="hidden md:inline">CSV</span>
             </button>
           </div>
         </div>
@@ -233,7 +229,18 @@ export default function StatementPage() {
 
         <div className="glass-card p-4 md:p-8">
           {statement
-            ? <StatementDocument statement={statement} profile={profile} confirmed={confirmed} />
+            ? <StatementDocument statement={statement} profile={profile} confirmed={confirmed} periodPicker={
+                <select
+                  value={current ? `${current.year}-${current.month}` : ''}
+                  onChange={(e) => setSelected(e.target.value)}
+                  aria-label="Month"
+                  className="bg-white border border-stone-200 text-stone-950 text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-stone-500 cursor-pointer"
+                >
+                  {months.map(m => (
+                    <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>{MONTH_NAMES[m.month - 1]} {m.year}</option>
+                  ))}
+                </select>
+              } />
             : <p className="text-sm text-stone-400 font-medium">No trades or funding yet.</p>}
         </div>
       </div>
