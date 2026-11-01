@@ -1,15 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Scale, Save } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDefaultRisk } from "@/lib/defaultRisk";
+import { buildRiskContext, defaultRiskAt } from "@/lib/risk";
 
-// 1R used for imported trades whose first stop is unknown (the stop was moved before it was hit).
+// 1R for trades whose first stop is unknown (the stop was moved before it was hit): the usual 1R of
+// the time, worked out from the trades before it. The value saved here is only the fallback.
 export default function DefaultRiskSetting() {
   const updatePreferences = useJournalStore(state => state.updatePreferences);
   const savedDefault = useJournalStore(state => state.preferences.defaultRisk);
   const effectiveDefault = useDefaultRisk();
+  const trades = useJournalStore(state => state.trades);
+  const usual = useMemo(() => {
+    const ctx = buildRiskContext(trades, effectiveDefault);
+    const count = Math.min(10, ctx.knownRisks?.length ?? 0);
+    return { count, risk: count > 0 ? defaultRiskAt(ctx, {}) : 0 };
+  }, [trades, effectiveDefault]);
   const [value, setValue] = useState<string | null>(null); // null = not edited yet
   const [isSaving, setIsSaving] = useState(false);
 
@@ -39,14 +47,27 @@ export default function DefaultRiskSetting() {
           <h3 className="text-lg font-bold text-stone-950">Risk (1R)</h3>
           <p className="text-sm text-stone-500 font-medium">
             เทรดที่ import จะวัด 1R จากจุดเข้าถึง SL แรกที่วางไว้ ถ้า SL ถูกเลื่อนก่อนโดน และไม่มี Notifications log ของเทรดนั้น
-            SL แรกจะไม่เหลืออยู่ใน History ของโบรกเกอร์ ระบบจึงใช้จำนวนเงินนี้แทน (แสดงด้วย ≈) จนกว่าคุณจะกรอก SL แรก
+            ระบบจะใช้ 1R ปกติของช่วงนั้นแทน (แสดงด้วย ≈) คือค่ากลางของ 10 เทรดก่อนหน้าที่รู้ SL แรก จึงโตตามบัญชีเอง
+            ค่าในช่องนี้ใช้เฉพาะตอนที่ยังไม่มีเทรดแบบนั้นก่อนหน้า
           </p>
         </div>
       </div>
 
+      <div className="mb-6 text-sm">
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Usual 1R now</p>
+        {usual.count > 0 ? (
+          <p className="font-bold text-stone-950">
+            ${usual.risk.toFixed(2)}
+            <span className="font-medium text-stone-400 ml-2">median of your last {usual.count} {usual.count > 1 ? 'trades' : 'trade'} with a known first stop</span>
+          </p>
+        ) : (
+          <p className="font-medium text-stone-400">No trades with a known first stop yet, so the fallback below is used.</p>
+        )}
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-end gap-4">
         <div className="space-y-2 flex-1 max-w-xs">
-          <label className="block text-sm font-bold text-stone-950">Default 1R ($)</label>
+          <label className="block text-sm font-bold text-stone-950">Fallback 1R ($)</label>
           <input
             type="number"
             step="0.01"

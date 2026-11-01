@@ -204,7 +204,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
     notices.push({ serious: false, label: 'Exit time unknown', text: `${countOf(uncertainCount, 'trade')} hit SL with no TP. Click the time to set it.` });
   }
   if (unknownStopCount > 0) {
-    notices.push({ serious: false, label: 'Default risk', text: `${countOf(unknownStopCount, 'trade')} with a moved stop ${unknownStopCount === 1 ? 'uses' : 'use'} ${defaultRisk.toFixed(2)}. Enter the 1st SL or Risk ($).` });
+    notices.push({ serious: false, label: 'Usual risk', text: `${countOf(unknownStopCount, 'trade')} with a moved stop ${unknownStopCount === 1 ? 'uses' : 'use'} the usual 1R of its time. Enter the 1st SL or Risk ($).` });
   }
   if (noLogCount > 0) {
     notices.push({ serious: false, label: 'No Notifications log', text: `${countOf(noLogCount, 'new trade')}: entry time is when the order was placed.` });

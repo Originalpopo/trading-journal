@@ -5,7 +5,7 @@ import { useJournalStore, Trade, Funding } from "@/store/useJournalStore";
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatNumber } from "@/lib/utils";
-import { initialStopOf, mostCommonRisk, buildRiskContext, deriveTradeRisk, resolveDefaultRisk } from "@/lib/risk";
+import { initialStopOf, buildRiskContext, deriveTradeRisk, resolveDefaultRisk, defaultRiskAt } from "@/lib/risk";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { hasFractionOfCent } from "@/lib/money";
 import { DEFAULT_LOT_SIZE } from "@/lib/statement";
@@ -113,12 +113,14 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       tf = lastTf === 'none' ? '15m' : lastTf;
     }
   }
-  // 1R now varies per trade (it follows each trade's stop), so a new entry starts from the default.
-  const defaultRisk = useJournalStore.getState().preferences.defaultRisk
-    ?? mostCommonRisk(trades.filter(t => t.riskIsEstimate !== false));
-  if (defaultRisk) risk = defaultRisk.toString();
-
   const now = toInputTime(new Date().toISOString());
+  // 1R varies per trade (it follows each trade's stop), so a new entry starts from the usual 1R now:
+  // the median of the last 10 known ones, else the Settings value.
+  const usualRisk = defaultRiskAt(
+    buildRiskContext(trades, resolveDefaultRisk(useJournalStore.getState().preferences.defaultRisk, trades)),
+    { entryTime: now.replace('T', ' ') },
+  );
+  if (usualRisk) risk = usualRisk.toString();
   return {
     ...BLANK_TRADE_FIELDS,
     entryType: "TRADE", symbol: "", side: "BUY", amount: "", strategy: "",

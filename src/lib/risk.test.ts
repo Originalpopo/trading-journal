@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveTradeRisk, withDerivedRisk, buildRiskContext, initialStopOf, mostCommonRisk, resolveDefaultRisk } from './risk.ts';
+import { deriveTradeRisk, withDerivedRisk, buildRiskContext, initialStopOf, mostCommonRisk, resolveDefaultRisk, defaultRiskAt } from './risk.ts';
 
 const near = (actual: number, expected: number) =>
   assert.ok(Math.abs(actual - expected) < 1e-6, `expected ${expected}, got ${actual}`);
@@ -83,6 +83,26 @@ test('a stop a hair on the losing side of the entry was dragged there: break-eve
   assert.equal(lost.resultType, 'BE');
 });
 
+test('a new default 1R in Settings never changes a trade whose first stop is known', () => {
+  // First stop 0.49 below the entry, never moved, closed at TP for +1.00: 2.04R whatever the default
+  const t = gold({ side: 'BUY', entryOrderPrice: 4000, entryPrice: 4000, exitPrice: 4001, profit: 1, slPrice: 3999.51, tpPrice: 4001, exitType: 'Take Profit', risk: 0.49, riskIsEstimate: false });
+  for (const defaultRisk of [1.5, 5, 10, 20, 100]) {
+    const r = deriveTradeRisk(t, { ...CTX, defaultRisk });
+    near(r.risk, 0.49);
+    near(r.rr, 1 / 0.49);
+    assert.equal(r.riskIsEstimate, false);
+    assert.equal(r.resultType, 'TP');
+  }
+});
+
+test('a bigger lot does not turn a real first stop into a break-even one', () => {
+  // 1 lot of gold: $100 per 1.00, so a 0.30 stop is a $30 risk; it lost the full 1R
+  const r = deriveTradeRisk(gold({ size: 1, side: 'SELL', entryPrice: 4000, exitPrice: 4000.3, profit: -30, slPrice: 4000.3, exitType: 'Stop Loss' }), CTX);
+  near(r.risk, 30);
+  assert.equal(r.riskIsEstimate, false);
+  assert.equal(r.resultType, 'SL');
+});
+
 test('a first stop the user or the log gave is trusted however close it is', () => {
   const r = deriveTradeRisk(gold({ side: 'SELL', entryPrice: 4000, exitPrice: 4000.03, profit: -0.03, slPrice: 4000.01, exitType: 'Stop Loss', initialSlPrice: 4000.01, initialSlSource: 'log' }), CTX);
   near(r.risk, 0.01);
@@ -152,4 +172,48 @@ test('mostCommonRisk and resolveDefaultRisk', () => {
   assert.equal(resolveDefaultRisk(2, [{ risk: 1.5 }]), 2);
   assert.equal(resolveDefaultRisk(undefined, [{ risk: 1.5 }, { risk: 0.49, riskIsEstimate: false }]), 1.5);
   assert.equal(resolveDefaultRisk(undefined, []), 0);
+});
+
+// A gold trade opened on `day` with its first stop `risk` dollars away (0.01 lot: $1 per 1.00), never moved.
+const known = (id: string, day: string, risk: number) => ({ id, ...gold({ side: 'BUY', entryTime: `${day} 10:00:00`, time: `${day} 11:00:00`,
+  entryPrice: 4000, exitPrice: 4001, profit: 1, slPrice: 4000 - risk, tpPrice: 4001, exitType: 'Take Profit' }) });
+// One whose stop was moved past the entry before it closed: its own 1R is unknown.
+const moved = (id: string, day: string) => ({ id, ...gold({ side: 'BUY', entryTime: `${day} 10:00:00`, time: `${day} 11:00:00`,
+  entryPrice: 4000, exitPrice: 4003, profit: 3, slPrice: 4000.5, exitType: 'Stop Loss' }) });
+
+test('an unknown 1R is the median of the 10 known ones before the trade, and grows with the account', () => {
+  const january = Array.from({ length: 10 }, (_, i) => known(`j${i}`, `2026-01-${String(i + 1).padStart(2, '0')}`, 1.5));
+  const june = Array.from({ length: 10 }, (_, i) => known(`u${i}`, `2026-06-${String(i + 1).padStart(2, '0')}`, 10));
+  const trades = [...january, moved('feb', '2026-02-10'), ...june, moved('jul', '2026-07-10')];
+  const byId = new Map(withDerivedRisk(trades, 1.5).map(t => [t.id, t]));
+  near(byId.get('feb')!.risk, 1.5);
+  near(byId.get('jul')!.risk, 10);
+  assert.equal(byId.get('jul')!.riskIsEstimate, true);
+  near(byId.get('jul')!.rr, 0.3);
+});
+
+test('later trades never change the usual 1R of an earlier one', () => {
+  const before = Array.from({ length: 10 }, (_, i) => known(`b${i}`, `2026-01-${String(i + 1).padStart(2, '0')}`, 2));
+  const later = Array.from({ length: 10 }, (_, i) => known(`l${i}`, `2026-03-${String(i + 1).padStart(2, '0')}`, 50));
+  const alone = buildRiskContext([...before], 1.5);
+  const grown = buildRiskContext([...before, ...later], 1.5);
+  const feb = { entryTime: '2026-02-01 10:00:00' };
+  near(defaultRiskAt(alone, feb), 2);
+  near(defaultRiskAt(grown, feb), 2);
+});
+
+test('the median ignores an odd trade; fewer than 10 known trades use those there are', () => {
+  const trades = [known('a', '2026-01-01', 1), known('b', '2026-01-02', 1.2), known('c', '2026-01-03', 9)];
+  near(defaultRiskAt(buildRiskContext(trades, 1.5), { entryTime: '2026-01-05 10:00:00' }), 1.2);
+});
+
+test('with no known 1R before a trade, the Settings value is used', () => {
+  const ctx = buildRiskContext([known('later', '2026-05-01', 7)], 1.5);
+  near(defaultRiskAt(ctx, { entryTime: '2026-01-05 10:00:00' }), 1.5);
+});
+
+test('only the last 10 known trades count', () => {
+  const old = Array.from({ length: 10 }, (_, i) => known(`o${i}`, `2026-01-${String(i + 1).padStart(2, '0')}`, 1));
+  const recent = Array.from({ length: 10 }, (_, i) => known(`r${i}`, `2026-02-${String(i + 1).padStart(2, '0')}`, 3));
+  near(defaultRiskAt(buildRiskContext([...old, ...recent], 1.5), { entryTime: '2026-03-01 10:00:00' }), 3);
 });
