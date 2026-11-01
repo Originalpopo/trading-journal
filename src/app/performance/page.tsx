@@ -23,6 +23,7 @@ import {
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 
+import PageHeader from "@/components/PageHeader";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -260,12 +261,9 @@ export default function PerformancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6 gap-2 md:gap-4">
-        <div>
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Performance</h2>
-        </div>
+      <PageHeader title="Performance">
         <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
-      </div>
+      </PageHeader>
 
       <div className="glass-card p-6 h-[350px] flex flex-col w-full">
         <div className="flex items-center justify-between mb-4">

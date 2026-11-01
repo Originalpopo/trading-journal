@@ -9,6 +9,7 @@ import { dayKey, summarizeDay, type DaySummary } from "@/lib/dayNotes";
 import { weekKeyOf, groupNotesByWeek, summarizeWeek, formatWeekRange } from "@/lib/weekNotes";
 import { formatNumber } from "@/lib/utils";
 
+import PageHeader, { HeaderButton } from "@/components/PageHeader";
 const WEEKS_PER_PAGE = 5;
 
 // "$12.40 · 3 trades", or "No trades".
@@ -73,30 +74,10 @@ export default function NotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 shrink-0">
-        <div>
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Notes</h2>
-        </div>
-        {/* On phones the buttons are icons only, so they stay on the title line. */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setOpenWeek({ week: thisWeek, edit: true })}
-            title={weekLabel}
-            aria-label={weekLabel}
-            className="bg-white hover:bg-orange-50 text-orange-400 border border-orange-200 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-9 md:w-auto md:px-4 md:py-2">
-            <CalendarRange className="w-4 h-4 md:w-3.5 md:h-3.5" />
-            <span className="hidden md:inline">{weekLabel}</span>
-          </button>
-          <button
-            onClick={() => setOpenDay({ date: today, edit: true })}
-            title={todayLabel}
-            aria-label={todayLabel}
-            className="bg-orange-400 hover:bg-orange-500 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-9 md:w-auto md:px-4 md:py-2">
-            <PenLine className="w-4 h-4 md:w-3.5 md:h-3.5" />
-            <span className="hidden md:inline">{todayLabel}</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Notes">
+        <HeaderButton icon={CalendarRange} label={weekLabel} variant="outline" onClick={() => setOpenWeek({ week: thisWeek, edit: true })} />
+        <HeaderButton icon={PenLine} label={todayLabel} variant="primary" onClick={() => setOpenDay({ date: today, edit: true })} />
+      </PageHeader>
 
       <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col">
         <div className="relative mb-2">

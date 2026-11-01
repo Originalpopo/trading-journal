@@ -9,6 +9,7 @@ import { reconcileBalance, type BalanceCheckRecord } from "@/lib/reconcile";
 import { formatNumber } from "@/lib/utils";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
+import PageHeader, { HeaderButton } from "@/components/PageHeader";
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const TH = "px-3 py-3 font-bold uppercase text-[10px] tracking-widest text-right";
@@ -197,27 +198,11 @@ export default function StatementPage() {
     <>
       {/* Only the preview is ever printed, so the page itself stays off the paper. */}
       <div className="space-y-6 print:hidden">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            {/* "Monthly" is dropped on phones so the title and its buttons fit one line. */}
-            <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight whitespace-nowrap"><span className="hidden md:inline">Monthly </span>Statement</h2>
-          </div>
-          {/* On phones the buttons are icons only, so they stay on the title line. */}
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setIsPreviewOpen(true)} disabled={!statement}
-              title="ดูตัวอย่างหน้ากระดาษก่อนพิมพ์หรือบันทึกเป็น PDF"
-              aria-label="Preview"
-              className="h-9 w-9 md:w-auto md:px-5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-lg md:rounded-xl transition shadow-lg shadow-orange-200 flex items-center justify-center gap-2 text-xs">
-              <Eye className="w-4 h-4" /> <span className="hidden md:inline">Preview</span>
-            </button>
-            <button type="button" onClick={handleCsv} disabled={!statement}
-              title="CSV"
-              aria-label="CSV"
-              className="h-9 w-9 md:w-auto md:px-4 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-lg md:rounded-xl transition flex items-center justify-center gap-2 text-xs">
-              <Download className="w-4 h-4" /> <span className="hidden md:inline">CSV</span>
-            </button>
-          </div>
-        </div>
+        <PageHeader title="Monthly Statement" shortTitle="Statement">
+          <HeaderButton icon={Eye} label="Preview" title="ดูตัวอย่างหน้ากระดาษก่อนพิมพ์หรือบันทึกเป็น PDF" variant="primary"
+            onClick={() => setIsPreviewOpen(true)} disabled={!statement} />
+          <HeaderButton icon={Download} label="CSV" onClick={handleCsv} disabled={!statement} />
+        </PageHeader>
 
         {!hasProfile && (
           <p className="text-xs font-bold text-red-900 flex items-center gap-2">

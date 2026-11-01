@@ -18,6 +18,7 @@ import { Trade } from "@/store/useJournalStore";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 
+import PageHeader, { HeaderButton } from "@/components/PageHeader";
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // P&L in the table: exact, but on a phone whole dollars without "$" from 1,000 up so the column still fits. The detail popup has the exact figure.
@@ -241,30 +242,12 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">History</h2>
-        </div>
-        <div className="flex items-center gap-2 md:gap-4">
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            title="Import"
-            aria-label="Import"
-            className="relative bg-orange-400 hover:bg-orange-500 text-white border border-transparent rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-9 md:px-4 md:py-2 md:w-32"
-          >
-            <Upload className="w-4 h-4 md:w-3.5 md:h-3.5" />
-            <span className="hidden md:inline">Import</span>
-            <BackupDueDot />
-          </button>
-          <button 
-            onClick={() => { setTradeToEdit(null); setIsModalOpen(true); }}
-            title="Add entry"
-            aria-label="Add entry"
-            className="bg-white border border-stone-200 hover:border-orange-300 hover:text-orange-400 text-stone-500 rounded-lg transition shadow-sm flex items-center justify-center h-9 w-9">
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <PageHeader title="History">
+        <HeaderButton icon={Upload} label="Import" variant="primary" onClick={() => setIsUploadModalOpen(true)}>
+          <BackupDueDot />
+        </HeaderButton>
+        <HeaderButton icon={Plus} label="Add entry" variant="plain" iconOnly onClick={() => { setTradeToEdit(null); setIsModalOpen(true); }} />
+      </PageHeader>
 
       <div className="glass-card p-3 md:p-6 overflow-hidden flex flex-col h-fit">
         <HistoryFilterBar filters={filters} onChange={setFilters} shownCount={filteredData.length} totalCount={combinedData.length} />

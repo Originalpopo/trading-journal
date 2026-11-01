@@ -24,6 +24,7 @@ import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
+import PageHeader from "@/components/PageHeader";
 const LAST_POINT_FONT = 'bold 11px "Plus Jakarta Sans", sans-serif';
 const LAST_POINT_GAP = 12; // from the dot's centre to its number
 
@@ -421,10 +422,9 @@ export default function Dashboard() {
       <BalanceCheckModal isOpen={isBalanceCheckOpen} onClose={() => setIsBalanceCheckOpen(false)} />
       {/* Title and cards keep the same 24px gap as the other pages' headers. */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Dashboard</h2>
+        <PageHeader title="Dashboard">
           <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
-        </div>
+        </PageHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>

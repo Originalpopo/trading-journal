@@ -8,6 +8,7 @@ import { Lock, Save, UserCircle, LogOut, Copy, Check } from "lucide-react";
 import DefaultRiskSetting from "@/components/DefaultRiskSetting";
 import StatementProfileSetting from "@/components/StatementProfileSetting";
 
+import PageHeader from "@/components/PageHeader";
 export default function SettingsPage() {
   const currentUser = auth.currentUser;
   const [isUidCopied, setIsUidCopied] = useState(false);
@@ -74,11 +75,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Settings</h2>
-        </div>
-      </div>
+      <PageHeader title="Settings" />
 
       <DefaultRiskSetting />
 

@@ -13,6 +13,7 @@ import { addMoney } from "@/lib/money";
 import { summarizeYear } from "@/lib/calendarYear";
 import { loadBahtRate, formatApproxBaht, formatPnl, toBaht, type BahtRate } from "@/lib/bahtRate";
 
+import PageHeader from "@/components/PageHeader";
 type CalendarView = 'month' | 'year';
 const VIEW_KEY = 'calendarView';
 type CalendarCurrency = 'USD' | 'THB';
@@ -227,10 +228,7 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Calendar</h2>
-        </div>
+      <PageHeader title="Calendar">
         <div className="hidden md:flex gap-4 items-center justify-end">
           {stats.map((stat, i) => (
             <div key={stat.label} className="flex items-center gap-4">
@@ -264,7 +262,7 @@ export default function CalendarPage() {
           </div>
           <span title={shownStat.title} className={`text-lg font-black leading-none ${shownStat.tone}`}>{shownStat.value}</span>
         </div>
-      </div>
+      </PageHeader>
       <div className="glass-card p-3 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 gap-2 md:gap-4">
           <div className="flex items-center md:-ml-3">

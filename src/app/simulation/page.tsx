@@ -17,6 +17,7 @@ import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade, parseRisk } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
+import PageHeader from "@/components/PageHeader";
 import {
   simulatePath, simulateOutlook, binaryOutcomes, cautiousWinRate,
   type SimParams, type SimPath, type SimOutlook,
@@ -280,11 +281,7 @@ export default function SimulationPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
-        <div>
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Simulation</h2>
-        </div>
-      </div>
+      <PageHeader title="Simulation" />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="glass-card p-6 flex flex-col space-y-4 lg:col-span-1">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">

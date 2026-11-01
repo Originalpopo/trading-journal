@@ -6,6 +6,7 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { buildTaxReport, taxReportCsv, estimateIncomeTax, withdrawalSetAsides, type SplitMethod } from "@/lib/taxReport";
 import { formatNumber } from "@/lib/utils";
 
+import PageHeader, { HeaderButton } from "@/components/PageHeader";
 const TH_BASE = "px-4 py-4 font-bold uppercase text-[10px] tracking-widest";
 const TH = `${TH_BASE} text-right`;
 const TH_LEFT = `${TH_BASE} text-left`;
@@ -68,37 +69,13 @@ export default function ReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">Tax Report</h2>
-        </div>
-        {/* On phones the two exports are icons only (download = Principal 1st, pie = Pro rata), so they stay on the title line. */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleExport('principalFirst')}
-            disabled={report.years.length === 0}
-            title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบเงินต้นออกก่อน (วิธีหลัก)"
-            aria-label="CSV · Principal 1st"
-            className="h-9 w-9 md:w-auto md:px-6 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-lg md:rounded-xl transition shadow-lg shadow-orange-200 flex items-center justify-center gap-2 text-xs"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden md:inline">CSV · Principal 1st</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleExport('proRata')}
-            disabled={report.years.length === 0}
-            title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบตามสัดส่วน (ไว้เทียบ)"
-            aria-label="CSV · Pro rata"
-            className="h-9 w-9 md:w-auto md:px-4 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 font-bold rounded-lg md:rounded-xl transition flex items-center justify-center gap-2 text-xs"
-          >
-            <Download className="hidden md:block w-4 h-4" />
-            <PieChart className="md:hidden w-4 h-4" />
-            <span className="hidden md:inline">CSV · Pro rata</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Tax Report">
+        {/* On phones: download = Principal 1st, pie = Pro rata. */}
+        <HeaderButton icon={Download} label="CSV · Principal 1st" title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบเงินต้นออกก่อน (วิธีหลัก)" variant="primary"
+          onClick={() => handleExport('principalFirst')} disabled={report.years.length === 0} />
+        <HeaderButton icon={Download} phoneIcon={PieChart} label="CSV · Pro rata" title="ไฟล์ CSV ที่แบ่งเงินต้น/กำไรแบบตามสัดส่วน (ไว้เทียบ)"
+          onClick={() => handleExport('proRata')} disabled={report.years.length === 0} />
+      </PageHeader>
 
       <div className="glass-card p-6">
         {/* Whether every deposit and withdrawal has its baht amount: the figures below are final only when it does. */}
