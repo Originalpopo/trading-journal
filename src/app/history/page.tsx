@@ -227,17 +227,19 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight">History</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="relative bg-orange-400 hover:bg-orange-500 text-white border border-transparent px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-32"
+            title="Import"
+            aria-label="Import"
+            className="relative bg-orange-400 hover:bg-orange-500 text-white border border-transparent rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 h-9 w-9 md:px-4 md:py-2 md:w-32"
           >
-            <Upload className="w-3.5 h-3.5" />
-            Import
+            <Upload className="w-4 h-4 md:w-3.5 md:h-3.5" />
+            <span className="hidden md:inline">Import</span>
             <BackupDueDot />
           </button>
           <button 
