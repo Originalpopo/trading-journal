@@ -28,8 +28,6 @@ import BulkImportModal from "./BulkImportModal";
 export default function Sidebar() {
   const pathname = usePathname();
   const { initializeListeners, trades, funding, dayNotes, weekNotes, preferences, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
-  const [statusText, setStatusText] = useState("Initializing...");
-  const [statusColor, setStatusColor] = useState("bg-stone-300");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [tvRawText, setTvRawText] = useState("");
@@ -39,8 +37,6 @@ export default function Sidebar() {
 
   useEffect(() => {
     const unsubscribe = initializeListeners();
-    setStatusText("Live");
-    setStatusColor("bg-orange-400 shadow-md shadow-orange-400");
     return () => unsubscribe();
   }, [initializeListeners]);
 
@@ -50,6 +46,7 @@ export default function Sidebar() {
     setIsBulkImportOpen(true);
   };
 
+  // Restoring and clearing say when they finish or fail with their own alerts (dbActions).
   const onDBRestoreUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -60,18 +57,9 @@ export default function Sidebar() {
       if (text) {
         restoreDatabase(
           text,
-          (status) => {
-            setStatusText(status);
-            setStatusColor("bg-yellow-500");
-          },
+          undefined,
           (result) => {
             alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, ${result.notes} day notes, ${result.weekNotes} week notes${result.preferences ? ', and your settings (balance checks, statement details)' : ''}.`);
-            setStatusText("Live");
-            setStatusColor("bg-orange-400 shadow-md shadow-orange-400");
-          },
-          () => {
-            setStatusText("Error");
-            setStatusColor("bg-stone-500");
           }
         );
       }
@@ -81,24 +69,7 @@ export default function Sidebar() {
   };
 
   const onClearDatabase = () => {
-    clearDatabase(
-      trades,
-      funding,
-      dayNotes,
-      weekNotes,
-      (status) => {
-        setStatusText(status);
-        setStatusColor("bg-stone-500 animate-pulse");
-      },
-      () => {
-        setStatusText("Live");
-        setStatusColor("bg-orange-400 shadow-md shadow-orange-400");
-      },
-      () => {
-        setStatusText("Error");
-        setStatusColor("bg-stone-500");
-      }
-    );
+    clearDatabase(trades, funding, dayNotes, weekNotes);
   };
 
   const onDownloadDatabase = () => {
@@ -197,24 +168,6 @@ export default function Sidebar() {
         </button>
 
 
-        
-        {isCollapsed ? (
-          <>
-            <div 
-              className="flex items-center justify-center bg-stone-50 border border-stone-100 rounded-lg w-10 h-10 shrink-0 cursor-help mt-2"
-              title={`Database Status: ${statusText}`}
-            >
-              <span className={`w-3 h-3 rounded-full ${statusColor}`}></span>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-wrap gap-2 mt-2">
-            <div className="flex-1 text-xs font-semibold flex items-center justify-center text-stone-600 bg-stone-50 py-2 rounded-lg border border-stone-100 overflow-hidden">
-              <span className={`w-2.5 h-2.5 rounded-full mr-2 shrink-0 ${statusColor}`}></span>
-              <span className="truncate">{statusText}</span>
-            </div>
-          </div>
-        )}
       </div>
     </aside>
 
@@ -259,10 +212,6 @@ export default function Sidebar() {
               Import
               <BackupDueDot />
             </button>
-          </div>
-          <div className="mt-3 text-xs font-semibold flex items-center justify-center text-stone-600 bg-stone-50 py-2.5 rounded-xl border border-stone-100">
-            <span className={`w-2.5 h-2.5 rounded-full mr-2 shrink-0 ${statusColor}`}></span>
-            <span className="truncate">{statusText}</span>
           </div>
         </div>
       </div>
