@@ -8,6 +8,7 @@ import { Lock, UserCircle, LogOut, Copy, Check, Scale, FileText, Database } from
 import DefaultRiskSetting from "@/components/DefaultRiskSetting";
 import StatementProfileSetting from "@/components/StatementProfileSetting";
 import BreakEvenSetting from "@/components/settings/BreakEvenSetting";
+import DisciplineRulesSetting from "@/components/settings/DisciplineRulesSetting";
 import TaxStepsInfo from "@/components/settings/TaxStepsInfo";
 import BackupSetting from "@/components/settings/BackupSetting";
 import BalanceCheckHistory from "@/components/settings/BalanceCheckHistory";
@@ -113,6 +114,7 @@ export default function SettingsPage() {
         <>
           <DefaultRiskSetting />
           <BreakEvenSetting />
+          <DisciplineRulesSetting />
         </>
       )}
 

@@ -6,6 +6,7 @@ import { migrateLegacyChartData, deleteCachedCandles } from '@/lib/chartCache';
 import type { BalanceCheck, BalanceCheckRecord } from '@/lib/reconcile';
 import type { StatementProfile } from '@/lib/statement';
 import type { DayNote } from '@/lib/dayNotes';
+import type { DisciplineRule } from '@/lib/discipline';
 import type { WeekNote } from '@/lib/weekNotes';
 import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow } from '@/lib/risk';
 import { setBeThreshold } from '@/lib/stats';
@@ -105,6 +106,8 @@ export interface Preferences {
   beThreshold?: number;
   // How many recent trades with a known first stop make up the usual 1R (default 10).
   usualRiskWindow?: number;
+  // The user's own trading rules, ticked in a day note when broken.
+  disciplineRules?: DisciplineRule[];
 }
 
 interface JournalState {
@@ -123,7 +126,7 @@ interface JournalState {
   updateTrade: (id: string, trade: Partial<Trade>) => Promise<void>;
   updateTrades: (updates: { id: string; data: Partial<Trade> }[]) => Promise<void>;
   deleteTrade: (id: string) => Promise<void>;
-  saveDayNote: (date: string, note: Pick<DayNote, 'content' | 'mood'>) => Promise<void>;
+  saveDayNote: (date: string, note: Pick<DayNote, 'content' | 'mood' | 'brokenRules'>) => Promise<void>;
   deleteDayNote: (date: string) => Promise<void>;
   saveWeekNote: (week: string, note: Pick<WeekNote, 'content' | 'mood'>) => Promise<void>;
   deleteWeekNote: (week: string) => Promise<void>;

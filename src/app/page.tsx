@@ -2,7 +2,8 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, AlertTriangle, Check, X } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Check, X, Flame } from "lucide-react";
+import { disciplineStreak } from "@/lib/discipline";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -174,6 +175,9 @@ export default function Dashboard() {
   }, []);
   const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
   const balanceCheck = useJournalStore(state => state.preferences.balanceCheck);
+  const dayNotes = useJournalStore(state => state.dayNotes);
+  // Clean trading days in a row, over all trades: the same figure as on the Notes page.
+  const streak = useMemo(() => disciplineStreak(trades, dayNotes), [trades, dayNotes]);
   const [isBalanceCheckOpen, setIsBalanceCheckOpen] = useState(false);
   // Recomputed from the saved broker balance, so a trade added or removed later shows up here.
   const brokerCheck = useMemo(
@@ -694,6 +698,18 @@ export default function Dashboard() {
               <span className="text-xs font-bold text-stone-400">Net RR</span>
               <span className="font-black text-stone-950">
                 {formatNumber(data.netRR)} R
+              </span>
+            </div>
+            {/* One row, label over the best run, so the card stays the height of its neighbours. */}
+            <div className="flex justify-between items-center gap-3 pt-2 border-t border-stone-200"
+              title="Trading days in a row with every trade on plan and no rule broken in the day's note. Days without trades are skipped.">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-stone-400">On Plan in a Row</p>
+                <p className="text-[10px] font-semibold text-stone-400">Best {streak.best} {streak.best === 1 ? 'day' : 'days'}</p>
+              </div>
+              <span className="font-black text-stone-950 flex items-center gap-1 shrink-0">
+                <Flame className={`w-4 h-4 ${streak.current > 0 ? 'text-orange-400' : 'text-stone-300'}`} />
+                {streak.current} <span className="text-[11px] font-bold text-stone-400">{streak.current === 1 ? 'day' : 'days'}</span>
               </span>
             </div>
             {data.estimatedRCount > 0 && (

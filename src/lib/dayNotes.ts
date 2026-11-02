@@ -7,6 +7,7 @@ export interface DayNote {
   date: string; // "YYYY-MM-DD", also the document ID, which is what keeps it to one note a day
   content: string;
   mood: string; // one of the mood icon IDs
+  brokenRules?: string[]; // ids of the user's discipline rules broken that day (Settings)
   createdAt?: string;
   updatedAt?: string;
 }

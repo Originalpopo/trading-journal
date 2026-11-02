@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, type LucideIcon } from "lucide-react";
+import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, ChevronDown, XCircle, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import SaveRow from "./SaveRow";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useJournalStore, type Trade } from "@/store/useJournalStore";
 import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId, type DaySummary } from "@/lib/dayNotes";
-import { classifyTrade, outcomeLabel } from "@/lib/stats";
+import { classifyTrade, outcomeLabel, isOnPlan } from "@/lib/stats";
+import type { DisciplineRule } from "@/lib/discipline";
 import { formatNumber } from "@/lib/utils";
 import { formatPnl } from "@/lib/bahtRate";
 import TradeDetailModal from "./TradeDetailModal";
@@ -47,27 +49,52 @@ const clockOf = (time?: string) => {
 interface NoteModalProps {
   title: string;
   kind: 'day' | 'week';
-  note?: { content: string; mood: string; updatedAt?: string };
+  note?: { content: string; mood: string; brokenRules?: string[]; updatedAt?: string };
   startEditing: boolean; // open straight in the editor (a period without a note always does)
   summary: DaySummary;
-  onSave: (note: { content: string; mood: MoodId }) => Promise<void>;
+  onSave: (note: { content: string; mood: MoodId; brokenRules?: string[] }) => Promise<void>;
   onDelete: () => Promise<void>;
   onClose: () => void;
   children?: ReactNode; // what happened in the period, between the figures and the note
   bahtRate?: number | null; // show money in whole baht at this rate instead of dollars
+  rules?: DisciplineRule[]; // a day note: the user's rules, to tick the ones broken that day
+}
+
+// A collapsible list inside a note popup (the day's trades, the week's days), folded when it opens.
+export function NoteAccordion({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="mb-5 shrink-0 border border-stone-200 rounded-xl">
+      <button type="button" onClick={() => setIsOpen(!isOpen)} aria-expanded={isOpen}
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] font-bold text-left">
+        <span className="uppercase tracking-widest text-[10px] text-stone-400">{title}</span>
+        <span className="ml-auto">{extra}</span>
+        <ChevronDown className={`w-4 h-4 shrink-0 text-stone-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      {isOpen && <div className="flex flex-col gap-1.5 px-2 pb-2 max-h-[30vh] overflow-y-auto">{children}</div>}
+    </div>
+  );
 }
 
 // A note beside the result of its day or week. Reads first; edits in place.
 // Mount it with a `key` of the period so each one starts from its own saved note.
-export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children, bahtRate }: NoteModalProps) {
+export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children, bahtRate, rules }: NoteModalProps) {
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
   const [isEditing, setIsEditing] = useState(startEditing || !note);
   const [content, setContent] = useState(note?.content ?? "");
   const savedMood = normalizeMood(note?.mood);
   const [mood, setMood] = useState<MoodId>(savedMood);
+  const savedBroken = note?.brokenRules ?? [];
+  const [broken, setBroken] = useState<string[]>(savedBroken);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const day = summary;
-  const isDirty = isEditing && (content !== (note?.content ?? "") || mood !== savedMood);
+  const sameRules = broken.length === savedBroken.length && broken.every(id => savedBroken.includes(id));
+  const isDirty = isEditing && (content !== (note?.content ?? "") || mood !== savedMood || !sameRules);
+  // A day can be saved with only its broken rules ticked; otherwise a note needs words.
+  const canSave = !!content.trim() || broken.length > 0;
+  const toggleRule = (id: string) => setBroken(prev => (prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]));
+  // The rules ticked on this note that still exist, in the order of the user's list.
+  const brokenNames = (rules ?? []).filter(r => savedBroken.includes(r.id));
 
   // Backdrop clicks and Esc are easy to hit by accident, so they ask before discarding edits.
   // The X is pressed on purpose, so it closes straight away, like Cancel.
@@ -82,14 +109,15 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
     if (!note) return onClose();
     setContent(note.content);
     setMood(savedMood);
+    setBroken(savedBroken);
     setIsEditing(false);
   };
 
   const handleSave = async () => {
-    if (!content.trim()) return;
+    if (!canSave) return;
     setIsSubmitting(true);
     try {
-      await onSave({ content: content.trim(), mood });
+      await onSave({ content: content.trim(), mood, ...(rules && { brokenRules: broken }) });
       onClose();
     } catch (e) {
       console.error(e);
@@ -174,6 +202,31 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                 ))}
               </div>
             </div>
+            {rules && (
+              <div className="shrink-0">
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Rules broken today</label>
+                {rules.length === 0 ? (
+                  <p className="text-[11px] font-medium text-stone-400">
+                    No rules yet. <Link href="/settings" className="font-bold text-orange-400 hover:underline">Set your trading rules in Settings</Link>, then tick here the ones you broke.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {rules.map(rule => {
+                      const isBroken = broken.includes(rule.id);
+                      return (
+                        <button key={rule.id} type="button" onClick={() => toggleRule(rule.id)} aria-pressed={isBroken}
+                          className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition ${
+                            isBroken ? 'bg-red-50 text-red-900 border-red-200' : 'bg-stone-50 text-stone-400 border-stone-200 hover:text-stone-600'
+                          }`}>
+                          {isBroken && <XCircle className="w-3.5 h-3.5" />}
+                          {rule.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex-1 min-h-0 flex flex-col">
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Note</label>
               <textarea
@@ -190,11 +243,21 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
             </div>
             {/* -mt-4 takes back the column gap, so nothing is left below the note while Save is hidden. */}
             <div className="shrink-0 -mt-4">
-              <SaveRow isDirty={isDirty} canSave={!!content.trim()} isSaving={isSubmitting} onSave={handleSave} onCancel={cancelEdit} />
+              <SaveRow isDirty={isDirty} canSave={canSave} isSaving={isSubmitting} onSave={handleSave} onCancel={cancelEdit} />
             </div>
           </div>
         ) : (
           <>
+            {brokenNames.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4 shrink-0">
+                {brokenNames.map(rule => (
+                  <span key={rule.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-red-50 text-red-900 border border-red-200">
+                    <XCircle className="w-3.5 h-3.5" />
+                    {rule.name}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="text-stone-950 text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] pr-2">
               {note?.content}
             </div>
@@ -238,6 +301,8 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
 
   const day = useMemo(() => summarizeDay(trades, date), [trades, date]);
   const dayTrades = useMemo(() => tradesOfDay(trades, date), [trades, date]);
+  const offPlanCount = dayTrades.filter(t => !isOnPlan(t)).length;
+  const rules = useJournalStore(state => state.preferences.disciplineRules);
 
   // A trade of the day opened on top of the note, looked up by id so edits show at once.
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -263,12 +328,16 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
       startEditing={startEditing}
       summary={day}
       onSave={(n) => saveDayNote(date, n)}
+      rules={rules ?? []}
       onDelete={() => deleteDayNote(date)}
       onClose={onClose}
       bahtRate={bahtRate}
     >
         {dayTrades.length > 0 && (
-          <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
+          <NoteAccordion
+            title={`Trades · ${dayTrades.length}`}
+            extra={offPlanCount > 0 && <span className="text-red-900">{offPlanCount} off plan</span>}
+          >
             {dayTrades.map(t => {
               const outcome = classifyTrade(t);
               const tone = outcome === 'win' ? 'text-orange-400' : outcome === 'loss' ? 'text-red-900' : 'text-stone-400';
@@ -283,6 +352,9 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
                 >
                   <span className="text-stone-400 tabular-nums w-[76px] md:w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
                   <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
+                  <span className="w-3.5 shrink-0" title={isOnPlan(t) ? undefined : "Off plan"}>
+                    {!isOnPlan(t) && <XCircle className="w-3.5 h-3.5 text-red-900" />}
+                  </span>
                   <span className="text-stone-500 flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
                   <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
                   {!isPrivacyMode && (
@@ -292,7 +364,7 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
                 </button>
               );
             })}
-          </div>
+          </NoteAccordion>
         )}
     </NoteModal>
     <TradeDetailModal

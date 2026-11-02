@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarRange, PenLine, Plus, Search } from "lucide-react";
+import { CalendarRange, PenLine, Plus, Search, XCircle } from "lucide-react";
+import DisciplineSummary from "@/components/DisciplineSummary";
 import { useJournalStore } from "@/store/useJournalStore";
 import DayNoteModal, { MoodIcon, moodTone, formatDayLabel } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
@@ -25,7 +26,8 @@ function ResultLine({ summary, isPrivacyMode }: { summary: DaySummary; isPrivacy
 }
 
 // One note in the list: its mood, a title, a two-line preview, and the result beside it.
-function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick }: { mood: string; title: string; content: string; summary: DaySummary; isPrivacyMode: boolean; onClick: () => void }) {
+// `brokenCount`: how many of the user's rules the day's note ticks as broken.
+function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick, brokenCount = 0 }: { mood: string; title: string; content: string; summary: DaySummary; isPrivacyMode: boolean; onClick: () => void; brokenCount?: number }) {
   return (
     <div className="py-3 px-2 rounded-xl hover:bg-stone-50 transition cursor-pointer flex gap-4 items-start" onClick={onClick}>
       <div className={`w-10 h-10 rounded-full ${moodTone(mood).badge} flex items-center justify-center shrink-0 mt-0.5`}>
@@ -33,7 +35,15 @@ function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick }: { mo
       </div>
       {/* The preview keeps to its own column, two lines at most; the whole note opens on click. */}
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-stone-900 truncate mb-1">{title}</h4>
+        <div className="flex items-center gap-2 mb-1 min-w-0">
+          <h4 className="text-sm font-bold text-stone-900 truncate">{title}</h4>
+          {brokenCount > 0 && (
+            <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-red-900 bg-red-50 rounded-full px-2 py-0.5">
+              <XCircle className="w-3 h-3" />
+              {brokenCount} {brokenCount === 1 ? "rule" : "rules"}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-stone-500 line-clamp-2 whitespace-pre-line max-w-2xl">{content}</p>
       </div>
       <span className="text-xs font-bold shrink-0 text-stone-400 mt-0.5">
@@ -45,7 +55,8 @@ function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick }: { mo
 
 // Every note, grouped by week, newest week first: the week's own note on top, its day notes below.
 export default function NotesPage() {
-  const { dayNotes, weekNotes, trades, isLoading, isPrivacyMode } = useJournalStore();
+  const { dayNotes, weekNotes, trades, isLoading, isPrivacyMode, preferences } = useJournalStore();
+  const ruleIds = useMemo(() => new Set((preferences.disciplineRules ?? []).map(r => r.id)), [preferences.disciplineRules]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [openDay, setOpenDay] = useState<{ date: string; edit: boolean } | null>(null);
@@ -78,6 +89,8 @@ export default function NotesPage() {
         <HeaderButton icon={CalendarRange} label={weekLabel} variant="outline" onClick={() => setOpenWeek({ week: thisWeek, edit: true })} />
         <HeaderButton icon={PenLine} label={todayLabel} variant="primary" onClick={() => setOpenDay({ date: today, edit: true })} />
       </PageHeader>
+
+      <DisciplineSummary />
 
       <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col">
         <div className="relative mb-2">
@@ -140,6 +153,7 @@ export default function NotesPage() {
                           content={note.content}
                           summary={summarizeDay(trades, note.date)}
                           isPrivacyMode={isPrivacyMode}
+                          brokenCount={(note.brokenRules ?? []).filter(id => ruleIds.has(id)).length}
                           onClick={() => setOpenDay({ date: note.date, edit: false })}
                         />
                       ))}

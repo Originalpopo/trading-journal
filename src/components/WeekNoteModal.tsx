@@ -5,7 +5,7 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { summarizeWeek, formatWeekRange } from "@/lib/weekNotes";
 import { formatNumber } from "@/lib/utils";
 import { formatPnl } from "@/lib/bahtRate";
-import { NoteModal, MoodIcon, moodTone } from "./DayNoteModal";
+import { NoteModal, NoteAccordion, MoodIcon, moodTone } from "./DayNoteModal";
 
 interface WeekNoteModalProps {
   week: string; // "YYYY-MM-DD" of the week's Sunday
@@ -44,7 +44,7 @@ export default function WeekNoteModal({ week, startEditing, bahtRate, onClose, o
       onClose={onClose}
       bahtRate={bahtRate}
     >
-      <div className="flex flex-col gap-1.5 mb-5 shrink-0 max-h-[30vh] overflow-y-auto pr-1">
+      <NoteAccordion title={`Days · ${summary.count} ${summary.count === 1 ? 'trade' : 'trades'}`}>
         {days.map(d => {
           const dayNote = notesByDay.get(d.date);
           return (
@@ -71,7 +71,7 @@ export default function WeekNoteModal({ week, startEditing, bahtRate, onClose, o
             </button>
           );
         })}
-      </div>
+      </NoteAccordion>
     </NoteModal>
   );
 }
