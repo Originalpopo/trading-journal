@@ -28,11 +28,19 @@ const cellMoney = (pnl: number, rate?: number | null) => {
   const value = rate ? Math.round(toBaht(pnl, rate)) : pnl;
   const sign = value < 0 ? '-' : '';
   const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2)}M`;
-  if (abs >= 100_000) return `${sign}${Math.round(abs / 1000)}K`;
+  // Rounded first, so 999,600 reads 1.00M rather than 1000K, and 9,996,000 reads 10.0M rather than 10.00M.
+  if (abs >= 100_000 && Math.round(abs / 1000) < 1000) return `${sign}${Math.round(abs / 1000)}K`;
+  if (abs >= 100_000) {
+    const millions = abs / 1_000_000;
+    return `${sign}${Number(millions.toFixed(2)) >= 10 ? millions.toFixed(1) : millions.toFixed(2)}M`;
+  }
   if (rate || abs >= 1000) return `${sign}${Math.round(abs).toLocaleString('en-US')}`;
   return `${sign}${formatNumber(abs)}`;
 };
+
+// Font size for a figure in a phone cell (an @container): `max`, or smaller when a long figure would not fit.
+// 180 keeps a figure within about 95% of the cell, measured at 375px wide (the smallest iPhone).
+const phoneFit = (text: string, max: string) => fitFontSize(text, max, 180);
 
 export default function CalendarPage() {
   const { trades, dayNotes, weekNotes, isLoading, isPrivacyMode } = useJournalStore();
@@ -355,14 +363,14 @@ export default function CalendarPage() {
                   
                   {stats && (
                     <div className="mt-auto md:hidden text-center leading-tight">
-                      <div className={`text-[10px] font-black tracking-tighter tabular-nums ${
+                      <div style={phoneFit(isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl, rate), '10px')} className={`whitespace-nowrap font-black tracking-tighter tabular-nums ${
                         (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' :
                         (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
                       }`}>
                         {isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl, rate)}
                       </div>
                       {!isPrivacyMode && (
-                        <div className={`text-[9px] font-bold tracking-tighter tabular-nums ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                        <div style={phoneFit(`${formatNumber(stats.rr)}R`, '9px')} className={`whitespace-nowrap font-bold tracking-tighter tabular-nums ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>
                           {formatNumber(stats.rr)}R
                         </div>
                       )}
@@ -521,7 +529,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                   onClick={() => onOpenMonth(m.month)}
                   onKeyDown={(e) => { if (e.key === 'Enter') onOpenMonth(m.month); }}
                   title="Open this month"
-                  className={`${bgOf(w.pnl, w.count)} group cursor-pointer hover:brightness-95 transition min-h-[56px] md:min-h-[92px] p-1 md:p-3 flex flex-col text-left select-none`}
+                  className={`${bgOf(w.pnl, w.count)} @container group cursor-pointer hover:brightness-95 transition min-h-[56px] md:min-h-[92px] p-1 md:p-3 flex flex-col text-left select-none`}
                 >
                   <div className="flex items-start justify-between">
                     <span className={`text-[9px] md:text-[10px] font-bold tabular-nums ${w.isFuture ? 'text-stone-300' : 'text-stone-400'}`}>
@@ -532,11 +540,11 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                   </div>
                   {w.count > 0 && (
                     <div className="mt-auto md:hidden w-full text-center leading-tight">
-                      <div className={`text-[10px] font-black tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? w.rr : w.pnl)}`}>
+                      <div style={phoneFit(isPrivacyMode ? `${formatNumber(w.rr)}R` : cellMoney(w.pnl, rate), '10px')} className={`whitespace-nowrap font-black tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? w.rr : w.pnl)}`}>
                         {isPrivacyMode ? `${formatNumber(w.rr)}R` : cellMoney(w.pnl, rate)}
                       </div>
                       {!isPrivacyMode && (
-                        <div className={`text-[9px] font-bold tracking-tighter tabular-nums ${toneOf(w.rr)}`}>{formatNumber(w.rr)}R</div>
+                        <div style={phoneFit(`${formatNumber(w.rr)}R`, '9px')} className={`whitespace-nowrap font-bold tracking-tighter tabular-nums ${toneOf(w.rr)}`}>{formatNumber(w.rr)}R</div>
                       )}
                     </div>
                   )}
