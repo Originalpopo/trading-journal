@@ -4,6 +4,8 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, AlertTriangle, Check, X, Flame } from "lucide-react";
 import { disciplineStreak } from "@/lib/discipline";
+import DailyTargetBar from "@/components/DailyTargetBar";
+import { useDailyTargets } from "@/components/useDailyTargets";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -176,8 +178,9 @@ export default function Dashboard() {
   const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
   const balanceCheck = useJournalStore(state => state.preferences.balanceCheck);
   const dayNotes = useJournalStore(state => state.dayNotes);
+  const { tradedAfter } = useDailyTargets();
   // Clean trading days in a row, over all trades: the same figure as on the Notes page.
-  const streak = useMemo(() => disciplineStreak(trades, dayNotes), [trades, dayNotes]);
+  const streak = useMemo(() => disciplineStreak(trades, dayNotes, tradedAfter), [trades, dayNotes, tradedAfter]);
   const [isBalanceCheckOpen, setIsBalanceCheckOpen] = useState(false);
   // Recomputed from the saved broker balance, so a trade added or removed later shows up here.
   const brokerCheck = useMemo(
@@ -505,6 +508,8 @@ export default function Dashboard() {
         </div>
       </section>
 
+      <DailyTargetBar />
+
       <div className="glass-card p-6 h-[350px] flex flex-col">
         {/* Large balances push the phone numbers onto a line of their own rather than squeezing the title. */}
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
@@ -702,7 +707,7 @@ export default function Dashboard() {
             </div>
             {/* One row, label over the best run, so the card stays the height of its neighbours. */}
             <div className="flex justify-between items-center gap-3 pt-2 border-t border-stone-200"
-              title="Trading days in a row with every trade on plan and no rule broken in the day's note. Days without trades are skipped.">
+              title="Trading days in a row with every trade on plan, no rule broken in the day's note and nothing entered after the daily target. Days without trades are skipped.">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-stone-400">On Plan in a Row</p>
                 <p className="text-[10px] font-semibold text-stone-400">Best {streak.best} {streak.best === 1 ? 'day' : 'days'}</p>

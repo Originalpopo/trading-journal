@@ -54,4 +54,6 @@ test('disciplineStreak counts clean trading days back from the latest, skipping 
   // A rule broken on the latest day ends the run, even without an off-plan trade.
   assert.deepEqual(disciplineStreak(t, [{ date: '2026-10-09', brokenRules: ['a'] }]), { current: 0, best: 3 });
   assert.deepEqual(disciplineStreak([], []), { current: 0, best: 0 });
+  // So does trading on after the daily target.
+  assert.deepEqual(disciplineStreak(t, [], new Set(['2026-10-09'])), { current: 0, best: 3 });
 });

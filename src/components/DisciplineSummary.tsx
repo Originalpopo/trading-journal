@@ -7,6 +7,8 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { dayKey } from "@/lib/dayNotes";
 import { planCost, ruleCounts, disciplineStreak, type PlanSide } from "@/lib/discipline";
 import { formatNumber } from "@/lib/utils";
+import { summarizeTargets } from "@/lib/dailyTarget";
+import { useDailyTargets } from "./useDailyTargets";
 
 type Period = "month" | "all";
 
@@ -35,7 +37,9 @@ export default function DisciplineSummary() {
     return dayKey(new Date(now.getFullYear(), now.getMonth(), 1));
   }, [period]);
 
-  const streak = useMemo(() => disciplineStreak(trades, dayNotes), [trades, dayNotes]);
+  const { days, pct, tradedAfter } = useDailyTargets();
+  const streak = useMemo(() => disciplineStreak(trades, dayNotes, tradedAfter), [trades, dayNotes, tradedAfter]);
+  const target = useMemo(() => summarizeTargets(days, from), [days, from]);
   const cost = useMemo(() => planCost(trades, from), [trades, from]);
   const broken = useMemo(() => ruleCounts(dayNotes, rules, from).slice(0, 3), [dayNotes, rules, from]);
   const mostBroken = broken[0]?.count ?? 0;
@@ -54,8 +58,8 @@ export default function DisciplineSummary() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-stone-50 rounded-xl p-4" title="Trading days in a row with every trade on plan and no rule broken. Days without trades are skipped.">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="bg-stone-50 rounded-xl p-4" title="Trading days in a row with every trade on plan, no rule broken and nothing entered after the daily target. Days without trades are skipped.">
           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">On plan in a row</p>
           <p className="flex items-center gap-2 text-2xl font-black text-stone-950">
             <Flame className={`w-6 h-6 ${streak.current > 0 ? "text-orange-400" : "text-stone-300"}`} />
@@ -76,6 +80,31 @@ export default function DisciplineSummary() {
           )}
           {cost.onPlan.count > 0 && (
             <p className="text-[11px] font-semibold text-stone-400 mt-1">On plan: <SideResult side={cost.onPlan} isPrivacyMode={isPrivacyMode} /></p>
+          )}
+        </div>
+
+        <div className="bg-stone-50 rounded-xl p-4" title={`Daily target: ${pct}% of the balance each day started with (Settings)`}>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Daily target</p>
+          {pct <= 0 ? (
+            <p className="text-[11px] font-medium text-stone-400 mt-2">
+              Off. <Link href="/settings" className="font-bold text-orange-400 hover:underline">Set a daily target</Link> to see whether you stop once it is reached.
+            </p>
+          ) : target.hitDays === 0 ? (
+            <p className="text-sm font-bold text-stone-400 mt-2">Not reached yet</p>
+          ) : (
+            <>
+              <p className="text-lg font-black text-stone-950">
+                {target.stoppedDays} <span className="text-sm font-bold text-stone-400">of {target.hitDays} {target.hitDays === 1 ? "day" : "days"} stopped</span>
+              </p>
+              {target.continuedDays > 0 ? (
+                <p className="text-[11px] font-semibold text-red-900 mt-1">
+                  Traded on {target.continuedDays} {target.continuedDays === 1 ? "day" : "days"}: {target.afterCount} {target.afterCount === 1 ? "trade" : "trades"},{" "}
+                  <SideResult side={{ count: target.afterCount, pnl: target.afterPnl, rr: target.afterRr }} isPrivacyMode={isPrivacyMode} />
+                </p>
+              ) : (
+                <p className="text-[11px] font-semibold text-orange-400 mt-1">Stopped every time</p>
+              )}
+            </>
           )}
         </div>
 

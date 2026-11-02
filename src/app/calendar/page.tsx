@@ -2,7 +2,8 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Target } from "lucide-react";
+import { useDailyTargets } from "@/components/useDailyTargets";
 import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
 import { weekKeyOf } from "@/lib/weekNotes";
@@ -44,6 +45,7 @@ const phoneFit = (text: string, max: string) => fitFontSize(text, max, 180);
 
 export default function CalendarPage() {
   const { trades, dayNotes, weekNotes, isLoading, isPrivacyMode } = useJournalStore();
+  const { days: targetDays, pct: targetPct } = useDailyTargets();
   const [openNote, setOpenNote] = useState<{ date: string; edit: boolean } | null>(null);
   const [openWeekNote, setOpenWeekNote] = useState<{ week: string; edit: boolean } | null>(null);
   const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
@@ -341,26 +343,43 @@ export default function CalendarPage() {
               }
 
               const noteControl = <NoteControl mood={note?.mood} hasNote={!!note} onOpen={(edit) => setOpenNote({ date, edit })} />;
+              // The daily target: reached and stopped, or reached and traded on.
+              const targetDay = targetDays.get(date);
+              const targetState = targetDay?.hitAt ? (targetDay.afterCount > 0 ? 'after' : 'hit') : null;
+              const targetTitle = targetState === 'after'
+                ? `Target reached, then ${targetDay!.afterCount} more ${targetDay!.afterCount === 1 ? 'trade' : 'trades'}`
+                : 'Target reached and stopped';
 
               return (
                 <div
                   key={cell.id}
-                  className={`${bgColor} @container group min-h-[68px] md:min-h-[110px] p-1 md:p-3 flex flex-col select-none touch-manipulation`}
+                  className={`${bgColor} relative @container group min-h-[68px] md:min-h-[110px] p-1 md:p-3 flex flex-col select-none touch-manipulation`}
                   title={note ? "Double-click to edit the note" : "Double-click to write a note"}
                   onDoubleClick={() => setOpenNote({ date, edit: true })}
                   // A phone has no hover or double-click: one tap opens the day.
                   onClick={() => { if (isPhone()) setOpenNote({ date, edit: false }); }}
                 >
                   <div className="flex items-start justify-between h-5 md:h-6">
-                    {isToday ? (
-                      <span className="text-xs font-bold bg-orange-400 text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
-                    ) : (
-                      <span className="text-xs font-bold text-stone-400">{day}</span>
-                    )}
+                    <span className="flex items-center gap-1.5">
+                      {isToday ? (
+                        <span className="text-xs font-bold bg-orange-400 text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
+                      ) : (
+                        <span className="text-xs font-bold text-stone-400">{day}</span>
+                      )}
+                      {/* A computer has room for the icon beside the date; a phone gets the strip at the bottom. */}
+                      {targetState && (
+                        <span title={targetTitle} className="hidden md:block">
+                          <Target className={`w-4 h-4 ${targetState === 'after' ? 'text-red-900' : 'text-orange-400'}`} />
+                        </span>
+                      )}
+                    </span>
                     {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
                     <span className="md:hidden">{noteControl}</span>
                   </div>
-                  
+                  {targetState && (
+                    <span title={targetTitle} className={`md:hidden absolute inset-x-1 bottom-0 h-[3px] rounded-full ${targetState === 'after' ? 'bg-red-900' : 'bg-orange-400'}`} />
+                  )}
+
                   {stats && (
                     <div className="mt-auto md:hidden text-center leading-tight">
                       <div style={phoneFit(isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl, rate), '10px')} className={`whitespace-nowrap font-black tracking-tighter tabular-nums ${
@@ -458,6 +477,18 @@ export default function CalendarPage() {
         </div>
         )}
       </div>
+
+      {view === 'month' && targetPct > 0 && (
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1 -mt-3 px-1 md:px-2 text-[10px] font-bold text-stone-400">
+          {([['hit', 'Target reached, stopped', 'text-orange-400', 'bg-orange-400'], ['after', 'Traded after the target', 'text-red-900', 'bg-red-900']] as const).map(([key, label, text, bg]) => (
+            <span key={key} className="flex items-center gap-1.5">
+              <Target className={`hidden md:block w-3.5 h-3.5 ${text}`} />
+              <span className={`md:hidden w-4 h-[3px] rounded-full ${bg}`} />
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {openNote && <DayNoteModal key={openNote.date} date={openNote.date} startEditing={openNote.edit} bahtRate={rate} onClose={() => setOpenNote(null)} />}
       {openWeekNote && (

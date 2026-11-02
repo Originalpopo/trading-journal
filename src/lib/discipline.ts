@@ -70,9 +70,10 @@ export function ruleCounts(notes: RuleNote[], rules: DisciplineRule[], from?: st
 
 export type DayDiscipline = 'clean' | 'broken';
 
-// A day is broken when it had an off-plan trade or its note ticks a broken rule, and clean when it
-// had trades that were all on plan. Days with neither are left out: a day off is not a lapse.
-export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[]): Map<string, DayDiscipline> {
+// A day is broken when it had an off-plan trade, its note ticks a broken rule, or it is in
+// `alsoBroken` (a trade entered after the daily target, see dailyTarget.ts); clean when it had trades
+// that were all on plan. Days with neither are left out: a day off is not a lapse.
+export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], alsoBroken?: Set<string>): Map<string, DayDiscipline> {
   const days = new Map<string, DayDiscipline>();
   for (const t of trades) {
     const day = dayKeyOfTime(t.time);
@@ -81,12 +82,13 @@ export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[]): Map<str
     else if (!days.has(day)) days.set(day, 'clean');
   }
   for (const n of notes) if ((n.brokenRules ?? []).length > 0) days.set(n.date, 'broken');
+  for (const day of alsoBroken ?? []) days.set(day, 'broken');
   return days;
 }
 
 // Clean trading days in a row: `current` counts back from the latest day, `best` is the longest run.
-export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[]): { current: number; best: number } {
-  const ordered = [...disciplineByDay(trades, notes).entries()].sort(([a], [b]) => a.localeCompare(b));
+export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[], alsoBroken?: Set<string>): { current: number; best: number } {
+  const ordered = [...disciplineByDay(trades, notes, alsoBroken).entries()].sort(([a], [b]) => a.localeCompare(b));
   let run = 0, best = 0;
   for (const [, state] of ordered) {
     run = state === 'clean' ? run + 1 : 0;

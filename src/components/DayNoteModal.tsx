@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, ChevronDown, XCircle, type LucideIcon } from "lucide-react";
+import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, ChevronDown, XCircle, Target, type LucideIcon } from "lucide-react";
+import { useDailyTargets } from "./useDailyTargets";
 import Link from "next/link";
 import SaveRow from "./SaveRow";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
@@ -303,6 +304,7 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
   const dayTrades = useMemo(() => tradesOfDay(trades, date), [trades, date]);
   const offPlanCount = dayTrades.filter(t => !isOnPlan(t)).length;
   const rules = useJournalStore(state => state.preferences.disciplineRules);
+  const target = useDailyTargets().days.get(date);
 
   // A trade of the day opened on top of the note, looked up by id so edits show at once.
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -333,6 +335,25 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
       onClose={onClose}
       bahtRate={bahtRate}
     >
+        {/* The daily target of a day that was traded: reached or not, and what came after it. */}
+        {target && target.target > 0 && dayTrades.length > 0 && (
+          <p className={`mb-3 shrink-0 text-[11px] font-bold flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${
+            !target.hitAt ? 'text-stone-400' : target.afterCount > 0 ? 'text-red-900' : 'text-orange-400'
+          }`}>
+            <Target className="w-3.5 h-3.5 shrink-0" />
+            {isPrivacyMode ? 'Daily target' : `Target ${formatPnl(target.target, bahtRate)}`}
+            {' · '}
+            {!target.hitAt
+              ? 'not reached'
+              : `reached at ${clockOf(target.hitAt)}${target.afterCount === 0 ? ', stopped' : ''}`}
+            {target.afterCount > 0 && (
+              <span>
+                · {target.afterCount} {target.afterCount === 1 ? 'trade' : 'trades'} after
+                {!isPrivacyMode && `: ${formatPnl(target.afterPnl, bahtRate)}`} · {formatNumber(target.afterRr)} R
+              </span>
+            )}
+          </p>
+        )}
         {dayTrades.length > 0 && (
           <NoteAccordion
             title={`Trades · ${dayTrades.length}`}

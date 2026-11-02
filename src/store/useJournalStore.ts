@@ -108,6 +108,8 @@ export interface Preferences {
   usualRiskWindow?: number;
   // The user's own trading rules, ticked in a day note when broken.
   disciplineRules?: DisciplineRule[];
+  // Daily profit target in % of the balance the day started with (default 2.5; 0 turns it off).
+  dailyTargetPct?: number;
 }
 
 interface JournalState {
