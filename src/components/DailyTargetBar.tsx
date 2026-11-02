@@ -1,11 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Target, AlertTriangle } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDailyTargets } from "./useDailyTargets";
 import { formatNumber } from "@/lib/utils";
 
-const usd = (n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
+// Lucide's Flame, the app's logo, drawn filled at the tip of the bar.
+const FLAME_PATH = "M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4";
+
+const usd =(n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
 
 // Today's progress to the daily target, as a bar that fills up. Hidden while the target is off or the
 // account has no balance to take a share of.
@@ -13,9 +17,21 @@ export default function DailyTargetBar() {
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
   const { days, pct, today } = useDailyTargets();
   const day = days.get(today);
-  if (!day || day.target <= 0) return null;
+  const hasBar = !!day && day.target > 0;
+
+  // The bar starts empty and fills up to today's share once it is on screen, alongside the charts' own
+  // opening animation.
+  const [isFilled, setIsFilled] = useState(false);
+  useEffect(() => {
+    if (!hasBar || isFilled) return;
+    const frame = requestAnimationFrame(() => setIsFilled(true));
+    return () => cancelAnimationFrame(frame);
+  }, [hasBar, isFilled]);
+
+  if (!day || !hasBar) return null;
 
   const isHit = !!day.hitAt;
+  const isOnTarget = isHit && day.pnl >= day.target;
   const share = Math.max(0, Math.min(1, day.pnl / day.target));
   const percentText = `${Math.round(Math.max(0, day.pnl / day.target) * 100)}%`;
 
@@ -37,22 +53,38 @@ export default function DailyTargetBar() {
             </>
           )}
         </span>
-        <div className="order-3 md:order-2 w-full md:w-auto md:flex-1 h-4 rounded-full bg-stone-100 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
-          <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-700 ease-out ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${share * 100}%` }} />
+        <div className="order-3 md:order-2 w-full md:w-auto md:flex-1 relative">
+          <div className="h-4 rounded-full bg-stone-100 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
+            <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isFilled ? share * 100 : 0}%` }} />
+          </div>
+          {/* The app's flame, lit at the end of the full bar: a reward shown only while the day is at or over its
+              target. Trading the profit back below the target puts it out. */}
+          {isOnTarget && (
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="flame-light absolute top-1/2 left-full w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_rgba(251,146,60,0.45)]"
+            >
+              {/* A white edge under the flame keeps it apart from the orange bar behind it. */}
+              <g className="flame-outer" strokeLinejoin="round">
+                <path className="fill-white stroke-white" strokeWidth={4.5} d={FLAME_PATH} />
+                <path className="fill-orange-400 stroke-orange-400" strokeWidth={1.5} d={FLAME_PATH} />
+              </g>
+              <path
+                className="flame-inner fill-orange-50"
+                d="M12 20.5a3.2 3.2 0 0 1-3.2-3.2c0-1.8 1.3-2.9 2.1-4.4.3 1 1.1 1.8 2 2.4 1.3.8 2.3 1.6 2.3 3a3.2 3.2 0 0 1-3.2 2.2z"
+              />
+            </svg>
+          )}
         </div>
       </div>
 
-      {isHit && (
-        <p className={`mt-2 text-[11px] font-bold flex items-center gap-1.5 ${day.afterCount > 0 ? "text-red-900" : "text-orange-400"}`}>
-          {day.afterCount > 0 ? (
-            <>
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              Traded after the target: {day.afterCount} {day.afterCount === 1 ? "trade" : "trades"}
-              {!isPrivacyMode && <>, {usd(day.afterPnl)}</>} · {formatNumber(day.afterRr)} R
-            </>
-          ) : (
-            <>Stop for today. Setups after this are not for today.</>
-          )}
+      {/* Trades taken after the target, centred in the card under the bar's line. */}
+      {isHit && day.afterCount > 0 && (
+        <p className="mt-2 text-[11px] font-bold flex flex-wrap items-center justify-center gap-x-1.5 text-center text-red-900">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          Traded after the target: {day.afterCount} {day.afterCount === 1 ? "trade" : "trades"}
+          {!isPrivacyMode && <>, {usd(day.afterPnl)}</>} · {formatNumber(day.afterRr)} R
         </p>
       )}
     </div>

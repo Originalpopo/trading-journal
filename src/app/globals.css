@@ -48,3 +48,52 @@ body {
 .calendar-grid {
     @apply grid grid-cols-7 gap-[1px] bg-stone-200 border border-stone-200 rounded-xl overflow-hidden;
 }
+
+/* The flame at the tip of the daily target bar: the outer flame sways, the inner one flickers out of step. */
+@keyframes flame-sway {
+    0%, 100% { transform: scale(1, 1) skewX(0deg); }
+    25% { transform: scale(0.96, 1.06) skewX(-3deg); }
+    50% { transform: scale(1.03, 0.97) skewX(2deg); }
+    75% { transform: scale(0.98, 1.04) skewX(-1deg); }
+}
+
+@keyframes flame-flicker {
+    0%, 100% { transform: scale(1, 1); opacity: 0.95; }
+    30% { transform: scale(0.9, 1.12); opacity: 0.8; }
+    60% { transform: scale(1.06, 0.92); opacity: 1; }
+}
+
+.flame-outer {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: flame-sway 1.4s ease-in-out infinite;
+}
+
+.flame-inner {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: flame-flicker 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flame-outer, .flame-inner {
+        animation: none;
+    }
+}
+
+/* The flame lights up once the bar has filled to the end (the bar takes 1s). */
+@keyframes flame-light {
+    from { scale: 0; opacity: 0; }
+    to { scale: 1; opacity: 1; }
+}
+
+.flame-light {
+    transform-origin: 50% 100%;
+    animation: flame-light 0.35s ease-out 0.9s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flame-light {
+        animation: none;
+    }
+}
