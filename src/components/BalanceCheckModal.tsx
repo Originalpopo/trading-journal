@@ -63,8 +63,8 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
         </div>
 
         <p className="text-xs text-stone-500 font-medium mb-5">
-          Enter the <span className="font-bold text-stone-950">Balance</span> your broker shows right now (not Equity, which includes open
-          trades). The journal adds up deposits, withdrawals and every trade&apos;s P&L up to that moment; the two must be equal to the cent.
+          กรอกยอด <span className="font-bold text-stone-950">Balance</span> ที่โบรกเกอร์แสดงตอนนี้ (ไม่ใช่ Equity ซึ่งรวมเทรดที่ยังเปิดอยู่)
+          ระบบจะรวมเงินฝาก เงินถอน และกำไรขาดทุนของทุกเทรดจนถึงเวลานั้น สองยอดต้องตรงกันถึงเซนต์
         </p>
 
         <div className="grid grid-cols-2 gap-4 mb-5">
@@ -97,14 +97,14 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
             <div className={`flex items-center gap-2 mt-3 pt-3 border-t text-sm font-black ${result.matches ? 'text-orange-400 border-orange-200' : 'text-red-900 border-red-200'}`}>
               {result.matches ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
               {result.matches
-                ? 'Matches to the cent'
-                : `Journal is $${formatNumber(Math.abs(result.difference))} ${result.difference > 0 ? 'higher' : 'lower'} than the broker`}
+                ? 'ตรงกับโบรกเกอร์ถึงเซนต์'
+                : `ยอดใน journal ${result.difference > 0 ? 'สูงกว่า' : 'ต่ำกว่า'}โบรกเกอร์ $${formatNumber(Math.abs(result.difference))}`}
             </div>
             {!result.matches && (
               <p className="text-[11px] font-medium text-red-900 mt-2">
                 {result.difference > 0
-                  ? 'Look for: a losing trade or a withdrawal that is not in the journal, a trade entered twice, or a fee/swap the broker charged.'
-                  : 'Look for: a winning trade or a deposit that is not in the journal, or a withdrawal entered twice.'}
+                  ? 'ลองหา: เทรดที่ขาดทุนหรือการถอนเงินที่ยังไม่ได้ลงใน journal, เทรดที่ลงซ้ำ 2 ครั้ง, หรือค่าธรรมเนียม/ค่า swap ที่โบรกเกอร์หักไป'
+                  : 'ลองหา: เทรดที่กำไรหรือการฝากเงินที่ยังไม่ได้ลงใน journal, หรือการถอนเงินที่ลงซ้ำ 2 ครั้ง'}
               </p>
             )}
           </div>
@@ -134,7 +134,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
           </div>
         )}
 
-        <SaveRow isDirty={balance.trim() !== ""} canSave={isValid} isSaving={isSaving} onSave={handleSave} label="Save check" />
+        <SaveRow isDirty={balance.trim() !== ""} canSave={isValid} isSaving={isSaving} onSave={handleSave} />
       </div>
     </div>
   );

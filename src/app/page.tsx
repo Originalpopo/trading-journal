@@ -454,56 +454,63 @@ export default function Dashboard() {
               <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
             )}
           </div>
-          <div className="relative">
           <div className="@container glass-card p-6 h-full flex flex-col justify-center items-center text-center">
-            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Balance</p>
+            {/* The broker check sits as icons beside the label, so the card keeps the same three lines as Net Profit:
+                a mismatch first, else Yes / No when a check is due, else the tick of the last match. */}
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider">Balance</p>
+              {brokerCheck && !brokerCheck.matches && (
+                <button
+                  type="button"
+                  onClick={() => setIsBalanceCheckOpen(true)}
+                  title={`${isPrivacyMode ? 'Differs from broker' : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on ${balanceCheck!.time.split('T')[0]}: open the check`}
+                  aria-label="Differs from broker: open the check"
+                  className="-m-1.5 p-1.5 text-red-900 hover:opacity-70 transition"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {brokerCheck?.matches && !needsBrokerCheck && (
+                <button
+                  type="button"
+                  onClick={() => setIsBalanceCheckOpen(true)}
+                  title={`Matched broker on ${balanceCheck!.time.split('T')[0]}`}
+                  aria-label="Matched broker: open the check"
+                  className="-m-1.5 p-1.5 text-orange-400 hover:opacity-70 transition"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {needsBrokerCheck && (!brokerCheck || brokerCheck.matches) && (
+                <span className="-my-1 flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={isConfirmingMatch}
+                    onClick={confirmBrokerMatch}
+                    title={isPrivacyMode ? "The broker's Balance is the same as this one" : `The broker's Balance is exactly $${formatNumber(data.runningBalance)} right now`}
+                    aria-label="Same as broker"
+                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-orange-50 text-orange-400 border-orange-200 hover:bg-orange-100 transition disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsBalanceCheckOpen(true)}
+                    title="The broker shows a different amount: enter it to see the difference"
+                    aria-label="Differs from broker"
+                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 transition"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+            </div>
             <p style={fitFontSize(balanceText, '1.875rem')} className="leading-9 font-extrabold stat-value text-stone-950">
               {balanceText}
             </p>
             {bahtRate && !isPrivacyMode && (
               <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
             )}
-          </div>
-          {/* The broker check sits in the gap under the card, so Balance and Net Profit stay the same three lines.
-              The gap fits one line: a mismatch first, else the question when a check is due, else the last match. */}
-          <div className="absolute top-full inset-x-0 mt-1 flex justify-center whitespace-nowrap">
-            {brokerCheck && (!needsBrokerCheck || !brokerCheck.matches) && (
-              <button
-                type="button"
-                onClick={() => setIsBalanceCheckOpen(true)}
-                title="Open the broker balance check"
-                className={`text-[10px] font-bold flex items-center gap-1 transition hover:opacity-70 ${brokerCheck.matches ? 'text-orange-400' : 'text-red-900'}`}
-              >
-                {brokerCheck.matches
-                  ? <><CheckCircle2 className="w-3 h-3" /> Matched broker on {balanceCheck!.time.split('T')[0]}</>
-                  : <><AlertTriangle className="w-3 h-3" /> {isPrivacyMode
-                      ? 'Differs from broker'
-                      : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on {balanceCheck!.time.split('T')[0]}</>}
-              </button>
-            )}
-            {needsBrokerCheck && (!brokerCheck || brokerCheck.matches) && (
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
-                <span>{isPrivacyMode ? 'Same as broker?' : `Broker shows $${formatNumber(data.runningBalance)}?`}</span>
-                <button
-                  type="button"
-                  disabled={isConfirmingMatch}
-                  onClick={confirmBrokerMatch}
-                  title="The broker's Balance is exactly this amount right now"
-                  className="px-2 py-0.5 rounded-md border bg-orange-50 text-orange-400 border-orange-200 hover:bg-orange-100 transition flex items-center gap-0.5 disabled:opacity-50"
-                >
-                  <Check className="w-3 h-3" /> Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsBalanceCheckOpen(true)}
-                  title="The broker shows a different amount: enter it to see the difference"
-                  className="px-2 py-0.5 rounded-md border bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 transition flex items-center gap-0.5"
-                >
-                  <X className="w-3 h-3" /> No
-                </button>
-              </div>
-            )}
-          </div>
           </div>
         </div>
       </section>
