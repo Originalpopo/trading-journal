@@ -70,11 +70,20 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
   const isDirty = isEditing && (content !== (note?.content ?? "") || mood !== savedMood);
 
   // Backdrop clicks and Esc are easy to hit by accident, so they ask before discarding edits.
+  // The X is pressed on purpose, so it closes straight away, like Cancel.
   const requestClose = () => {
     if (isDirty && !confirm("Discard your unsaved changes?")) return;
     onClose();
   };
   useEscapeToClose(true, requestClose);
+
+  // Cancel throws away what was typed: back to reading the saved note, or closed when there is none.
+  const cancelEdit = () => {
+    if (!note) return onClose();
+    setContent(note.content);
+    setMood(savedMood);
+    setIsEditing(false);
+  };
 
   const handleSave = async () => {
     if (!content.trim()) return;
@@ -120,7 +129,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
               </p>
             </div>
           </div>
-          <button onClick={requestClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition shrink-0 ml-4">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition shrink-0 ml-4">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -181,7 +190,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
             </div>
             {/* -mt-4 takes back the column gap, so nothing is left below the note while Save is hidden. */}
             <div className="shrink-0 -mt-4">
-              <SaveRow isDirty={isDirty} canSave={!!content.trim()} isSaving={isSubmitting} onSave={handleSave} />
+              <SaveRow isDirty={isDirty} canSave={!!content.trim()} isSaving={isSubmitting} onSave={handleSave} onCancel={cancelEdit} />
             </div>
           </div>
         ) : (
