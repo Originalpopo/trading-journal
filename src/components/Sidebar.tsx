@@ -81,10 +81,10 @@ export default function Sidebar() {
     { name: "Performance", href: "/performance", icon: TrendingUp },
     { name: "History", href: "/history", icon: History },
     { name: "Calendar", href: "/calendar", icon: Calendar },
+    { name: "Notes", href: "/notes", icon: StickyNote },
     { name: "Simulation", href: "/simulation", icon: FlaskConical },
     { name: "Tax Report", href: "/report", icon: Receipt },
     { name: "Statement", href: "/statement", icon: FileText },
-    { name: "Notes", href: "/notes", icon: StickyNote },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
