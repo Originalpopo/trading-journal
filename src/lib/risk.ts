@@ -1,5 +1,5 @@
 import { pointValueOf, medianPointValue, type ZoneTrade } from './tradeZones.ts';
-import { BE_RR_THRESHOLD, deriveResultType, parseRisk } from './stats.ts';
+import { getBeThreshold, deriveResultType, parseRisk } from './stats.ts';
 
 // A trade's risk, its result in R and its TP/SL/BE label are never trusted from storage: they are
 // worked out here, from the facts of the trade, every time trades are loaded or planned for import.
@@ -8,7 +8,7 @@ import { BE_RR_THRESHOLD, deriveResultType, parseRisk } from './stats.ts';
 // with, in dollars. The broker's order history only reports where the stop was last, so the first
 // stop is known when the notifications log or the user supplied it, or when the last stop is still
 // on the losing side of the entry (it was never moved to break-even). Otherwise 1R is the usual 1R
-// of the time: the median of the 10 trades before it whose 1R is known (defaultRiskAt), else the
+// of the time: the median of the 10 trades (Settings) before it whose 1R is known (defaultRiskAt), else the
 // Settings value. It is saved with the trade, so a later change never rewrites it.
 
 export interface RiskTrade extends ZoneTrade {
@@ -39,8 +39,14 @@ export interface RiskContext {
   knownRisks?: { at: number; risk: number }[]; // 1R of trades whose first stop (or typed risk) is known, by entry time
 }
 
-// How many trades with a known 1R make up "the usual 1R" of a moment.
-const USUAL_RISK_WINDOW = 10;
+// How many trades with a known 1R make up "the usual 1R" of a moment. The default; Settings can
+// change it (setUsualRiskWindow), and the store sets it before trades are derived.
+export const USUAL_RISK_WINDOW = 10;
+let usualRiskWindow = USUAL_RISK_WINDOW;
+export const getUsualRiskWindow = () => usualRiskWindow;
+export const setUsualRiskWindow = (value: number | undefined) => {
+  usualRiskWindow = value !== undefined && Number.isInteger(value) && value >= 1 ? value : USUAL_RISK_WINDOW;
+};
 
 // A stop the order history shows closer to the entry than this share of the entry price was dragged
 // there to break even: it is not the risk the trade was opened with. Measured in price, not in
@@ -86,13 +92,13 @@ const timeOf = (t: { entryTime?: string; time?: string }) => {
   return value ? new Date(value.replace(' ', 'T')).getTime() : NaN;
 };
 
-// The usual 1R when a trade was opened: the median of the last 10 known 1Rs before it, so it grows
+// The usual 1R when a trade was opened: the median of the last 10 (Settings) known 1Rs before it, so it grows
 // with the account yet never changes for an old trade. Without any, the Settings value.
 export function defaultRiskAt(ctx: RiskContext, t: { entryTime?: string; time?: string }): number {
   const known = ctx.knownRisks ?? [];
   const at = timeOf(t);
   const before = Number.isNaN(at) ? known : known.filter(k => k.at < at);
-  const recent = before.slice(-USUAL_RISK_WINDOW).map(k => k.risk);
+  const recent = before.slice(-usualRiskWindow).map(k => k.risk);
   return recent.length > 0 ? round2(median(recent)) : ctx.defaultRisk;
 }
 
@@ -122,7 +128,7 @@ function resultTypeOf(t: RiskTrade, profit: number, risk: number, stop: ReturnTy
     const moved = stop ? Math.abs(t.slPrice - stop.price) > 1e-9 : true;
     if (onLosingSide || !moved) return 'SL';
     // A stop trailed far into profit is a win, not a break-even.
-    return risk > 0 && profit / risk > BE_RR_THRESHOLD ? 'TP' : 'BE';
+    return risk > 0 && profit / risk > getBeThreshold() ? 'TP' : 'BE';
   }
   if (exitType && exitType !== 'stop loss') return profit > 0 ? 'TP' : profit < 0 ? 'SL' : 'BE';
   return deriveResultType(profit, risk);

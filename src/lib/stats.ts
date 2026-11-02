@@ -13,12 +13,18 @@ export interface StatTrade {
 }
 
 // For a trade that doesn't say how it was closed: a result within ±0.4R of zero is break-even.
+// The default; Settings can change it (setBeThreshold), and the store sets it before trades are derived.
 export const BE_RR_THRESHOLD = 0.4;
+let beThreshold = BE_RR_THRESHOLD;
+export const getBeThreshold = () => beThreshold;
+export const setBeThreshold = (value: number | undefined) => {
+  beThreshold = value !== undefined && value >= 0 ? value : BE_RR_THRESHOLD;
+};
 
 export const parseRisk = (risk: number | string | undefined): number => parseFloat(String(risk || 0)) || 0;
 
 function classifyBySize(pnl: number, risk: number): TradeOutcome {
-  if (risk > 0 ? Math.abs(pnl / risk) <= BE_RR_THRESHOLD : pnl === 0) return 'be';
+  if (risk > 0 ? Math.abs(pnl / risk) <= beThreshold : pnl === 0) return 'be';
   return pnl > 0 ? 'win' : 'loss';
 }
 

@@ -19,6 +19,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - Buttons on the right use `<HeaderButton>`: icon + label from `md` up, the icon alone (36px square) on a phone. Give each button on a page an icon that tells it apart from the others (use `phoneIcon` when two share the desktop icon). `variant`: `primary` (orange, the main action), `secondary` (grey), `outline` (orange border), `plain` (white, e.g. "+").
   - Figures or status on the right (Calendar's month figures, the weather icons) must also fit the line on a phone: show fewer or one at a time rather than wrapping.
   - Check new or changed pages at 390px and desktop before handing them over.
+- **Save button in a card of fields (every page, including new ones)**: Use `<SaveRow>` from `src/components/SaveRow.tsx` as the last child of the card. Do not hand-build a Save button for a card.
+  - It stays hidden, with the card's bottom edge pulled up, until a value in that card is changed. Then the edge slides down and an active orange "Save" button appears at the bottom right. Changing the value back to what is saved hides it again.
+  - Pass `isDirty` (something differs from what is saved), `canSave` (the changed value is valid; while false the button shows faded and can't be pressed), `isSaving`, and `onSave` (or `submit` inside a `<form>`; don't put the form in `space-y-*`, or the hidden row still leaves a gap).
+  - The label is just "Save" ("Saving..." while saving), never "Save Settings" or similar. One card, one Save button. When the action is not saving, pass `label`/`icon` for it (e.g. "Import" in the Import & Backup popup).
+  - Popups with fields use it too (Add Entry, the Import paste box): no Cancel button beside it, the popup's X or Esc closes.
+- **Tabs (Settings, the Add Entry popup, and any new ones)**: Use `<PillTabs>` from `src/components/PillTabs.tsx`, not an accordion. Each tab has its own icon; on a phone the tabs show the icon only and share the row equally. Pass `onWhite` when the bar sits on a white card or popup.
 - **Checklists in History Table**: Every checklist item has a unique Lucide icon ("On Plan" uses `ClipboardCheck`). The History table's "On Plan" column renders the icon of each item in `CHECKLIST_NAMES` side by side.
   - If a checklist is selected for that trade, render its specific icon in orange (`text-orange-400`).
   - If a checklist is not selected, render its specific icon in a muted color (`text-stone-300`).

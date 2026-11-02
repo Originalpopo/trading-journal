@@ -7,15 +7,20 @@ import type { BalanceCheck, BalanceCheckRecord } from '@/lib/reconcile';
 import type { StatementProfile } from '@/lib/statement';
 import type { DayNote } from '@/lib/dayNotes';
 import type { WeekNote } from '@/lib/weekNotes';
-import { withDerivedRisk, resolveDefaultRisk } from '@/lib/risk';
+import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow } from '@/lib/risk';
+import { setBeThreshold } from '@/lib/stats';
 
 let legacyChartMigrationStarted = false;
 
 // Trades as stored. The app never reads these: `trades` in the store is always this list with
 // risk, R and TP/SL/BE worked out again, so a stored figure can never go stale.
 let storedTrades: Trade[] = [];
-const deriveTrades = (preferences: Preferences): Trade[] =>
-  withDerivedRisk(storedTrades, resolveDefaultRisk(preferences.defaultRisk, storedTrades));
+// The rules from Settings are set first, so every page classifies trades the same way.
+const deriveTrades = (preferences: Preferences): Trade[] => {
+  setBeThreshold(preferences.beThreshold);
+  setUsualRiskWindow(preferences.usualRiskWindow);
+  return withDerivedRisk(storedTrades, resolveDefaultRisk(preferences.defaultRisk, storedTrades));
+};
 
 // How exitTime was determined: 'exact' from broker data, 'estimated' from a TP/SL placed after
 // entry, 'uncertain' when the broker data had nothing better (SL hit with no TP), 'manual' when
@@ -94,6 +99,12 @@ export interface Preferences {
   statementProfile?: StatementProfile;
   // When a backup file was last downloaded (ISO time), for the backup reminder.
   lastBackupAt?: string;
+  // Days before the backup reminder turns red (default 30).
+  backupDueDays?: number;
+  // A trade that doesn't say how it was closed is break-even within ±this many R (default 0.4).
+  beThreshold?: number;
+  // How many recent trades with a known first stop make up the usual 1R (default 10).
+  usualRiskWindow?: number;
 }
 
 interface JournalState {

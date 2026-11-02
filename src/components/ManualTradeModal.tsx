@@ -9,7 +9,9 @@ import { initialStopOf, buildRiskContext, deriveTradeRisk, resolveDefaultRisk, d
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { hasFractionOfCent } from "@/lib/money";
 import { DEFAULT_LOT_SIZE } from "@/lib/statement";
-import { X, CheckCircle2, XCircle, ChevronDown } from "lucide-react";
+import { X, CheckCircle2, XCircle, ChevronDown, ChartCandlestick, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import PillTabs, { type PillTab } from "./PillTabs";
+import SaveRow from "./SaveRow";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -257,8 +259,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setIsSubmitting(true);
 
     try {
@@ -371,15 +373,23 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     liveRRStr = `${formatNumber(rr)} R`;
     liveRRClass = rr >= 0 ? "text-orange-400 normal-case tracking-normal" : "text-red-900 normal-case tracking-normal";
   }
+  const canSubmit = !invalidAmount && !(!isFundingEntry && invalidSize) && !(isFundingEntry && invalidThb) && !(entryType === "TRADE" && hasInitialSl && !validInitialSl);
+  // Save shows once something was typed. On a new entry, only switching tabs is not something to save.
+  const hasChangesToSave = initialForm !== null && (Object.keys(currentForm) as (keyof FormState)[]).some(key =>
+    key === 'entryType'
+      ? Boolean(tradeToEdit) && currentForm.entryType !== initialForm.entryType
+      : key === 'checklists'
+        ? currentForm.checklists.join('|') !== initialForm.checklists.join('|')
+        : currentForm[key] !== initialForm[key]);
 
   if (!isOpen) return null;
 
   // While editing, only the kinds the entry can turn into: a trade stays a trade, funding stays funding.
-  const sections: { type: string; label: string }[] = [
-    { type: "TRADE", label: "Trade" },
-    { type: "DEPOSIT", label: "Deposit" },
-    { type: "WITHDRAW", label: "Withdraw" },
-  ].filter(s => !tradeToEdit || (tradeToEdit.isFunding ? s.type !== "TRADE" : s.type === "TRADE"));
+  const sections: PillTab<string>[] = [
+    { id: "TRADE", label: "Trade", icon: ChartCandlestick },
+    { id: "DEPOSIT", label: "Deposit", icon: ArrowDownToLine },
+    { id: "WITHDRAW", label: "Withdraw", icon: ArrowUpFromLine },
+  ].filter(s => !tradeToEdit || (tradeToEdit.isFunding ? s.id !== "TRADE" : s.id === "TRADE"));
 
   const tradeFields = (
     <>
@@ -603,40 +613,21 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           </button>
         </div>
 
-        <div className="space-y-3 overflow-y-auto pr-2 flex-1 border-0 border-transparent" style={{ outline: 'none' }}>
-          {/* Accordion: the open section is the kind of entry being saved. */}
-          {sections.map(({ type, label }) => (
-            <div key={type} className="border border-stone-200 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setEntryType(type)}
-                aria-expanded={entryType === type}
-                className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-bold text-stone-950 text-left"
-              >
-                <span>{label}</span>
-                <ChevronDown className={`w-4 h-4 shrink-0 text-stone-400 transition-transform ${entryType === type ? "rotate-180" : ""}`} />
-              </button>
-              {entryType === type && (
-                <div className="px-4 pb-4 space-y-4">
-                  {type === "TRADE" ? tradeFields : fundingFields}
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
-                    <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={3}
-                      className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition resize-y"></textarea>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+        {sections.length > 1 && (
+          <PillTabs tabs={sections} value={entryType} onChange={setEntryType} onWhite className="mb-4 shrink-0" />
+        )}
+
+        <div className="space-y-4 overflow-y-auto pr-2 flex-1 border-0 border-transparent" style={{ outline: 'none' }}>
+          {entryType === "TRADE" ? tradeFields : fundingFields}
+          <div>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
+            <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={3}
+              className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition resize-y"></textarea>
+          </div>
         </div>
 
-        <div className="flex gap-3 justify-end pt-4 shrink-0">
-          <button onClick={() => onClose()} disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={isSubmitting || invalidAmount || (!isFundingEntry && invalidSize) || (isFundingEntry && invalidThb) || (entryType === "TRADE" && hasInitialSl && !validInitialSl)}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
-            {isSubmitting ? "Saving..." : "Save"}
-          </button>
+        <div className="shrink-0">
+          <SaveRow isDirty={hasChangesToSave} canSave={canSubmit} isSaving={isSubmitting} onSave={handleSubmit} />
         </div>
       </div>
     </div>

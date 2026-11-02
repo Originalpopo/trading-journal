@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Upload, Trash2, Download, ChevronDown } from "lucide-react";
+import { Upload, Trash2, Download, ChevronDown, Import } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import BackupReminder from "./BackupReminder";
+import SaveRow from "./SaveRow";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
           {sectionHeader("paste", "Paste from TradingView")}
           {openSection === "paste" && (
           <div className="px-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <p className="text-[11px] font-bold text-stone-500 mb-1">History tab</p>
               <textarea
@@ -86,19 +87,11 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
             </div>
           </div>
           {pasteText.trim() && !logText.trim() ? (
-            <p className="text-[11px] font-medium text-stone-400 mb-3">No log: entry times and first stop may be off.</p>
+            <p className="text-[11px] font-medium text-stone-400 mt-3">No log: entry times and first stop may be off.</p>
           ) : logText.trim() && !pasteText.trim() ? (
-            <p className="text-[11px] font-medium text-stone-400 mb-3">Log only: updates trades already in the journal.</p>
+            <p className="text-[11px] font-medium text-stone-400 mt-3">Log only: updates trades already in the journal.</p>
           ) : null}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSubmit}
-              disabled={!pasteText.trim() && !logText.trim()}
-              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50"
-            >
-              Import
-            </button>
-          </div>
+          <SaveRow isDirty={!!pasteText.trim() || !!logText.trim()} isSaving={false} onSave={handleSubmit} label="Import" icon={Import} />
           </div>
           )}
         </div>

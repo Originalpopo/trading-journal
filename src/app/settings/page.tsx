@@ -4,16 +4,43 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
-import { Lock, Save, UserCircle, LogOut, Copy, Check } from "lucide-react";
+import { Lock, UserCircle, LogOut, Copy, Check, Scale, FileText, Database } from "lucide-react";
 import DefaultRiskSetting from "@/components/DefaultRiskSetting";
 import StatementProfileSetting from "@/components/StatementProfileSetting";
-
+import BreakEvenSetting from "@/components/settings/BreakEvenSetting";
+import TaxStepsInfo from "@/components/settings/TaxStepsInfo";
+import BackupSetting from "@/components/settings/BackupSetting";
+import BalanceCheckHistory from "@/components/settings/BalanceCheckHistory";
+import SaveRow from "@/components/SaveRow";
 import PageHeader from "@/components/PageHeader";
+import PillTabs from "@/components/PillTabs";
+
+// Settings are grouped by what they are used for; the open tab is remembered on this device.
+const TABS = [
+  { id: "trading", label: "Trading", icon: Scale },
+  { id: "statement", label: "Statement & Tax", icon: FileText },
+  { id: "data", label: "Data & Backup", icon: Database },
+  { id: "account", label: "Account", icon: UserCircle },
+] as const;
+type TabId = typeof TABS[number]["id"];
+const TAB_KEY = "settingsTab";
+
 export default function SettingsPage() {
+  const [tab, setTabState] = useState<TabId>(() => {
+    try {
+      const saved = localStorage.getItem(TAB_KEY);
+      return TABS.some(t => t.id === saved) ? saved as TabId : "trading";
+    } catch { return "trading"; }
+  });
+  const setTab = (next: TabId) => {
+    setTabState(next);
+    try { localStorage.setItem(TAB_KEY, next); } catch { }
+  };
   const currentUser = auth.currentUser;
   const [isUidCopied, setIsUidCopied] = useState(false);
   const [pin, setPin] = useState("");
   const [hint, setHint] = useState("");
+  const [savedAuth, setSavedAuth] = useState({ pin: "", hint: "" }); // as stored, to tell when the form was changed
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -27,6 +54,7 @@ export default function SettingsPage() {
           const data = docSnap.data();
           setPin(data.pin || "");
           setHint(data.hint || "");
+          setSavedAuth({ pin: data.pin || "", hint: data.hint || "" });
         }
 
       } catch (error) {
@@ -41,6 +69,7 @@ export default function SettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pin === savedAuth.pin && hint === savedAuth.hint) return; // Enter in an unchanged form
     if (pin.length !== 4 || !/^\d+$/.test(pin)) {
       alert("PIN must be exactly 4 digits.");
       return;
@@ -54,6 +83,7 @@ export default function SettingsPage() {
       });
       // Update local storage so the current device doesn't get locked out immediately
       localStorage.setItem("tradejournal_pin", pin);
+      setSavedAuth({ pin, hint });
       alert("Settings saved successfully! Other devices will be forced to re-enter the new PIN.");
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -77,10 +107,30 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <PageHeader title="Settings" />
 
-      <DefaultRiskSetting />
+      <PillTabs tabs={TABS} value={tab} onChange={setTab} className="-mx-4 px-4 md:mx-0 md:px-0" />
 
-      <StatementProfileSetting />
+      {tab === "trading" && (
+        <>
+          <DefaultRiskSetting />
+          <BreakEvenSetting />
+        </>
+      )}
 
+      {tab === "statement" && (
+        <>
+          <StatementProfileSetting />
+          <TaxStepsInfo />
+        </>
+      )}
+
+      {tab === "data" && (
+        <>
+          <BackupSetting />
+          <BalanceCheckHistory />
+        </>
+      )}
+
+      {tab === "account" && (<>
       <div className="bg-white rounded-2xl p-5 md:p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
           <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
@@ -135,7 +185,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-6">
+        <form onSubmit={handleSave}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-stone-950">4-Digit PIN</label>
@@ -163,20 +213,10 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4">
-            <button
-              type="submit"
-              disabled={isSaving || pin.length !== 4}
-              className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {isSaving ? "Saving..." : "Save Settings"}
-            </button>
-          </div>
+          <SaveRow isDirty={pin !== savedAuth.pin || hint !== savedAuth.hint} canSave={pin.length === 4} isSaving={isSaving} submit />
         </form>
       </div>
-
-
+      </>)}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Save } from "lucide-react";
+import { FileText } from "lucide-react";
+import SaveRow from "@/components/SaveRow";
 import { useJournalStore } from "@/store/useJournalStore";
 
 const INPUT = "w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium";
@@ -59,17 +60,7 @@ export default function StatementProfileSetting() {
         </div>
       </div>
 
-      <div className="flex justify-end pt-6">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving || !isDirty}
-          className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2"
-        >
-          <Save className="w-4 h-4" />
-          {isSaving ? "Saving..." : "Save"}
-        </button>
-      </div>
+      <SaveRow isDirty={isDirty} isSaving={isSaving} onSave={handleSave} />
     </div>
   );
 }

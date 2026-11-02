@@ -6,12 +6,13 @@ import { useJournalStore } from "@/store/useJournalStore";
 import { backupAge } from "@/lib/backupReminder";
 
 // How old the latest backup is, or null while the journal has nothing to back up.
-function useBackupAge() {
+export function useBackupAge() {
   const hasData = useJournalStore(state => state.trades.length > 0 || state.funding.length > 0);
   const lastBackupAt = useJournalStore(state => state.preferences.lastBackupAt);
+  const dueDays = useJournalStore(state => state.preferences.backupDueDays);
   // Read once per mount; the age only matters to the day.
   const [now] = useState(() => new Date());
-  return hasData ? backupAge(lastBackupAt, now) : null;
+  return hasData ? backupAge(lastBackupAt, now, dueDays) : null;
 }
 
 // Red dot on the corner of an Upload button (which must be `relative`) while a backup is overdue.

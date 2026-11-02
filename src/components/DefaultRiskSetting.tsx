@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Scale, Save } from "lucide-react";
+import { Scale } from "lucide-react";
+import SaveRow from "@/components/SaveRow";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDefaultRisk } from "@/lib/defaultRisk";
-import { buildRiskContext, defaultRiskAt } from "@/lib/risk";
+import { buildRiskContext, defaultRiskAt, USUAL_RISK_WINDOW } from "@/lib/risk";
 
 // 1R for trades whose first stop is unknown (the stop was moved before it was hit): the usual 1R of
 // the time, worked out from the trades before it. The value saved here is only the fallback.
@@ -12,26 +13,36 @@ export default function DefaultRiskSetting() {
   const updatePreferences = useJournalStore(state => state.updatePreferences);
   const savedDefault = useJournalStore(state => state.preferences.defaultRisk);
   const effectiveDefault = useDefaultRisk();
+  const savedWindow = useJournalStore(state => state.preferences.usualRiskWindow);
+  const riskWindow = savedWindow ?? USUAL_RISK_WINDOW;
   const trades = useJournalStore(state => state.trades);
   const usual = useMemo(() => {
     const ctx = buildRiskContext(trades, effectiveDefault);
-    const count = Math.min(10, ctx.knownRisks?.length ?? 0);
+    const count = Math.min(riskWindow, ctx.knownRisks?.length ?? 0);
     return { count, risk: count > 0 ? defaultRiskAt(ctx, {}) : 0 };
-  }, [trades, effectiveDefault]);
+  }, [trades, effectiveDefault, riskWindow]);
   const [value, setValue] = useState<string | null>(null); // null = not edited yet
+  const [windowValue, setWindowValue] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const shown = value ?? (effectiveDefault ? effectiveDefault.toString() : "");
   const parsed = parseFloat(shown);
-  const canSave = parsed > 0 && parsed !== savedDefault;
+  const shownWindow = windowValue ?? riskWindow.toString();
+  const parsedWindow = Number(shownWindow);
+  const riskChanged = value !== null && parsed !== savedDefault;
+  const windowChanged = windowValue !== null && parsedWindow !== riskWindow;
+  const isValid = parsed > 0 && Number.isInteger(parsedWindow) && parsedWindow >= 1 && parsedWindow <= 100;
+  // A default that was never saved counts as a change, so it can be saved as it is.
+  const isDirty = riskChanged || windowChanged || (!savedDefault && parsed > 0);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updatePreferences({ defaultRisk: parsed });
+      await updatePreferences({ defaultRisk: parsed, usualRiskWindow: parsedWindow });
       setValue(null);
+      setWindowValue(null);
     } catch {
-      alert("Failed to save the default 1R.");
+      alert("Failed to save the 1R settings.");
     } finally {
       setIsSaving(false);
     }
@@ -47,8 +58,8 @@ export default function DefaultRiskSetting() {
           <h3 className="text-lg font-bold text-stone-950">Risk (1R)</h3>
           <p className="text-sm text-stone-500 font-medium">
             เทรดที่ import จะวัด 1R จากจุดเข้าถึง SL แรกที่วางไว้ ถ้า SL ถูกเลื่อนก่อนโดน และไม่มี Notifications log ของเทรดนั้น
-            ระบบจะใช้ 1R ปกติของช่วงนั้นแทน (แสดงด้วย ≈) คือค่ากลางของ 10 เทรดก่อนหน้าที่รู้ SL แรก จึงโตตามบัญชีเอง
-            ค่าในช่องนี้ใช้เฉพาะตอนที่ยังไม่มีเทรดแบบนั้นก่อนหน้า
+            ระบบจะใช้ 1R ปกติของช่วงนั้นแทน (แสดงด้วย ≈) คือค่ากลางของ {riskWindow} เทรดก่อนหน้าที่รู้ SL แรก จึงโตตามบัญชีเอง
+            ช่อง Fallback ใช้เฉพาะตอนที่ยังไม่มีเทรดแบบนั้นก่อนหน้า
           </p>
         </div>
       </div>
@@ -65,8 +76,20 @@ export default function DefaultRiskSetting() {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-end gap-4">
-        <div className="space-y-2 flex-1 max-w-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-stone-950">Trades in usual 1R <span className="font-medium text-stone-400">(default {USUAL_RISK_WINDOW})</span></label>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            max="100"
+            value={shownWindow}
+            onChange={(e) => setWindowValue(e.target.value)}
+            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition"
+          />
+        </div>
+        <div className="space-y-2">
           <label className="block text-sm font-bold text-stone-950">Fallback 1R ($)</label>
           <input
             type="number"
@@ -80,16 +103,9 @@ export default function DefaultRiskSetting() {
             <p className="text-xs text-stone-400 font-medium">Not saved yet: using ${effectiveDefault.toFixed(2)}, the risk most of your trades had.</p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving || !canSave}
-          className="px-6 py-2.5 bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center justify-center gap-2 md:mb-0.5"
-        >
-          <Save className="w-4 h-4" />
-          {isSaving ? "Saving..." : "Save"}
-        </button>
       </div>
+
+      <SaveRow isDirty={isDirty} canSave={isValid} isSaving={isSaving} onSave={handleSave} />
     </div>
   );
 }
