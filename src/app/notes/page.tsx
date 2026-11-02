@@ -123,7 +123,7 @@ export default function NotesPage() {
                   ) : (
                     <button
                       onClick={() => setOpenWeek({ week: group.week, edit: true })}
-                      className="mx-2 my-1 text-xs font-bold text-stone-400 hover:text-orange-400 transition flex items-center gap-1.5"
+                      className="mx-2 py-2 text-xs font-bold text-stone-400 hover:text-orange-400 transition flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Write this week&apos;s note

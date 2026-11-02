@@ -251,12 +251,12 @@ export default function CalendarPage() {
             if (Math.abs(dx) > 30) stepStat(dx < 0 ? 1 : -1);
           }}
         >
-          <div className="flex items-center gap-1 mb-1">
-            <button onClick={() => stepStat(-1)} aria-label="Previous figure" className="px-1 text-stone-300 hover:text-stone-500 transition">
+          <div className="flex items-center gap-3 mb-1">
+            <button onClick={() => stepStat(-1)} aria-label="Previous figure" className="p-2 -m-2 text-stone-300 hover:text-stone-500 transition">
               <ChevronLeft className="w-3 h-3" strokeWidth={3} />
             </button>
             <span className="text-[9px] leading-none font-black text-stone-400 uppercase tracking-widest min-w-[52px]">{shownStat.label}</span>
-            <button onClick={() => stepStat(1)} aria-label="Next figure" className="px-1 text-stone-300 hover:text-stone-500 transition">
+            <button onClick={() => stepStat(1)} aria-label="Next figure" className="p-2 -m-2 text-stone-300 hover:text-stone-500 transition">
               <ChevronRight className="w-3 h-3" strokeWidth={3} />
             </button>
           </div>
@@ -282,7 +282,7 @@ export default function CalendarPage() {
                 <button
                   key={v}
                   onClick={() => changeView(v)}
-                  className={`px-2 md:px-3 py-1.5 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                 >
                   {v}
                 </button>
@@ -294,7 +294,7 @@ export default function CalendarPage() {
                   key={c}
                   onClick={() => changeCurrency(c)}
                   disabled={c === 'THB' && !bahtRate}
-                  className={`px-2 md:px-2.5 py-1.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                 >
                   {c === 'USD' ? '$' : '฿'}
                 </button>

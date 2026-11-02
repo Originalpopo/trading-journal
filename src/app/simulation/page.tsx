@@ -104,7 +104,7 @@ function Toggle<T extends string>({ value, options, onChange }: { value: T; opti
           type="button"
           title={option.title}
           onClick={() => onChange(option.value)}
-          className={`flex-1 text-[10px] font-bold px-2 py-1 rounded transition whitespace-nowrap ${
+          className={`flex-1 text-xs md:text-[10px] font-bold px-2 py-2 md:py-1 rounded transition whitespace-nowrap ${
             value === option.value ? 'bg-white text-stone-950 shadow-md' : 'text-stone-400 hover:text-stone-600'
           }`}
         >

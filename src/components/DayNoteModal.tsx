@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, type LucideIcon } from "lucide-react";
+import SaveRow from "./SaveRow";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useJournalStore, type Trade } from "@/store/useJournalStore";
 import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId, type DaySummary } from "@/lib/dayNotes";
@@ -178,12 +179,9 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                 className="w-full flex-1 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 leading-relaxed focus:outline-none focus:border-orange-400 transition resize-y placeholder:text-stone-300"
               />
             </div>
-            <div className="flex gap-3 justify-end pt-4 border-t border-stone-100 shrink-0">
-              <button onClick={requestClose} disabled={isSubmitting} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-              <button onClick={handleSave} disabled={isSubmitting || !content.trim()}
-                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
-                {isSubmitting ? "Saving..." : "Save"}
-              </button>
+            {/* -mt-4 takes back the column gap, so nothing is left below the note while Save is hidden. */}
+            <div className="shrink-0 -mt-4">
+              <SaveRow isDirty={isDirty} canSave={!!content.trim()} isSaving={isSubmitting} onSave={handleSave} />
             </div>
           </div>
         ) : (

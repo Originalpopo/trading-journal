@@ -270,14 +270,15 @@ export default function HistoryPage() {
           <table className="w-full text-left text-sm whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
               <tr className="text-stone-400 border-b border-stone-100 bg-stone-50">
-                <th className="py-4 pl-2 md:pl-4 pr-0 rounded-tl-xl w-8">
+                {/* The whole cell toggles, so the box is easy to hit with a finger. */}
+                <th className="py-4 pl-2 md:pl-4 pr-0 rounded-tl-xl w-8 cursor-pointer" onClick={(e) => { if (e.target === e.currentTarget && filteredTradeIds.length > 0) toggleSelectAllFiltered(); }}>
                   <input
                     type="checkbox"
                     checked={allFilteredSelected}
                     onChange={toggleSelectAllFiltered}
                     disabled={filteredTradeIds.length === 0}
                     title={allFilteredSelected ? "Unselect all" : `Select all ${filteredTradeIds.length} trades shown by the filters`}
-                    className="w-3.5 h-3.5 accent-orange-400 cursor-pointer align-middle"
+                    className="w-4 h-4 md:w-3.5 md:h-3.5 accent-orange-400 cursor-pointer align-middle"
                   />
                 </th>
                 <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
@@ -348,12 +349,12 @@ export default function HistoryPage() {
 
                 return (
                   <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-stone-50'}`}>
-                    <td className="py-4 pl-2 md:pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-4 pl-2 md:pl-4 pr-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleSelected(t.id); }}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelected(t.id)}
-                        className="w-3.5 h-3.5 accent-orange-400 cursor-pointer align-middle"
+                        className="w-4 h-4 md:w-3.5 md:h-3.5 accent-orange-400 cursor-pointer align-middle"
                       />
                     </td>
                     <td className="py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight">

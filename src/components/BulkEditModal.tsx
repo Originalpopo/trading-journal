@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, CheckCircle2, XCircle } from "lucide-react";
+import SaveRow from "./SaveRow";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
 import { CHECKLIST_NAMES, applyChecklistChanges, type ChecklistChange } from "@/lib/checklists";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
@@ -99,7 +100,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                           key={opt.value}
                           type="button"
                           onClick={() => setChanges(prev => ({ ...prev, [name]: opt.value }))}
-                          className={`text-[11px] font-bold px-3 py-1 rounded-md transition ${
+                          className={`text-[11px] font-bold px-3 py-2 md:py-1 rounded-md transition ${
                             change === opt.value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-600'
                           }`}
                         >
@@ -121,7 +122,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                   key={item}
                   type="button"
                   onClick={() => setTf(item)}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+                  className={`px-3 py-2 md:py-1 text-xs font-bold rounded-md transition ${
                     tf === item ? 'bg-orange-400 text-white shadow-sm' : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
                   }`}
                 >
@@ -132,13 +133,8 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
-          <button onClick={() => close(false)} disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleApply} disabled={isSaving || !hasChanges}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
-            {isSaving ? "Saving..." : `Apply to ${trades.length} trades`}
-          </button>
+        <div className="shrink-0">
+          <SaveRow isDirty={hasChanges} isSaving={isSaving} onSave={handleApply} label={`Apply to ${trades.length} trades`} />
         </div>
       </div>
     </div>

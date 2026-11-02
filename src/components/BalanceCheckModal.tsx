@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, CheckCircle2, AlertTriangle, Save } from "lucide-react";
+import { X, CheckCircle2, AlertTriangle } from "lucide-react";
+import SaveRow from "./SaveRow";
 import { useJournalStore } from "@/store/useJournalStore";
 import { reconcileBalance, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import { hasFractionOfCent } from "@/lib/money";
@@ -133,15 +134,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
           </div>
         )}
 
-        <div className="flex gap-3 justify-end pt-4 border-t border-stone-100">
-          <button onClick={onClose} disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleSave} disabled={isSaving || !isValid}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50 flex items-center gap-2">
-            <Save className="w-4 h-4" />
-            {isSaving ? "Saving..." : "Save check"}
-          </button>
-        </div>
+        <SaveRow isDirty={balance.trim() !== ""} canSave={isValid} isSaving={isSaving} onSave={handleSave} label="Save check" />
       </div>
     </div>
   );
