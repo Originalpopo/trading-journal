@@ -10,14 +10,13 @@ export interface DisciplineRule {
   name: string;
 }
 
-// Offered in Settings as one-click starting points; the user's own list is what counts.
+// Offered in Settings as one-click starting points; the user's own list is what counts. Rules for a whole
+// day only: a mistake within one trade is an Off Plan reason (offPlan.ts).
 export const SUGGESTED_RULES = [
   'เทรดแก้แค้น',
-  'ไม่วาง SL',
-  'เลื่อน SL หนี',
   'เทรดเกินจำนวนที่ตั้งไว้',
-  'เสี่ยงเกิน 1R',
-  'เข้าก่อนสัญญาณครบ',
+  'ไม่ทำ routine ก่อนเทรด',
+  'เทรดตอนอารมณ์ไม่พร้อม',
 ];
 
 interface PlanTrade {

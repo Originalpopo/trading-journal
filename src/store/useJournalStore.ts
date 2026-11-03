@@ -9,6 +9,7 @@ import type { DayNote } from '@/lib/dayNotes';
 import type { DisciplineRule } from '@/lib/discipline';
 import type { WeekNote } from '@/lib/weekNotes';
 import type { TargetPctChange } from '@/lib/dailyTarget';
+import type { OffPlanReason } from '@/lib/offPlan';
 import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow } from '@/lib/risk';
 import { setBeThreshold } from '@/lib/stats';
 
@@ -43,6 +44,8 @@ export interface Trade {
   images?: string[];
   tf?: string;
   checklists?: string[];
+  // Why the trade was off plan: ids from the Off Plan reasons in Settings (see offPlan.ts). Empty when on plan.
+  offPlanReasons?: string[];
   entryPrice?: number;
   exitPrice?: number;
   slPrice?: number;
@@ -107,6 +110,8 @@ export interface Preferences {
   beThreshold?: number;
   // How many recent trades with a known first stop make up the usual 1R (default 10).
   usualRiskWindow?: number;
+  // Why a trade can be off plan, picked on the trade (default DEFAULT_OFF_PLAN_REASONS).
+  offPlanReasons?: OffPlanReason[];
   // The user's own trading rules, ticked in a day note when broken.
   disciplineRules?: DisciplineRule[];
   // Daily profit target in % of the balance the day started with (default 2.5; 0 turns it off).

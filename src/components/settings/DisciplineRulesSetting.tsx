@@ -9,7 +9,8 @@ import SettingsCard, { SETTINGS_INPUT } from "./SettingsCard";
 
 const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `r${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
 
-// The user's own trading rules. A day note ticks the ones broken that day; the Notes page counts them.
+// The user's own trading rules for a whole day (one trade's mistakes are Off Plan reasons, on the trade).
+// A day note ticks the ones broken that day; the Notes page counts them.
 export default function DisciplineRulesSetting() {
   const updatePreferences = useJournalStore(state => state.updatePreferences);
   const saved = useJournalStore(state => state.preferences.disciplineRules);
@@ -48,7 +49,7 @@ export default function DisciplineRulesSetting() {
     <SettingsCard
       icon={ListChecks}
       title="Discipline Rules"
-      description="กฎการเทรดของคุณเอง ในโน้ตรายวันติ๊กได้ว่าวันนั้นทำผิดข้อไหน หน้า Notes จะนับว่าผิดข้อไหนบ่อยที่สุด และนับวันที่เทรดตามแผนติดกัน ลบกฎแล้วโน้ตเก่าที่เคยติ๊กข้อนั้นจะไม่นับข้อนั้นอีก"
+      description="กฎการเทรดระดับทั้งวันที่ผูกกับเทรดใดเทรดหนึ่งไม่ได้ เช่น เทรดแก้แค้น หรือเทรดเกินจำนวน (ความผิดในเทรดเดียวให้ใช้ Off Plan Reasons) ในโน้ตรายวันติ๊กได้ว่าวันนั้นทำผิดข้อไหน หน้า Notes จะนับว่าผิดข้อไหนบ่อยที่สุด และนับวันที่เทรดตามแผนติดกัน ลบกฎแล้วโน้ตเก่าที่เคยติ๊กข้อนั้นจะไม่นับข้อนั้นอีก"
     >
       <div className="space-y-2">
         {rules.length === 0 && <p className="text-sm font-medium text-stone-400">No rules yet. Add your own below, or pick a suggestion.</p>}

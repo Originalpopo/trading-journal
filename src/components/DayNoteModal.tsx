@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, ChevronDown, XCircle, Target, type LucideIcon } from "lucide-react";
+import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, ChevronDown, XCircle, ClipboardX, Target, type LucideIcon } from "lucide-react";
 import { useDailyTargets } from "./useDailyTargets";
 import { useTradingDay } from "./useTradingDay";
 import Link from "next/link";
@@ -14,6 +14,8 @@ import type { DisciplineRule } from "@/lib/discipline";
 import { formatNumber } from "@/lib/utils";
 import { formatPnl } from "@/lib/bahtRate";
 import TradeDetailModal from "./TradeDetailModal";
+import { useOffPlanReasons } from "./useOffPlanReasons";
+import { reasonsOfTrade } from "@/lib/offPlan";
 import ManualTradeModal from "./ManualTradeModal";
 
 // How the day felt, best to worst. The chosen face is also the note's marker on the Calendar.
@@ -60,6 +62,22 @@ interface NoteModalProps {
   children?: ReactNode; // what happened in the period, between the figures and the note
   bahtRate?: number | null; // show money in whole baht at this rate instead of dollars
   rules?: DisciplineRule[]; // a day note: the user's rules, to tick the ones broken that day
+  offPlan?: { id: string; name: string; count: number }[]; // a day note: why the day's off-plan trades were off plan
+}
+
+// Why the day's trades were off plan, as set on the trades: shown, not ticked here.
+function OffPlanChips({ items }: { items: { id: string; name: string; count: number }[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map(r => (
+        <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-stone-50 text-stone-600 border border-stone-200">
+          <ClipboardX className="w-3.5 h-3.5 text-red-900" />
+          {r.name}
+          {r.count > 1 && <span className="text-stone-400">×{r.count}</span>}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 // A collapsible list inside a note popup (the day's trades, the week's days), folded when it opens.
@@ -80,7 +98,7 @@ export function NoteAccordion({ title, extra, children }: { title: string; extra
 
 // A note beside the result of its day or week. Reads first; edits in place.
 // Mount it with a `key` of the period so each one starts from its own saved note.
-export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children, bahtRate, rules }: NoteModalProps) {
+export function NoteModal({ title, kind, note, startEditing, summary, onSave, onDelete, onClose, children, bahtRate, rules, offPlan }: NoteModalProps) {
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
   const [isEditing, setIsEditing] = useState(startEditing || !note);
   const [content, setContent] = useState(note?.content ?? "");
@@ -186,7 +204,8 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
         {children}
 
         {isEditing ? (
-          <div className="flex-1 min-h-0 flex flex-col gap-4">
+          // Scrolls when the trades list above is open and the form no longer fits the popup.
+          <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto -mx-1 px-1">
             <div className="shrink-0">
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{kind === 'week' ? 'How the week felt' : 'How the day felt'}</label>
               <div className="flex flex-wrap gap-2">
@@ -204,6 +223,12 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                 ))}
               </div>
             </div>
+            {offPlan && offPlan.length > 0 && (
+              <div className="shrink-0">
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Off plan today (from the trades)</label>
+                <OffPlanChips items={offPlan} />
+              </div>
+            )}
             {rules && (
               <div className="shrink-0">
                 <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Rules broken today</label>
@@ -229,7 +254,8 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                 )}
               </div>
             )}
-            <div className="flex-1 min-h-0 flex flex-col">
+            {/* Never squeezed below a few lines: with the trades list open the form scrolls instead. */}
+            <div className="flex-1 min-h-48 flex flex-col">
               <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Note</label>
               <textarea
                 // Not on a phone: the keyboard would cover what happened as soon as a day or week is tapped.
@@ -250,6 +276,11 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
           </div>
         ) : (
           <>
+            {offPlan && offPlan.length > 0 && (
+              <div className="mb-2 shrink-0">
+                <OffPlanChips items={offPlan} />
+              </div>
+            )}
             {brokenNames.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4 shrink-0">
                 {brokenNames.map(rule => (
@@ -306,6 +337,13 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
   const dayTrades = useMemo(() => tradesOfDay(trades, date, startHour), [trades, date, startHour]);
   const offPlanCount = dayTrades.filter(t => !isOnPlan(t)).length;
   const rules = useJournalStore(state => state.preferences.disciplineRules);
+  const reasons = useOffPlanReasons();
+  // Each reason named by the day's off-plan trades, with how many trades named it.
+  const offPlan = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of dayTrades) for (const r of reasonsOfTrade(t, reasons)) counts.set(r.id, (counts.get(r.id) ?? 0) + 1);
+    return reasons.filter(r => counts.has(r.id)).map(r => ({ ...r, count: counts.get(r.id)! }));
+  }, [dayTrades, reasons]);
   const target = useDailyTargets().days.get(date);
 
   // A trade of the day opened on top of the note, looked up by id so edits show at once.
@@ -333,6 +371,7 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
       summary={day}
       onSave={(n) => saveDayNote(date, n)}
       rules={rules ?? []}
+      offPlan={offPlan}
       onDelete={() => deleteDayNote(date)}
       onClose={onClose}
       bahtRate={bahtRate}

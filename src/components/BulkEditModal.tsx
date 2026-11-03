@@ -7,6 +7,8 @@ import { useJournalStore, Trade } from "@/store/useJournalStore";
 import { CHECKLIST_NAMES, applyChecklistChanges, type ChecklistChange } from "@/lib/checklists";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { CHECKLIST_ICONS } from "./checklistIcons";
+import OffPlanReasonPicker from "./OffPlanReasonPicker";
+import { useOffPlanReasons } from "./useOffPlanReasons";
 
 const TIMEFRAMES = ['1s', '5s', '15s', '1m', '5m', '15m', '1h'];
 
@@ -17,15 +19,18 @@ interface BulkEditModalProps {
 }
 
 // Edits "On Plan" and timeframe of several trades at once. Every item starts at "Keep", so only
-// what the user explicitly changes is written.
+// what the user explicitly changes is written. Setting them off plan needs a reason, given to all of them.
 export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModalProps) {
   const updateTrades = useJournalStore(state => state.updateTrades);
   const [changes, setChanges] = useState<Record<string, ChecklistChange>>({});
   const [tf, setTf] = useState<string>('keep');
+  const [offPlanReasons, setOffPlanReasons] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const reasons = useOffPlanReasons();
 
   const close = (applied: boolean) => {
     setChanges({});
+    setOffPlanReasons([]);
     setTf('keep');
     onClose(applied);
   };
@@ -34,6 +39,8 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
   if (!isOpen) return null;
 
   const hasChanges = tf !== 'keep' || Object.values(changes).some(c => c !== 'keep');
+  const isSettingOffPlan = changes['On Plan'] === 'remove';
+  const canApply = !isSettingOffPlan || reasons.some(r => offPlanReasons.includes(r.id));
 
   const handleApply = async () => {
     setIsSaving(true);
@@ -47,6 +54,9 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
           const checklists = applyChecklistChanges(current, changes);
           data.checklists = checklists;
           data.isOnPlan = checklists.includes('On Plan');
+          // On plan has no reason; off plan takes the ones picked here, or keeps its own when left as is.
+          if (data.isOnPlan) data.offPlanReasons = [];
+          else if (isSettingOffPlan) data.offPlanReasons = offPlanReasons;
         }
         if (tf !== 'keep') data.tf = tf;
         return { id: t.id, data };
@@ -111,6 +121,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                   </div>
                 );
               })}
+              {isSettingOffPlan && <OffPlanReasonPicker reasons={reasons} value={offPlanReasons} onChange={setOffPlanReasons} />}
             </div>
           </div>
 
@@ -134,7 +145,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
         </div>
 
         <div className="shrink-0">
-          <SaveRow isDirty={hasChanges} isSaving={isSaving} onSave={handleApply} label={`Apply to ${trades.length} trades`} />
+          <SaveRow isDirty={hasChanges} canSave={canApply} isSaving={isSaving} onSave={handleApply} label={`Apply to ${trades.length} trades`} />
         </div>
       </div>
     </div>

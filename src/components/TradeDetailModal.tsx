@@ -1,13 +1,16 @@
 "use client";
 
 import { DEFAULT_LOT_SIZE } from "@/lib/statement";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Trade, Funding, useJournalStore } from "@/store/useJournalStore";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
-import { Edit2, Trash2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { Edit2, Trash2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, ClipboardX } from "lucide-react";
 import InteractiveChart from "./InteractiveChart";
 import ExitConfidenceBadge from "./ExitConfidenceBadge";
+import { FoldBar } from "./TradeSummary";
+import { useOffPlanReasons } from "./useOffPlanReasons";
+import { reasonsOfTrade } from "@/lib/offPlan";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
 interface TradeDetailModalProps {
@@ -28,6 +31,11 @@ const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFr
 
 export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDelete, onPrev, onNext, hasPrev, hasNext, currentIndex, totalItems }: TradeDetailModalProps) {
   const isPrivacyMode = useJournalStore((state) => state.isPrivacyMode);
+  // The trade's figures fold under a "Trade details" bar (the header and chart already show the gist), so
+  // the note shows without scrolling. Kept open or
+  // folded while stepping through trades.
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const reasons = useOffPlanReasons();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,6 +92,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
   const notes = isFunding ? f.notes : t.strategy;
   // Older trades mark "On Plan" only through isOnPlan.
   const isOnPlan = !isFunding && (t.checklists?.includes('On Plan') || t.isOnPlan !== false);
+  const offPlanReasons = isFunding ? [] : reasonsOfTrade(t, reasons);
 
   let isBE = false;
   let rawRisk = 0;
@@ -173,9 +182,10 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto px-6 md:px-8 py-2 md:py-4 flex flex-col gap-6 border-0 border-transparent" style={{ outline: 'none' }}>
-          {/* Chart Section */}
+          {/* From the top: the chart, the trade's figures (folded under a bar), the note, and why it was
+              off plan. */}
           {!isFunding && (
-            <div className="border-b border-stone-200 pb-2">
+            <div>
               <InteractiveChart key={(t as Trade).id} trade={t as Trade} />
             </div>
           )}
@@ -208,7 +218,12 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               </div>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-6 pb-2">
+            <FoldBar
+              isOpen={isDetailsOpen}
+              onToggle={() => setIsDetailsOpen(!isDetailsOpen)}
+              header={<span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Trade details</span>}
+            >
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
               <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time Entry</span>
@@ -271,6 +286,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                  </div>
               )}
             </div>
+            </FoldBar>
           )}
 
 
@@ -281,6 +297,21 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               {notes || <span className="text-stone-400 italic">No notes provided for this entry.</span>}
             </div>
           </div>
+
+          {/* Why it was off plan, as set in Edit: shown only. */}
+          {offPlanReasons.length > 0 && (
+            <div className="pb-2">
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Off plan</p>
+              <div className="flex flex-wrap gap-2">
+                {offPlanReasons.map(r => (
+                  <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-stone-50 text-stone-600 border border-stone-200">
+                    <ClipboardX className="w-3.5 h-3.5 text-red-900" />
+                    {r.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
 
         </div>

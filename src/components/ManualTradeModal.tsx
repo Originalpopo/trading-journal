@@ -9,9 +9,12 @@ import { initialStopOf, buildRiskContext, deriveTradeRisk, resolveDefaultRisk, d
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { hasFractionOfCent } from "@/lib/money";
 import { DEFAULT_LOT_SIZE } from "@/lib/statement";
-import { X, CheckCircle2, XCircle, ChevronDown, ChartCandlestick, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { X, CheckCircle2, XCircle, ChartCandlestick, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import PillTabs, { type PillTab } from "./PillTabs";
 import SaveRow from "./SaveRow";
+import { TradeSummaryLine, FoldBar } from "./TradeSummary";
+import OffPlanReasonPicker from "./OffPlanReasonPicker";
+import { useOffPlanReasons } from "./useOffPlanReasons";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -30,6 +33,7 @@ interface FormState {
   strategy: string;
   tf: string;
   checklists: string[];
+  offPlanReasons: string[];
   entryPrice: string;
   exitPrice: string;
   tpPrice: string;
@@ -51,6 +55,10 @@ const toInputTime = (value?: string) => {
   return d.toISOString().slice(0, 19);
 };
 
+// Form values are strings or lists of strings (checklists, reasons).
+const sameValue = (a: string | string[], b: string | string[]) =>
+  Array.isArray(a) && Array.isArray(b) ? a.join('|') === b.join('|') : a === b;
+
 const firstTf = (tf: string) => (tf.includes(',') ? tf.split(',')[0].trim() : tf);
 
 const BLANK_TRADE_FIELDS = {
@@ -67,7 +75,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       entryType: f.deposit > 0 ? "DEPOSIT" : "WITHDRAW",
       amount: (f.deposit > 0 ? f.deposit : (f.withdraw || 0)).toString(),
       strategy: f.notes || "",
-      symbol: "", side: "BUY", risk: "", tf: "none", checklists: [],
+      symbol: "", side: "BUY", risk: "", tf: "none", checklists: [], offPlanReasons: [],
       time: toInputTime(f.time), entryTime: "",
       thb: f.thb?.toString() || "", bankDate: f.bankDate || "",
     };
@@ -86,6 +94,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
       strategy: t.strategy || "",
       risk: t.risk?.toString() || "",
       checklists,
+      offPlanReasons: checklists.includes('On Plan') ? [] : [...(t.offPlanReasons ?? [])],
       tf: tf === 'none' ? '15m' : tf,
       entryPrice: t.entryPrice?.toString() || "",
       exitPrice: t.exitPrice?.toString() || "",
@@ -126,7 +135,7 @@ function buildInitialForm(tradeToEdit: ManualTradeModalProps['tradeToEdit']): Fo
   return {
     ...BLANK_TRADE_FIELDS,
     entryType: "TRADE", symbol: "", side: "BUY", amount: "", strategy: "",
-    risk, tf, checklists, time: now, entryTime: now,
+    risk, tf, checklists, offPlanReasons: [], time: now, entryTime: now,
   };
 }
 
@@ -144,6 +153,9 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   const [tf, setTf] = useState("none");
   const [checklists, setChecklists] = useState<string[]>([]);
+  const [offPlanReasons, setOffPlanReasons] = useState<string[]>([]);
+  const reasons = useOffPlanReasons();
+  const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
   const [entryPrice, setEntryPrice] = useState("");
   const [exitPrice, setExitPrice] = useState("");
   const [tpPrice, setTpPrice] = useState("");
@@ -154,7 +166,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   const [thb, setThb] = useState("");
   const [bankDate, setBankDate] = useState("");
   const [size, setSize] = useState("");
-  const [pricesOpen, setPricesOpen] = useState(false);
+  // The trade's own fields: folded while editing a trade, open on a new entry.
+  const [detailsOpen, setDetailsOpen] = useState(false);
   // Set once the user touches the entry/exit time inputs; re-importing never overwrites hand-set times.
   const timesEditedRef = useRef(false);
   // Set once the user types the first stop or the risk, so 1R is no longer the default guess.
@@ -180,6 +193,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     setStrategy(f.strategy);
     setTf(f.tf);
     setChecklists(f.checklists);
+    setOffPlanReasons(f.offPlanReasons);
     setEntryPrice(f.entryPrice);
     setExitPrice(f.exitPrice);
     setTpPrice(f.tpPrice);
@@ -190,12 +204,11 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     setThb(f.thb);
     setBankDate(f.bankDate);
     setSize(f.size);
-    // Prices start folded unless the entry already has some.
-    setPricesOpen(Boolean(f.entryPrice || f.exitPrice || f.tpPrice || f.slPrice || f.initialSl));
+    setDetailsOpen(!tradeToEdit);
   }, [isOpen, tradeToEdit]);
 
   const currentForm: FormState = {
-    entryType, symbol, side, amount, time, risk, entryTime, strategy, tf, checklists,
+    entryType, symbol, side, amount, time, risk, entryTime, strategy, tf, checklists, offPlanReasons,
     entryPrice, exitPrice, tpPrice, slPrice, initialSl, orderEntryType, orderExitType, thb, bankDate, size,
   };
 
@@ -246,9 +259,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     riskIsEstimate: validInitialSl || riskEdited ? false : prevTrade?.riskIsEstimate,
   }, riskContext);
   const isDirty = initialForm !== null && (Object.keys(currentForm) as (keyof FormState)[]).some(key =>
-    key === 'checklists'
-      ? currentForm.checklists.join('|') !== initialForm.checklists.join('|')
-      : currentForm[key] !== initialForm[key]);
+    !sameValue(currentForm[key], initialForm[key]));
 
   // Esc is easy to hit by accident, so it asks before discarding edits. A backdrop click closes straight away.
   const requestClose = () => {
@@ -318,6 +329,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           isOnPlan: checklists.includes('On Plan'),
           tf,
           checklists,
+          offPlanReasons: checklists.includes('On Plan') ? [] : offPlanReasons,
           ...((!tradeToEdit || timesEditedRef.current) && { exitTimeConfidence: 'manual' as const }),
         };
 
@@ -373,14 +385,14 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     liveRRStr = `${formatNumber(rr)} R`;
     liveRRClass = rr >= 0 ? "text-orange-400 normal-case tracking-normal" : "text-red-900 normal-case tracking-normal";
   }
-  const canSubmit = !invalidAmount && !(!isFundingEntry && invalidSize) && !(isFundingEntry && invalidThb) && !(entryType === "TRADE" && hasInitialSl && !validInitialSl);
+  // An off-plan trade must say why.
+  const missingReason = entryType === "TRADE" && !checklists.includes('On Plan') && !reasons.some(r => offPlanReasons.includes(r.id));
+  const canSubmit = !missingReason && !invalidAmount && !(!isFundingEntry && invalidSize) && !(isFundingEntry && invalidThb) && !(entryType === "TRADE" && hasInitialSl && !validInitialSl);
   // Save shows once something was typed. On a new entry, only switching tabs is not something to save.
   const hasChangesToSave = initialForm !== null && (Object.keys(currentForm) as (keyof FormState)[]).some(key =>
     key === 'entryType'
       ? Boolean(tradeToEdit) && currentForm.entryType !== initialForm.entryType
-      : key === 'checklists'
-        ? currentForm.checklists.join('|') !== initialForm.checklists.join('|')
-        : currentForm[key] !== initialForm[key]);
+      : !sameValue(currentForm[key], initialForm[key]));
 
   if (!isOpen) return null;
 
@@ -391,175 +403,215 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     { id: "WITHDRAW", label: "Withdraw", icon: ArrowUpFromLine },
   ].filter(s => !tradeToEdit || (tradeToEdit.isFunding ? s.id !== "TRADE" : s.id === "TRADE"));
 
-  const tradeFields = (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  // The trade itself, from the broker on an imported trade: folded away while editing one, open on a new
+  // entry, where it has to be filled in. Rows sized to what goes in them.
+  const label = "block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1";
+  const field = "w-full min-w-0 bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition";
+  const detailsHaveError = invalidAmount || invalidSize || (hasInitialSl && !validInitialSl);
+  const detailFields = (
+    <div className="space-y-4">
+      {/* On a phone the symbol and side take a little more of the row, so XAUUSD and SELL show whole. */}
+      <div className="grid grid-cols-[1.2fr_1.1fr_1fr] sm:grid-cols-3 gap-2 sm:gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Symbol</label>
-          <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="e.g. BTCUSDT"
-            className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition uppercase" />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Side</label>
-            <select value={side} onChange={(e) => setSide(e.target.value)}
-              className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition">
-              <option value="BUY">BUY</option>
-              <option value="SELL">SELL</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Size (lot)</label>
-            <input type="number" step="0.01" min="0" value={size} onChange={(e) => setSize(e.target.value)}
-              className={`w-full bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidSize ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'}`} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Entry Time</label>
-          <input type="datetime-local" step="1" value={entryTime} onChange={(e) => { timesEditedRef.current = true; setEntryTime(e.target.value); }}
-            className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+          <label className={label}>Symbol</label>
+          <input type="text" value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="XAUUSD" className={`${field} uppercase`} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Exit Time</label>
-          <input type="datetime-local" step="1" value={time} onChange={(e) => { timesEditedRef.current = true; setTime(e.target.value); }}
-            className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+          <label className={label}>Side</label>
+          <select value={side} onChange={(e) => setSide(e.target.value)} className={`${field} px-2`}>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </div>
+        <div>
+          <label className={label}>Size (lot)</label>
+          <input type="number" step="0.01" min="0" value={size} onChange={(e) => setSize(e.target.value)}
+            className={`${field} ${invalidSize ? 'border-red-900' : ''}`} />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">P&L ($)</label>
+          <label className={label}>Entry Time</label>
+          <input type="datetime-local" step="1" value={entryTime} onChange={(e) => { timesEditedRef.current = true; setEntryTime(e.target.value); }} className={field} />
+        </div>
+        <div>
+          <label className={label}>Exit Time</label>
+          <input type="datetime-local" step="1" value={time} onChange={(e) => { timesEditedRef.current = true; setTime(e.target.value); }} className={field} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className={label}>P&L ($)</label>
           <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-            className={`w-full bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidAmount ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'}`} />
+            className={`${field} ${invalidAmount ? 'border-red-900' : ''}`} />
           {invalidAmount && <p className="text-[10px] font-bold text-red-900 mt-1">Max 2 decimals</p>}
         </div>
         <div>
-          <label className="flex justify-between items-end text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">
-            <span>Risk ($)</span>
-            {liveRRStr && <span className={liveRRClass}>RR: {liveRRStr}</span>}
-          </label>
+          <label className={label}>Risk ($)</label>
           {validInitialSl ? (
             <input type="number" value={formRisk.risk} readOnly title="Measured from the entry to the first stop"
-              className="w-full bg-stone-100 border border-stone-200 text-stone-500 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none" />
+              className={`${field} bg-stone-100 text-stone-500 focus:border-stone-200`} />
           ) : (
-            <input type="number" step="0.01" value={risk} onChange={(e) => { setRiskEdited(true); setRisk(e.target.value); }}
-              className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+            <input type="number" step="0.01" value={risk} onChange={(e) => { setRiskEdited(true); setRisk(e.target.value); }} className={field} />
           )}
         </div>
+        <div>
+          <label className={label}>R</label>
+          <p className={`h-[38px] flex items-center px-3 rounded-lg bg-stone-100 text-sm font-bold ${liveRRStr ? liveRRClass : 'text-stone-400'}`} title="P&L divided by Risk">
+            {liveRRStr || '-'}
+          </p>
+        </div>
       </div>
 
-      <div className="border border-stone-200 rounded-xl">
-        <button type="button" onClick={() => setPricesOpen(!pricesOpen)} aria-expanded={pricesOpen}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-[10px] font-bold text-stone-400 uppercase tracking-widest text-left">
-          <span>Prices</span>
-          <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${pricesOpen ? "rotate-180" : ""}`} />
-        </button>
-        {pricesOpen && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 pb-3">
-            <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Entry Price & Type</label>
-              <div className="flex bg-stone-50 border border-stone-200 rounded-lg overflow-hidden focus-within:border-stone-500 transition">
-                <input type="number" step="0.01" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)}
-                  className="w-full bg-transparent text-stone-950 text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
-                <select value={orderEntryType} onChange={(e) => setOrderEntryType(e.target.value)}
-                  className="bg-stone-100/50 text-stone-500 text-xs font-bold border-l border-stone-200 px-2 py-2 focus:outline-none cursor-pointer">
-                  <option value="Limit">Limit</option>
-                  <option value="Market">Market</option>
-                  <option value="Stop">Stop</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Exit Price & Type</label>
-              <div className="flex bg-stone-50 border border-stone-200 rounded-lg overflow-hidden focus-within:border-stone-500 transition">
-                <input type="number" step="0.01" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)}
-                  className="w-full bg-transparent text-stone-950 text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
-                <select value={orderExitType} onChange={(e) => setOrderExitType(e.target.value)}
-                  className="bg-stone-100/50 text-stone-500 text-xs font-bold border-l border-stone-200 px-2 py-2 focus:outline-none cursor-pointer">
-                  <option value="Limit">Limit</option>
-                  <option value="Take Profit">Take Profit</option>
-                  <option value="Stop Loss">Stop Loss</option>
-                  <option value="Market">Market</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Take Profit</label>
-              <input type="number" step="0.01" value={tpPrice} onChange={(e) => setTpPrice(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Stop Loss</label>
-              <div className="flex gap-2">
-                <input type="number" step="0.01" value={slPrice} onChange={(e) => setSlPrice(e.target.value)} placeholder="Last"
-                  title="Where the stop ended up (e.g. moved to break-even)"
-                  className="w-full min-w-0 bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
-                <input type="number" step="0.01" value={initialSl} onChange={(e) => handleInitialSlChange(e.target.value)} placeholder="1st SL"
-                  title="Where the stop was first placed. 1R is measured to it; entering it sets Risk."
-                  className={`w-full min-w-0 bg-stone-50 border text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${
-                    hasInitialSl && !validInitialSl ? 'border-red-900' : 'border-stone-200 focus:border-stone-500'
-                  }`} />
-              </div>
-              {hasInitialSl && !validInitialSl && (
-                <p className="text-[10px] font-bold text-red-900 mt-1">1st SL must be {side === 'SELL' ? 'above' : 'below'} entry</p>
-              )}
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className={label}>Entry Price & Type</label>
+          <div className="flex bg-stone-50 border border-stone-200 rounded-lg overflow-hidden focus-within:border-stone-500 transition">
+            <input type="number" step="0.01" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)}
+              className="w-full bg-transparent text-stone-950 text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
+            <select value={orderEntryType} onChange={(e) => setOrderEntryType(e.target.value)}
+              className="bg-stone-100/50 text-stone-500 text-xs font-bold border-l border-stone-200 px-2 py-2 focus:outline-none cursor-pointer">
+              <option value="Limit">Limit</option>
+              <option value="Market">Market</option>
+              <option value="Stop">Stop</option>
+            </select>
           </div>
+        </div>
+        <div>
+          <label className={label}>Exit Price & Type</label>
+          <div className="flex bg-stone-50 border border-stone-200 rounded-lg overflow-hidden focus-within:border-stone-500 transition">
+            <input type="number" step="0.01" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)}
+              className="w-full bg-transparent text-stone-950 text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
+            <select value={orderExitType} onChange={(e) => setOrderExitType(e.target.value)}
+              className="bg-stone-100/50 text-stone-500 text-xs font-bold border-l border-stone-200 px-2 py-2 focus:outline-none cursor-pointer">
+              <option value="Limit">Limit</option>
+              <option value="Take Profit">Take Profit</option>
+              <option value="Stop Loss">Stop Loss</option>
+              <option value="Market">Market</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className={label}>Take Profit</label>
+            <input type="number" step="0.01" value={tpPrice} onChange={(e) => setTpPrice(e.target.value)} className={field} />
+          </div>
+          <div>
+            <label className={label} title="Where the stop was first placed. 1R is measured to it; entering it sets Risk.">1st SL</label>
+            <input type="number" step="0.01" value={initialSl} onChange={(e) => handleInitialSlChange(e.target.value)}
+              title="Where the stop was first placed. 1R is measured to it; entering it sets Risk."
+              className={`${field} ${hasInitialSl && !validInitialSl ? 'border-red-900' : ''}`} />
+          </div>
+          <div>
+            <label className={label} title="Where the stop ended up (e.g. moved to break-even)">Final SL</label>
+            <input type="number" step="0.01" value={slPrice} onChange={(e) => setSlPrice(e.target.value)}
+              title="Where the stop ended up (e.g. moved to break-even)" className={field} />
+          </div>
+        </div>
+        {hasInitialSl && !validInitialSl && (
+          <p className="text-[10px] font-bold text-red-900 mt-1">1st SL must be {side === 'SELL' ? 'above' : 'below'} entry</p>
         )}
       </div>
+    </div>
+  );
 
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-        <div>
-          <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
-          <div className="flex gap-2 flex-wrap h-full items-start">
-            {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
-              <button
-                type="button"
-                key={item}
-                onClick={() => setTf(item)}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition ${
-                  tf === item
-                    ? 'bg-orange-400 text-white shadow-sm'
-                    : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Plan</label>
-          <div className="inline-flex items-center bg-stone-100 p-0.5 rounded-lg border border-stone-200">
-            {[{ onPlan: true, label: 'On Plan', Icon: CheckCircle2 }, { onPlan: false, label: 'Off Plan', Icon: XCircle }].map(({ onPlan, label, Icon }) => {
-              const isActive = checklists.includes('On Plan') === onPlan;
-              return (
-                <button
-                  type="button"
-                  key={label}
-                  onClick={() => {
-                    // Only "On Plan" is edited here; tags from older checklists stay on the trade.
-                    const others = checklists.filter(c => c !== 'On Plan');
-                    setChecklists(onPlan ? ['On Plan', ...others] : others);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-md transition ${
-                    isActive
-                      ? (onPlan ? 'bg-orange-50 text-orange-400 border border-orange-200 shadow-sm' : 'bg-white text-stone-500 border border-stone-200 shadow-sm')
-                      : 'text-stone-400 border border-transparent hover:text-stone-600'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+  // The plan, the note and the timeframe: what is set by hand on an imported trade.
+  const planField = (
+    <div>
+      <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Plan</label>
+      <div className="inline-flex items-center bg-stone-100 p-0.5 rounded-lg border border-stone-200">
+        {[{ onPlan: true, label: 'On Plan', Icon: CheckCircle2 }, { onPlan: false, label: 'Off Plan', Icon: XCircle }].map(({ onPlan, label, Icon }) => {
+          const isActive = checklists.includes('On Plan') === onPlan;
+          return (
+            <button
+              type="button"
+              key={label}
+              onClick={() => {
+                // Only "On Plan" is edited here; tags from older checklists stay on the trade.
+                const others = checklists.filter(c => c !== 'On Plan');
+                setChecklists(onPlan ? ['On Plan', ...others] : others);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-md transition ${
+                isActive
+                  ? (onPlan ? 'bg-orange-50 text-orange-400 border border-orange-200 shadow-sm' : 'bg-white text-stone-500 border border-stone-200 shadow-sm')
+                  : 'text-stone-400 border border-transparent hover:text-stone-600'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              {label}
+            </button>
+          );
+        })}
       </div>
+      {/* Off plan: why, one reason or more. */}
+      {!checklists.includes('On Plan') && (
+        <div className="mt-2">
+          <OffPlanReasonPicker reasons={reasons} value={offPlanReasons} saved={(tradeToEdit as Trade | undefined)?.offPlanReasons} onChange={setOffPlanReasons} />
+        </div>
+      )}
+    </div>
+  );
+
+  const tfField = (
+    <div>
+      <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Timeframe (TF)</label>
+      <div className="flex gap-2 flex-wrap">
+        {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
+          <button
+            type="button"
+            key={item}
+            onClick={() => setTf(item)}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+              tf === item
+                ? 'bg-orange-400 text-white shadow-sm'
+                : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'
+            }`}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const notesField = (rows: number) => (
+    <div>
+      <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
+      <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={rows}
+        className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition resize-y"></textarea>
+    </div>
+  );
+
+  const tradeFields = (
+    <>
+      {/* From the top: the trade (folded to one line while editing it; a new entry starts open, under a
+          title), its timeframe, the note, then the plan. */}
+      <FoldBar
+        isOpen={detailsOpen}
+        onToggle={() => setDetailsOpen(!detailsOpen)}
+        hasError={detailsHaveError}
+        header={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {tradeToEdit ? (
+              <TradeSummaryLine symbol={symbol} side={side} size={size} entryTime={entryTime} exitTime={time}
+                pnl={parsedAmount} rr={formRisk.risk > 0 && amount.trim() !== "" ? formRisk.rr : undefined} isPrivacyMode={isPrivacyMode} />
+            ) : (
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Trade details</span>
+            )}
+            {detailsHaveError && !detailsOpen && <span className="text-[11px] font-bold text-red-900">Check the details</span>}
+          </span>
+        }
+      >
+        {detailFields}
+      </FoldBar>
+      {tfField}
+      {notesField(5)}
+      {planField}
     </>
   );
 
@@ -603,7 +655,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={() => onClose()}>
-      <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-2xl font-black text-stone-950 tracking-tight">
             {tradeToEdit ? (tradeToEdit.isFunding ? "Edit Funding" : "Edit Trade") : "Add Entry"}
@@ -618,12 +670,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         )}
 
         <div className="space-y-4 overflow-y-auto pr-2 flex-1 border-0 border-transparent" style={{ outline: 'none' }}>
-          {entryType === "TRADE" ? tradeFields : fundingFields}
-          <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Notes</label>
-            <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={3}
-              className="w-full bg-stone-50 border border-stone-200 text-stone-950 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition resize-y"></textarea>
-          </div>
+          {entryType === "TRADE" ? tradeFields : <>{fundingFields}{notesField(3)}</>}
         </div>
 
         <div className="shrink-0">

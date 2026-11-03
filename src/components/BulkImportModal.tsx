@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useJournalStore, Trade } from "@/store/useJournalStore";
 import { parseTradingViewData, groupOrdersIntoTrades, findImportWarnings, type ImportWarning, type ImportWarningKind, type LinkedTrade } from "@/lib/tradingViewParser";
 import { parseNotificationsLog, applyNotificationsLog, looksLikeNotificationsLog, linkSavedTrades } from "@/lib/notificationsLog";
@@ -12,6 +12,8 @@ import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useDefaultRisk } from "@/lib/defaultRisk";
 import { isOnPlan } from "@/lib/stats";
 import { applyChecklistChanges } from "@/lib/checklists";
+import OffPlanReasonPicker from "./OffPlanReasonPicker";
+import { useOffPlanReasons } from "./useOffPlanReasons";
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -125,6 +127,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   // TF and On Plan typed here; the broker data never carries them.
   const [tfEdits, setTfEdits] = useState<Record<string, string>>({});
   const [onPlanEdits, setOnPlanEdits] = useState<Record<string, boolean>>({});
+  // Why a row marked off plan here is off plan: it must name one reason or more before importing.
+  const [reasonEdits, setReasonEdits] = useState<Record<string, string[]>>({});
+  const offPlanReasons = useOffPlanReasons();
 
   // New trades start with the TF of the latest trade that has one.
   const defaultTf = useMemo(() => {
@@ -140,7 +145,10 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   );
   const tfOf = (r: ImportPlanRow) => tfEdits[r.key] ?? (r.existing ? r.existing.tf || 'none' : defaultTf);
   const onPlanOf = (r: ImportPlanRow) => onPlanEdits[r.key] ?? (r.existing ? isOnPlan(r.existing) : true);
-  // A saved trade whose TF or On Plan was changed here; hidden legacy checklist tags are kept.
+  const reasonsOfRow = (r: ImportPlanRow) => reasonEdits[r.key] ?? r.existing?.offPlanReasons ?? [];
+  const isMarkedOffHere = (r: ImportPlanRow) => onPlanEdits[r.key] === false;
+  const isMissingReason = (r: ImportPlanRow) => isMarkedOffHere(r) && !offPlanReasons.some(x => reasonsOfRow(r).includes(x.id));
+  // A saved trade whose TF, On Plan or reasons were changed here; hidden legacy checklist tags are kept.
   const tagUpdatesOf = (r: ImportPlanRow): Partial<Trade> | null => {
     if (!r.existing) return null;
     const updates: Partial<Trade> = {};
@@ -148,6 +156,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
     if (onPlanOf(r) !== isOnPlan(r.existing)) {
       updates.isOnPlan = onPlanOf(r);
       updates.checklists = applyChecklistChanges(r.existing.checklists || [], { 'On Plan': onPlanOf(r) ? 'add' : 'remove' });
+      updates.offPlanReasons = onPlanOf(r) ? [] : reasonsOfRow(r);
+    } else if (!onPlanOf(r) && reasonsOfRow(r).join('|') !== (r.existing.offPlanReasons ?? []).join('|')) {
+      updates.offPlanReasons = reasonsOfRow(r);
     }
     return Object.keys(updates).length > 0 ? updates : null;
   };
@@ -264,6 +275,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
           images: [],
           tf: tfOf(row),
           checklists: onPlan ? ["On Plan"] : [],
+          offPlanReasons: onPlan ? [] : reasonsOfRow(row),
           entryPrice: t.entryPrice,
           entryOrderPrice: t.entryOrderPrice,
           timesFromLog: t.timesFromLog,
@@ -406,7 +418,8 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                       const tf = tfOf(row);
                       const onPlan = onPlanOf(row);
                       return (
-                        <tr key={key} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
+                        <Fragment key={key}>
+                        <tr className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
                           <td className="px-2 py-4">
                             <span className={`px-2 py-0.5 border rounded-md text-[9px] font-black uppercase ${actionLabel[action].className}`}>{actionLabel[action].text}</span>
                           </td>
@@ -584,6 +597,15 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                             {result.riskIsEstimate ? '≈' : ''}{(result.rr || 0).toFixed(2)}R
                           </td>
                         </tr>
+                        {/* Marked off plan here: why, under the trade. */}
+                        {isMarkedOffHere(row) && (
+                          <tr className="border-b border-stone-50">
+                            <td colSpan={13} className="px-2 pb-4">
+                              <OffPlanReasonPicker reasons={offPlanReasons} value={reasonsOfRow(row)} saved={row.existing?.offPlanReasons} onChange={ids => setReasonEdits(prev => ({ ...prev, [key]: ids }))} />
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -596,7 +618,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
-          <button onClick={handleImport} disabled={isSubmitting || hasInvalidEdit || newCount + updateCount === 0}
+          <button onClick={handleImport} disabled={isSubmitting || hasInvalidEdit || plan.some(isMissingReason) || newCount + updateCount === 0}
             className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Importing..." : logOnly ? `Update ${updateCount}` : `Import ${newCount} new, update ${updateCount}`}
           </button>
