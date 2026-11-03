@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, Edit2, Trash2, Upload } from "lucide-react";
+import { Plus, Edit2, Trash2, Upload, SquareCheck } from "lucide-react";
 import { CHECKLIST_NAMES } from "@/lib/checklists";
 import { CHECKLIST_ICONS } from "@/components/checklistIcons";
 import ManualTradeModal from "@/components/ManualTradeModal";
@@ -13,6 +13,7 @@ import BulkImportModal from "@/components/BulkImportModal";
 import ExitConfidenceBadge from "@/components/ExitConfidenceBadge";
 import BulkEditModal from "@/components/BulkEditModal";
 import HistoryFilterBar from "@/components/HistoryFilterBar";
+import { useHistoryColumns, HistoryColumnsButton, HistoryColumnsPanel } from "@/components/HistoryColumns";
 import { filterHistoryRows, EMPTY_FILTERS, type HistoryFilters } from "@/lib/historyFilter";
 import { Trade } from "@/store/useJournalStore";
 import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils";
@@ -57,6 +58,12 @@ export default function HistoryPage() {
     setCurrentPage(1);
   };
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // The tick boxes for editing several trades at once stay hidden until "Select" is pressed.
+  const [isSelecting, setIsSelecting] = useState(false);
+  const stopSelecting = () => { setIsSelecting(false); setSelectedIds(new Set()); };
+  const columns = useHistoryColumns();
+  const col = columns.colClass;
+  const [isColumnsOpen, setIsColumnsOpen] = useState(false);
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
 
   useEffect(() => {
@@ -177,6 +184,9 @@ export default function HistoryPage() {
   const selectedTrades = trades.filter(t => selectedIds.has(t.id));
   const allFilteredSelected = filteredTradeIds.length > 0 && filteredTradeIds.every(id => selectedIds.has(id));
 
+  // With the tick boxes hidden, Time is the first column and takes the table's left edge and corner.
+  const firstColClass = isSelecting ? '' : 'pl-2 md:pl-4';
+
   const toggleSelected = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -250,7 +260,30 @@ export default function HistoryPage() {
       </PageHeader>
 
       <div className="glass-card p-3 md:p-6 overflow-hidden flex flex-col h-fit">
-        <HistoryFilterBar filters={filters} onChange={setFilters} shownCount={filteredData.length} totalCount={combinedData.length} />
+        <HistoryFilterBar
+          filters={filters}
+          onChange={setFilters}
+          shownCount={filteredData.length}
+          totalCount={combinedData.length}
+          leading={
+            <>
+            <button
+              type="button"
+              onClick={() => (isSelecting ? stopSelecting() : setIsSelecting(true))}
+              aria-pressed={isSelecting}
+              aria-label="Select trades"
+              title={isSelecting ? "Stop selecting" : "Select trades to edit together"}
+              className={`flex items-center justify-center h-8 w-8 border rounded-lg text-[11px] font-bold transition ${
+                isSelecting ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
+              }`}
+            >
+              <SquareCheck className="w-3.5 h-3.5" />
+            </button>
+            <HistoryColumnsButton isOpen={isColumnsOpen} onToggle={() => setIsColumnsOpen(open => !open)} />
+            </>
+          }
+        />
+        {isColumnsOpen && <HistoryColumnsPanel columns={columns} />}
 
         {selectedIds.size > 0 && (
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
@@ -271,7 +304,8 @@ export default function HistoryPage() {
             <thead className="sticky top-0 z-10">
               <tr className="text-stone-400 border-b border-stone-100 bg-stone-50">
                 {/* The whole cell toggles, so the box is easy to hit with a finger. */}
-                <th className="py-4 pl-2 md:pl-4 pr-0 rounded-tl-xl w-8 cursor-pointer" onClick={(e) => { if (e.target === e.currentTarget && filteredTradeIds.length > 0) toggleSelectAllFiltered(); }}>
+                {isSelecting && (
+                <th className="py-4 pl-2 md:pl-4 pr-0 w-8 cursor-pointer" onClick={(e) => { if (e.target === e.currentTarget && filteredTradeIds.length > 0) toggleSelectAllFiltered(); }}>
                   <input
                     type="checkbox"
                     checked={allFilteredSelected}
@@ -281,16 +315,17 @@ export default function HistoryPage() {
                     className="w-4 h-4 md:w-3.5 md:h-3.5 accent-orange-400 cursor-pointer align-middle"
                   />
                 </th>
-                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Time</th>
-                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest">Symbol</th>
-                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">TF</th>
-                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">On Plan</th>
-                <th className="hidden md:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">Side</th>
-                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center">Result</th>
-                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">Risk ($)</th>
-                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right">RR</th>
-                <th className="py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right rounded-tr-xl lg:rounded-tr-none"><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
-                <th className="hidden lg:table-cell py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center rounded-tr-xl">Actions</th>
+                )}
+                <th className={`py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest ${firstColClass}`}>Time</th>
+                <th className={`${col("symbol")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest`}>Symbol</th>
+                <th className={`${col("tf")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>TF</th>
+                <th className={`${col("onPlan")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>On Plan</th>
+                <th className={`${col("side")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>Side</th>
+                <th className={`${col("result")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>Result</th>
+                <th className={`${col("risk")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right`}>Risk ($)</th>
+                <th className={`${col("rr")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right`}>RR</th>
+                <th className={`${col("pnl")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right`}><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
+                <th className={`${col("actions")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center`}>Actions</th>
               </tr>
             </thead>
             <tbody className="text-[11px] divide-y divide-stone-50">
@@ -311,24 +346,24 @@ export default function HistoryPage() {
                   const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                   return (
                     <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
-                      <td className="py-4 pl-2 md:pl-4 pr-0"></td>
-                      <td className="py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight"><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
-                      <td className="py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
+                      {isSelecting && <td className="py-4 pl-2 md:pl-4 pr-0"></td>}
+                      <td className={`py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight ${firstColClass}`}><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
+                      <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap`}>
                         {badgeText}
                       </td>
-                      <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
-                      <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-center">-</td>
-                      <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center text-stone-500">-</td>
-                      <td className="py-4 px-1 md:px-4 text-center"><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
-                      <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
-                      <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">-</td>
-                      <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
+                      <td className={`${col("tf")} py-4 px-1 md:px-4 text-center text-stone-500`}>-</td>
+                      <td className={`${col("onPlan")} py-4 px-1 md:px-4 text-center`}>-</td>
+                      <td className={`${col("side")} py-4 px-1 md:px-4 text-center text-stone-500`}>-</td>
+                      <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
+                      <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>-</td>
+                      <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>-</td>
+                      <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
                         {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                       </td>
-                      <td className="hidden lg:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
+                      <td className={`${col("actions")} py-4 px-1 md:px-4`}><div className="flex justify-center gap-3">
                         <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
-                      </td>
+                      </div></td>
                     </tr>
                   );
                 }
@@ -349,6 +384,7 @@ export default function HistoryPage() {
 
                 return (
                   <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-stone-50'}`}>
+                    {isSelecting && (
                     <td className="py-4 pl-2 md:pl-4 pr-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleSelected(t.id); }}>
                       <input
                         type="checkbox"
@@ -357,16 +393,17 @@ export default function HistoryPage() {
                         className="w-4 h-4 md:w-3.5 md:h-3.5 accent-orange-400 cursor-pointer align-middle"
                       />
                     </td>
-                    <td className="py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight">
+                    )}
+                    <td className={`py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight ${firstColClass}`}>
                       <span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span>{durationStr}
                     </td>
-                    <td className="py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap flex items-center gap-1">
+                    <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap`}>
                       {t.symbol}
                     </td>
-                    <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-center font-bold text-stone-500">
+                    <td className={`${col("tf")} py-4 px-1 md:px-4 text-center font-bold text-stone-500`}>
                       {t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}
                     </td>
-                    <td className="hidden lg:table-cell py-4 px-1 md:px-4">
+                    <td className={`${col("onPlan")} py-4 px-1 md:px-4`}>
                       <div className="flex items-center justify-center gap-2">
                         {CHECKLIST_NAMES.map(name => {
                           const Icon = CHECKLIST_ICONS[name];
@@ -380,25 +417,25 @@ export default function HistoryPage() {
                         })}
                       </div>
                     </td>
-                    <td className="hidden md:table-cell py-4 px-1 md:px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]">
+                    <td className={`${col("side")} py-4 px-1 md:px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]`}>
                       {t.side}
                     </td>
-                    <td className="py-4 px-1 md:px-4 text-center">
+                    <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}>
                       <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
-                    <td className="hidden lg:table-cell py-4 px-1 md:px-4 text-right font-bold text-stone-500">
+                    <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>
                       {isPrivacyMode ? '***' : riskText}
                     </td>
-                    <td className="py-4 px-1 md:px-4 text-right font-bold text-stone-500">
+                    <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>
                       {t.rr ? (t.riskIsEstimate ? '≈' : '') + format2Decimals(t.rr) + ' R' : '-'}
                     </td>
-                    <td className={`py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
+                    <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
                       {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                     </td>
-                    <td className="hidden lg:flex py-4 px-1 md:px-4 text-center justify-center gap-3">
+                    <td className={`${col("actions")} py-4 px-1 md:px-4`}><div className="flex justify-center gap-3">
                       <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
-                    </td>
+                    </div></td>
                   </tr>
                 );
               })}
@@ -455,7 +492,7 @@ export default function HistoryPage() {
         trades={selectedTrades}
         onClose={(applied) => {
           setIsBulkEditOpen(false);
-          if (applied) setSelectedIds(new Set());
+          if (applied) stopSelecting();
         }}
       />
       <UploadModal 

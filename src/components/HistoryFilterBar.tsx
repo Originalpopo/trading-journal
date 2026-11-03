@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Search, AlertTriangle, X, SlidersHorizontal } from "lucide-react";
 import { EMPTY_FILTERS, isFilterActive, type HistoryFilters, type ResultLabel } from "@/lib/historyFilter";
 
@@ -9,6 +9,7 @@ interface HistoryFilterBarProps {
   onChange: (filters: HistoryFilters) => void;
   shownCount: number;
   totalCount: number;
+  leading?: ReactNode; // shown before the Filter button
 }
 
 const RESULT_STYLES: Record<ResultLabel, string> = {
@@ -36,7 +37,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
   );
 }
 
-export default function HistoryFilterBar({ filters, onChange, shownCount, totalCount }: HistoryFilterBarProps) {
+export default function HistoryFilterBar({ filters, onChange, shownCount, totalCount, leading }: HistoryFilterBarProps) {
   const set = (patch: Partial<HistoryFilters>) => onChange({ ...filters, ...patch });
   const toggleResult = (r: ResultLabel) =>
     set({ results: filters.results.includes(r) ? filters.results.filter(x => x !== r) : [...filters.results, r] });
@@ -47,6 +48,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
   return (
     <div className="flex flex-col gap-3 mb-4">
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-stone-400">
+        {leading}
         <button
           type="button"
           onClick={() => setIsOpen(open => !open)}
