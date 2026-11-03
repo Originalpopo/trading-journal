@@ -53,11 +53,13 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
           type="button"
           onClick={() => setIsOpen(open => !open)}
           aria-expanded={isOpen}
-          className={`flex items-center gap-1.5 h-8 px-3 border rounded-lg text-[11px] font-bold transition ${
+          aria-label="Filter"
+          title="Filter"
+          className={`flex items-center justify-center h-8 w-8 border rounded-lg transition ${
             isOpen || active ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
           }`}
         >
-          <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
+          <SlidersHorizontal className="w-3.5 h-3.5" />
         </button>
         {/* Opened, the search and the date range sit on the button's row; the toggles go below. */}
         {isOpen && (

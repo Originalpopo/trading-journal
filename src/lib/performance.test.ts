@@ -92,17 +92,22 @@ test('hour, weekday and month charts follow the entry time', () => {
   const p = computePerformance(trades, funding, filters());
   assert.equal(p.hourlyDataArr[10], 1.5);
   assert.equal(p.hourlyDataArr[15], 0.1);
-  assert.deepEqual(p.activeDowNames, ['Mon', 'Tue']);
-  assert.deepEqual(p.activeDowData, [3, -1.4]);
-  assert.deepEqual(p.activeMoyNames, ['Jan', 'Feb']);
-  assert.deepEqual(p.moyRRData, [1.5, 0.1]);
-  assert.deepEqual([p.activeMoyWins, p.activeMoyLosses, p.activeMoyBEs], [[1, 0], [1, 0], [0, 1]]);
+  // Monday to Friday always; untraded days have no bar.
+  assert.deepEqual(p.activeDowNames, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+  assert.deepEqual(p.activeDowData, [3, -1.4, null, null, null]);
+  assert.deepEqual(p.dowTraded, [true, true, false, false, false]);
+  // Every month is on the axis; untraded ones have no bar.
+  assert.deepEqual(p.activeMoyNames, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+  assert.deepEqual(p.moyRRData, [1.5, 0.1, ...Array(10).fill(null)]);
+  assert.deepEqual(p.moyTraded, [true, true, ...Array(10).fill(false)]);
+  const pad = (a: number[]) => [...a, ...Array(10).fill(0)];
+  assert.deepEqual([p.activeMoyWins, p.activeMoyLosses, p.activeMoyBEs], [pad([1, 0]), pad([1, 0]), pad([0, 1])]);
 });
 
 test('monthly gain is measured against the balance the month started with', () => {
   const p = computePerformance(trades, funding, filters({ selectedMetric: 'GAIN' }));
-  close(p.moyRRData[0], (1.5 / 148) * 100);
-  close(p.moyRRData[1], (0.1 / 149.5) * 100);
+  close(p.moyRRData[0]!, (1.5 / 148) * 100);
+  close(p.moyRRData[1]!, (0.1 / 149.5) * 100);
 });
 
 test('more than 500 events are drawn one point per day', () => {
@@ -140,4 +145,11 @@ test('absolute drawdown is how far the result fell below where the period starte
     filters({ selectedYear: 'ALL' }),
   );
   assert.equal(p.absoluteDD, 3.5); // not the whole 25 deposited
+});
+
+test('a weekend day joins the weekday chart only when it was traded', () => {
+  const weekend: PerfTrade = { time: '2026-01-10 12:00:00', profit: 2, risk: 1, rr: 2, symbol: 'BTCUSD', side: 'BUY' }; // Saturday
+  const p = computePerformance([...trades, weekend], funding, filters());
+  assert.deepEqual(p.activeDowNames, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+  assert.deepEqual(p.activeDowData.slice(-1), [2]);
 });

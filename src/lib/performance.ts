@@ -391,17 +391,25 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const hourlyLossesArr = hours.map(h => hourLosses[h]);
   const hourlyBEsArr = hours.map(h => hourBEs[h]);
 
-  const activeDowKeys = Object.keys(dowStats).filter(k => (selectedMetric === 'RR' ? dowStats[Number(k)] : dowStatsPnL[Number(k)]) !== 0 || dowWins[Number(k)] > 0 || dowLosses[Number(k)] > 0 || dowBEs[Number(k)] > 0).map(Number);
+  // Monday to Friday always, so the axis stays put; Saturday and Sunday only when traded (e.g. crypto).
+  // A weekday with nothing in it has no bar (null).
+  const isDayTraded = (k: number) => (selectedMetric === 'RR' ? dowStats[k] : dowStatsPnL[k]) !== 0 || dowWins[k] > 0 || dowLosses[k] > 0 || dowBEs[k] > 0;
+  const activeDowKeys = dowNames.map((_, k) => k).filter(k => (k > 0 && k < 6) || isDayTraded(k));
   const activeDowNames = activeDowKeys.map(k => dowNames[k]);
-  const activeDowData = activeDowKeys.map(k => selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
-  const dowColors = activeDowData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
+  const dowTraded = activeDowKeys.map(isDayTraded);
+  const activeDowData = activeDowKeys.map((k): number | null => !isDayTraded(k) ? null : selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
+  const dowColors = activeDowData.map(v => (v ?? 0) >= 0 ? '#fb923c' : '#7f1d1d');
   const activeDowWins = activeDowKeys.map(k => dowWins[k]);
   const activeDowLosses = activeDowKeys.map(k => dowLosses[k]);
   const activeDowBEs = activeDowKeys.map(k => dowBEs[k]);
 
-  const activeMoyKeys = Object.keys(moyStats).filter(k => (selectedMetric === 'RR' ? moyStats[Number(k)] : moyStatsPnL[Number(k)]) !== 0 || moyPnL[Number(k)] !== 0 || moyWins[Number(k)] > 0 || moyLosses[Number(k)] > 0 || moyBEs[Number(k)] > 0).map(Number);
+  // All twelve months, so the axis is the same every year; a month with nothing in it has no bar (null).
+  const activeMoyKeys = monthNames.map((_, k) => k);
+  const isMonthTraded = (k: number) => (selectedMetric === 'RR' ? moyStats[k] : moyStatsPnL[k]) !== 0 || moyPnL[k] !== 0 || moyWins[k] > 0 || moyLosses[k] > 0 || moyBEs[k] > 0;
   const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
-  const moyRRData = activeMoyKeys.map(k => {
+  const moyTraded = activeMoyKeys.map(isMonthTraded);
+  const moyRRData = activeMoyKeys.map((k): number | null => {
+    if (!isMonthTraded(k)) return null;
     if (selectedMetric === 'RR') return moyStats[k];
     if (selectedMetric === 'GAIN') {
       const sb = moyStartBalance[k] || initialDeposit;
@@ -409,7 +417,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
     }
     return moyStatsPnL[k];
   });
-  const moyRRColors = moyRRData.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
+  const moyRRColors = moyRRData.map(v => (v ?? 0) >= 0 ? '#fb923c' : '#7f1d1d');
   const activeMoyWins = activeMoyKeys.map(k => moyWins[k]);
   const activeMoyLosses = activeMoyKeys.map(k => moyLosses[k]);
   const activeMoyBEs = activeMoyKeys.map(k => moyBEs[k]);
@@ -430,8 +438,8 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
     avgConsWin, avgConsLoss,
     perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
     hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr,
-    activeDowNames, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
-    activeMoyNames, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
+    activeDowNames, dowTraded, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
+    activeMoyNames, moyTraded, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
     matrixSorted,
     isAggregated: shouldAggregate
   };

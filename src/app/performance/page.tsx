@@ -2,7 +2,7 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check, SlidersHorizontal } from "lucide-react";
 import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import HealthWeather from "@/components/HealthWeather";
@@ -131,6 +131,8 @@ export default function PerformancePage() {
   const tfRef = useRef<HTMLDivElement>(null);
   
   const [selectedPlan, setSelectedPlan] = useState('ALL');
+  // The year, TF and plan filters stay folded behind one button until it is pressed.
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -227,22 +229,35 @@ export default function PerformancePage() {
         return;
       }
 
+      // Bars too narrow for their labels (twelve months on a phone) get them standing upright instead.
+      const slotWidth = chart.chartArea.width / Math.max(1, chart.data.labels?.length ?? 1);
       chart.data.datasets.forEach((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
         if (!meta.hidden) {
           meta.data.forEach((element, index) => {
+            const val = dataset.data[index] as number | null;
+            if (val == null) return; // a month with no trades has no bar to label
             ctx.fillStyle = '#78716c';
             ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
-            ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            const val = dataset.data[index] as number;
             let text = formatNumber(val);
             if (selectedMetric === 'RR') text += ' R';
             else if (selectedMetric === 'GAIN') text += '%';
             else text = isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(Math.abs(val));
 
             const position = tooltipPositionOf(element);
+            if (ctx.measureText(text).width > slotWidth - 4) {
+              // Upright, reading upwards from just past the end of the bar.
+              ctx.save();
+              ctx.translate(position.x, position.y + (val >= 0 ? -6 : 6));
+              ctx.rotate(-Math.PI / 2);
+              ctx.textAlign = val >= 0 ? 'left' : 'right';
+              ctx.fillText(text, 0, 0);
+              ctx.restore();
+              return;
+            }
+            ctx.textAlign = 'center';
             const yOffset = val >= 0 ? -12 : 14;
             ctx.fillText(text, position.x, position.y + yOffset);
           });
@@ -299,6 +314,7 @@ export default function PerformancePage() {
                   data: data.perfPnlData,
                   backgroundColor: data.perfPnlColors,
                   borderRadius: 4,
+                  maxBarThickness: 48,
                   yAxisID: 'y1'
                 }
               ] as any
@@ -336,94 +352,113 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row md:justify-end items-center gap-3 mt-2 mb-2">
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year:</span>
-            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              {availableYears.map(y => (
-                 <option key={y} value={y.toString()}>{y}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2" ref={tfRef}>
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">TF:</span>
-            <div className="relative">
-              <button
-                onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
-                className="bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer min-w-[70px] justify-between transition-colors"
-              >
-                <span className="truncate max-w-[100px]">
-                  {selectedTfs.length === 0 
-                    ? "ALL" 
-                    : selectedTfs.length <= 2 
-                      ? selectedTfs.join(", ") 
-                      : `${selectedTfs.length} Selected`}
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isTfMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isTfMenuOpen && (
-                <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                  <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
-                    <span className="text-[10px] font-bold text-stone-400 uppercase">Select TFs</span>
-                    {selectedTfs.length > 0 && (
-                      <button 
-                        onClick={() => setSelectedTfs([])}
-                        className="text-[10px] font-bold text-orange-400 hover:text-orange-500 transition-colors"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-64 overflow-y-auto p-1.5">
-                    {availableTfs.map(tf => {
-                      const isSelected = selectedTfs.includes(tf);
-                      return (
-                        <div 
-                          key={tf}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedTfs(selectedTfs.filter(i => i !== tf));
-                            } else {
-                              setSelectedTfs([...selectedTfs, tf]);
-                            }
-                          }}
-                          className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
-                            isSelected ? 'bg-orange-50 text-orange-400' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-                          }`}
+      <div className="bg-stone-100/60 border border-stone-200 rounded-[1.25rem] p-6 flex flex-col w-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)]">
+        {/* The filters sit in the corner of Results; folded behind the button, which turns orange while open,
+            or while a filter is off its default even when folded. They filter the whole page, the charts too. */}
+        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 mb-4">
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mr-auto flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Results
+          </h3>
+          {/* On a phone the button stays beside the title and the filters open below it as three even
+              columns, each named above its box; from an iPad up they sit in a line left of the button. */}
+          {isFiltersOpen && (
+          <div className="order-3 md:order-2 w-full md:w-auto grid grid-cols-3 gap-2 md:flex md:items-center md:gap-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year<span className="hidden md:inline">:</span></span>
+              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+                {availableYears.map(y => (
+                   <option key={y} value={y.toString()}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0" ref={tfRef}>
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">TF<span className="hidden md:inline">:</span></span>
+              <div className="relative">
+                <button
+                  onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
+                  className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
+                >
+                  <span className="truncate max-w-[100px]">
+                    {selectedTfs.length === 0 
+                      ? "ALL" 
+                      : selectedTfs.length <= 2 
+                        ? selectedTfs.join(", ") 
+                        : `${selectedTfs.length} Selected`}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isTfMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isTfMenuOpen && (
+                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                    <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+                      <span className="text-[10px] font-bold text-stone-400 uppercase">Select TFs</span>
+                      {selectedTfs.length > 0 && (
+                        <button 
+                          onClick={() => setSelectedTfs([])}
+                          className="text-[10px] font-bold text-orange-400 hover:text-orange-500 transition-colors"
                         >
-                          <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected ? 'bg-orange-400 border-orange-400' : 'border-stone-200'
-                          }`}>
-                            {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-1.5">
+                      {availableTfs.map(tf => {
+                        const isSelected = selectedTfs.includes(tf);
+                        return (
+                          <div 
+                            key={tf}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedTfs(selectedTfs.filter(i => i !== tf));
+                              } else {
+                                setSelectedTfs([...selectedTfs, tf]);
+                              }
+                            }}
+                            className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
+                              isSelected ? 'bg-orange-50 text-orange-400' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                            }`}
+                          >
+                            <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
+                              isSelected ? 'bg-orange-400 border-orange-400' : 'border-stone-200'
+                            }`}>
+                              {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                            </div>
+                            <span className="truncate">{tf}</span>
                           </div>
-                          <span className="truncate">{tf}</span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Plan<span className="hidden md:inline">:</span></span>
+              <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
+                className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+                <option value="ALL">ALL</option>
+                <option value="On Plan">On Plan</option>
+                <option value="Off Plan">Off Plan</option>
+              </select>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Plan:</span>
-            <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
-              className="bg-white border border-stone-200 text-stone-950 text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
-              <option value="ALL">ALL</option>
-              <option value="On Plan">On Plan</option>
-              <option value="Off Plan">Off Plan</option>
-            </select>
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsFiltersOpen(open => !open)}
+            aria-expanded={isFiltersOpen}
+            aria-label="Filter"
+            title="Filter"
+            className={`order-2 md:order-3 flex items-center justify-center h-8 w-8 border rounded-lg transition ${
+              isFiltersOpen || selectedYear !== new Date().getFullYear().toString() || selectedTfs.length > 0 || selectedPlan !== 'ALL'
+                ? 'bg-orange-50 text-orange-400 border-orange-200'
+                : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+          </button>
         </div>
-      </div>
-
-      <div className="bg-stone-100/60 border border-stone-200 rounded-[1.25rem] p-6 flex flex-col w-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)]">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Results
-        </h3>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
           <div className="@container bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
@@ -509,11 +544,11 @@ export default function PerformancePage() {
             </div>
             <div className="flex justify-between text-[10px] font-bold">
               <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
-              <span className="text-stone-600 flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-stone-100 border border-stone-200 shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
+              <span className="text-orange-400 flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
             </div>
             <div className="w-full h-4 bg-stone-100 rounded-full overflow-hidden flex mt-1 mb-1">
               <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
-              <div className="h-full bg-stone-100 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
+              <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
             </div>
             <div className="flex justify-between text-[10px] font-bold mt-2">
               <div className="flex flex-col">
@@ -521,8 +556,8 @@ export default function PerformancePage() {
                 <span className="text-red-900">{formatCurrency(data.offPlanPnL)}</span>
               </div>
               <div className="flex flex-col items-end text-right">
-                <span className="text-stone-600">On Plan</span>
-                <span className="text-stone-600">{formatCurrency(data.onPlanPnL)}</span>
+                <span className="text-orange-400">On Plan</span>
+                <span className="text-orange-400">{formatCurrency(data.onPlanPnL)}</span>
               </div>
             </div>
           </div>
@@ -673,53 +708,35 @@ export default function PerformancePage() {
         </div>
       </div>
 
+      {/* What the three charts below measure, kept just above them. */}
       <div className="flex justify-end mt-4 mb-2">
-        <div className="flex bg-stone-100 p-1 rounded-xl">
-          <button
-            onClick={() => setSelectedMetric('COUNT')}
-            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
-              selectedMetric === 'COUNT' 
-                ? 'bg-white text-stone-950 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            Win/Loss
-          </button>
-          <button
-            onClick={() => setSelectedMetric('RR')}
-            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
-              selectedMetric === 'RR' 
-                ? 'bg-white text-stone-950 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            Risk/Reward (RR)
-          </button>
-          <button
-            onClick={() => setSelectedMetric('PNL')}
-            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
-              selectedMetric === 'PNL' 
-                ? 'bg-white text-stone-950 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            Net P&L ($)
-          </button>
-          <button
-            onClick={() => setSelectedMetric('GAIN')}
-            className={`text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all ${
-              selectedMetric === 'GAIN' 
-                ? 'bg-white text-stone-950 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            Gain (%)
-          </button>
+        <div className="flex bg-stone-100 p-0.5 rounded-lg" role="group" aria-label="Chart measure">
+          {([
+            { value: 'COUNT', label: 'W/L', title: 'Wins and losses' },
+            { value: 'RR', label: 'RR', title: 'Risk/Reward (R)' },
+            { value: 'PNL', label: '$', title: 'Net P&L ($)' },
+            { value: 'GAIN', label: '%', title: 'Gain (%)' },
+          ] as const).map(m => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setSelectedMetric(m.value)}
+              aria-pressed={selectedMetric === m.value}
+              title={m.title}
+              className={`h-7 min-w-10 px-2.5 text-[11px] font-bold rounded-md transition ${
+                selectedMetric === m.value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-600'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-6 h-[400px] flex flex-col">
+      {/* On a computer Hour and Day share a row and Month takes the next one whole; on an iPad and a phone
+          each takes a row whole (shorter on a phone), so the twelve months have room. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Hour of Day
           </h3>
@@ -729,23 +746,24 @@ export default function PerformancePage() {
               data={{
                 labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
               datasets: selectedMetric === 'COUNT' ? [
-                  { label: 'Losses', data: data.hourlyLossesArr, backgroundColor: '#7f1d1d', borderRadius: 6 },
-                  { label: 'BEs', data: data.hourlyBEsArr, backgroundColor: '#d6d3d1', borderRadius: 6 },
-                  { label: 'Wins', data: data.hourlyWinsArr, backgroundColor: '#fb923c', borderRadius: 6 }
-                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6 }]
+                  { label: 'Losses', data: data.hourlyLossesArr, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'BEs', data: data.hourlyBEsArr, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'Wins', data: data.hourlyWinsArr, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
+                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6, maxBarThickness: 48 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
                   y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, stacked: selectedMetric === 'COUNT' }, 
-                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT' } 
+                  // Every hour labelled, standing upright so all 24 fit.
+                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { autoSkip: false, minRotation: 90, maxRotation: 90 } }
                 },
                 plugins: { legend: { display: false } }
               }}
             />
           </div>
         </div>
-        <div className="glass-card p-6 h-[400px] flex flex-col">
+        <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Day of Week
           </h3>
@@ -755,17 +773,18 @@ export default function PerformancePage() {
               data={{
                 labels: data.activeDowNames,
                 datasets: selectedMetric === 'COUNT' ? [
-                  { label: 'Losses', data: data.activeDowLosses, backgroundColor: '#7f1d1d', borderRadius: 6 },
-                  { label: 'BEs', data: data.activeDowBEs, backgroundColor: '#d6d3d1', borderRadius: 6 },
-                  { label: 'Wins', data: data.activeDowWins, backgroundColor: '#fb923c', borderRadius: 6 }
-                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6 }]
+                  { label: 'Losses', data: data.activeDowLosses, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'BEs', data: data.activeDowBEs, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'Wins', data: data.activeDowWins, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
+                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6, maxBarThickness: 48 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
                 layout: { padding: { top: 20, bottom: 20 } },
                 scales: {
                   y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
-                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT' }
+                  // A day not traded yet named in light grey.
+                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { color: (c: { index: number }) => data.dowTraded[c.index] ? '#78716c' : '#d6d3d1' } }
                 },
                 plugins: { legend: { display: false } }
               }}
@@ -773,9 +792,8 @@ export default function PerformancePage() {
             />
           </div>
         </div>
-      </div>
 
-      <div className="glass-card p-6 h-[400px] flex flex-col w-full">
+      <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col w-full md:col-span-2">
         <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Month of Year
         </h3>
@@ -785,30 +803,38 @@ export default function PerformancePage() {
             data={{
               labels: data.activeMoyNames,
               datasets: selectedMetric === 'COUNT' ? [
-                { label: 'Losses', data: data.activeMoyLosses, backgroundColor: '#7f1d1d', borderRadius: 6 },
-                { label: 'BEs', data: data.activeMoyBEs, backgroundColor: '#d6d3d1', borderRadius: 6 },
-                { label: 'Wins', data: data.activeMoyWins, backgroundColor: '#fb923c', borderRadius: 6 }
+                { label: 'Losses', data: data.activeMoyLosses, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
+                { label: 'BEs', data: data.activeMoyBEs, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
+                { label: 'Wins', data: data.activeMoyWins, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
               ] : [
                 {
                   label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)',
                   data: data.moyRRData,
                   backgroundColor: data.moyRRColors,
                   borderRadius: 6,
+                  maxBarThickness: 48,
                 }
               ]
             }}
             options={{
               responsive: true, maintainAspectRatio: false,
-              layout: { padding: { top: 20, bottom: 20 } },
+              // More room above and below on a narrow screen, where the bars' labels stand upright.
+              layout: { padding: (c: { chart: { width: number } }) => c.chart.width / 12 < 44 ? { top: 44, bottom: 44 } : { top: 20, bottom: 20 } },
               scales: {
                 y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
-                x: { grid: { display: false }, stacked: selectedMetric === 'COUNT' }
+                // Every month named, level, a month not traded yet in light grey; a smaller font on a phone so all twelve fit.
+                x: { grid: { display: false }, stacked: selectedMetric === 'COUNT', ticks: {
+                  autoSkip: false, maxRotation: 0,
+                  color: (c: { index: number }) => data.moyTraded[c.index] ? '#78716c' : '#d6d3d1',
+                  font: (c: { chart: { width: number } }) => ({ size: c.chart.width / 12 < 44 ? 10 : 12 }),
+                } }
               },
               plugins: { legend: { display: false } }
             }}
             plugins={[barValueLabels]}
           />
         </div>
+      </div>
       </div>
 
       <SideMatrixTable title="Buy VS Sell Analysis" firstColumn="Symbol" rows={data.matrixSorted} formatCurrency={formatCurrency} />
