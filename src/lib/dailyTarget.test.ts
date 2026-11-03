@@ -173,3 +173,27 @@ test('each day can be held to its own %', () => {
   assert.equal(days.get('2026-10-05')!.target, 5.02);
   assert.equal(days.get('2026-10-05')!.hitAt, undefined);
 });
+
+test('the lowest the day went: kept after it climbs back, 0 when it never went below', () => {
+  const trades = [
+    { time: '2026-10-02T09:00:00', profit: -5 },
+    { time: '2026-10-02T10:00:00', profit: -7.25 },
+    { time: '2026-10-02T11:00:00', profit: 10 },
+  ];
+  const d = dailyTargets(trades, funding, 0.25, 0).get('2026-10-02')!;
+  assert.equal(d.pnl, -2.25);
+  assert.equal(d.lowPnl, -12.25);
+  assert.equal(dailyTargets([{ time: '2026-10-02T09:00:00', profit: 3 }], funding, 0.25, 0).get('2026-10-02')!.lowPnl, 0);
+});
+
+test('the lowest the day went starts again once the day is back above 0', () => {
+  const trades = [
+    { time: '2026-10-02T09:00:00', profit: -12.25 },
+    { time: '2026-10-02T10:00:00', profit: 13 }, // back above 0: +0.75
+    { time: '2026-10-02T11:00:00', profit: -4 }, // -3.25
+    { time: '2026-10-02T12:00:00', profit: 1 }, // -2.25
+  ];
+  const d = dailyTargets(trades, funding, 0.25, 0).get('2026-10-02')!;
+  assert.equal(d.pnl, -2.25);
+  assert.equal(d.lowPnl, -3.25);
+});

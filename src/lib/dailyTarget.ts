@@ -50,6 +50,7 @@ export interface DayTarget {
   startBalance: number; // deposits less withdrawals plus every trade closed before the day began
   target: number; // dollars, to the cent; 0 when the start balance is not positive
   pnl: number; // the day's closed trades
+  lowPnl: number; // the lowest the day's running total went, trade by trade, since it was last above 0 (else 0)
   hitAt?: string; // close time of the trade that took the day to its target
   afterCount: number; // trades entered after the target was reached
   afterPnl: number;
@@ -90,10 +91,13 @@ export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pc
 
     const dayTrades = [...byDay.get(day)!].sort((a, b) => msOf(a.time) - msOf(b.time));
     let runCents = 0;
+    let lowCents = 0;
     let hitAtMs = NaN;
     let hitAt: string | undefined;
     for (const t of dayTrades) {
       runCents += toCents(t.profit);
+      // Back above 0 makes up for the dip before it, so a later dip is measured on its own.
+      lowCents = runCents > 0 ? 0 : Math.min(lowCents, runCents);
       if (targetCents > 0 && Number.isNaN(hitAtMs) && runCents >= targetCents) {
         hitAtMs = msOf(t.time);
         hitAt = t.time;
@@ -117,6 +121,7 @@ export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pc
       startBalance: fromCents(startCents),
       target: fromCents(targetCents),
       pnl: fromCents(runCents),
+      lowPnl: fromCents(lowCents),
       hitAt,
       afterCount,
       afterPnl: fromCents(afterCents),
