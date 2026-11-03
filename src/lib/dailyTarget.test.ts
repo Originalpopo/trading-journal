@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dailyTargets, summarizeTargets, daysTradedAfterTarget, weekdayTargets } from './dailyTarget.ts';
+import { dailyTargets, summarizeTargets, daysTradedAfterTarget, weekdayTargets, pctOnDay, withPctChange } from './dailyTarget.ts';
 
 const funding = [{ time: '2026-10-01T08:00:00', deposit: 1000 }];
 
@@ -139,4 +139,37 @@ test('weekdayTargets: a past day traded but short is missed; one with no trade a
   const trades = [{ time: '2026-10-05T10:00:00', profit: -1 }]; // Monday: traded, a loss
   const days = dailyTargets(trades, funding, 0.25, 0, '2026-10-07');
   assert.deepEqual(weekdayTargets(days, '2026-10-07').slice(0, 3).map(d => d.state), ['missed', 'noTrades', 'today']);
+});
+
+test('the target % history: the first change keeps the old % for the days before it', () => {
+  const h = withPctChange(undefined, 25, 30, '2026-11-03');
+  assert.deepEqual(h, [{ from: '', pct: 25 }, { from: '2026-11-03', pct: 30 }]);
+  assert.equal(pctOnDay(h, '2026-11-02', 30), 25);
+  assert.equal(pctOnDay(h, '2026-11-03', 30), 30);
+  assert.equal(pctOnDay(h, '2026-12-01', 30), 30);
+  // No history: every day uses the % set now.
+  assert.equal(pctOnDay(undefined, '2026-11-02', 30), 30);
+});
+
+test('the target % history: a second change on the same day replaces it, and changing back drops it', () => {
+  const once = withPctChange(undefined, 25, 30, '2026-11-03');
+  assert.deepEqual(withPctChange(once, 30, 35, '2026-11-03'), [{ from: '', pct: 25 }, { from: '2026-11-03', pct: 35 }]);
+  assert.deepEqual(withPctChange(once, 30, 25, '2026-11-03'), [{ from: '', pct: 25 }]);
+  const later = withPctChange(once, 30, 20, '2026-11-10');
+  assert.deepEqual(later.map(c => c.pct), [25, 30, 20]);
+  assert.equal(pctOnDay(later, '2026-11-09', 20), 30);
+});
+
+test('each day can be held to its own %', () => {
+  const trades = [
+    { time: '2026-10-02T10:00:00', profit: 3 },
+    { time: '2026-10-05T10:00:00', profit: 3 },
+  ];
+  const h = [{ from: '', pct: 0.25 }, { from: '2026-10-05', pct: 0.5 }];
+  const days = dailyTargets(trades, funding, day => pctOnDay(h, day, 0.5), 0);
+  assert.equal(days.get('2026-10-02')!.target, 2.5);
+  assert.ok(days.get('2026-10-02')!.hitAt);
+  // 1003 at 0.5% is 5.015, so $5.02, not reached with $3.
+  assert.equal(days.get('2026-10-05')!.target, 5.02);
+  assert.equal(days.get('2026-10-05')!.hitAt, undefined);
 });

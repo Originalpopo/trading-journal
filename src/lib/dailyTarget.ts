@@ -7,6 +7,31 @@ import { weekKeyOfDay, daysOfWeek } from './weekNotes.ts';
 
 export const DEFAULT_TARGET_PCT = 2.5;
 
+// One change of the target %: in force from `from` ("YYYY-MM-DD", a trading day) until the next change.
+// `from` "" is the % every day before the first change was made.
+export interface TargetPctChange {
+  from: string;
+  pct: number;
+}
+
+// Which % a day was held to: the last change made on or before it, or `fallback` with no history.
+export function pctOnDay(history: TargetPctChange[] | undefined, day: string, fallback: number): number {
+  let pct = fallback;
+  for (const c of [...(history ?? [])].sort((a, b) => a.from.localeCompare(b.from))) {
+    if (c.from > day) break;
+    pct = c.pct;
+  }
+  return pct;
+}
+
+// The history after the % is changed from `oldPct` to `newPct` on `today`: the first change also records
+// the old % for every day before it, and a second change on the same day replaces the first.
+export function withPctChange(history: TargetPctChange[] | undefined, oldPct: number, newPct: number, today: string): TargetPctChange[] {
+  const kept = (history?.length ? history : [{ from: '', pct: oldPct }]).filter(c => c.from < today);
+  if (pctOnDay(kept, today, oldPct) === newPct) return kept;
+  return [...kept, { from: today, pct: newPct }].sort((a, b) => a.from.localeCompare(b.from));
+}
+
 interface TargetTrade {
   time: string; // close time
   entryTime?: string;
@@ -35,7 +60,8 @@ const msOf = (time: string | undefined) => (time ? new Date(time.replace(' ', 'T
 
 // The target of every trading day that had a closed trade, plus `alsoDay` (today, before its first trade).
 // A day starts at `startHour` (see dayNotes.ts), and so does the balance its target is a share of.
-export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pct: number, startHour: number, alsoDay?: string): Map<string, DayTarget> {
+// `pct` is one % for every day, or the % each day was held to (see pctOnDay).
+export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pct: number | ((day: string) => number), startHour: number, alsoDay?: string): Map<string, DayTarget> {
   const byDay = new Map<string, TargetTrade[]>();
   for (const t of trades) {
     const day = dayKeyOfTime(t.time, startHour);
@@ -59,7 +85,8 @@ export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pc
       if (m.at >= dayStart) break;
       startCents += m.cents;
     }
-    const targetCents = startCents > 0 && pct > 0 ? Math.round(startCents * pct / 100) : 0;
+    const dayPct = typeof pct === 'function' ? pct(day) : pct;
+    const targetCents = startCents > 0 && dayPct > 0 ? Math.round(startCents * dayPct / 100) : 0;
 
     const dayTrades = [...byDay.get(day)!].sort((a, b) => msOf(a.time) - msOf(b.time));
     let runCents = 0;

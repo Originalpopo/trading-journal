@@ -8,6 +8,7 @@ import type { StatementProfile } from '@/lib/statement';
 import type { DayNote } from '@/lib/dayNotes';
 import type { DisciplineRule } from '@/lib/discipline';
 import type { WeekNote } from '@/lib/weekNotes';
+import type { TargetPctChange } from '@/lib/dailyTarget';
 import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow } from '@/lib/risk';
 import { setBeThreshold } from '@/lib/stats';
 
@@ -110,6 +111,11 @@ export interface Preferences {
   disciplineRules?: DisciplineRule[];
   // Daily profit target in % of the balance the day started with (default 2.5; 0 turns it off).
   dailyTargetPct?: number;
+  // Every change of that %, oldest first (see dailyTarget.ts), kept whichever way the days are counted.
+  dailyTargetHistory?: TargetPctChange[];
+  // "history": each past day keeps the % it was held to then; "current": every day uses the % set now
+  // (default "history").
+  dailyTargetMode?: 'history' | 'current';
   // Hour (Bangkok time) a trading day starts; trades closed before it count for the day before (default 5).
   dayStartHour?: number;
 }
