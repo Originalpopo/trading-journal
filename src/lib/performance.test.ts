@@ -92,6 +92,7 @@ test('hour, weekday and month charts follow the entry time', () => {
   const p = computePerformance(trades, funding, filters());
   assert.equal(p.hourlyDataArr[10], 1.5);
   assert.equal(p.hourlyDataArr[15], 0.1);
+  assert.deepEqual(p.hourTraded.flatMap((t, h) => t ? [h] : []), [10, 15]);
   // Monday to Friday always; untraded days have no bar.
   assert.deepEqual(p.activeDowNames, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   assert.deepEqual(p.activeDowData, [3, -1.4, null, null, null]);

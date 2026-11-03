@@ -201,6 +201,10 @@ export default function PerformancePage() {
     }
   }), [isPrivacyMode]);
 
+  // The Hour, Day and Month charts draw their 0 line darker, and no axis line at the bottom, so a loss
+  // hangs from the line its bar starts at rather than looking as if it floats.
+  const zeroLineColor = (c: { tick?: { value: number } }) => c.tick?.value === 0 ? '#d6d3d1' : '#fafaf9';
+
   // Value labels drawn beside the bars of the Day of Week and Month of Year charts.
   const barValueLabels: Plugin<'bar'> = useMemo(() => ({
     id: 'barValueLabels',
@@ -754,9 +758,9 @@ export default function PerformancePage() {
               options={{
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
-                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, stacked: selectedMetric === 'COUNT' }, 
-                  // Every hour labelled, standing upright so all 24 fit.
-                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { autoSkip: false, minRotation: 90, maxRotation: 90 } }
+                  y: { border: { display: false }, grid: { color: zeroLineColor }, ticks: { display: false }, stacked: selectedMetric === 'COUNT' }, 
+                  // Every hour labelled, standing upright so all 24 fit; an hour not traded in light grey.
+                  x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { autoSkip: false, minRotation: 90, maxRotation: 90, color: (c: { index: number }) => data.hourTraded[c.index] ? '#78716c' : '#d6d3d1' } }
                 },
                 plugins: { legend: { display: false } }
               }}
@@ -782,9 +786,9 @@ export default function PerformancePage() {
                 responsive: true, maintainAspectRatio: false,
                 layout: { padding: { top: 20, bottom: 20 } },
                 scales: {
-                  y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
+                  y: { border: { display: false }, grid: { color: zeroLineColor }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
                   // A day not traded yet named in light grey.
-                  x: { grid: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { color: (c: { index: number }) => data.dowTraded[c.index] ? '#78716c' : '#d6d3d1' } }
+                  x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { color: (c: { index: number }) => data.dowTraded[c.index] ? '#78716c' : '#d6d3d1' } }
                 },
                 plugins: { legend: { display: false } }
               }}
@@ -821,9 +825,9 @@ export default function PerformancePage() {
               // More room above and below on a narrow screen, where the bars' labels stand upright.
               layout: { padding: (c: { chart: { width: number } }) => c.chart.width / 12 < 44 ? { top: 44, bottom: 44 } : { top: 20, bottom: 20 } },
               scales: {
-                y: { border: { display: false }, grid: { color: '#fafaf9' }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
+                y: { border: { display: false }, grid: { color: zeroLineColor }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
                 // Every month named, level, a month not traded yet in light grey; a smaller font on a phone so all twelve fit.
-                x: { grid: { display: false }, stacked: selectedMetric === 'COUNT', ticks: {
+                x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: {
                   autoSkip: false, maxRotation: 0,
                   color: (c: { index: number }) => data.moyTraded[c.index] ? '#78716c' : '#d6d3d1',
                   font: (c: { chart: { width: number } }) => ({ size: c.chart.width / 12 < 44 ? 10 : 12 }),

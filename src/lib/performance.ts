@@ -390,6 +390,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const hourlyWinsArr = hours.map(h => hourWins[h]);
   const hourlyLossesArr = hours.map(h => hourLosses[h]);
   const hourlyBEsArr = hours.map(h => hourBEs[h]);
+  const hourTraded = hours.map(h => hourStats[h] !== 0 || hourStatsPnL[h] !== 0 || hourWins[h] > 0 || hourLosses[h] > 0 || hourBEs[h] > 0);
 
   // Monday to Friday always, so the axis stays put; Saturday and Sunday only when traded (e.g. crypto).
   // A weekday with nothing in it has no bar (null).
@@ -437,7 +438,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
     maxConsWinAmt, maxConsLossAmt, countAtMaxWinAmt, countAtMaxLossAmt,
     avgConsWin, avgConsLoss,
     perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
-    hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr,
+    hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr, hourTraded,
     activeDowNames, dowTraded, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
     activeMoyNames, moyTraded, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
     matrixSorted,
