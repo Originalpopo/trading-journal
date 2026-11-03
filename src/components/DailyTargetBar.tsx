@@ -17,14 +17,33 @@ const SEGMENTS = 5;
 
 const usd =(n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
 
-// One bar that fills up, with a white mark every 20% so how far it has come reads at a glance.
+// One bar that fills up, with a white mark every 20% so how far it has come reads at a glance. On a day in
+// loss (a share below 0) the bar grows by the loss to the left of a 0 point: the whole bar is the loss plus
+// the full target, split at 0 into two bars with a small gap between: the loss fills the left one red, leftwards
+// from 0, the right one is the way to the target, and the marks go on every 20% of the target on both sides.
 function SegmentBar({ share, isShown, isHit }: { share: number; isShown: boolean; isHit: boolean }) {
+  const loss = Math.max(0, -share);
+  const total = 1 + loss;
+  const at = (value: number) => `${((loss + value) * 100) / total}%`; // where a share of the target sits on the bar
+  const marks = [
+    ...Array.from({ length: Math.ceil(loss * SEGMENTS) - 1 }, (_, i) => -(i + 1) / SEGMENTS).filter(v => v > -loss),
+    ...Array.from({ length: SEGMENTS - 1 }, (_, i) => (i + 1) / SEGMENTS),
+  ];
   return (
     <div className="relative">
-      <div className="relative h-4 rounded-full bg-stone-100 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
-        <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
-        {Array.from({ length: SEGMENTS - 1 }, (_, i) => (
-          <span key={i} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-white" style={{ left: `${((i + 1) * 100) / SEGMENTS}%` }} />
+      <div className={`relative h-4 rounded-full overflow-hidden ${loss > 0 ? "" : "bg-stone-100"}`} role="progressbar" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
+        {loss > 0 ? (
+          <>
+            <div className="absolute inset-y-0 left-0 rounded-full bg-stone-100 overflow-hidden" style={{ width: `calc(${at(0)} - 2px)` }}>
+              <div className="absolute inset-y-0 right-0 rounded-full bg-red-900 transition-[width] duration-1000 ease-out motion-reduce:transition-none" style={{ width: isShown ? "100%" : "0%" }} />
+            </div>
+            <div className="absolute inset-y-0 right-0 rounded-full bg-stone-100" style={{ left: `calc(${at(0)} + 2px)` }} />
+          </>
+        ) : (
+          <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
+        )}
+        {marks.map(v => (
+          <span key={v} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-white" style={{ left: at(v) }} />
         ))}
       </div>
       {/* The app's flame, lit at the end of the bar: a reward shown only while the bar is past its last mark
@@ -109,8 +128,9 @@ export default function DailyTargetBar() {
   if (!day || !hasBar) return null;
 
   const isHit = !!day.hitAt;
-  const share = Math.max(0, Math.min(1, day.pnl / day.target));
-  const percentText = `${Math.round(Math.max(0, day.pnl / day.target) * 100)}%`;
+  // Below 0 on a losing day, down to -1 (a loss as large as the target); the figures show the full amount.
+  const share = Math.max(-1, Math.min(1, day.pnl / day.target));
+  const percentText = `${Math.round((day.pnl / day.target) * 100)}%`;
 
   // Days with no trade at all are left out of the count: a day off is not a day short of the target.
   const weekHitDays = week.filter(d => d.state === "hit").length;
@@ -122,7 +142,7 @@ export default function DailyTargetBar() {
   const figuresClass = "order-2 md:order-3 ml-auto md:ml-0 md:min-w-28 text-right text-xs font-black tabular-nums whitespace-nowrap";
   const figures = (pnl: number, target: number, hit: boolean, percent: string) =>
     isPrivacyMode ? (
-      <span className={hit ? "text-orange-400" : "text-stone-950"}>{percent}</span>
+      <span className={hit ? "text-orange-400" : pnl < 0 ? "text-red-900" : "text-stone-950"}>{percent}</span>
     ) : (
       <>
         <span className={pnl > 0 ? "text-orange-400" : pnl < 0 ? "text-red-900" : "text-stone-950"}>{usd(pnl)}</span>
