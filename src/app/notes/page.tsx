@@ -6,8 +6,9 @@ import DisciplineSummary from "@/components/DisciplineSummary";
 import { useJournalStore } from "@/store/useJournalStore";
 import DayNoteModal, { MoodIcon, moodTone, formatDayLabel } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
-import { dayKey, summarizeDay, type DaySummary } from "@/lib/dayNotes";
-import { weekKeyOf, groupNotesByWeek, summarizeWeek, formatWeekRange } from "@/lib/weekNotes";
+import { summarizeDay, type DaySummary } from "@/lib/dayNotes";
+import { useTradingDay } from "@/components/useTradingDay";
+import { weekKeyOfDay, groupNotesByWeek, summarizeWeek, formatWeekRange } from "@/lib/weekNotes";
 import { formatNumber } from "@/lib/utils";
 
 import PageHeader, { HeaderButton } from "@/components/PageHeader";
@@ -67,9 +68,8 @@ export default function NotesPage() {
   const currentPage = Math.min(page, totalPages);
   const shown = found.slice((currentPage - 1) * WEEKS_PER_PAGE, currentPage * WEEKS_PER_PAGE);
 
-  const now = new Date();
-  const today = dayKey(now);
-  const thisWeek = weekKeyOf(now);
+  const { startHour, today } = useTradingDay();
+  const thisWeek = weekKeyOfDay(today);
   const hasToday = dayNotes.some(n => n.date === today);
   const hasThisWeek = weekNotes.some(n => n.week === thisWeek);
   const weekLabel = hasThisWeek ? "Add to this week's note" : "Write this week's note";
@@ -113,7 +113,7 @@ export default function NotesPage() {
             </div>
           ) : (
             shown.map(group => {
-              const week = summarizeWeek(trades, group.week);
+              const week = summarizeWeek(trades, group.week, startHour);
               return (
                 <section key={group.week} className="py-4">
                   <div className="flex items-center gap-2 px-2 mb-1">
@@ -151,7 +151,7 @@ export default function NotesPage() {
                           mood={note.mood}
                           title={formatDayLabel(note.date)}
                           content={note.content}
-                          summary={summarizeDay(trades, note.date)}
+                          summary={summarizeDay(trades, note.date, startHour)}
                           isPrivacyMode={isPrivacyMode}
                           brokenCount={(note.brokenRules ?? []).filter(id => ruleIds.has(id)).length}
                           onClick={() => setOpenDay({ date: note.date, edit: false })}

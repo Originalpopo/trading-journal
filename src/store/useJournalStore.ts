@@ -110,6 +110,8 @@ export interface Preferences {
   disciplineRules?: DisciplineRule[];
   // Daily profit target in % of the balance the day started with (default 2.5; 0 turns it off).
   dailyTargetPct?: number;
+  // Hour (Bangkok time) a trading day starts; trades closed before it count for the day before (default 5).
+  dayStartHour?: number;
 }
 
 interface JournalState {

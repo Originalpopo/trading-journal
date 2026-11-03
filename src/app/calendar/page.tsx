@@ -7,7 +7,8 @@ import { useDailyTargets } from "@/components/useDailyTargets";
 import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
 import { weekKeyOf } from "@/lib/weekNotes";
-import { dayKey } from "@/lib/dayNotes";
+import { dayKey, dayKeyOfTime } from "@/lib/dayNotes";
+import { useTradingDay } from "@/components/useTradingDay";
 import { formatNumber, fitFontSize } from "@/lib/utils";
 import { classifyTrade } from "@/lib/stats";
 import { addMoney } from "@/lib/money";
@@ -50,7 +51,8 @@ export default function CalendarPage() {
   const [openWeekNote, setOpenWeekNote] = useState<{ week: string; edit: boolean } | null>(null);
   const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
   const notesByWeek = useMemo(() => new Map(weekNotes.map(n => [n.week, n])), [weekNotes]);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const { startHour, today } = useTradingDay();
+  const [currentDate, setCurrentDate] = useState(() => new Date(`${today}T00:00:00`));
   const [statIndex, setStatIndex] = useState(1); // PnL
   const touchStartX = useRef<number | null>(null);
 
@@ -92,7 +94,7 @@ export default function CalendarPage() {
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(new Date(`${today}T00:00:00`));
   };
 
   const jumpToYear = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -102,9 +104,10 @@ export default function CalendarPage() {
   const data = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const today = new Date();
-    const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
-    const currentDay = today.getDate();
+    // Days are trading days: before the start hour (Settings) it is still yesterday, and a trade closed
+    // then counts for yesterday.
+    const isCurrentMonth = today.startsWith(`${year}-${String(month + 1).padStart(2, '0')}-`);
+    const currentDay = Number(today.slice(8, 10));
 
     const firstDay = new Date(year, month, 1).getDay(); // Sunday is 0, Monday is 1, etc.
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -115,9 +118,9 @@ export default function CalendarPage() {
     let mTotalTradesAll = 0;
 
     trades.forEach(t => {
-      const d = new Date(t.time.replace(' ', 'T'));
-      if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
-        const date = d.getDate();
+      const key = dayKeyOfTime(t.time, startHour);
+      if (key && Number(key.slice(0, 4)) === year && Number(key.slice(5, 7)) === month + 1) {
+        const date = Number(key.slice(8, 10));
         if (!statsMap[date]) statsMap[date] = { pnl: 0, count: 0, rr: 0 };
         statsMap[date].pnl = addMoney(statsMap[date].pnl, t.profit);
         statsMap[date].count++;
@@ -194,9 +197,13 @@ export default function CalendarPage() {
     const resolvedTrades = mWins + mLosses;
     const winRate = resolvedTrades > 0 ? (mWins / resolvedTrades) * 100 : 0;
 
-    const availableYears = Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).sort((a, b) => b - a);
-    if (!availableYears.includes(today.getFullYear())) {
-      availableYears.unshift(today.getFullYear());
+    const availableYears = Array.from(new Set(trades.flatMap(t => {
+      const key = dayKeyOfTime(t.time, startHour);
+      return key ? [Number(key.slice(0, 4))] : [];
+    }))).sort((a, b) => b - a);
+    const thisYear = Number(today.slice(0, 4));
+    if (!availableYears.includes(thisYear)) {
+      availableYears.unshift(thisYear);
       availableYears.sort((a, b) => b - a);
     }
 
@@ -211,9 +218,9 @@ export default function CalendarPage() {
       availableYears,
       year
     };
-  }, [trades, currentDate]);
+  }, [trades, currentDate, startHour, today]);
 
-  const yearData = useMemo(() => summarizeYear(trades, currentDate.getFullYear()), [trades, currentDate]);
+  const yearData = useMemo(() => summarizeYear(trades, currentDate.getFullYear(), startHour), [trades, currentDate, startHour]);
   const headline = view === 'year'
     ? { label: String(currentDate.getFullYear()), count: yearData.count, net: yearData.pnl, rr: yearData.rr, winRate: yearData.winRate }
     : { label: data.monthLabel, count: data.mTotalTradesAll, net: data.mNet, rr: data.mRR, winRate: data.winRate };
@@ -478,15 +485,25 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {view === 'month' && targetPct > 0 && (
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1 -mt-3 px-1 md:px-2 text-[10px] font-bold text-stone-400">
-          {([['hit', 'Target reached, stopped', 'text-orange-400', 'bg-orange-400'], ['after', 'Traded after the target', 'text-red-900', 'bg-red-900']] as const).map(([key, label, text, bg]) => (
-            <span key={key} className="flex items-center gap-1.5">
-              <Target className={`hidden md:block w-3.5 h-3.5 ${text}`} />
-              <span className={`md:hidden w-4 h-[3px] rounded-full ${bg}`} />
-              {label}
-            </span>
-          ))}
+      {((view === 'month' && targetPct > 0) || startHour > 0) && (
+        <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-[10px] font-bold text-stone-400">
+          {view === 'month' && targetPct > 0 && (
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1">
+              {([['hit', 'Target reached, stopped', 'text-orange-400', 'bg-orange-400'], ['after', 'Traded after the target', 'text-red-900', 'bg-red-900']] as const).map(([key, label, text, bg]) => (
+                <span key={key} className="flex items-center gap-1.5">
+                  <Target className={`hidden md:block w-3.5 h-3.5 ${text}`} />
+                  <span className={`md:hidden w-4 h-[3px] rounded-full ${bg}`} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Why a month here can differ a little from the monthly statement, which keeps the real date. */}
+          {startHour > 0 && (
+            <p className="text-center md:text-left">
+              Days start at {String(startHour).padStart(2, '0')}:00 (Settings): a trade closed before then counts for the day before. The statement keeps the real date.
+            </p>
+          )}
         </div>
       )}
 

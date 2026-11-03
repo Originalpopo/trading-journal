@@ -6,6 +6,7 @@ import { summarizeWeek, formatWeekRange } from "@/lib/weekNotes";
 import { formatNumber } from "@/lib/utils";
 import { formatPnl } from "@/lib/bahtRate";
 import { NoteModal, NoteAccordion, MoodIcon, moodTone } from "./DayNoteModal";
+import { useTradingDay } from "./useTradingDay";
 
 interface WeekNoteModalProps {
   week: string; // "YYYY-MM-DD" of the week's Sunday
@@ -28,7 +29,8 @@ export default function WeekNoteModal({ week, startEditing, bahtRate, onClose, o
   const deleteWeekNote = useJournalStore(state => state.deleteWeekNote);
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
 
-  const summary = useMemo(() => summarizeWeek(trades, week), [trades, week]);
+  const { startHour } = useTradingDay();
+  const summary = useMemo(() => summarizeWeek(trades, week, startHour), [trades, week, startHour]);
   const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
   const days = summary.days.filter((d, i) => (i > 0 && i < 6) || d.count > 0 || notesByDay.has(d.date));
 

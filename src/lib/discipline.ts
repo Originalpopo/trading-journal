@@ -21,7 +21,7 @@ export const SUGGESTED_RULES = [
 ];
 
 interface PlanTrade {
-  time: string; // close time; a trade belongs to the day it closed, as on the Calendar
+  time: string; // close time; a trade belongs to the trading day it closed in, as on the Calendar
   profit?: number;
   rr?: number;
   checklists?: string[];
@@ -39,11 +39,12 @@ export interface PlanSide {
   rr: number;
 }
 
-// What trading on plan and off plan each came to, from `from` (a "YYYY-MM-DD" day, inclusive) on.
-export function planCost(trades: PlanTrade[], from?: string): { onPlan: PlanSide; offPlan: PlanSide } {
+// What trading on plan and off plan each came to, from `from` (a "YYYY-MM-DD" trading day, inclusive) on.
+// `startHour`: when a trading day starts (dayNotes.ts).
+export function planCost(trades: PlanTrade[], startHour: number, from?: string): { onPlan: PlanSide; offPlan: PlanSide } {
   const sides = { onPlan: { count: 0, cents: 0, rr: 0 }, offPlan: { count: 0, cents: 0, rr: 0 } };
   for (const t of trades) {
-    const day = dayKeyOfTime(t.time);
+    const day = dayKeyOfTime(t.time, startHour);
     if (!day || (from && day < from)) continue;
     const side = isOnPlan(t) ? sides.onPlan : sides.offPlan;
     side.count++;
@@ -73,10 +74,10 @@ export type DayDiscipline = 'clean' | 'broken';
 // A day is broken when it had an off-plan trade, its note ticks a broken rule, or it is in
 // `alsoBroken` (a trade entered after the daily target, see dailyTarget.ts); clean when it had trades
 // that were all on plan. Days with neither are left out: a day off is not a lapse.
-export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], alsoBroken?: Set<string>): Map<string, DayDiscipline> {
+export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], startHour: number, alsoBroken?: Set<string>): Map<string, DayDiscipline> {
   const days = new Map<string, DayDiscipline>();
   for (const t of trades) {
-    const day = dayKeyOfTime(t.time);
+    const day = dayKeyOfTime(t.time, startHour);
     if (!day) continue;
     if (!isOnPlan(t)) days.set(day, 'broken');
     else if (!days.has(day)) days.set(day, 'clean');
@@ -87,8 +88,8 @@ export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], alsoBrok
 }
 
 // Clean trading days in a row: `current` counts back from the latest day, `best` is the longest run.
-export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[], alsoBroken?: Set<string>): { current: number; best: number } {
-  const ordered = [...disciplineByDay(trades, notes, alsoBroken).entries()].sort(([a], [b]) => a.localeCompare(b));
+export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[], startHour: number, alsoBroken?: Set<string>): { current: number; best: number } {
+  const ordered = [...disciplineByDay(trades, notes, startHour, alsoBroken).entries()].sort(([a], [b]) => a.localeCompare(b));
   let run = 0, best = 0;
   for (const [, state] of ordered) {
     run = state === 'clean' ? run + 1 : 0;

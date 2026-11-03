@@ -1,6 +1,7 @@
 import { addMoney } from './money.ts';
 import { classifyTrade, type StatTrade } from './stats.ts';
 import { weekKeyOf } from './weekNotes.ts';
+import { dayKey, dayKeyOfTime, tradingDayOf } from './dayNotes.ts';
 
 // The Calendar's year view: every month as a row of weeks. A week runs Sunday to Saturday and is
 // cut at the month's edges, exactly like the Summary column of the month view, so the two always agree.
@@ -38,8 +39,10 @@ const add = (into: PeriodStats, t: YearTrade) => {
   into.count++;
 };
 
-export function summarizeYear(trades: YearTrade[], year: number, today: Date = new Date()): YearSummary {
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+// A trade counts in the trading day it closed in, which starts at `startHour` (dayNotes.ts): one closed at
+// 1am on 1 January can count in the year before.
+export function summarizeYear(trades: YearTrade[], year: number, startHour: number, now: Date = new Date()): YearSummary {
+  const today = tradingDayOf(now, startHour);
 
   const months: YearMonth[] = Array.from({ length: 12 }, (_, month) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -47,7 +50,7 @@ export function summarizeYear(trades: YearTrade[], year: number, today: Date = n
     for (let day = 1; day <= daysInMonth; day++) {
       if (day === 1 || new Date(year, month, day).getDay() === 0) {
         const date = new Date(year, month, day);
-        weeks.push({ ...empty(), startDay: day, endDay: day, isFuture: date.getTime() > todayStart, week: weekKeyOf(date) });
+        weeks.push({ ...empty(), startDay: day, endDay: day, isFuture: dayKey(date) > today, week: weekKeyOf(date) });
       }
       weeks[weeks.length - 1].endDay = day;
     }
@@ -58,10 +61,11 @@ export function summarizeYear(trades: YearTrade[], year: number, today: Date = n
   let wins = 0;
   let losses = 0;
   for (const t of trades) {
-    const d = new Date(t.time.replace(' ', 'T'));
-    if (isNaN(d.getTime()) || d.getFullYear() !== year) continue;
-    const month = months[d.getMonth()];
-    const week = month.weeks.find(w => d.getDate() >= w.startDay && d.getDate() <= w.endDay)!;
+    const key = dayKeyOfTime(t.time, startHour);
+    if (!key || Number(key.slice(0, 4)) !== year) continue;
+    const month = months[Number(key.slice(5, 7)) - 1];
+    const date = Number(key.slice(8, 10));
+    const week = month.weeks.find(w => date >= w.startDay && date <= w.endDay)!;
     add(week, t);
     add(month, t);
     add(total, t);

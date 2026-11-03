@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Flame, XCircle } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { dayKey } from "@/lib/dayNotes";
 import { planCost, ruleCounts, disciplineStreak, type PlanSide } from "@/lib/discipline";
 import { formatNumber } from "@/lib/utils";
 import { summarizeTargets } from "@/lib/dailyTarget";
 import { useDailyTargets } from "./useDailyTargets";
+import { useTradingDay } from "./useTradingDay";
 
 type Period = "month" | "all";
 
@@ -31,16 +31,14 @@ export default function DisciplineSummary() {
   const rules = useMemo(() => preferences.disciplineRules ?? [], [preferences.disciplineRules]);
   const [period, setPeriod] = useState<Period>("month");
 
-  const from = useMemo(() => {
-    if (period === "all") return undefined;
-    const now = new Date();
-    return dayKey(new Date(now.getFullYear(), now.getMonth(), 1));
-  }, [period]);
+  // The month starts on the 1st of the trading day's month ("YYYY-MM-01").
+  const { startHour, today } = useTradingDay();
+  const from = period === "all" ? undefined : `${today.slice(0, 8)}01`;
 
   const { days, pct, tradedAfter } = useDailyTargets();
-  const streak = useMemo(() => disciplineStreak(trades, dayNotes, tradedAfter), [trades, dayNotes, tradedAfter]);
+  const streak = useMemo(() => disciplineStreak(trades, dayNotes, startHour, tradedAfter), [trades, dayNotes, startHour, tradedAfter]);
   const target = useMemo(() => summarizeTargets(days, from), [days, from]);
-  const cost = useMemo(() => planCost(trades, from), [trades, from]);
+  const cost = useMemo(() => planCost(trades, startHour, from), [trades, startHour, from]);
   const broken = useMemo(() => ruleCounts(dayNotes, rules, from).slice(0, 3), [dayNotes, rules, from]);
   const mostBroken = broken[0]?.count ?? 0;
 

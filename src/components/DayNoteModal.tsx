@@ -3,11 +3,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Trash2, Edit2, X, Laugh, Smile, Meh, Annoyed, Frown, Angry, ChevronDown, XCircle, Target, type LucideIcon } from "lucide-react";
 import { useDailyTargets } from "./useDailyTargets";
+import { useTradingDay } from "./useTradingDay";
 import Link from "next/link";
 import SaveRow from "./SaveRow";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 import { useJournalStore, type Trade } from "@/store/useJournalStore";
-import { summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId, type DaySummary } from "@/lib/dayNotes";
+import { dayKeyOfTime, summarizeDay, tradesOfDay, normalizeMood, MOOD_IDS, type MoodId, type DaySummary } from "@/lib/dayNotes";
 import { classifyTrade, outcomeLabel, isOnPlan } from "@/lib/stats";
 import type { DisciplineRule } from "@/lib/discipline";
 import { formatNumber } from "@/lib/utils";
@@ -300,8 +301,9 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
   const deleteTrade = useJournalStore(state => state.deleteTrade);
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
 
-  const day = useMemo(() => summarizeDay(trades, date), [trades, date]);
-  const dayTrades = useMemo(() => tradesOfDay(trades, date), [trades, date]);
+  const { startHour } = useTradingDay();
+  const day = useMemo(() => summarizeDay(trades, date, startHour), [trades, date, startHour]);
+  const dayTrades = useMemo(() => tradesOfDay(trades, date, startHour), [trades, date, startHour]);
   const offPlanCount = dayTrades.filter(t => !isOnPlan(t)).length;
   const rules = useJournalStore(state => state.preferences.disciplineRules);
   const target = useDailyTargets().days.get(date);
@@ -363,6 +365,8 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
               const outcome = classifyTrade(t);
               const tone = outcome === 'win' ? 'text-orange-400' : outcome === 'loss' ? 'text-red-900' : 'text-stone-400';
               const entryClock = clockOf(t.entryTime);
+              // Closed after midnight, before the trading day rolled over: its real date is the next day.
+              const closedNextDay = dayKeyOfTime(t.time, 0) !== date;
               return (
                 <button
                   key={t.id}
@@ -371,7 +375,10 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
                   onClick={() => setDetailId(t.id)}
                   className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
                 >
-                  <span className="text-stone-400 tabular-nums w-[76px] md:w-[84px] shrink-0">{entryClock && `${entryClock} – `}{clockOf(t.time)}</span>
+                  <span className="text-stone-400 tabular-nums w-[88px] md:w-[96px] shrink-0">
+                    {entryClock && `${entryClock} – `}{clockOf(t.time)}
+                    {closedNextDay && <sup className="ml-0.5 text-[8px]" title="Closed after midnight, the next day by the clock">+1</sup>}
+                  </span>
                   <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
                   <span className="w-3.5 shrink-0" title={isOnPlan(t) ? undefined : "Off plan"}>
                     {!isOnPlan(t) && <XCircle className="w-3.5 h-3.5 text-red-900" />}

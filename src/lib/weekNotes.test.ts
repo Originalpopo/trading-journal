@@ -27,7 +27,7 @@ test('summarizeWeek adds up the whole week across the month edge, day by day', (
     { time: '2026-10-02 10:00:32', profit: 0.08, risk: 1.5, rr: 0.05, resultType: 'BE' },
     { time: '2026-10-04T10:00:00', profit: 5, risk: 1, rr: 5, resultType: 'TP' }, // next week
   ];
-  const week = summarizeWeek(trades, '2026-09-27');
+  const week = summarizeWeek(trades, '2026-09-27', 0);
   assert.deepEqual([week.count, week.pnl, week.wins, week.losses, week.bes], [3, 17.67, 1, 1, 1]);
   assert.equal(week.days.length, 7);
   assert.deepEqual(week.days.map(d => d.count), [0, 0, 0, 1, 1, 1, 0]);

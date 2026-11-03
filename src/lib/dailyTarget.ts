@@ -2,7 +2,8 @@
 // reach it, trading stops for the day; a trade entered after that is "after target".
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { toCents, fromCents } from './money.ts';
-import { dayKeyOfTime } from './dayNotes.ts';
+import { dayKeyOfTime, tradingDayStartMs } from './dayNotes.ts';
+import { weekKeyOfDay, daysOfWeek } from './weekNotes.ts';
 
 export const DEFAULT_TARGET_PCT = 2.5;
 
@@ -32,11 +33,12 @@ export interface DayTarget {
 
 const msOf = (time: string | undefined) => (time ? new Date(time.replace(' ', 'T')).getTime() : NaN);
 
-// The target of every day that had a closed trade, plus `alsoDay` (today, before its first trade).
-export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pct: number, alsoDay?: string): Map<string, DayTarget> {
+// The target of every trading day that had a closed trade, plus `alsoDay` (today, before its first trade).
+// A day starts at `startHour` (see dayNotes.ts), and so does the balance its target is a share of.
+export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pct: number, startHour: number, alsoDay?: string): Map<string, DayTarget> {
   const byDay = new Map<string, TargetTrade[]>();
   for (const t of trades) {
-    const day = dayKeyOfTime(t.time);
+    const day = dayKeyOfTime(t.time, startHour);
     if (!day) continue;
     if (!byDay.has(day)) byDay.set(day, []);
     byDay.get(day)!.push(t);
@@ -51,7 +53,7 @@ export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pc
 
   const result = new Map<string, DayTarget>();
   for (const day of [...byDay.keys()].sort()) {
-    const dayStart = new Date(`${day}T00:00:00`).getTime();
+    const dayStart = tradingDayStartMs(day, startHour);
     let startCents = 0;
     for (const m of moves) {
       if (m.at >= dayStart) break;
@@ -118,6 +120,27 @@ export function summarizeTargets(days: Map<string, DayTarget>, from?: string): T
     afterRr += d.afterRr;
   }
   return { hitDays, stoppedDays: hitDays - continuedDays, continuedDays, afterCount, afterPnl: fromCents(afterCents), afterRr };
+}
+
+// How one trading day of the week stands against its target: reached it, traded and ended without it,
+// passed with no trade at all (a day off or no setup: not a miss, and kept apart for later analysis),
+// is today (not reached yet), or is still to come.
+export type WeekdayState = 'hit' | 'missed' | 'noTrades' | 'today' | 'upcoming';
+
+// The trading days of a week (Sunday to Saturday, as on the Calendar; by default the one `today` falls in),
+// each with its state: Monday to Friday always, and a Saturday or Sunday only when it was traded or is today
+// (markets such as crypto trade at weekends). `days` holds only days with a closed trade, plus today.
+export function weekdayTargets(days: Map<string, DayTarget>, today: string, week = weekKeyOfDay(today)): { date: string; state: WeekdayState }[] {
+  return daysOfWeek(week)
+    .filter((date, i) => (i > 0 && i < 6) || days.has(date))
+    .map(date => {
+      const day = days.get(date);
+      const state: WeekdayState = day?.hitAt ? 'hit'
+        : date > today ? 'upcoming'
+        : date === today ? 'today'
+        : day ? 'missed' : 'noTrades';
+      return { date, state };
+    });
 }
 
 // Days on which a trade was entered after the target: they break the discipline streak.

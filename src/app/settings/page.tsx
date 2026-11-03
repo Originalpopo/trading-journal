@@ -10,6 +10,7 @@ import StatementProfileSetting from "@/components/StatementProfileSetting";
 import BreakEvenSetting from "@/components/settings/BreakEvenSetting";
 import DisciplineRulesSetting from "@/components/settings/DisciplineRulesSetting";
 import DailyTargetSetting from "@/components/settings/DailyTargetSetting";
+import TradingDaySetting from "@/components/settings/TradingDaySetting";
 import TaxStepsInfo from "@/components/settings/TaxStepsInfo";
 import BackupSetting from "@/components/settings/BackupSetting";
 import BalanceCheckHistory from "@/components/settings/BalanceCheckHistory";
@@ -116,6 +117,7 @@ export default function SettingsPage() {
           <DefaultRiskSetting />
           <BreakEvenSetting />
           <DailyTargetSetting />
+          <TradingDaySetting />
           <DisciplineRulesSetting />
         </>
       )}

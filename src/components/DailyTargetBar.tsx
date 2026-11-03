@@ -1,21 +1,99 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Target, AlertTriangle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Target, AlertTriangle, CalendarRange, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDailyTargets } from "./useDailyTargets";
+import { weekdayTargets, type WeekdayState } from "@/lib/dailyTarget";
+import { weekKeyOfDay } from "@/lib/weekNotes";
+import { dayKey } from "@/lib/dayNotes";
 import { formatNumber } from "@/lib/utils";
 
 // Lucide's Flame, the app's logo, drawn filled at the tip of the bar.
 const FLAME_PATH = "M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4";
 
+// The bar is marked into this many equal parts (20% each).
+const SEGMENTS = 5;
+
 const usd =(n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
 
-// Today's progress to the daily target, as a bar that fills up. Hidden while the target is off or the
-// account has no balance to take a share of.
+// One bar that fills up, with a white mark every 20% so how far it has come reads at a glance.
+function SegmentBar({ share, isShown, isHit }: { share: number; isShown: boolean; isHit: boolean }) {
+  return (
+    <div className="relative">
+      <div className="relative h-4 rounded-full bg-stone-100 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
+        <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
+        {Array.from({ length: SEGMENTS - 1 }, (_, i) => (
+          <span key={i} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-white" style={{ left: `${((i + 1) * 100) / SEGMENTS}%` }} />
+        ))}
+      </div>
+      {/* The app's flame, lit at the end of the bar: a reward shown only while the bar is past its last mark
+          (over 80% of the target). Trading the profit back to 80% or below puts it out. */}
+      {share > (SEGMENTS - 1) / SEGMENTS && (
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="flame-light absolute top-1/2 left-full w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_rgba(251,146,60,0.45)]"
+        >
+          {/* A white edge under the flame keeps it apart from the orange bar behind it. */}
+          <g className="flame-outer" strokeLinejoin="round">
+            <path className="fill-white stroke-white" strokeWidth={4.5} d={FLAME_PATH} />
+            <path className="fill-orange-400 stroke-orange-400" strokeWidth={1.5} d={FLAME_PATH} />
+          </g>
+          <path
+            className="flame-inner fill-orange-50"
+            d="M12 20.5a3.2 3.2 0 0 1-3.2-3.2c0-1.8 1.3-2.9 2.1-4.4.3 1 1.1 1.8 2 2.4 1.3.8 2.3 1.6 2.3 3a3.2 3.2 0 0 1-3.2 2.2z"
+          />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+const weekdayName = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { weekday: "short" });
+
+// One circle per trading day of the week (Monday to Friday, plus a weekend day that was traded): orange with a tick once the day reached its target, an empty orange ring for
+// today still going, an orange ring with a cross for a day traded that ended short, an empty grey dashed ring
+// for a day with no trade at all, and an empty grey ring for days to come.
+function WeekSteps({ steps }: { steps: { date: string; state: WeekdayState }[] }) {
+  const circle: Record<WeekdayState, string> = {
+    hit: "bg-orange-400 text-white",
+    today: "border-2 border-orange-400 bg-white",
+    missed: "border-2 border-orange-400 bg-white text-orange-400",
+    noTrades: "border-2 border-dashed border-stone-300 bg-stone-50",
+    upcoming: "border-2 border-stone-200 bg-white",
+  };
+  return (
+    <div className="flex items-center pb-4">
+      {steps.map(({ date, state }, i) => (
+        <div key={date} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
+          {/* The line into a day is orange once that day has come. */}
+          {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-stone-200" : "bg-orange-400"}`} />}
+          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${circle[state]}`} title={date}>
+            {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+            {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
+            <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-orange-400" : "text-stone-400"}`}>
+              {weekdayName(date)}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Today's progress to the daily target, as a bar that fills up, with which days of this week reached
+// theirs under it. Hidden while the target is off or the account has no balance to take a share of.
 export default function DailyTargetBar() {
   const isPrivacyMode = useJournalStore(state => state.isPrivacyMode);
   const { days, pct, today } = useDailyTargets();
+  // The week row shows this week, or the one before it (no further back) with the arrows.
+  const [isLastWeek, setIsLastWeek] = useState(false);
+  const week = useMemo(() => {
+    const sunday = new Date(`${weekKeyOfDay(today)}T00:00:00`);
+    if (isLastWeek) sunday.setDate(sunday.getDate() - 7);
+    return weekdayTargets(days, today, dayKey(sunday));
+  }, [days, today, isLastWeek]);
   const day = days.get(today);
   const hasBar = !!day && day.target > 0;
 
@@ -31,55 +109,43 @@ export default function DailyTargetBar() {
   if (!day || !hasBar) return null;
 
   const isHit = !!day.hitAt;
-  const isOnTarget = isHit && day.pnl >= day.target;
   const share = Math.max(0, Math.min(1, day.pnl / day.target));
   const percentText = `${Math.round(Math.max(0, day.pnl / day.target) * 100)}%`;
+
+  // Days with no trade at all are left out of the count: a day off is not a day short of the target.
+  const weekHitDays = week.filter(d => d.state === "hit").length;
+  const weekDays = week.filter(d => d.state !== "noTrades").length;
+  const isWeekHit = weekDays > 0 && weekHitDays === weekDays;
+
+  // Title, bar and figures share their widths between the two lines, so the two bars line up on a computer.
+  const titleClass = "order-1 md:w-44 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap";
+  const figuresClass = "order-2 md:order-3 ml-auto md:ml-0 md:min-w-28 text-right text-xs font-black tabular-nums whitespace-nowrap";
+  const figures = (pnl: number, target: number, hit: boolean, percent: string) =>
+    isPrivacyMode ? (
+      <span className={hit ? "text-orange-400" : "text-stone-950"}>{percent}</span>
+    ) : (
+      <>
+        <span className={pnl > 0 ? "text-orange-400" : pnl < 0 ? "text-red-900" : "text-stone-950"}>{usd(pnl)}</span>
+        <span className="text-stone-400"> / {usd(target)}</span>
+      </>
+    );
 
   return (
     <div className="glass-card px-5 py-4 md:px-6" title={`Target: ${pct}% of the balance the day started with${isPrivacyMode ? "" : ` (${usd(day.startBalance)})`}`}>
       {/* One line on a computer: title, bar, figures. On a phone the bar takes a line of its own. */}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
-        <h3 className="order-1 text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap">
+        {/* The title turns orange once the target is reached. */}
+        <h3 className={`${titleClass} ${isHit ? "text-orange-400" : "text-stone-950"}`}>
           <Target className={`w-4 h-4 ${isHit ? "text-orange-400" : "text-stone-400"}`} />
-          {isHit ? "Target reached" : "Today's target"}
+          Today&apos;s target
         </h3>
-        <span className="order-2 md:order-3 ml-auto md:ml-0 text-xs font-black tabular-nums whitespace-nowrap">
-          {isPrivacyMode ? (
-            <span className={isHit ? "text-orange-400" : "text-stone-950"}>{percentText}</span>
-          ) : (
-            <>
-              <span className={day.pnl > 0 ? "text-orange-400" : day.pnl < 0 ? "text-red-900" : "text-stone-950"}>{usd(day.pnl)}</span>
-              <span className="text-stone-400"> / {usd(day.target)}</span>
-            </>
-          )}
-        </span>
-        <div className="order-3 md:order-2 w-full md:w-auto md:flex-1 relative">
-          <div className="h-4 rounded-full bg-stone-100 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
-            <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isFilled ? share * 100 : 0}%` }} />
-          </div>
-          {/* The app's flame, lit at the end of the full bar: a reward shown only while the day is at or over its
-              target. Trading the profit back below the target puts it out. */}
-          {isOnTarget && (
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className="flame-light absolute top-1/2 left-full w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_rgba(251,146,60,0.45)]"
-            >
-              {/* A white edge under the flame keeps it apart from the orange bar behind it. */}
-              <g className="flame-outer" strokeLinejoin="round">
-                <path className="fill-white stroke-white" strokeWidth={4.5} d={FLAME_PATH} />
-                <path className="fill-orange-400 stroke-orange-400" strokeWidth={1.5} d={FLAME_PATH} />
-              </g>
-              <path
-                className="flame-inner fill-orange-50"
-                d="M12 20.5a3.2 3.2 0 0 1-3.2-3.2c0-1.8 1.3-2.9 2.1-4.4.3 1 1.1 1.8 2 2.4 1.3.8 2.3 1.6 2.3 3a3.2 3.2 0 0 1-3.2 2.2z"
-              />
-            </svg>
-          )}
+        <span className={figuresClass}>{figures(day.pnl, day.target, isHit, percentText)}</span>
+        <div className="order-3 md:order-2 w-full md:w-auto md:flex-1">
+          <SegmentBar share={share} isShown={isFilled} isHit={isHit} />
         </div>
       </div>
 
-      {/* Trades taken after the target, centred in the card under the bar's line. */}
+      {/* Trades taken after the target, centred in the card under the day's line. */}
       {isHit && day.afterCount > 0 && (
         <p className="mt-2 text-[11px] font-bold flex flex-wrap items-center justify-center gap-x-1.5 text-center text-red-900">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -87,6 +153,48 @@ export default function DailyTargetBar() {
           {!isPrivacyMode && <>, {usd(day.afterPnl)}</>} · {formatNumber(day.afterRr)} R
         </p>
       )}
+
+      {/* Which days of the week reached their target, always under the day's line. The arrows step between
+          this week and last week. On a computer they sit in the gaps beside the circles, so the circles keep
+          the day bar's width; on a phone they sit at the ends of the circles' own line. */}
+      <div className="mt-3 pt-3 border-t border-stone-100 flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
+        <h3 className={`${titleClass} ${isWeekHit ? "text-orange-400" : "text-stone-950"}`}>
+          <CalendarRange className={`w-4 h-4 ${isWeekHit ? "text-orange-400" : "text-stone-400"}`} />
+          {isLastWeek ? "Last week" : "This week"}
+        </h3>
+        <span className={figuresClass}>
+          {weekDays === 0 ? (
+            <span className="text-stone-400">No trades</span>
+          ) : (
+            <>
+              <span className={weekHitDays > 0 ? "text-orange-400" : "text-stone-950"}>{weekHitDays}</span>
+              <span className="text-stone-400"> / {weekDays} {weekDays === 1 ? "day" : "days"}</span>
+            </>
+          )}
+        </span>
+        <div className="order-3 md:order-2 w-full md:w-auto md:flex-1 flex items-start gap-1.5 md:block md:relative">
+          {([
+            { label: "Show last week", Icon: ChevronLeft, isEnabled: !isLastWeek, side: "md:right-full", go: true },
+            { label: "Show this week", Icon: ChevronRight, isEnabled: isLastWeek, side: "md:left-full md:order-none order-last", go: false },
+          ] as const).map(({ label, Icon, isEnabled, side, go }) => (
+            <button
+              key={label}
+              type="button"
+              aria-label={label}
+              disabled={!isEnabled}
+              onClick={() => setIsLastWeek(go)}
+              className={`${side} md:absolute md:top-0 h-6 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors ${
+                isEnabled ? "text-stone-400 hover:text-stone-950 hover:bg-stone-100" : "text-stone-200 cursor-default"
+              }`}
+            >
+              <Icon className="w-4 h-4" strokeWidth={2.5} />
+            </button>
+          ))}
+          <div className="flex-1">
+            <WeekSteps steps={week} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

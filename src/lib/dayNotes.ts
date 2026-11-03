@@ -29,11 +29,25 @@ export function normalizeMood(mood: string | undefined): MoodId {
 export const dayKey = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-// The day a stored time falls on, or null when the time cannot be read.
-export function dayKeyOfTime(time: string | undefined): string | null {
+// A trading day starts at this hour, Bangkok time, not at midnight: the broker's day rolls over at 4 or 5
+// in the morning, so a trade closed at 1am still belongs to the evening before. Set in Settings; 0 is midnight.
+// Only how trades are grouped into days follows it (Calendar, notes, targets, discipline). The statement,
+// tax report and History's date filter keep the real date and time.
+export const DEFAULT_DAY_START_HOUR = 5;
+
+// The trading day a moment falls in: the calendar day of the moment `startHour` hours earlier.
+export const tradingDayOf = (date: Date, startHour: number): string =>
+  dayKey(new Date(date.getTime() - startHour * 3_600_000));
+
+// When a trading day ("YYYY-MM-DD") starts, in ms.
+export const tradingDayStartMs = (day: string, startHour: number): number =>
+  new Date(`${day}T00:00:00`).getTime() + startHour * 3_600_000;
+
+// The trading day a stored time falls in, or null when the time cannot be read.
+export function dayKeyOfTime(time: string | undefined, startHour: number): string | null {
   if (!time) return null;
   const date = new Date(time.replace(' ', 'T'));
-  return isNaN(date.getTime()) ? null : dayKey(date);
+  return isNaN(date.getTime()) ? null : tradingDayOf(date, startHour);
 }
 
 export interface DaySummary {
@@ -47,11 +61,11 @@ export interface DaySummary {
 
 interface DayTrade extends StatTrade { time: string }
 
-// What was traded on one day. A trade belongs to the day it closed, as on the Calendar page.
-export function summarizeDay(trades: DayTrade[], key: string): DaySummary {
+// What was traded on one day. A trade belongs to the trading day it closed in, as on the Calendar page.
+export function summarizeDay(trades: DayTrade[], key: string, startHour: number): DaySummary {
   let count = 0, pnlCents = 0, rr = 0, wins = 0, losses = 0, bes = 0;
   for (const t of trades) {
-    if (dayKeyOfTime(t.time) !== key) continue;
+    if (dayKeyOfTime(t.time, startHour) !== key) continue;
     count++;
     pnlCents += toCents(t.profit);
     rr += t.rr || 0;
@@ -63,10 +77,10 @@ export function summarizeDay(trades: DayTrade[], key: string): DaySummary {
   return { count, pnl: fromCents(pnlCents), rr, wins, losses, bes };
 }
 
-// The trades that closed on one day, earliest first.
-export function tradesOfDay<T extends { time: string }>(trades: T[], key: string): T[] {
+// The trades that closed in one trading day, earliest first.
+export function tradesOfDay<T extends { time: string }>(trades: T[], key: string, startHour: number): T[] {
   return trades
-    .filter(t => dayKeyOfTime(t.time) === key)
+    .filter(t => dayKeyOfTime(t.time, startHour) === key)
     .sort((a, b) => new Date(a.time.replace(' ', 'T')).getTime() - new Date(b.time.replace(' ', 'T')).getTime());
 }
 
