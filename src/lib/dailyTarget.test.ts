@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dailyTargets, summarizeTargets, daysTradedAfterTarget, weekdayTargets, pctOnDay, withPctChange } from './dailyTarget.ts';
+import { dailyTargets, summarizeTargets, daysTradedAfterTarget, weekdayTargets, weekTotals, pctOnDay, withPctChange } from './dailyTarget.ts';
 
 const funding = [{ time: '2026-10-01T08:00:00', deposit: 1000 }];
 
@@ -196,4 +196,23 @@ test('the lowest the day went starts again once the day is back above 0', () => 
   const d = dailyTargets(trades, funding, 0.25, 0).get('2026-10-02')!;
   assert.equal(d.pnl, -2.25);
   assert.equal(d.lowPnl, -3.25);
+});
+
+test('week totals add P&L and targets of days with a target, up to today, to the cent', () => {
+  const week = [
+    { date: '2026-10-05', state: 'hit' as const, target: 17.85, pnl: 20.1 },
+    { date: '2026-10-06', state: 'noTrades' as const },
+    { date: '2026-10-07', state: 'missed' as const, target: 17.9, pnl: -3.05 },
+    { date: '2026-10-08', state: 'today' as const, target: 17.83, pnl: 0 },
+    { date: '2026-10-09', state: 'upcoming' as const },
+  ];
+  assert.deepEqual(weekTotals(week), { pnl: 17.05, target: 53.58, days: 3 });
+  assert.deepEqual(weekTotals([]), { pnl: 0, target: 0, days: 0 });
+});
+
+test('a future day in the map carries no target into the week', () => {
+  const days = dailyTargets([{ time: '2026-10-05T10:00:00', profit: 1 }], [{ time: '2026-10-01T00:00:00', deposit: 100 }], 1, 0, '2026-10-05');
+  const week = weekdayTargets(days, '2026-10-05');
+  assert.equal(week.find(d => d.date === '2026-10-05')!.target, 1);
+  assert.equal(week.find(d => d.date === '2026-10-06')!.target, undefined);
 });

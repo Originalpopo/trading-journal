@@ -116,11 +116,8 @@ export interface Preferences {
   disciplineRules?: DisciplineRule[];
   // Daily profit target in % of the balance the day started with (default 2.5; 0 turns it off).
   dailyTargetPct?: number;
-  // Every change of that %, oldest first (see dailyTarget.ts), kept whichever way the days are counted.
+  // Every change of that %, oldest first (see dailyTarget.ts): each past day keeps the % it was held to then.
   dailyTargetHistory?: TargetPctChange[];
-  // "history": each past day keeps the % it was held to then; "current": every day uses the % set now
-  // (default "history").
-  dailyTargetMode?: 'history' | 'current';
   // Hour (Bangkok time) a trading day starts; trades closed before it count for the day before (default 5).
   dayStartHour?: number;
 }

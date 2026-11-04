@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Target, AlertTriangle, CalendarRange, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDailyTargets } from "./useDailyTargets";
-import { weekdayTargets, type WeekdayState } from "@/lib/dailyTarget";
+import { weekdayTargets, weekTotals, type WeekdayState, type WeekdayTarget } from "@/lib/dailyTarget";
 import { weekKeyOfDay } from "@/lib/weekNotes";
 import { dayKey } from "@/lib/dayNotes";
 import { formatNumber } from "@/lib/utils";
@@ -70,12 +70,25 @@ function SegmentBar({ share, depth, isShown, isHit }: { share: number; depth: nu
   );
 }
 
+const dayTitle = (date: string, target: number | undefined, pnl: number | undefined, isPrivacyMode: boolean) => {
+  const when = new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  if (target === undefined) return when;
+  if (target <= 0) return `${when}
+No target`;
+  return isPrivacyMode
+    ? `${when}
+Target reached: ${Math.round(((pnl ?? 0) / target) * 100)}%`
+    : `${when}
+Target: ${usd(target)}`;
+};
+
 const weekdayName = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { weekday: "short" });
 
 // One circle per trading day of the week (Monday to Friday, plus a weekend day that was traded): orange with a tick once the day reached its target, an empty orange ring for
 // today still going, an orange ring with a cross for a day traded that ended short, an empty grey dashed ring
 // for a day with no trade at all, and an empty grey ring for days to come.
-function WeekSteps({ steps }: { steps: { date: string; state: WeekdayState }[] }) {
+// Pointing at a circle shows its date and, for a day with a target, that target (its % while in privacy mode).
+function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacyMode: boolean }) {
   const circle: Record<WeekdayState, string> = {
     hit: "bg-orange-400 text-white",
     today: "border-2 border-orange-400 bg-white",
@@ -85,11 +98,11 @@ function WeekSteps({ steps }: { steps: { date: string; state: WeekdayState }[] }
   };
   return (
     <div className="flex items-center pb-4">
-      {steps.map(({ date, state }, i) => (
+      {steps.map(({ date, state, target, pnl }, i) => (
         <div key={date} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
           {/* The line into a day is orange once that day has come. */}
           {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-stone-200" : "bg-orange-400"}`} />}
-          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${circle[state]}`} title={date}>
+          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
             {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
             {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
             <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-orange-400" : "text-stone-400"}`}>
@@ -135,10 +148,11 @@ export default function DailyTargetBar() {
   const depth = day.pnl > 0 ? 0 : Math.min(1, Math.max(-share, -day.lowPnl / day.target));
   const percentText = `${Math.round((day.pnl / day.target) * 100)}%`;
 
-  // Days with no trade at all are left out of the count: a day off is not a day short of the target.
-  const weekHitDays = week.filter(d => d.state === "hit").length;
-  const weekDays = week.filter(d => d.state !== "noTrades").length;
-  const isWeekHit = weekDays > 0 && weekHitDays === weekDays;
+  // The week's P&L against the sum of its days' targets up to today. Days with no trade at all have no
+  // target and are left out: a day off is not a day short of the target.
+  const weekSum = weekTotals(week);
+  const isWeekHit = weekSum.target > 0 && weekSum.pnl >= weekSum.target;
+  const weekPercentText = weekSum.target > 0 ? `${Math.round((weekSum.pnl / weekSum.target) * 100)}%` : "0%";
 
   // Title, bar and figures share their widths between the two lines, so the two bars line up on a computer.
   const titleClass = "order-1 md:w-44 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap";
@@ -186,13 +200,10 @@ export default function DailyTargetBar() {
           {isLastWeek ? "Last week" : "This week"}
         </h3>
         <span className={figuresClass}>
-          {weekDays === 0 ? (
+          {weekSum.days === 0 ? (
             <span className="text-stone-400">No trades</span>
           ) : (
-            <>
-              <span className={weekHitDays > 0 ? "text-orange-400" : "text-stone-950"}>{weekHitDays}</span>
-              <span className="text-stone-400"> / {weekDays} {weekDays === 1 ? "day" : "days"}</span>
-            </>
+            figures(weekSum.pnl, weekSum.target, isWeekHit, weekPercentText)
           )}
         </span>
         <div className="order-3 md:order-2 w-full md:w-auto md:flex-1 flex items-start gap-1.5 md:block md:relative">
@@ -214,7 +225,7 @@ export default function DailyTargetBar() {
             </button>
           ))}
           <div className="flex-1">
-            <WeekSteps steps={week} />
+            <WeekSteps steps={week} isPrivacyMode={isPrivacyMode} />
           </div>
         </div>
       </div>

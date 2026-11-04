@@ -161,8 +161,16 @@ export type WeekdayState = 'hit' | 'missed' | 'noTrades' | 'today' | 'upcoming';
 
 // The trading days of a week (Sunday to Saturday, as on the Calendar; by default the one `today` falls in),
 // each with its state: Monday to Friday always, and a Saturday or Sunday only when it was traded or is today
-// (markets such as crypto trade at weekends). `days` holds only days with a closed trade, plus today.
-export function weekdayTargets(days: Map<string, DayTarget>, today: string, week = weekKeyOfDay(today)): { date: string; state: WeekdayState }[] {
+// (markets such as crypto trade at weekends). `days` holds only days with a closed trade, plus today; those
+// days also carry their target and P&L, which a day with no trade or still to come has none of.
+export interface WeekdayTarget {
+  date: string;
+  state: WeekdayState;
+  target?: number;
+  pnl?: number;
+}
+
+export function weekdayTargets(days: Map<string, DayTarget>, today: string, week = weekKeyOfDay(today)): WeekdayTarget[] {
   return daysOfWeek(week)
     .filter((date, i) => (i > 0 && i < 6) || days.has(date))
     .map(date => {
@@ -171,10 +179,22 @@ export function weekdayTargets(days: Map<string, DayTarget>, today: string, week
         : date > today ? 'upcoming'
         : date === today ? 'today'
         : day ? 'missed' : 'noTrades';
-      return { date, state };
+      return day && date <= today ? { date, state, target: day.target, pnl: day.pnl } : { date, state };
     });
 }
 
 // Days on which a trade was entered after the target: they break the discipline streak.
 export const daysTradedAfterTarget = (days: Map<string, DayTarget>): Set<string> =>
   new Set([...days.values()].filter(d => d.afterCount > 0).map(d => d.date));
+
+// A week's P&L against the sum of its days' targets, over the days that have a target (traded, or today).
+export function weekTotals(week: WeekdayTarget[]): { pnl: number; target: number; days: number } {
+  let pnlCents = 0, targetCents = 0, days = 0;
+  for (const d of week) {
+    if (d.target === undefined) continue;
+    days++;
+    pnlCents += toCents(d.pnl);
+    targetCents += toCents(d.target);
+  }
+  return { pnl: fromCents(pnlCents), target: fromCents(targetCents), days };
+}
