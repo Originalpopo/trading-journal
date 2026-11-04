@@ -173,7 +173,17 @@ export default function Dashboard() {
       observer.disconnect();
       main.style.background = '';
     };
-  }, []);
+    // Again once loading is over: the chart's title row isn't on the page before that.
+  }, [isLoading]);
+  // A new bleed widens the chart's box; Chart.js can miss that change (it kept the old width, short of the
+  // right edge, on a wide screen), so the chart is sized to its box again once the margins are in.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const canvas = document.querySelector('main canvas');
+      if (canvas instanceof HTMLCanvasElement) ChartJS.getChart(canvas)?.resize();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [bleed]);
   const [now] = useState(() => Date.now()); // for "days below the peak"
 
   const data = useMemo(() => {
