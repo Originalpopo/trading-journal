@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useJournalStore } from "@/store/useJournalStore";
 import { formatNumber } from "@/lib/utils";
 import {
-  DEFAULT_RISK_PCT, DEFAULT_RISK_STEP_UP_PCT, DEFAULT_RISK_STEP_DOWN_PCT, balanceOf, riskStep,
+  DEFAULT_RISK_PCT, DEFAULT_RISK_STEP_UP_PCT, DEFAULT_RISK_STEP_DOWN_PCT, balanceOf, riskStep, riskHistoryOf, setRiskFrom,
 } from "@/lib/riskStep";
 
 // "2%", "1.5%": a set % without trailing zeros.
@@ -38,7 +38,7 @@ export default function RiskPerTrade() {
   const setFromBalance = async () => {
     setIsSaving(true);
     try {
-      await updatePreferences({ riskAnchor: { balance, at: new Date().toISOString() } });
+      await updatePreferences(setRiskFrom(balance, pct, new Date().toISOString(), riskHistoryOf(prefs.riskHistory, prefs.riskAnchor, pct)));
     } catch {
       alert("Failed to set the risk.");
     } finally {
@@ -49,6 +49,10 @@ export default function RiskPerTrade() {
   const isSet = !!prefs.riskAnchor;
   const due = isSet && step.state !== "hold";
   const isUp = step.state === "up";
+  // A new % in Settings is a step to take too, neither up nor down by the balance: orange, no arrow.
+  const isPct = step.state === "pct";
+  // The % the risk set was taken at (it stays until the risk is set again).
+  const pctSet = step.anchorBalance > 0 ? (step.riskNow / step.anchorBalance) * 100 : pct;
 
   return (
     <div className="glass-card flex-1 px-5 py-4 md:px-6 flex flex-col gap-2">
@@ -62,7 +66,7 @@ export default function RiskPerTrade() {
 
       <p className="text-[11px] font-semibold text-stone-400">
         {isSet
-          ? <>{pctText(pct)} of {usd(step.anchorBalance)} · set {dateText(prefs.riskAnchor!.at)}</>
+          ? <>{pctText(pctSet)} of {usd(step.anchorBalance)} · set {dateText(prefs.riskAnchor!.at)}</>
           : <>{pctText(pct)} of the balance now · not set yet (% in <Link href="/settings" className="font-bold text-orange-400 hover:underline">Settings</Link>)</>}
       </p>
 
@@ -80,8 +84,10 @@ export default function RiskPerTrade() {
         </div>
       )}
       {due && (
-        <p className={`text-[11px] font-bold ${isUp ? "text-orange-400" : "text-red-900"}`}>
-          {isUp ? `Balance ${usd(balance)} is ${pctText(up)}+ above: time to step up.` : `Balance ${usd(balance)} is ${pctText(down)}+ below: step down now.`}
+        <p className={`text-[11px] font-bold ${isUp || isPct ? "text-orange-400" : "text-red-900"}`}>
+          {isPct
+            ? `Risk changed to ${pctText(pct)} in Settings: set it to start using it.`
+            : isUp ? `Balance ${usd(balance)} is ${pctText(up)}+ above: time to step up.` : `Balance ${usd(balance)} is ${pctText(down)}+ below: step down now.`}
         </p>
       )}
       {(!isSet || due) && (
@@ -90,11 +96,11 @@ export default function RiskPerTrade() {
           onClick={setFromBalance}
           disabled={isSaving}
           className={`mt-auto w-full h-8 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50 ${
-            !isSet || isUp ? "bg-orange-400 text-white hover:bg-orange-500" : "bg-red-900 text-white hover:opacity-90"
+            !isSet || isUp || isPct ? "bg-orange-400 text-white hover:bg-orange-500" : "bg-red-900 text-white hover:opacity-90"
           }`}
         >
-          {isSet && (isUp ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />)}
-          {!isSet ? `Set ${usd(step.riskAtBalance)}` : `Step ${isUp ? "up" : "down"} to ${usd(step.riskAtBalance)}`}
+          {isSet && !isPct && (isUp ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />)}
+          {!isSet || isPct ? `Set ${usd(step.riskAtBalance)}` : `Step ${isUp ? "up" : "down"} to ${usd(step.riskAtBalance)}`}
         </button>
       )}
     </div>

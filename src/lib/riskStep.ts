@@ -9,10 +9,19 @@ export const DEFAULT_RISK_PCT = 2;
 export const DEFAULT_RISK_STEP_UP_PCT = 20;
 export const DEFAULT_RISK_STEP_DOWN_PCT = 10;
 
-// The balance the risk was last set from, and when (ISO time).
+// The balance the risk was last set from, when (ISO time), and the dollars it gave. `risk` is kept so a later
+// change of the % in Settings shows as a step to take, not as a quiet change of the risk.
 export interface RiskAnchor {
   balance: number;
   at: string;
+  risk?: number; // missing on the first one set, before this was kept: the anchor's share at the % then
+}
+
+// One Risk per Trade set: from `from` (ISO time) on, `risk` dollars a trade. Kept in dollars, so changing the
+// % later never rewrites the past. Trades whose first stop is unknown use the one in force when entered.
+export interface RiskChange {
+  from: string;
+  risk: number;
 }
 
 export interface RiskStep {
@@ -20,23 +29,25 @@ export interface RiskStep {
   riskNow: number; // dollars, to the cent: the anchor's share
   upAt: number; // the balance that calls for a step up
   downAt: number; // the balance that calls for a step down
-  state: 'hold' | 'up' | 'down';
+  state: 'hold' | 'up' | 'down' | 'pct'; // 'pct': the % in Settings no longer gives the risk set
   riskAtBalance: number; // the risk the current balance would give, to step to
 }
 
-const share = (balance: number, pct: number) => fromCents(Math.round(toCents(balance) * pct / 100));
+export const share = (balance: number, pct: number) => fromCents(Math.round(toCents(balance) * pct / 100));
 
 // `anchor` missing: the risk has not been set yet, and the current balance stands in for it.
 export function riskStep(balance: number, pct: number, anchor: RiskAnchor | undefined, upPct: number, downPct: number): RiskStep {
   const anchorBalance = anchor?.balance ?? balance;
   const upAt = share(anchorBalance, 100 + upPct);
   const downAt = share(anchorBalance, 100 - downPct);
+  const riskNow = anchor?.risk ?? share(anchorBalance, pct);
+  const pctChanged = anchor?.risk !== undefined && share(anchorBalance, pct) !== anchor.risk;
   return {
     anchorBalance,
-    riskNow: share(anchorBalance, pct),
+    riskNow,
     upAt,
     downAt,
-    state: balance >= upAt && upPct > 0 ? 'up' : balance <= downAt && downPct > 0 ? 'down' : 'hold',
+    state: balance >= upAt && upPct > 0 ? 'up' : balance <= downAt && downPct > 0 ? 'down' : pctChanged ? 'pct' : 'hold',
     riskAtBalance: share(balance, pct),
   };
 }
@@ -52,4 +63,17 @@ export function balanceOf(trades: { profit?: number }[], funding: { deposit?: nu
   for (const f of funding) cents += toCents(f.deposit || 0) - toCents(f.withdraw || 0);
   for (const t of trades) cents += toCents(t.profit || 0);
   return fromCents(cents);
+}
+
+// The risks set so far, oldest first. The first anchor was saved before the history was kept: it stands in
+// for its own entry, at the % then (`pctThen`).
+export function riskHistoryOf(history: RiskChange[] | undefined, anchor: RiskAnchor | undefined, pctThen: number): RiskChange[] {
+  if (history?.length) return [...history].sort((a, b) => a.from.localeCompare(b.from));
+  return anchor ? [{ from: anchor.at, risk: anchor.risk ?? share(anchor.balance, pctThen) }] : [];
+}
+
+// What setting the risk from `balance` at `pct` now saves: the new anchor, and the history with it added.
+export function setRiskFrom(balance: number, pct: number, at: string, history: RiskChange[]): { riskAnchor: RiskAnchor; riskHistory: RiskChange[] } {
+  const risk = share(balance, pct);
+  return { riskAnchor: { balance, at, risk }, riskHistory: [...history, { from: at, risk }] };
 }

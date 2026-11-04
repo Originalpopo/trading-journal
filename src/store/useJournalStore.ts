@@ -9,9 +9,9 @@ import type { DayNote } from '@/lib/dayNotes';
 import type { DisciplineRule } from '@/lib/discipline';
 import type { WeekNote } from '@/lib/weekNotes';
 import type { TargetPctChange } from '@/lib/dailyTarget';
-import type { RiskAnchor } from '@/lib/riskStep';
+import { riskHistoryOf, DEFAULT_RISK_PCT, type RiskAnchor, type RiskChange } from '@/lib/riskStep';
 import type { OffPlanReason } from '@/lib/offPlan';
-import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow } from '@/lib/risk';
+import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow, setRiskHistory } from '@/lib/risk';
 import { setBeThreshold } from '@/lib/stats';
 
 let legacyChartMigrationStarted = false;
@@ -23,6 +23,8 @@ let storedTrades: Trade[] = [];
 const deriveTrades = (preferences: Preferences): Trade[] => {
   setBeThreshold(preferences.beThreshold);
   setUsualRiskWindow(preferences.usualRiskWindow);
+  setRiskHistory(riskHistoryOf(preferences.riskHistory, preferences.riskAnchor, preferences.riskPct ?? DEFAULT_RISK_PCT)
+    .map(c => ({ at: Date.parse(c.from), risk: c.risk })));
   return withDerivedRisk(storedTrades, resolveDefaultRisk(preferences.defaultRisk, storedTrades));
 };
 
@@ -127,6 +129,9 @@ export interface Preferences {
   riskStepUpPct?: number;
   riskStepDownPct?: number;
   riskAnchor?: RiskAnchor;
+  // Every Risk per Trade set, oldest first, in dollars: trades whose first stop is unknown (and with no known
+  // 1R before them) use the one in force when they were entered.
+  riskHistory?: RiskChange[];
 }
 
 interface JournalState {

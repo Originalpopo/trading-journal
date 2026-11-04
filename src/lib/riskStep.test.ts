@@ -44,3 +44,19 @@ test('the balance is funding plus every trade, to the cent', async () => {
   const { balanceOf } = await import('./riskStep.ts');
   assert.equal(balanceOf([{ profit: 0.1 }, { profit: 0.2 }, { profit: -1.15 }], [{ deposit: 50, withdraw: 0 }, { deposit: 0, withdraw: 10 }]), 39.15);
 });
+
+test('the risk set is kept in dollars; a new % shows as a step to take', async () => {
+  const { riskStep, riskHistoryOf, setRiskFrom } = await import('./riskStep.ts');
+  const a = { balance: 91.79, at: '2026-11-04T10:00:00.000Z', risk: 1.84 };
+  assert.equal(riskStep(91.79, 2, a, 20, 10).state, 'hold');
+  const changed = riskStep(91.79, 1.5, a, 20, 10);
+  assert.equal(changed.riskNow, 1.84);
+  assert.equal(changed.state, 'pct');
+  assert.equal(changed.riskAtBalance, 1.38);
+  // The first anchor, saved before the history, stands in for its own entry at the % then.
+  assert.deepEqual(riskHistoryOf(undefined, { balance: 91.79, at: '2026-11-04T10:00:00.000Z' }, 2), [{ from: '2026-11-04T10:00:00.000Z', risk: 1.84 }]);
+  assert.deepEqual(riskHistoryOf(undefined, undefined, 2), []);
+  const next = setRiskFrom(110.5, 2, '2026-12-01T02:00:00.000Z', [{ from: '2026-11-04T10:00:00.000Z', risk: 1.84 }]);
+  assert.deepEqual(next.riskAnchor, { balance: 110.5, at: '2026-12-01T02:00:00.000Z', risk: 2.21 });
+  assert.deepEqual(next.riskHistory.map(c => c.risk), [1.84, 2.21]);
+});

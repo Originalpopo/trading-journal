@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveTradeRisk, withDerivedRisk, buildRiskContext, initialStopOf, mostCommonRisk, resolveDefaultRisk, defaultRiskAt } from './risk.ts';
+import { deriveTradeRisk, withDerivedRisk, buildRiskContext, initialStopOf, mostCommonRisk, resolveDefaultRisk, defaultRiskAt, setRiskHistory } from './risk.ts';
 
 const near = (actual: number, expected: number) =>
   assert.ok(Math.abs(actual - expected) < 1e-6, `expected ${expected}, got ${actual}`);
@@ -210,6 +210,24 @@ test('the median ignores an odd trade; fewer than 10 known trades use those ther
 test('with no known 1R before a trade, the Settings value is used', () => {
   const ctx = buildRiskContext([known('later', '2026-05-01', 7)], 1.5);
   near(defaultRiskAt(ctx, { entryTime: '2026-01-05 10:00:00' }), 1.5);
+});
+
+test('with no known 1R before a trade, the Risk per Trade set at the time comes before the Settings value', () => {
+  const ms = (t: string) => new Date(t.replace(' ', 'T')).getTime();
+  setRiskHistory([{ at: ms('2026-11-04 10:00:00'), risk: 1.84 }, { at: ms('2026-12-01 09:00:00'), risk: 2.2 }]);
+  try {
+    const ctx = buildRiskContext([known('later', '2027-05-01', 7)], 1.5);
+    // Before any risk was set: the Settings value.
+    near(defaultRiskAt(ctx, { entryTime: '2026-11-04 09:59:00' }), 1.5);
+    // The risk in force when the trade was entered, not the latest.
+    near(defaultRiskAt(ctx, { entryTime: '2026-11-20 10:00:00' }), 1.84);
+    near(defaultRiskAt(ctx, { entryTime: '2026-12-01 09:00:00' }), 2.2);
+    // A known 1R before the trade still wins.
+    const withKnown = buildRiskContext([known('a', '2026-11-10', 1.1)], 1.5);
+    near(defaultRiskAt(withKnown, { entryTime: '2026-11-20 10:00:00' }), 1.1);
+  } finally {
+    setRiskHistory([]);
+  }
 });
 
 test('only the last 10 known trades count', () => {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Coins } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import {
-  DEFAULT_RISK_PCT, DEFAULT_RISK_STEP_UP_PCT, DEFAULT_RISK_STEP_DOWN_PCT, drawdownAfterLosses,
+  DEFAULT_RISK_PCT, DEFAULT_RISK_STEP_UP_PCT, DEFAULT_RISK_STEP_DOWN_PCT, drawdownAfterLosses, riskHistoryOf, share,
 } from "@/lib/riskStep";
 import SaveRow from "@/components/SaveRow";
 import SettingsCard, { SETTINGS_INPUT } from "./SettingsCard";
@@ -33,7 +33,12 @@ export default function RiskStepSetting() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updatePreferences({ riskPct: num("pct"), riskStepUpPct: num("up"), riskStepDownPct: num("down") });
+      // The risk set so far keeps its dollars: an anchor saved before they were kept is frozen at the old %.
+      const anchor = prefs.riskAnchor;
+      const freeze = anchor && anchor.risk === undefined
+        ? { riskAnchor: { ...anchor, risk: share(anchor.balance, saved.pct) }, riskHistory: riskHistoryOf(prefs.riskHistory, anchor, saved.pct) }
+        : {};
+      await updatePreferences({ riskPct: num("pct"), riskStepUpPct: num("up"), riskStepDownPct: num("down"), ...freeze });
       setEdits({});
     } catch {
       alert("Failed to save the risk per trade.");

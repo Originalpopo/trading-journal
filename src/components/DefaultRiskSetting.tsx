@@ -55,7 +55,8 @@ export default function DefaultRiskSetting() {
         title="Risk (1R)"
         description={<>เทรดที่ import จะวัด 1R จากจุดเข้าถึง SL แรกที่วางไว้ ถ้า SL ถูกเลื่อนก่อนโดน และไม่มี Notifications log ของเทรดนั้น
             ระบบจะใช้ 1R ปกติของช่วงนั้นแทน (แสดงด้วย ≈) คือค่ากลางของ {riskWindow} เทรดก่อนหน้าที่รู้ SL แรก จึงโตตามบัญชีเอง
-            ช่อง Fallback ใช้เฉพาะตอนที่ยังไม่มีเทรดแบบนั้นก่อนหน้า</>}
+            ถ้ายังไม่มีเทรดแบบนั้นก่อนหน้า จะใช้ Risk per Trade ที่ตั้งไว้ตอนเข้าเทรดนั้น
+            ช่อง Fallback ใช้เฉพาะเทรดก่อนเริ่มตั้ง Risk per Trade จึงไม่ต้องปรับตาม balance</>}
       >
 
       <div className="mb-6 text-sm">

@@ -9,7 +9,8 @@ import { getBeThreshold, deriveResultType, parseRisk } from './stats.ts';
 // stop is known when the notifications log or the user supplied it, or when the last stop is still
 // on the losing side of the entry (it was never moved to break-even). Otherwise 1R is the usual 1R
 // of the time: the median of the 10 trades (Settings) before it whose 1R is known (defaultRiskAt), else the
-// Settings value. It is saved with the trade, so a later change never rewrites it.
+// Risk per Trade in force when it was entered, else the Settings fallback. It is saved with the trade, so a
+// later change never rewrites it.
 
 export interface RiskTrade extends ZoneTrade {
   symbol?: string;
@@ -47,6 +48,24 @@ export const getUsualRiskWindow = () => usualRiskWindow;
 export const setUsualRiskWindow = (value: number | undefined) => {
   usualRiskWindow = value !== undefined && Number.isInteger(value) && value >= 1 ? value : USUAL_RISK_WINDOW;
 };
+
+// Every Risk per Trade the user set (Dashboard), oldest first: from `at` (ms) on, `risk` dollars a trade. The
+// store sets it before trades are derived, like the usual-1R window. A trade's own time picks the one in force
+// then, so stepping the risk up later never changes an older trade.
+let riskHistory: { at: number; risk: number }[] = [];
+export const setRiskHistory = (list: { at: number; risk: number }[] | undefined) => {
+  riskHistory = (list ?? []).filter(c => !Number.isNaN(c.at) && c.risk > 0).sort((a, b) => a.at - b.at);
+};
+// The Risk per Trade in force at a moment, or null before the first one (or for a trade with no time).
+export function setRiskAt(at: number): number | null {
+  if (Number.isNaN(at)) return null;
+  let risk: number | null = null;
+  for (const c of riskHistory) {
+    if (c.at > at) break;
+    risk = c.risk;
+  }
+  return risk;
+}
 
 // A stop the order history shows closer to the entry than this share of the entry price was dragged
 // there to break even: it is not the risk the trade was opened with. Measured in price, not in
@@ -93,13 +112,15 @@ const timeOf = (t: { entryTime?: string; time?: string }) => {
 };
 
 // The usual 1R when a trade was opened: the median of the last 10 (Settings) known 1Rs before it, so it grows
-// with the account yet never changes for an old trade. Without any, the Settings value.
+// with the account yet never changes for an old trade. Without any, the Risk per Trade set at the time, and
+// before that was ever set, the Settings fallback.
 export function defaultRiskAt(ctx: RiskContext, t: { entryTime?: string; time?: string }): number {
   const known = ctx.knownRisks ?? [];
   const at = timeOf(t);
   const before = Number.isNaN(at) ? known : known.filter(k => k.at < at);
   const recent = before.slice(-usualRiskWindow).map(k => k.risk);
-  return recent.length > 0 ? round2(median(recent)) : ctx.defaultRisk;
+  if (recent.length > 0) return round2(median(recent));
+  return setRiskAt(at) ?? ctx.defaultRisk;
 }
 
 // $ of P&L per 1.00 move in price for this trade.
