@@ -45,7 +45,7 @@ export default function DailyTargetSetting() {
     <SettingsCard
       icon={Target}
       title="Daily Target"
-      description="เป้ากำไรต่อวัน คิดเป็น % ของยอดเงินตอนเริ่มวันนั้น ถึงเป้าแล้วหยุดเทรด Dashboard แสดงความคืบหน้าของวันนี้ Calendar แสดงวันที่ถึงเป้า และเทรดที่เข้าหลังถึงเป้าจะนับเป็นวันผิดวินัย ใส่ 0 เพื่อปิด"
+      description="เป้ากำไรต่อวัน คิดเป็น % ของยอดเงินตอนเริ่มวันนั้น ถึงเป้าแล้วหยุดเทรด Dashboard แสดงความคืบหน้าของวันนี้ Calendar แสดงความคืบหน้าของวันนี้และแต่ละสัปดาห์ เทรดที่เข้าหลังถึงเป้าเตือนใน Dashboard และนับเป็นวันผิดวินัย ใส่ 0 เพื่อปิด"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">

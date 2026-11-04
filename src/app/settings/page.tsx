@@ -16,6 +16,7 @@ import TaxStepsInfo from "@/components/settings/TaxStepsInfo";
 import BackupSetting from "@/components/settings/BackupSetting";
 import BalanceCheckHistory from "@/components/settings/BalanceCheckHistory";
 import SaveRow from "@/components/SaveRow";
+import SettingsCard from "@/components/settings/SettingsCard";
 import PageHeader from "@/components/PageHeader";
 import PillTabs from "@/components/PillTabs";
 
@@ -139,16 +140,11 @@ export default function SettingsPage() {
       )}
 
       {tab === "account" && (<>
-      <div className="bg-white rounded-2xl p-5 md:p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
-          <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-            <UserCircle className="w-5 h-5 text-orange-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-stone-950">Account</h3>
-            <p className="text-sm text-stone-500 font-medium">เฉพาะบัญชีที่มี UID ตรงกับที่ตั้งไว้ใน Firestore rules เท่านั้นที่อ่านหรือเขียนข้อมูลได้</p>
-          </div>
-        </div>
+      <SettingsCard
+        icon={UserCircle}
+        title="Account"
+        description={<>เฉพาะบัญชีที่มี UID ตรงกับที่ตั้งไว้ใน Firestore rules เท่านั้นที่อ่านหรือเขียนข้อมูลได้</>}
+      >
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1 min-w-0">
@@ -180,18 +176,13 @@ export default function SettingsPage() {
             Sign out
           </button>
         </div>
-      </div>
+      </SettingsCard>
 
-      <div className="bg-white rounded-2xl p-5 md:p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
-          <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-            <Lock className="w-5 h-5 text-orange-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-stone-950">Security & App Lock</h3>
-            <p className="text-sm text-stone-500 font-medium">ตั้ง PIN ที่ใช้เข้าแอปนี้บนทุกอุปกรณ์</p>
-          </div>
-        </div>
+      <SettingsCard
+        icon={Lock}
+        title="Security & App Lock"
+        description={<>ตั้ง PIN ที่ใช้เข้าแอปนี้บนทุกอุปกรณ์</>}
+      >
 
         <form onSubmit={handleSave}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,7 +214,7 @@ export default function SettingsPage() {
 
           <SaveRow isDirty={pin !== savedAuth.pin || hint !== savedAuth.hint} canSave={pin.length === 4} isSaving={isSaving} submit />
         </form>
-      </div>
+      </SettingsCard>
       </>)}
     </div>
   );

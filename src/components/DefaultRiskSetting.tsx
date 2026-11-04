@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Scale } from "lucide-react";
 import SaveRow from "@/components/SaveRow";
+import SettingsCard from "@/components/settings/SettingsCard";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDefaultRisk } from "@/lib/defaultRisk";
 import { buildRiskContext, defaultRiskAt, USUAL_RISK_WINDOW } from "@/lib/risk";
@@ -49,20 +50,13 @@ export default function DefaultRiskSetting() {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-5 md:p-8 shadow-sm">
-      <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-          <Scale className="w-5 h-5 text-orange-400" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-stone-950">Risk (1R)</h3>
-          <p className="text-sm text-stone-500 font-medium">
-            เทรดที่ import จะวัด 1R จากจุดเข้าถึง SL แรกที่วางไว้ ถ้า SL ถูกเลื่อนก่อนโดน และไม่มี Notifications log ของเทรดนั้น
+    <SettingsCard
+        icon={Scale}
+        title="Risk (1R)"
+        description={<>เทรดที่ import จะวัด 1R จากจุดเข้าถึง SL แรกที่วางไว้ ถ้า SL ถูกเลื่อนก่อนโดน และไม่มี Notifications log ของเทรดนั้น
             ระบบจะใช้ 1R ปกติของช่วงนั้นแทน (แสดงด้วย ≈) คือค่ากลางของ {riskWindow} เทรดก่อนหน้าที่รู้ SL แรก จึงโตตามบัญชีเอง
-            ช่อง Fallback ใช้เฉพาะตอนที่ยังไม่มีเทรดแบบนั้นก่อนหน้า
-          </p>
-        </div>
-      </div>
+            ช่อง Fallback ใช้เฉพาะตอนที่ยังไม่มีเทรดแบบนั้นก่อนหน้า</>}
+      >
 
       <div className="mb-6 text-sm">
         <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Usual 1R now</p>
@@ -106,6 +100,6 @@ export default function DefaultRiskSetting() {
       </div>
 
       <SaveRow isDirty={isDirty} canSave={isValid} isSaving={isSaving} onSave={handleSave} />
-    </div>
+    </SettingsCard>
   );
 }

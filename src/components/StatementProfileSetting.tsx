@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 import SaveRow from "@/components/SaveRow";
+import SettingsCard from "@/components/settings/SettingsCard";
 import { useJournalStore } from "@/store/useJournalStore";
 
 const INPUT = "w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium";
@@ -32,18 +33,11 @@ export default function StatementProfileSetting() {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-5 md:p-8 shadow-sm">
-      <div className="flex items-center gap-3 mb-6 pb-6 border-b border-stone-100">
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-          <FileText className="w-5 h-5 text-orange-400" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-stone-950">Statement Details</h3>
-          <p className="text-sm text-stone-500 font-medium">
-            แสดงที่ส่วนหัวของ Monthly Statement และบันทึกไว้ในฐานข้อมูลส่วนตัวของคุณเท่านั้น
-          </p>
-        </div>
-      </div>
+    <SettingsCard
+        icon={FileText}
+        title="Statement Details"
+        description={<>แสดงที่ส่วนหัวของ Monthly Statement และบันทึกไว้ในฐานข้อมูลส่วนตัวของคุณเท่านั้น</>}
+      >
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-2">
@@ -61,6 +55,6 @@ export default function StatementProfileSetting() {
       </div>
 
       <SaveRow isDirty={isDirty} isSaving={isSaving} onSave={handleSave} />
-    </div>
+    </SettingsCard>
   );
 }
