@@ -22,23 +22,26 @@ const usd =(n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
 // (`depth`, a share of the target): the whole bar is that plus the full target, split at 0 into two bars with
 // a small gap between. The left one holds the deepest point and fills red, leftwards from 0, by the loss now;
 // the right one is the way to the target. The marks go on every 20% of the target on both sides.
-function SegmentBar({ share, depth, isShown, isHit }: { share: number; depth: number; isShown: boolean; isHit: boolean }) {
+// The Calendar's week cells use it plain and thin: `isPlain` leaves out the marks and the flame.
+export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heightClass = "h-4", trackClass = "bg-stone-100" }: {
+  share: number; depth: number; isShown: boolean; isHit: boolean; isPlain?: boolean; heightClass?: string; trackClass?: string;
+}) {
   const loss = Math.max(0, -share);
   const total = 1 + depth;
   const at = (value: number) => `${((depth + value) * 100) / total}%`; // where a share of the target sits on the bar
-  const marks = [
+  const marks = isPlain ? [] : [
     ...Array.from({ length: Math.ceil(depth * SEGMENTS) - 1 }, (_, i) => -(i + 1) / SEGMENTS).filter(v => v > -depth),
     ...Array.from({ length: SEGMENTS - 1 }, (_, i) => (i + 1) / SEGMENTS),
   ];
   return (
     <div className="relative">
-      <div className={`relative h-4 rounded-full overflow-hidden ${depth > 0 ? "" : "bg-stone-100"}`} role="progressbar" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
+      <div className={`relative ${heightClass} rounded-full overflow-hidden ${depth > 0 ? "" : trackClass}`} role="progressbar" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}>
         {depth > 0 ? (
           <>
-            <div className="absolute inset-y-0 left-0 rounded-full bg-stone-100 overflow-hidden" style={{ width: `calc(${at(0)} - 2px)` }}>
+            <div className={`absolute inset-y-0 left-0 rounded-full ${trackClass} overflow-hidden`} style={{ width: `calc(${at(0)} - 2px)` }}>
               <div className="absolute inset-y-0 right-0 rounded-full bg-red-900 transition-[width] duration-1000 ease-out motion-reduce:transition-none" style={{ width: isShown ? `${(loss * 100) / depth}%` : "0%" }} />
             </div>
-            <div className="absolute inset-y-0 right-0 rounded-full bg-stone-100" style={{ left: `calc(${at(0)} + 2px)` }} />
+            <div className={`absolute inset-y-0 right-0 rounded-full ${trackClass}`} style={{ left: `calc(${at(0)} + 2px)` }} />
           </>
         ) : (
           <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
@@ -49,7 +52,7 @@ function SegmentBar({ share, depth, isShown, isHit }: { share: number; depth: nu
       </div>
       {/* The app's flame, lit at the end of the bar: a reward shown only while the bar is past its last mark
           (over 80% of the target). Trading the profit back to 80% or below puts it out. */}
-      {share > (SEGMENTS - 1) / SEGMENTS && (
+      {!isPlain && share > (SEGMENTS - 1) / SEGMENTS && (
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"

@@ -2,8 +2,10 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Plus, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { weekdayTargets, weekTotals } from "@/lib/dailyTarget";
 import { useDailyTargets } from "@/components/useDailyTargets";
+import { SegmentBar } from "@/components/DailyTargetBar";
 import DayNoteModal, { MoodIcon, moodTone } from "@/components/DayNoteModal";
 import WeekNoteModal from "@/components/WeekNoteModal";
 import { weekKeyOf } from "@/lib/weekNotes";
@@ -42,11 +44,16 @@ const cellMoney = (pnl: number, rate?: number | null) => {
 
 // Font size for a figure in a phone cell (an @container): `max`, or smaller when a long figure would not fit.
 // 180 keeps a figure within about 95% of the cell, measured at 375px wide (the smallest iPhone).
+// The target line along the bottom of a day or week cell: thin on a phone, a little thicker on a computer. Its
+// unfilled part is a darker grey than the Dashboard's, so a bar short of the target reads apart from a full line.
+const TARGET_LINE_HEIGHT = "h-[3px] md:h-1.5";
+const TARGET_LINE_TRACK = "bg-stone-200";
+
 const phoneFit = (text: string, max: string) => fitFontSize(text, max, 180);
 
 export default function CalendarPage() {
   const { trades, dayNotes, weekNotes, isLoading, isPrivacyMode } = useJournalStore();
-  const { days: targetDays, pct: targetPct } = useDailyTargets();
+  const { days: targetDays, pct: targetPct, today: targetToday } = useDailyTargets();
   const [openNote, setOpenNote] = useState<{ date: string; edit: boolean } | null>(null);
   const [openWeekNote, setOpenWeekNote] = useState<{ week: string; edit: boolean } | null>(null);
   const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
@@ -350,17 +357,24 @@ export default function CalendarPage() {
               }
 
               const noteControl = <NoteControl mood={note?.mood} hasNote={!!note} onOpen={(edit) => setOpenNote({ date, edit })} />;
-              // The daily target: reached and stopped, or reached and traded on.
+              // The daily target, as a line along the bottom of the cell: full orange once the day reached it (trading
+              // on after it is warned about on the Dashboard only). Today, short of it, the line is a bar of how far the
+              // day has come, as on the Dashboard (no marks, no flame), with the loss side holding the deepest point of
+              // the current dip; reaching the target fills it into the full line.
               const targetDay = targetDays.get(date);
-              const targetState = targetDay?.hitAt ? (targetDay.afterCount > 0 ? 'after' : 'hit') : null;
-              const targetTitle = targetState === 'after'
-                ? `Target reached, then ${targetDay!.afterCount} more ${targetDay!.afterCount === 1 ? 'trade' : 'trades'}`
-                : 'Target reached and stopped';
+              const todayBar = date === targetToday && targetDay && targetDay.target > 0 && !targetDay.hitAt ? (() => {
+                const share = Math.max(-1, Math.min(1, targetDay.pnl / targetDay.target));
+                const depth = targetDay.pnl > 0 ? 0 : Math.min(1, Math.max(-share, -targetDay.lowPnl / targetDay.target));
+                const title = isPrivacyMode
+                  ? `Today's target: ${Math.round((targetDay.pnl / targetDay.target) * 100)}%`
+                  : `Today's target: ${formatPnl(targetDay.pnl, rate)} / ${formatPnl(targetDay.target, rate)}`;
+                return { share, depth, title };
+              })() : null;
 
               return (
                 <div
                   key={cell.id}
-                  className={`${bgColor} relative @container group min-h-[68px] md:min-h-[110px] p-1 md:p-3 flex flex-col select-none touch-manipulation`}
+                  className={`${bgColor} relative @container group min-h-[68px] md:min-h-[110px] p-1 pb-2 md:p-3 md:pb-[18px] flex flex-col select-none touch-manipulation`}
                   title={note ? "Double-click to edit the note" : "Double-click to write a note"}
                   onDoubleClick={() => setOpenNote({ date, edit: true })}
                   // A phone has no hover or double-click: one tap opens the day.
@@ -373,18 +387,18 @@ export default function CalendarPage() {
                       ) : (
                         <span className="text-xs font-bold text-stone-400">{day}</span>
                       )}
-                      {/* A computer has room for the icon beside the date; a phone gets the strip at the bottom. */}
-                      {targetState && (
-                        <span title={targetTitle} className="hidden md:block">
-                          <Target className={`w-4 h-4 ${targetState === 'after' ? 'text-red-900' : 'text-orange-400'}`} />
-                        </span>
-                      )}
                     </span>
                     {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
                     <span className="md:hidden">{noteControl}</span>
                   </div>
-                  {targetState && (
-                    <span title={targetTitle} className={`md:hidden absolute inset-x-1 bottom-0 h-[3px] rounded-full ${targetState === 'after' ? 'bg-red-900' : 'bg-orange-400'}`} />
+                  {/* The daily target line, kept a little in from the cell's edges. */}
+                  {todayBar && (
+                    <span title={todayBar.title} className="absolute inset-x-1.5 bottom-1 md:inset-x-3 md:bottom-1.5">
+                      <SegmentBar share={todayBar.share} depth={todayBar.depth} isShown isHit={false} isPlain heightClass={TARGET_LINE_HEIGHT} trackClass={TARGET_LINE_TRACK} />
+                    </span>
+                  )}
+                  {targetDay?.hitAt && (
+                    <span title="Target reached" className={`absolute inset-x-1.5 bottom-1 md:inset-x-3 md:bottom-1.5 ${TARGET_LINE_HEIGHT} rounded-full bg-orange-400`} />
                   )}
 
                   {stats && (
@@ -444,16 +458,34 @@ export default function CalendarPage() {
               if (cell.pnl > 0) bgBorder = "bg-orange-50";
               else if (cell.pnl < 0) bgBorder = "bg-red-50";
               const weekNote = notesByWeek.get(cell.week);
+              // The whole week (also its days in the next or last month), as on the Dashboard: its P&L reached the
+              // sum of its days' targets up to today.
+              const weekSum = weekTotals(weekdayTargets(targetDays, targetToday, cell.week));
+              const isWeekHit = weekSum.target > 0 && weekSum.pnl >= weekSum.target;
+              // Shown as the days' target line along the bottom: short of it, a bar of how far the week has come (orange
+              // right of 0, red left of it when the week is down); reached, the full orange line. Falling back under
+              // the target brings the bar back.
+              const weekShare = weekSum.target > 0 ? Math.max(-1, Math.min(1, weekSum.pnl / weekSum.target)) : 0;
+              const weekTitle = isPrivacyMode
+                ? `Week target: ${weekSum.target > 0 ? Math.round((weekSum.pnl / weekSum.target) * 100) : 0}%`
+                : `Week target: ${formatPnl(weekSum.pnl, rate)} / ${formatPnl(weekSum.target, rate)}`;
 
               return (
                 <div
                   key={cell.id}
-                  className={`${bgBorder} group px-4 py-2.5 xl:p-3 xl:min-h-[110px] flex xl:flex-col items-center xl:items-stretch gap-4 xl:gap-0 flex-1 select-none touch-manipulation`}
+                  className={`${bgBorder} relative group px-4 py-2.5 md:pb-3.5 xl:p-3 xl:pb-[18px] xl:min-h-[110px] flex xl:flex-col items-center xl:items-stretch gap-4 xl:gap-0 flex-1 select-none touch-manipulation`}
                   title={weekNote ? "Double-click to edit the week's note" : "Double-click to write a note for the week"}
                   onDoubleClick={() => setOpenWeekNote({ week: cell.week, edit: true })}
                   // A phone has no hover or double-click: one tap opens the week.
                   onClick={() => { if (isPhone()) setOpenWeekNote({ week: cell.week, edit: false }); }}
                 >
+                  {isWeekHit ? (
+                    <span title={weekTitle} className={`absolute inset-x-4 bottom-1 xl:inset-x-3 xl:bottom-1.5 ${TARGET_LINE_HEIGHT} rounded-full bg-orange-400`} />
+                  ) : weekSum.target > 0 && (
+                    <span title={weekTitle} className="absolute inset-x-4 bottom-1 xl:inset-x-3 xl:bottom-1.5">
+                      <SegmentBar share={weekShare} depth={weekSum.pnl > 0 ? 0 : -weekShare} isShown isHit={false} isPlain heightClass={TARGET_LINE_HEIGHT} trackClass={TARGET_LINE_TRACK} />
+                    </span>
+                  )}
                   <span className="mr-auto xl:mr-0 text-[10px] font-black text-stone-400 uppercase tracking-widest xl:h-6">
                     <span className="xl:hidden">Week </span><span className="hidden xl:inline">W</span>{index + 1}
                   </span>
@@ -489,13 +521,15 @@ export default function CalendarPage() {
         <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-[10px] font-bold text-stone-400">
           {view === 'month' && targetPct > 0 && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1">
-              {([['hit', 'Target reached, stopped', 'text-orange-400', 'bg-orange-400'], ['after', 'Traded after the target', 'text-red-900', 'bg-red-900']] as const).map(([key, label, text, bg]) => (
-                <span key={key} className="flex items-center gap-1.5">
-                  <Target className={`hidden md:block w-3.5 h-3.5 ${text}`} />
-                  <span className={`md:hidden w-4 h-[3px] rounded-full ${bg}`} />
-                  {label}
-                </span>
-              ))}
+              {/* The line along the bottom of a day or a week: a bar while short of the target, full once reached. */}
+              <span className="flex items-center gap-1.5">
+                <span className="w-4 h-[3px] rounded-full bg-stone-200 overflow-hidden"><span className="block h-full w-1/2 rounded-full bg-orange-400" /></span>
+                Progress to the target
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-4 h-[3px] rounded-full bg-orange-400" />
+                Target reached
+              </span>
             </div>
           )}
           {/* Why a month here can differ a little from the monthly statement, which keeps the real date. */}
