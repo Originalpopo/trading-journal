@@ -55,17 +55,18 @@ export default function RiskPerTrade() {
   const pctSet = step.anchorBalance > 0 ? (step.riskNow / step.anchorBalance) * 100 : pct;
 
   return (
-    <div className="glass-card flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-center">
-      {/* Title with its %, the dollars under it, both centred; what it was set from is in the tooltip. */}
+    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-left border-t border-stone-300 lg:border-t-0 lg:border-l">
+      {/* No card: a line parts it from today's target (left from lg up, above on a phone). The dollars on top,
+          the title with its % under them, both to the left like the ↑ row; what it was set from is in the tooltip. */}
+      <p className="text-2xl font-black text-stone-950 tabular-nums leading-none">{usd(step.riskNow)}</p>
       <h3
-        className="text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 whitespace-nowrap text-stone-950"
+        className="mt-auto text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap text-stone-950"
         title={isSet ? `${pctText(pctSet)} of ${usd(step.anchorBalance)}, set ${dateText(prefs.riskAnchor!.at)}` : `${pctText(pct)} of the balance now (% in Settings)`}
       >
         <Coins className="w-4 h-4 text-stone-400" />
         Risk per Trade
         <span className="text-stone-400 tracking-normal">{pctText(isSet ? pctSet : pct)}</span>
       </h3>
-      <p className="text-2xl font-black text-stone-950 tabular-nums leading-none">{usd(step.riskNow)}</p>
 
       {!isSet && (
         <p className="text-[11px] font-semibold text-stone-400">
@@ -75,7 +76,7 @@ export default function RiskPerTrade() {
 
       {/* The balances that call for the next step, or, once one is reached, why and the button for it. */}
       {isSet && !due && (
-        <div className="mt-auto flex items-center justify-between gap-3 text-[11px] font-bold tabular-nums">
+        <div className="flex items-center gap-4 text-[11px] font-bold tabular-nums">
           <span className="flex items-center gap-1 text-orange-400" title={`Step up once the balance is ${pctText(up)} above ${usd(step.anchorBalance)}`}>
             <ArrowUp className="w-3.5 h-3.5" />{usd(step.upAt)}
           </span>
@@ -90,7 +91,7 @@ export default function RiskPerTrade() {
         <p className={`text-[11px] font-bold ${isUp || isPct ? "text-orange-400" : "text-red-900"}`}>
           {isPct
             ? `Risk changed to ${pctText(pct)} in Settings: set it to start using it.`
-            : isUp ? `Balance ${usd(balance)} is ${pctText(up)}+ above: time to step up.` : `Balance ${usd(balance)} is ${pctText(down)}+ below: step down now.`}
+            : isUp ? `Balance ${usd(balance)} is ${pctText(up)}+ above` : `Balance ${usd(balance)} is ${pctText(down)}+ below`}
         </p>
       )}
       {(!isSet || due) && (
