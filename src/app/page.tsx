@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, AlertTriangle, Check, X, Flame } from "lucide-react";
 import { disciplineStreak } from "@/lib/discipline";
 import DailyTargetBar from "@/components/DailyTargetBar";
+import RiskPerTrade from "@/components/RiskPerTrade";
 import { useTradingDay } from "@/components/useTradingDay";
 import {
   Chart as ChartJS,
@@ -516,7 +517,16 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <DailyTargetBar />
+      {/* From lg up: today's target across three columns, the risk per trade in the fourth (under Balance), one
+          height. Below lg they stack. */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 min-w-0 flex flex-col">
+          <DailyTargetBar />
+        </div>
+        <div className="lg:col-start-4 min-w-0 flex flex-col">
+          <RiskPerTrade />
+        </div>
+      </div>
 
       <div className="glass-card p-6 h-[350px] flex flex-col">
         {/* Large balances push the phone numbers onto a line of their own rather than squeezing the title. */}
@@ -714,8 +724,8 @@ export default function Dashboard() {
               </span>
             </div>
             {/* One row, label over the best run, so the card stays the height of its neighbours. */}
-            <div className="flex justify-between items-center gap-3 pt-2 border-t border-stone-200"
-              title="Trading days in a row with every trade on plan, no rule broken in the day's note and nothing entered after the daily target. Days without trades are skipped.">
+            <div className="flex justify-between items-center gap-3 pt-4 border-t border-stone-200"
+              title="Trading days in a row with every trade on plan, no rule broken in the day's note. Days without trades are skipped.">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-stone-400">On Plan in a Row</p>
                 <p className="text-[10px] font-semibold text-stone-400">Best {streak.best} {streak.best === 1 ? 'day' : 'days'}</p>

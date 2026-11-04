@@ -171,7 +171,7 @@ export default function DailyTargetBar() {
     );
 
   return (
-    <div className="glass-card px-5 py-4 md:px-6" title={`Target: ${pct}% of the balance the day started with${isPrivacyMode ? "" : ` (${usd(day.startBalance)})`}`}>
+    <div className="glass-card flex-1 px-5 py-4 md:px-6" title={`Target: ${pct}% of the balance the day started with${isPrivacyMode ? "" : ` (${usd(day.startBalance)})`}`}>
       {/* One line on a computer: title, bar, figures. On a phone the bar takes a line of its own. */}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
         {/* The title turns orange once the target is reached. */}

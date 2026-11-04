@@ -9,6 +9,7 @@ import type { DayNote } from '@/lib/dayNotes';
 import type { DisciplineRule } from '@/lib/discipline';
 import type { WeekNote } from '@/lib/weekNotes';
 import type { TargetPctChange } from '@/lib/dailyTarget';
+import type { RiskAnchor } from '@/lib/riskStep';
 import type { OffPlanReason } from '@/lib/offPlan';
 import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow } from '@/lib/risk';
 import { setBeThreshold } from '@/lib/stats';
@@ -120,6 +121,12 @@ export interface Preferences {
   dailyTargetHistory?: TargetPctChange[];
   // Hour (Bangkok time) a trading day starts; trades closed before it count for the day before (default 5).
   dayStartHour?: number;
+  // Risk per trade in steps (see riskStep.ts): % of the balance (default 2; 0 turns it off), the % rise and fall
+  // of the balance that call for a step up or down (defaults 20 and 10), and the balance it was last set from.
+  riskPct?: number;
+  riskStepUpPct?: number;
+  riskStepDownPct?: number;
+  riskAnchor?: RiskAnchor;
 }
 
 interface JournalState {

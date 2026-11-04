@@ -58,7 +58,7 @@ export default function DisciplineSummary() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="bg-stone-50 rounded-xl p-4" title="Trading days in a row with every trade on plan, no rule broken and nothing entered after the daily target. Days without trades are skipped.">
+        <div className="bg-stone-50 rounded-xl p-4" title="Trading days in a row with every trade on plan, no rule broken. Days without trades are skipped.">
           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">On plan in a row</p>
           <p className="flex items-center gap-2 text-2xl font-black text-stone-950">
             <Flame className={`w-6 h-6 ${streak.current > 0 ? "text-orange-400" : "text-stone-300"}`} />
