@@ -82,29 +82,35 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: numbe
   }
 };
 
-// The Balance area's grey carried out past the chart: the page's scroll area takes it from the chart's
-// bottom down, and from the last Balance point to the right edge, so the chart has no card around it.
-// Drawn as the <main> background (scrolls with the page), measured again on every chart draw.
+// The Balance area's grey carried out past the chart, so the chart has no card around it: inside the
+// canvas from the last Balance point to the right edge, and below the chart's bottom a grey block behind the
+// rest of the page (in the page itself, not the scroll area's background, which iOS lags behind on a fast
+// scroll). The block's place is measured on every chart draw and handed over as CSS variables.
 const BALANCE_FILL = 'rgba(0, 0, 0, 0.03)';
 const pageFillPlugin: Plugin<'line'> = {
   id: 'pageFill',
-  afterDraw: (chart) => {
-    const main = chart.canvas.closest('main');
-    if (!main) return;
+  beforeDatasetsDraw: (chart) => {
     const points = chart.getDatasetMeta(1).data;
     const last = points[points.length - 1];
-    if (!last) { main.style.background = ''; return; }
-    const canvasBox = chart.canvas.getBoundingClientRect();
+    if (!last) return;
+    const x = Math.round(last.x);
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.fillStyle = BALANCE_FILL;
+    ctx.fillRect(x, last.y, chart.width - x, chart.chartArea.bottom - last.y);
+    ctx.restore();
+  },
+  afterDraw: (chart) => {
+    const main = chart.canvas.closest('main');
+    const page = chart.canvas.closest<HTMLElement>('[data-page-fill]');
+    if (!main || !page) return;
+    const pageBox = page.getBoundingClientRect();
     const mainBox = main.getBoundingClientRect();
-    const left = canvasBox.left - mainBox.left + main.scrollLeft;
-    const top = canvasBox.top - mainBox.top + main.scrollTop;
-    const bottom = Math.round(top + chart.chartArea.bottom);
-    const lastX = Math.round(left + last.x);
-    const lastY = Math.round(top + last.y);
-    main.style.background = [
-      `linear-gradient(${BALANCE_FILL}, ${BALANCE_FILL}) ${lastX}px ${lastY}px / 100% ${Math.max(0, bottom - lastY)}px no-repeat local`,
-      `linear-gradient(transparent ${bottom}px, ${BALANCE_FILL} ${bottom}px) local`,
-    ].join(', ');
+    const top = Math.round(chart.canvas.getBoundingClientRect().top - pageBox.top + chart.chartArea.bottom);
+    page.style.setProperty('--fill-top', `${top}px`);
+    page.style.setProperty('--fill-left', `${mainBox.left + main.clientLeft - pageBox.left}px`);
+    page.style.setProperty('--fill-width', `${main.clientWidth}px`);
+    page.style.setProperty('--fill-bottom', `-${getComputedStyle(main).paddingBottom}`);
   },
 };
 
@@ -149,8 +155,7 @@ export default function Dashboard() {
   const [ddMode, setDdMode] = useState<'r' | 'usd'>('r');
   // The chart runs edge to edge of the page (sidebar to the right edge) while its title stays in the
   // column: `bleed` is how far the page reaches past the title row on each side, measured whenever the page
-  // changes width. The chart's grey on the page background (pageFillPlugin) is measured again then too;
-  // leaving the Dashboard takes it off.
+  // changes width. The chart's grey below it (pageFillPlugin) is measured again then too.
   const chartTitleRef = useRef<HTMLDivElement>(null);
   const [bleed, setBleed] = useState({ left: 0, right: 0 });
   useEffect(() => {
@@ -169,10 +174,7 @@ export default function Dashboard() {
       if (canvas) ChartJS.getChart(canvas)?.draw();
     });
     observer.observe(main);
-    return () => {
-      observer.disconnect();
-      main.style.background = '';
-    };
+    return () => observer.disconnect();
     // Again once loading is over: the chart's title row isn't on the page before that.
   }, [isLoading]);
   // A new bleed widens the chart's box; Chart.js can miss that change (it kept the old width, short of the
@@ -405,7 +407,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div data-page-fill className="relative isolate space-y-8">
+      {/* The Balance grey below the chart, to the page's edges and bottom (placed by pageFillPlugin). */}
+      <div
+        aria-hidden="true"
+        className="absolute -z-10 pointer-events-none !m-0"
+        style={{ top: 'var(--fill-top, 100%)', left: 'var(--fill-left, 0)', width: 'var(--fill-width, 100%)', bottom: 'var(--fill-bottom, 0)', background: BALANCE_FILL }}
+      />
       <BalanceCheckModal isOpen={isBalanceCheckOpen} onClose={() => setIsBalanceCheckOpen(false)} />
       {/* Title and cards keep the same 24px gap as the other pages' headers. */}
       <section className="space-y-6">
