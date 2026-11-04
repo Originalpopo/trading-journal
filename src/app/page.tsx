@@ -1,7 +1,7 @@
 "use client";
 
 import { useJournalStore } from "@/store/useJournalStore";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, AlertTriangle, Check, X, Flame } from "lucide-react";
 import { disciplineStreak } from "@/lib/discipline";
 import DailyTargetBar from "@/components/DailyTargetBar";
@@ -29,102 +29,29 @@ import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } fro
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 import PageHeader from "@/components/PageHeader";
-const LAST_POINT_FONT = 'bold 11px "Plus Jakarta Sans", sans-serif';
-const LAST_POINT_GAP = 12; // from the dot's centre to its number
-
-// How wide a last-point number is drawn, so the chart leaves just that much room on its right.
-let measureCtx: CanvasRenderingContext2D | null = null;
-const lastPointLabelWidth = (text: string) => {
-  measureCtx ??= document.createElement('canvas').getContext('2d');
-  if (!measureCtx) return 60;
-  measureCtx.font = LAST_POINT_FONT;
-  return measureCtx.measureText(text).width;
-};
-
-// A dot on the last point of each line, with its number beside it unless `labels` is off (phones show the numbers above the chart).
-const dashboardLastPointsPlugin: Plugin<'line', { labels?: boolean }> = {
+const LAST_DOT_RADIUS = 6;
+// An orange dot on the Equity line's last point (its number is on the chart's title line).
+const dashboardLastPointsPlugin: Plugin<'line'> = {
   id: 'dashboardLastPointsPlugin',
-  afterDatasetsDraw: (chart, _args, options) => {
-    const showLabels = options.labels !== false;
-    if (chart.data.datasets.length < 2) return;
+  afterDatasetsDraw: (chart) => {
+    const meta = chart.getDatasetMeta(0);
+    if (meta.hidden || meta.data.length === 0) return;
+    const pos = tooltipPositionOf(meta.data[meta.data.length - 1]);
     const ctx = chart.ctx;
-    const meta0 = chart.getDatasetMeta(0);
-    const meta1 = chart.getDatasetMeta(1);
-    let pos0: { x: number; y: number } | null = null;
-    let val0 = 0;
-    if (!meta0.hidden && meta0.data.length > 0) {
-      const lastIdx = meta0.data.length - 1;
-      pos0 = tooltipPositionOf(meta0.data[lastIdx]);
-      val0 = chart.data.datasets[0].data[lastIdx] as number;
-    }
-
-    let pos1: { x: number; y: number } | null = null;
-    let val1 = 0;
-    if (!meta1.hidden && meta1.data.length > 0) {
-      const lastIdx = meta1.data.length - 1;
-      pos1 = tooltipPositionOf(meta1.data[lastIdx]);
-      val1 = chart.data.datasets[1].data[lastIdx] as number;
-    }
-
-    let yOffset0 = 0;
-    let yOffset1 = 0;
-
-    if (pos0 && pos1) {
-      const yDiff = Math.abs(pos0.y - pos1.y);
-      if (yDiff < 22) {
-        if (pos0.y <= pos1.y) {
-          yOffset0 = -12;
-          yOffset1 = 12;
-        } else {
-          yOffset0 = 12;
-          yOffset1 = -12;
-        }
-      }
-    }
-
-    if (pos0) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(pos0.x, pos0.y, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = '#fb923c';
-      ctx.fill();
-
-      if (showLabels) {
-        ctx.fillStyle = '#fb923c';
-        ctx.font = LAST_POINT_FONT;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
-        ctx.fillText(isPrivacyMode ? '***' : formatNumber(val0), pos0.x + LAST_POINT_GAP, pos0.y + yOffset0);
-      }
-      ctx.restore();
-    }
-
-    if (pos1) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(pos1.x, pos1.y, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = '#1c1917';
-      ctx.fill();
-
-      if (showLabels) {
-        ctx.fillStyle = '#1c1917';
-        ctx.font = LAST_POINT_FONT;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
-        ctx.fillText(isPrivacyMode ? '***' : formatNumber(val1), pos1.x + LAST_POINT_GAP, pos1.y + yOffset1);
-      }
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, LAST_DOT_RADIUS, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fb923c';
+    ctx.fill();
+    ctx.restore();
   }
 };
 
 // While the equity is below its highest point, a faint dashed line marks that peak.
-const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: number }> = {
+const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: number; labelX?: number }> = {
   id: 'peakEquityLine',
   afterDatasetsDraw: (chart, _args, options) => {
-    const { peak, current } = options;
+    const { peak, current, labelX = 0 } = options;
     if (peak === null || current >= peak || chart.getDatasetMeta(0).hidden) return;
     const yScale = chart.scales.y;
     if (!yScale) return;
@@ -148,11 +75,37 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: numbe
     const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
     ctx.fillText(
       isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)}`,
-      left + 4,
+      left + labelX + 4,
       y - 4,
     );
     ctx.restore();
   }
+};
+
+// The Balance area's grey carried out past the chart: the page's scroll area takes it from the chart's
+// bottom down, and from the last Balance point to the right edge, so the chart has no card around it.
+// Drawn as the <main> background (scrolls with the page), measured again on every chart draw.
+const BALANCE_FILL = 'rgba(0, 0, 0, 0.03)';
+const pageFillPlugin: Plugin<'line'> = {
+  id: 'pageFill',
+  afterDraw: (chart) => {
+    const main = chart.canvas.closest('main');
+    if (!main) return;
+    const points = chart.getDatasetMeta(1).data;
+    const last = points[points.length - 1];
+    if (!last) { main.style.background = ''; return; }
+    const canvasBox = chart.canvas.getBoundingClientRect();
+    const mainBox = main.getBoundingClientRect();
+    const left = canvasBox.left - mainBox.left + main.scrollLeft;
+    const top = canvasBox.top - mainBox.top + main.scrollTop;
+    const bottom = Math.round(top + chart.chartArea.bottom);
+    const lastX = Math.round(left + last.x);
+    const lastY = Math.round(top + last.y);
+    main.style.background = [
+      `linear-gradient(${BALANCE_FILL}, ${BALANCE_FILL}) ${lastX}px ${lastY}px / 100% ${Math.max(0, bottom - lastY)}px no-repeat local`,
+      `linear-gradient(transparent ${bottom}px, ${BALANCE_FILL} ${bottom}px) local`,
+    ].join(', ');
+  },
 };
 
 ChartJS.register(
@@ -194,14 +147,32 @@ export default function Dashboard() {
   // Ask again whenever the last check no longer vouches for the balance on screen.
   const needsBrokerCheck = !balanceCheck || !brokerCheck?.matches || hasActivityAfter(balanceCheck, trades, funding);
   const [ddMode, setDdMode] = useState<'r' | 'usd'>('r');
-  // Below md the chart's last numbers move to its title line, so the lines get the full width.
-  const [isPhone, setIsPhone] = useState(false);
+  // The chart runs edge to edge of the page (sidebar to the right edge) while its title stays in the
+  // column: `bleed` is how far the page reaches past the title row on each side, measured whenever the page
+  // changes width. The chart's grey on the page background (pageFillPlugin) is measured again then too;
+  // leaving the Dashboard takes it off.
+  const chartTitleRef = useRef<HTMLDivElement>(null);
+  const [bleed, setBleed] = useState({ left: 0, right: 0 });
   useEffect(() => {
-    const query = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsPhone(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    const main = document.querySelector('main');
+    if (!main) return;
+    const observer = new ResizeObserver(() => {
+      const title = chartTitleRef.current;
+      if (title) {
+        const box = main.getBoundingClientRect();
+        const row = title.getBoundingClientRect();
+        const left = Math.max(0, Math.floor(row.left - box.left - main.clientLeft));
+        const right = Math.max(0, Math.floor(box.left + main.clientLeft + main.clientWidth - row.right));
+        setBleed(b => (b.left === left && b.right === right ? b : { left, right }));
+      }
+      const canvas = main.querySelector('canvas');
+      if (canvas) ChartJS.getChart(canvas)?.draw();
+    });
+    observer.observe(main);
+    return () => {
+      observer.disconnect();
+      main.style.background = '';
+    };
   }, []);
   const [now] = useState(() => Date.now()); // for "days below the peak"
 
@@ -348,12 +319,9 @@ export default function Dashboard() {
   const balanceText = isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`;
 
   const lastEquity = data.equityData[data.equityData.length - 1] ?? 0;
-  const lastBalance = data.balanceData[data.balanceData.length - 1] ?? 0;
   const lastLabel = (value: number) => isPrivacyMode ? '***' : formatNumber(value);
-  // Room on the right for the dots, plus their numbers where they are drawn beside them.
-  const chartRightPadding = isPhone
-    ? 8
-    : Math.ceil(LAST_POINT_GAP + Math.max(lastPointLabelWidth(lastLabel(lastEquity)), lastPointLabelWidth(lastLabel(lastBalance))) + 8);
+  // The last dot ends 10px short of the page's right edge.
+  const chartRightPadding = LAST_DOT_RADIUS + 10;
 
   const chartOptions = {
     responsive: true,
@@ -367,8 +335,7 @@ export default function Dashboard() {
         mode: 'index' as const,
         intersect: false,
       },
-      dashboardLastPointsPlugin: { labels: !isPhone },
-      peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, current: data.currentPnL }
+      peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, current: data.currentPnL, labelX: bleed.left }
     },
     scales: {
       x: { display: false },
@@ -378,7 +345,8 @@ export default function Dashboard() {
         // Keeps the peak line inside the chart even when the plotted daily points sit below it.
         suggestedMax: data.peakPnL,
         position: 'left' as const,
-        grid: { color: '#fafaf9', drawOnChartArea: true },
+        // No line along the bottom: the Balance grey carries on below it (pageFillPlugin).
+        grid: { color: (c: { index: number }) => (c.index === 0 ? 'transparent' : '#fafaf9'), drawOnChartArea: true },
         ticks: { display: false },
         border: { display: false }
       },
@@ -528,19 +496,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="glass-card p-6 h-[350px] flex flex-col">
-        {/* Large balances push the phone numbers onto a line of their own rather than squeezing the title. */}
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
+      <div className="px-6 pt-6 h-[350px] flex flex-col">
+        {/* The Equity's last number follows the title (the chart reaches the page edge, no room beside the
+            dot); on a narrow screen it wraps onto a line of its own. */}
+        <div ref={chartTitleRef} className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
           </h3>
-          <div className="md:hidden flex items-center gap-3 text-[11px] font-bold">
-            <span title="Equity (PnL)" className="flex items-center gap-1 text-orange-400"><span className="w-2 h-2 rounded-full bg-orange-400"></span>{lastLabel(lastEquity)}</span>
-            <span title="Balance" className="flex items-center gap-1 text-stone-900"><span className="w-2 h-2 rounded-full bg-stone-900"></span>{lastLabel(lastBalance)}</span>
-          </div>
+          <span title="Equity (PnL)" className="text-[11px] font-bold text-orange-400 tabular-nums">{lastLabel(lastEquity)}</span>
         </div>
-        <div className="flex-1 relative w-full h-full">
-          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin]} />
+        <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
+          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin, pageFillPlugin]} />
         </div>
       </div>
 
