@@ -55,17 +55,18 @@ export default function RiskPerTrade() {
   const pctSet = step.anchorBalance > 0 ? (step.riskNow / step.anchorBalance) * 100 : pct;
 
   return (
-    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-left border-t border-stone-300 lg:border-t-0 lg:border-l">
-      {/* No card: a line parts it from today's target (left from lg up, above on a phone). The dollars on top,
+    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-left border-stone-300 lg:border-l">
+      {/* No card: a line on its left parts it from today's target from lg up (none once it drops under it). The dollars on top,
           the title with its % under them, both to the left like the ↑ row; what it was set from is in the tooltip. */}
       <p className="text-2xl font-black text-stone-950 tabular-nums leading-none">{usd(step.riskNow)}</p>
       <h3
         className="mt-auto text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap text-stone-950"
         title={isSet ? `${pctText(pctSet)} of ${usd(step.anchorBalance)}, set ${dateText(prefs.riskAnchor!.at)}` : `${pctText(pct)} of the balance now (% in Settings)`}
       >
-        <Coins className="w-4 h-4 text-stone-400" />
         Risk per Trade
-        <span className="text-stone-400 tracking-normal">{pctText(isSet ? pctSet : pct)}</span>
+        <span className="flex items-center gap-1 text-stone-400 tracking-normal">
+          <Coins className="w-4 h-4" />{pctText(isSet ? pctSet : pct)}
+        </span>
       </h3>
 
       {!isSet && (
