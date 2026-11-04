@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, AlertTriangle, Check, X, Flame } from "lucide-react";
 import { disciplineStreak } from "@/lib/discipline";
 import DailyTargetBar from "@/components/DailyTargetBar";
-import { useDailyTargets } from "@/components/useDailyTargets";
 import { useTradingDay } from "@/components/useTradingDay";
 import {
   Chart as ChartJS,
@@ -179,10 +178,10 @@ export default function Dashboard() {
   const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
   const balanceCheck = useJournalStore(state => state.preferences.balanceCheck);
   const dayNotes = useJournalStore(state => state.dayNotes);
-  const { tradedAfter } = useDailyTargets();
   const { startHour } = useTradingDay();
   // Clean trading days in a row, over all trades: the same figure as on the Notes page.
-  const streak = useMemo(() => disciplineStreak(trades, dayNotes, startHour, tradedAfter), [trades, dayNotes, startHour, tradedAfter]);
+  // Trading on after the daily target does not break the streak: whether it pays is being measured on the Notes page.
+  const streak = useMemo(() => disciplineStreak(trades, dayNotes, startHour), [trades, dayNotes, startHour]);
   const [isBalanceCheckOpen, setIsBalanceCheckOpen] = useState(false);
   // Recomputed from the saved broker balance, so a trade added or removed later shows up here.
   const brokerCheck = useMemo(

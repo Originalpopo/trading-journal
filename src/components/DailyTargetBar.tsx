@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Target, AlertTriangle, CalendarRange, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Target, CalendarRange, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDailyTargets } from "./useDailyTargets";
 import { weekdayTargets, weekTotals, type WeekdayState, type WeekdayTarget } from "@/lib/dailyTarget";
@@ -185,14 +185,6 @@ export default function DailyTargetBar() {
         </div>
       </div>
 
-      {/* Trades taken after the target, centred in the card under the day's line. */}
-      {isHit && day.afterCount > 0 && (
-        <p className="mt-2 text-[11px] font-bold flex flex-wrap items-center justify-center gap-x-1.5 text-center text-red-900">
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          Traded after the target: {day.afterCount} {day.afterCount === 1 ? "trade" : "trades"}
-          {!isPrivacyMode && <>, {usd(day.afterPnl)}</>} · {formatNumber(day.afterRr)} R
-        </p>
-      )}
 
       {/* Which days of the week reached their target, always under the day's line. The arrows step between
           this week and last week. On a computer they sit in the gaps beside the circles, so the circles keep

@@ -379,16 +379,17 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
         {/* The daily target of a day that was traded: reached or not, and what came after it. */}
         {target && target.target > 0 && dayTrades.length > 0 && (
           <p className={`mb-3 shrink-0 text-[11px] font-bold flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${
-            !target.hitAt ? 'text-stone-400' : target.afterCount > 0 ? 'text-red-900' : 'text-orange-400'
+            target.hitAt ? 'text-orange-400' : 'text-stone-400'
           }`}>
             <Target className="w-3.5 h-3.5 shrink-0" />
             {isPrivacyMode ? 'Daily target' : `Target ${formatPnl(target.target, bahtRate)}`}
             {' · '}
             {!target.hitAt
               ? 'not reached'
-              : `reached at ${clockOf(target.hitAt)}${target.afterCount === 0 ? ', stopped' : ''}`}
+              : `reached at ${clockOf(target.hitAt)}`}
+            {/* What came after the target, as plain figures in grey. */}
             {target.afterCount > 0 && (
-              <span>
+              <span className="text-stone-400">
                 · {target.afterCount} {target.afterCount === 1 ? 'trade' : 'trades'} after
                 {!isPrivacyMode && `: ${formatPnl(target.afterPnl, bahtRate)}`} · {formatNumber(target.afterRr)} R
               </span>

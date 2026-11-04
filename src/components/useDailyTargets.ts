@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { dailyTargets, daysTradedAfterTarget, pctOnDay, DEFAULT_TARGET_PCT } from "@/lib/dailyTarget";
+import { dailyTargets, pctOnDay, DEFAULT_TARGET_PCT } from "@/lib/dailyTarget";
 import { useTradingDay } from "./useTradingDay";
 
 // Every trading day's target and what happened after it, plus today's (before its first trade too).
@@ -17,6 +17,5 @@ export function useDailyTargets() {
     () => dailyTargets(trades, funding, (day: string) => pctOnDay(history, day, pct), startHour, today),
     [trades, funding, pct, history, startHour, today],
   );
-  const tradedAfter = useMemo(() => daysTradedAfterTarget(days), [days]);
-  return { days, pct, today, tradedAfter };
+  return { days, pct, today };
 }

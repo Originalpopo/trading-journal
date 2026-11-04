@@ -35,8 +35,9 @@ export default function DisciplineSummary() {
   const { startHour, today } = useTradingDay();
   const from = period === "all" ? undefined : `${today.slice(0, 8)}01`;
 
-  const { days, pct, tradedAfter } = useDailyTargets();
-  const streak = useMemo(() => disciplineStreak(trades, dayNotes, startHour, tradedAfter), [trades, dayNotes, startHour, tradedAfter]);
+  const { days, pct } = useDailyTargets();
+  // Trading on after the daily target does not break the streak: whether it pays is being measured (below).
+  const streak = useMemo(() => disciplineStreak(trades, dayNotes, startHour), [trades, dayNotes, startHour]);
   const target = useMemo(() => summarizeTargets(days, from), [days, from]);
   const cost = useMemo(() => planCost(trades, startHour, from), [trades, startHour, from]);
   const broken = useMemo(() => ruleCounts(dayNotes, rules, from).slice(0, 3), [dayNotes, rules, from]);
@@ -85,23 +86,27 @@ export default function DisciplineSummary() {
           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Daily target</p>
           {pct <= 0 ? (
             <p className="text-[11px] font-medium text-stone-400 mt-2">
-              Off. <Link href="/settings" className="font-bold text-orange-400 hover:underline">Set a daily target</Link> to see whether you stop once it is reached.
+              Off. <Link href="/settings" className="font-bold text-orange-400 hover:underline">Set a daily target</Link> to see what trading on after it brings.
             </p>
           ) : target.hitDays === 0 ? (
             <p className="text-sm font-bold text-stone-400 mt-2">Not reached yet</p>
           ) : (
             <>
+              {/* Plain figures, not a warning: what the trades taken after the target brought, to judge whether
+                  stopping there pays. */}
               <p className="text-lg font-black text-stone-950">
-                {target.stoppedDays} <span className="text-sm font-bold text-stone-400">of {target.hitDays} {target.hitDays === 1 ? "day" : "days"} stopped</span>
+                {target.hitDays} <span className="text-sm font-bold text-stone-400">{target.hitDays === 1 ? "day" : "days"} reached</span>
               </p>
-              {target.continuedDays > 0 ? (
-                <p className="text-[11px] font-semibold text-red-900 mt-1">
-                  Traded on {target.continuedDays} {target.continuedDays === 1 ? "day" : "days"}: {target.afterCount} {target.afterCount === 1 ? "trade" : "trades"},{" "}
-                  <SideResult side={{ count: target.afterCount, pnl: target.afterPnl, rr: target.afterRr }} isPrivacyMode={isPrivacyMode} />
-                </p>
-              ) : (
-                <p className="text-[11px] font-semibold text-orange-400 mt-1">Stopped every time</p>
-              )}
+              <p className="text-[11px] font-semibold text-stone-400 mt-1">
+                {target.afterCount > 0 ? (
+                  <>
+                    After the target: {target.afterCount} {target.afterCount === 1 ? "trade" : "trades"} on {target.continuedDays} {target.continuedDays === 1 ? "day" : "days"},{" "}
+                    <SideResult side={{ count: target.afterCount, pnl: target.afterPnl, rr: target.afterRr }} isPrivacyMode={isPrivacyMode} />
+                  </>
+                ) : (
+                  "No trades after the target"
+                )}
+              </p>
             </>
           )}
         </div>
