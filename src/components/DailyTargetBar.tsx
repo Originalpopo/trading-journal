@@ -171,7 +171,7 @@ export default function DailyTargetBar() {
     );
 
   return (
-    <div className="glass-card flex-1 px-5 py-4 md:px-6" title={`Target: ${pct}% of the balance the day started with${isPrivacyMode ? "" : ` (${usd(day.startBalance)})`}`}>
+    <div className="flex-1 px-5 py-4 md:px-6" title={`Target: ${pct}% of the balance the day started with${isPrivacyMode ? "" : ` (${usd(day.startBalance)})`}`}>
       {/* One line on a computer: title, bar, figures. On a phone the bar takes a line of its own. */}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
         {/* The title turns orange once the target is reached. */}
@@ -189,7 +189,7 @@ export default function DailyTargetBar() {
       {/* Which days of the week reached their target, always under the day's line. The arrows step between
           this week and last week. On a computer they sit in the gaps beside the circles, so the circles keep
           the day bar's width; on a phone they sit at the ends of the circles' own line. */}
-      <div className="mt-3 pt-3 border-t border-stone-100 flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
+      <div className="mt-6 flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
         <h3 className={`${titleClass} ${isWeekHit ? "text-orange-400" : "text-stone-950"}`}>
           <CalendarRange className={`w-4 h-4 ${isWeekHit ? "text-orange-400" : "text-stone-400"}`} />
           {isLastWeek ? "Last week" : "This week"}
