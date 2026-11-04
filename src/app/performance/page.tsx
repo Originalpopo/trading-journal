@@ -145,6 +145,16 @@ export default function PerformancePage() {
   }, []);
 
   const [selectedMetric, setSelectedMetric] = useState('GAIN');
+  // Below md the balance chart's last number moves to its title line, so the chart gets the full width (as the
+  // Dashboard's Equity and Balance does).
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsPhone(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const [tfPage, setTfPage] = useState(0);
 
   const availableYears = useMemo(() => {
@@ -191,15 +201,17 @@ export default function PerformancePage() {
         ctx.fillStyle = '#1c1917';
         ctx.fill();
 
-        ctx.fillStyle = '#1c1917';
-        ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(isPrivacyMode ? '***' : formatNumber(lastVal), position.x + 12, position.y);
+        if (!isPhone) {
+          ctx.fillStyle = '#1c1917';
+          ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(isPrivacyMode ? '***' : formatNumber(lastVal), position.x + 12, position.y);
+        }
         ctx.restore();
       }
     }
-  }), [isPrivacyMode]);
+  }), [isPrivacyMode, isPhone]);
 
   // The Hour, Day and Month charts draw their 0 line darker, and no axis line at the bottom, so a loss
   // hangs from the line its bar starts at rather than looking as if it floats.
@@ -304,7 +316,7 @@ export default function PerformancePage() {
       </PageHeader>
 
       <div className="glass-card p-6 h-[350px] flex flex-col w-full">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Profit and Balance
           </h3>
@@ -313,10 +325,14 @@ export default function PerformancePage() {
               Daily Aggregated ({data.perfBalanceData.length - 1} Days)
             </span>
           )}
+          <span title="Balance" className="md:hidden ml-auto flex items-center gap-1 text-[11px] font-bold text-stone-900">
+            <span className="w-2 h-2 rounded-full bg-stone-900"></span>
+            {isPrivacyMode ? '***' : formatNumber(data.perfBalanceData[data.perfBalanceData.length - 1] ?? 0)}
+          </span>
         </div>
         <div className="flex-1 min-h-0 relative w-full">
           <Line
-            key={`pnl-${isPrivacyMode}`}
+            key={`pnl-${isPrivacyMode}-${isPhone}`}
             data={{
               labels: data.perfBalanceLabels,
               datasets: [
@@ -344,7 +360,7 @@ export default function PerformancePage() {
             }}
             options={{
               responsive: true, maintainAspectRatio: false,
-              layout: { padding: { top: 20, right: 80 } },
+              layout: { padding: { top: 20, right: isPhone ? 8 : 80 } },
               plugins: {
                 legend: { display: false },
                 tooltip: {
