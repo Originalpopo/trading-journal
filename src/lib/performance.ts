@@ -26,7 +26,7 @@ export interface PerformanceFilters {
   selectedYear: string; // a year, or 'ALL'
   selectedTfs: string[]; // empty = every timeframe
   selectedPlan: string; // 'ALL' | 'On Plan' | 'Off Plan'
-  selectedMetric: string; // 'COUNT' | 'RR' | 'PNL' | 'GAIN'
+  selectedMetric: string; // 'COUNT' | 'RR' | 'AVG_R' (R per trade) | 'PNL' | 'GAIN'
 }
 
 export interface SideStats { trades: number; win: number; loss: number; pnl: number; rr: number; rrCount: number }
@@ -385,7 +385,11 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const holdLoss = countDurationLosses > 0 ? formatDurationDetailed(sumDurationLosses / countDurationLosses) : '-';
 
   // Chart Data Generation
-  const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : selectedMetric === 'GAIN' ? (hourStatsPnL[h] / initialDeposit) * 100 : hourStatsPnL[h]);
+  // Trades in each hour, weekday and month: shown when a bar is pointed at, and what Avg R divides by. An
+  // average says which hour pays per trade; a total also grows with how often that hour is traded.
+  const hourCounts = hours.map(h => hourWins[h] + hourLosses[h] + hourBEs[h]);
+  const avgR = (sum: number, count: number) => (count > 0 ? sum / count : 0);
+  const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : selectedMetric === 'AVG_R' ? avgR(hourStats[h], hourCounts[h]) : selectedMetric === 'GAIN' ? (hourStatsPnL[h] / initialDeposit) * 100 : hourStatsPnL[h]);
   const hourlyColors = hourlyDataArr.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
   const hourlyWinsArr = hours.map(h => hourWins[h]);
   const hourlyLossesArr = hours.map(h => hourLosses[h]);
@@ -394,11 +398,12 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
 
   // Monday to Friday always, so the axis stays put; Saturday and Sunday only when traded (e.g. crypto).
   // A weekday with nothing in it has no bar (null).
-  const isDayTraded = (k: number) => (selectedMetric === 'RR' ? dowStats[k] : dowStatsPnL[k]) !== 0 || dowWins[k] > 0 || dowLosses[k] > 0 || dowBEs[k] > 0;
+  const isDayTraded = (k: number) => (selectedMetric === 'RR' || selectedMetric === 'AVG_R' ? dowStats[k] : dowStatsPnL[k]) !== 0 || dowWins[k] > 0 || dowLosses[k] > 0 || dowBEs[k] > 0;
   const activeDowKeys = dowNames.map((_, k) => k).filter(k => (k > 0 && k < 6) || isDayTraded(k));
   const activeDowNames = activeDowKeys.map(k => dowNames[k]);
   const dowTraded = activeDowKeys.map(isDayTraded);
-  const activeDowData = activeDowKeys.map((k): number | null => !isDayTraded(k) ? null : selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
+  const activeDowCounts = activeDowKeys.map(k => dowWins[k] + dowLosses[k] + dowBEs[k]);
+  const activeDowData = activeDowKeys.map((k, i): number | null => !isDayTraded(k) ? null : selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'AVG_R' ? avgR(dowStats[k], activeDowCounts[i]) : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
   const dowColors = activeDowData.map(v => (v ?? 0) >= 0 ? '#fb923c' : '#7f1d1d');
   const activeDowWins = activeDowKeys.map(k => dowWins[k]);
   const activeDowLosses = activeDowKeys.map(k => dowLosses[k]);
@@ -406,12 +411,14 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
 
   // All twelve months, so the axis is the same every year; a month with nothing in it has no bar (null).
   const activeMoyKeys = monthNames.map((_, k) => k);
-  const isMonthTraded = (k: number) => (selectedMetric === 'RR' ? moyStats[k] : moyStatsPnL[k]) !== 0 || moyPnL[k] !== 0 || moyWins[k] > 0 || moyLosses[k] > 0 || moyBEs[k] > 0;
+  const isMonthTraded = (k: number) => (selectedMetric === 'RR' || selectedMetric === 'AVG_R' ? moyStats[k] : moyStatsPnL[k]) !== 0 || moyPnL[k] !== 0 || moyWins[k] > 0 || moyLosses[k] > 0 || moyBEs[k] > 0;
   const activeMoyNames = activeMoyKeys.map(k => monthNames[k]);
   const moyTraded = activeMoyKeys.map(isMonthTraded);
-  const moyRRData = activeMoyKeys.map((k): number | null => {
+  const activeMoyCounts = activeMoyKeys.map(k => moyWins[k] + moyLosses[k] + moyBEs[k]);
+  const moyRRData = activeMoyKeys.map((k, i): number | null => {
     if (!isMonthTraded(k)) return null;
     if (selectedMetric === 'RR') return moyStats[k];
+    if (selectedMetric === 'AVG_R') return avgR(moyStats[k], activeMoyCounts[i]);
     if (selectedMetric === 'GAIN') {
       const sb = moyStartBalance[k] || initialDeposit;
       return (moyPnL[k] / sb) * 100;
@@ -438,9 +445,9 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
     maxConsWinAmt, maxConsLossAmt, countAtMaxWinAmt, countAtMaxLossAmt,
     avgConsWin, avgConsLoss,
     perfBalanceLabels, perfBalanceData, perfPnlData, perfPnlColors,
-    hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr, hourTraded,
-    activeDowNames, dowTraded, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs,
-    activeMoyNames, moyTraded, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs,
+    hourlyDataArr, hourlyColors, hourlyWinsArr, hourlyLossesArr, hourlyBEsArr, hourTraded, hourCounts,
+    activeDowNames, dowTraded, activeDowData, dowColors, activeDowWins, activeDowLosses, activeDowBEs, activeDowCounts,
+    activeMoyNames, moyTraded, moyRRData, moyRRColors, activeMoyWins, activeMoyLosses, activeMoyBEs, activeMoyCounts,
     matrixSorted,
     isAggregated: shouldAggregate
   };

@@ -154,3 +154,20 @@ test('a weekend day joins the weekday chart only when it was traded', () => {
   assert.deepEqual(p.activeDowNames, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   assert.deepEqual(p.activeDowData.slice(-1), [2]);
 });
+
+test('Avg R is the R per trade of each hour, weekday and month, and each bar knows its trade count', () => {
+  const p = computePerformance(trades, funding, filters({ selectedMetric: 'AVG_R' }));
+  // 10:00 holds a 2 R win and a 1 R loss; 15:00 a single 0.07 R break-even.
+  close(p.hourlyDataArr[10], 0.5);
+  close(p.hourlyDataArr[15], 0.07);
+  assert.equal(p.hourlyDataArr[9], 0);
+  assert.equal(p.hourCounts[10], 2);
+  assert.equal(p.hourCounts[15], 1);
+  // Monday: the win alone; Tuesday: the loss and the break-even.
+  close(p.activeDowData[0]!, 2);
+  close(p.activeDowData[1]!, -0.465);
+  assert.deepEqual(p.activeDowCounts, [1, 2, 0, 0, 0]);
+  close(p.moyRRData[0]!, 0.5);
+  close(p.moyRRData[1]!, 0.07);
+  assert.deepEqual(p.activeMoyCounts.slice(0, 3), [2, 1, 0]);
+});

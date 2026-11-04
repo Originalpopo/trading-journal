@@ -205,6 +205,25 @@ export default function PerformancePage() {
   // hangs from the line its bar starts at rather than looking as if it floats.
   const zeroLineColor = (c: { tick?: { value: number } }) => c.tick?.value === 0 ? '#d6d3d1' : '#fafaf9';
 
+  const metricLabel = selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'AVG_R' ? 'Avg R per trade' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)';
+  // What a bar of the Hour, Day and Month charts shows when pointed at: its value with its unit, and under it
+  // how many trades it holds, so a big or small bar can be weighed by how much there is behind it.
+  const chartTooltip = (counts: number[]) => ({
+    callbacks: {
+      label: (item: { dataset: { label?: string }; raw: unknown }) => {
+        const v = Number(item.raw ?? 0);
+        if (selectedMetric === 'COUNT') return `${item.dataset.label}: ${v}`;
+        if (selectedMetric === 'RR' || selectedMetric === 'AVG_R') return `${metricLabel}: ${formatNumber(v)} R`;
+        if (selectedMetric === 'GAIN') return `${metricLabel}: ${formatNumber(v)}%`;
+        return `${metricLabel}: ${isPrivacyMode ? '***' : `${v < 0 ? '-' : ''}$${formatNumber(Math.abs(v))}`}`;
+      },
+      footer: (items: { dataIndex: number }[]) => {
+        const n = items.length ? counts[items[0].dataIndex] ?? 0 : 0;
+        return `${n} ${n === 1 ? 'trade' : 'trades'}`;
+      },
+    },
+  });
+
   // Value labels drawn beside the bars of the Day of Week and Month of Year charts.
   const barValueLabels: Plugin<'bar'> = useMemo(() => ({
     id: 'barValueLabels',
@@ -246,7 +265,7 @@ export default function PerformancePage() {
             ctx.textBaseline = 'middle';
 
             let text = formatNumber(val);
-            if (selectedMetric === 'RR') text += ' R';
+            if (selectedMetric === 'RR' || selectedMetric === 'AVG_R') text += ' R';
             else if (selectedMetric === 'GAIN') text += '%';
             else text = isPrivacyMode ? '***' : val < 0 ? '-$' + formatNumber(Math.abs(val)) : '$' + formatNumber(Math.abs(val));
 
@@ -717,7 +736,8 @@ export default function PerformancePage() {
         <div className="flex bg-stone-100 p-0.5 rounded-lg" role="group" aria-label="Chart measure">
           {([
             { value: 'COUNT', label: 'W/L', title: 'Wins and losses' },
-            { value: 'RR', label: 'RR', title: 'Risk/Reward (R)' },
+            { value: 'RR', label: 'RR', title: 'Risk/Reward (R), total' },
+            { value: 'AVG_R', label: 'Avg R', title: 'Average R per trade' },
             { value: 'PNL', label: '$', title: 'Net P&L ($)' },
             { value: 'GAIN', label: '%', title: 'Gain (%)' },
           ] as const).map(m => (
@@ -753,7 +773,7 @@ export default function PerformancePage() {
                   { label: 'Losses', data: data.hourlyLossesArr, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
                   { label: 'BEs', data: data.hourlyBEsArr, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
                   { label: 'Wins', data: data.hourlyWinsArr, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
-                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6, maxBarThickness: 48 }]
+                ] : [{ label: metricLabel, data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6, maxBarThickness: 48 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
@@ -762,7 +782,7 @@ export default function PerformancePage() {
                   // Every hour labelled, standing upright so all 24 fit; an hour not traded in light grey.
                   x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { autoSkip: false, minRotation: 90, maxRotation: 90, color: (c: { index: number }) => data.hourTraded[c.index] ? '#78716c' : '#d6d3d1' } }
                 },
-                plugins: { legend: { display: false } }
+                plugins: { legend: { display: false }, tooltip: chartTooltip(data.hourCounts) }
               }}
             />
           </div>
@@ -780,7 +800,7 @@ export default function PerformancePage() {
                   { label: 'Losses', data: data.activeDowLosses, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
                   { label: 'BEs', data: data.activeDowBEs, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
                   { label: 'Wins', data: data.activeDowWins, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
-                ] : [{ label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)', data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6, maxBarThickness: 48 }]
+                ] : [{ label: metricLabel, data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6, maxBarThickness: 48 }]
               }}
               options={{
                 responsive: true, maintainAspectRatio: false,
@@ -790,7 +810,7 @@ export default function PerformancePage() {
                   // A day not traded yet named in light grey.
                   x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { color: (c: { index: number }) => data.dowTraded[c.index] ? '#78716c' : '#d6d3d1' } }
                 },
-                plugins: { legend: { display: false } }
+                plugins: { legend: { display: false }, tooltip: chartTooltip(data.activeDowCounts) }
               }}
               plugins={[barValueLabels]}
             />
@@ -812,7 +832,7 @@ export default function PerformancePage() {
                 { label: 'Wins', data: data.activeMoyWins, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
               ] : [
                 {
-                  label: selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)',
+                  label: metricLabel,
                   data: data.moyRRData,
                   backgroundColor: data.moyRRColors,
                   borderRadius: 6,
@@ -833,7 +853,7 @@ export default function PerformancePage() {
                   font: (c: { chart: { width: number } }) => ({ size: c.chart.width / 12 < 44 ? 10 : 12 }),
                 } }
               },
-              plugins: { legend: { display: false } }
+              plugins: { legend: { display: false }, tooltip: chartTooltip(data.activeMoyCounts) }
             }}
             plugins={[barValueLabels]}
           />
