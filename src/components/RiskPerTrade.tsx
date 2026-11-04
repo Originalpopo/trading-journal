@@ -55,20 +55,23 @@ export default function RiskPerTrade() {
   const pctSet = step.anchorBalance > 0 ? (step.riskNow / step.anchorBalance) * 100 : pct;
 
   return (
-    <div className="glass-card flex-1 px-5 py-4 md:px-6 flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap text-stone-950">
-          <Coins className="w-4 h-4 text-stone-400" />
-          Risk per Trade
-        </h3>
-        <span className="text-xl font-black text-stone-950 tabular-nums">{usd(step.riskNow)}</span>
-      </div>
+    <div className="glass-card flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-center">
+      {/* Title with its %, the dollars under it, both centred; what it was set from is in the tooltip. */}
+      <h3
+        className="text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 whitespace-nowrap text-stone-950"
+        title={isSet ? `${pctText(pctSet)} of ${usd(step.anchorBalance)}, set ${dateText(prefs.riskAnchor!.at)}` : `${pctText(pct)} of the balance now (% in Settings)`}
+      >
+        <Coins className="w-4 h-4 text-stone-400" />
+        Risk per Trade
+        <span className="text-stone-400 tracking-normal">{pctText(isSet ? pctSet : pct)}</span>
+      </h3>
+      <p className="text-2xl font-black text-stone-950 tabular-nums leading-none">{usd(step.riskNow)}</p>
 
-      <p className="text-[11px] font-semibold text-stone-400">
-        {isSet
-          ? <>{pctText(pctSet)} of {usd(step.anchorBalance)} · set {dateText(prefs.riskAnchor!.at)}</>
-          : <>{pctText(pct)} of the balance now · not set yet (% in <Link href="/settings" className="font-bold text-orange-400 hover:underline">Settings</Link>)</>}
-      </p>
+      {!isSet && (
+        <p className="text-[11px] font-semibold text-stone-400">
+          Not set yet · % in <Link href="/settings" className="font-bold text-orange-400 hover:underline">Settings</Link>
+        </p>
+      )}
 
       {/* The balances that call for the next step, or, once one is reached, why and the button for it. */}
       {isSet && !due && (
