@@ -123,8 +123,10 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const perfPnlColors = ['transparent'];
 
   let tradeCount = 0;
-  let longTrades = 0, longWon = 0, longLost = 0;
-  let shortTrades = 0, shortWon = 0, shortLost = 0;
+  let longTrades = 0, longWon = 0, longLost = 0, longPnl = 0, longRr = 0;
+  let shortTrades = 0, shortWon = 0, shortLost = 0, shortPnl = 0, shortRr = 0;
+  // R of the winning and losing trades, for the average win and loss in R.
+  let sumWinR = 0, winRCount = 0, sumLossR = 0, lossRCount = 0;
 
   let onPlanTrades = 0, onPlanPnL = 0;
   let offPlanTrades = 0, offPlanPnL = 0;
@@ -201,11 +203,17 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
         longTrades++;
         if (isWin) longWon++;
         if (isLoss) longLost++;
+        longPnl = addMoney(longPnl, pnl);
+        longRr += rrVal;
       } else if (t.side === 'SELL') {
         shortTrades++;
         if (isWin) shortWon++;
         if (isLoss) shortLost++;
+        shortPnl = addMoney(shortPnl, pnl);
+        shortRr += rrVal;
       }
+      if (isWin) { sumWinR += rrVal; winRCount++; }
+      else if (isLoss) { sumLossR += rrVal; lossRCount++; }
 
       const tfVals = t.tf ? t.tf.split(',').map((s: string) => s.trim()).filter(Boolean) : ['none'];
       if (tfVals.length === 0) tfVals.push('none');
@@ -376,6 +384,8 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   // Break-evens are left out, as in the main win rate.
   const longWinPct = longWon + longLost > 0 ? (longWon / (longWon + longLost)) * 100 : 0;
   const shortWinPct = shortWon + shortLost > 0 ? (shortWon / (shortWon + shortLost)) * 100 : 0;
+  const avgWinR = winRCount > 0 ? sumWinR / winRCount : 0;
+  const avgLossR = lossRCount > 0 ? sumLossR / lossRCount : 0; // below 0
   
   const totalPlanTrades = onPlanTrades + offPlanTrades;
   const onPlanPct = totalPlanTrades > 0 ? (onPlanTrades / totalPlanTrades) * 100 : 0;
@@ -437,7 +447,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
     tfStats, tfMatrixSorted,
     netProfit, profitFactor, expectedPayoff, expectancyR, mainWinRate,
     totalTrades, winPct, lossPct, bePct, profitTradesCount, lossTradesCount, beTradesCount,
-    longWinPct, shortWinPct, longTrades, shortTrades,
+    longWinPct, shortWinPct, longTrades, shortTrades, longPnl, longRr, shortPnl, shortRr, avgWinR, avgLossR,
     onPlanPct, offPlanPct, onPlanPnL, offPlanPnL,
     avgWin, avgLoss, avgBE, holdWin, holdLoss,
     largestProfit, largestLoss, grossProfit, grossLoss, sharpeRatio,

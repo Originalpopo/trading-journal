@@ -113,6 +113,30 @@ function SideMatrixTable({ title, firstColumn, shortFirstColumn, rows, formatCur
   );
 }
 
+// A row's P&L as a bar split at 0, as the Calendar's target line: losses fill red leftwards from 0, profits
+// orange rightwards, each against the largest on its side among the rows shown. A side no row reaches is left
+// out, and each side has an exact width, so 0 lines up on every row.
+function SplitBar({ value, maxPos, maxNeg }: { value: number; maxPos: number; maxNeg: number }) {
+  const total = maxPos + maxNeg;
+  const negRatio = total > 0 ? (maxNeg / total) * 100 : 50;
+  const posRatio = total > 0 ? (maxPos / total) * 100 : 50;
+  const width = (ratio: number) => (maxPos > 0 && maxNeg > 0 ? `calc(${ratio}% - 2px)` : '100%');
+  return (
+    <div className="h-2.5 flex items-center justify-between">
+      {maxNeg > 0 && (
+        <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-end" style={{ width: width(negRatio) }}>
+          {value < 0 && <div className="h-full bg-red-900 rounded-full" style={{ width: `${(-value / maxNeg) * 100}%` }}></div>}
+        </div>
+      )}
+      {maxPos > 0 && (
+        <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-start" style={{ width: width(posRatio) }}>
+          {value > 0 && <div className="h-full bg-orange-400 rounded-full" style={{ width: `${(value / maxPos) * 100}%` }}></div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PerformancePage() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const formatCurrency = (val: number) => formatCurrencyHelper(val, isPrivacyMode);
@@ -559,22 +583,29 @@ export default function PerformancePage() {
             <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Direction</span>
             </div>
-            <div className="space-y-3 mt-2">
-              <div>
-                <div className="flex justify-between text-[10px] font-bold mb-1">
-                  <span className="text-stone-600">Buy <span className="text-stone-400 font-normal">({data.longTrades})</span></span>
-                  <span className="text-stone-950">{formatNumber(data.longWinPct)}%</span>
+            {/* Buy and Sell read as the Timeframe rows: P&L as a bar split at 0, then $ and R. Pointing at Buy or
+                Sell shows its trades and win rate. */}
+            {(() => {
+              const sides = [
+                { label: 'Buy', trades: data.longTrades, pnl: data.longPnl, rr: data.longRr, winPct: data.longWinPct },
+                { label: 'Sell', trades: data.shortTrades, pnl: data.shortPnl, rr: data.shortRr, winPct: data.shortWinPct },
+              ];
+              const maxPos = Math.max(0, ...sides.map(x => x.pnl));
+              const maxNeg = Math.max(0, ...sides.map(x => -x.pnl));
+              return (
+                <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
+                  {sides.map(x => (
+                    <div key={x.label} className="contents">
+                      <span className="w-7 text-[10px] font-bold text-stone-950" title={`${x.trades} ${x.trades === 1 ? 'trade' : 'trades'} · win rate ${formatNumber(x.winPct)}%`}>{x.label}</span>
+                      {x.trades > 0 ? <SplitBar value={x.pnl} maxPos={maxPos} maxNeg={maxNeg} /> : <div className="h-2.5 bg-stone-100 rounded-full" />}
+                      <div className={`text-[10px] font-bold ${x.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
+                        {formatCurrency(x.pnl)} <span className="text-stone-300 font-normal mx-0.5">|</span> <span className={x.rr >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatNumber(x.rr)} R</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.longWinPct}%` }}></div></div>
-              </div>
-              <div>
-                <div className="flex justify-between text-[10px] font-bold mb-1">
-                  <span className="text-stone-600">Sell <span className="text-stone-400 font-normal">({data.shortTrades})</span></span>
-                  <span className="text-stone-950">{formatNumber(data.shortWinPct)}%</span>
-                </div>
-                <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-950 transition-all duration-500" style={{ width: `${data.shortWinPct}%` }}></div></div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-1">
@@ -627,40 +658,15 @@ export default function PerformancePage() {
                 
                 const maxPosPnl = Math.max(0, ...validTfs.map(tf => data.tfStats[tf].pnl));
                 const maxNegPnl = Math.max(0, ...validTfs.map(tf => -data.tfStats[tf].pnl));
-                const totalRange = maxPosPnl + maxNegPnl;
-                
-                const negRatio = totalRange > 0 ? (maxNegPnl / totalRange) * 100 : 50;
-                const posRatio = totalRange > 0 ? (maxPosPnl / totalRange) * 100 : 50;
-                // Each side's exact width, less half the 4px gap when both sides are there, so 0 lines up on every row.
-                const trackWidth = (ratio: number) => (maxPosPnl > 0 && maxNegPnl > 0 ? `calc(${ratio}% - 2px)` : '100%');
-                
+
                 return validTfs.slice(normalizedPage * 4, normalizedPage * 4 + 4).map(tf => {
                   const stat = data.tfStats[tf];
-                  
-                  let negWidth = 0;
-                  let posWidth = 0;
-                  if (stat.pnl < 0 && maxNegPnl > 0) negWidth = (Math.abs(stat.pnl) / maxNegPnl) * 100;
-                  if (stat.pnl > 0 && maxPosPnl > 0) posWidth = (stat.pnl / maxPosPnl) * 100;
-                  
                   return (
                     <div key={tf} className="contents">
                       <div className="w-7 shrink-0 flex items-baseline text-[10px]">
                         <span className="font-bold text-stone-950">{tf}</span>
                       </div>
-                      {/* Split at 0 into two bars with a small gap, as the Calendar's target line: losses fill red
-                          leftwards from 0, profits orange rightwards. A side no timeframe reaches is left out. */}
-                      <div className="h-2.5 flex items-center justify-between">
-                        {maxNegPnl > 0 && (
-                          <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-end" style={{ width: trackWidth(negRatio) }}>
-                            {stat.pnl < 0 && <div className="h-full bg-red-900 rounded-full" style={{ width: `${negWidth}%` }}></div>}
-                          </div>
-                        )}
-                        {maxPosPnl > 0 && (
-                          <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-start" style={{ width: trackWidth(posRatio) }}>
-                            {stat.pnl > 0 && <div className="h-full bg-orange-400 rounded-full" style={{ width: `${posWidth}%` }}></div>}
-                          </div>
-                        )}
-                      </div>
+                      <SplitBar value={stat.pnl} maxPos={maxPosPnl} maxNeg={maxNegPnl} />
                       <div className={`w-auto shrink-0 text-left text-[10px] font-bold ${stat.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
                         {formatCurrency(stat.pnl)} <span className="text-stone-300 font-normal mx-0.5">|</span> <span className={stat.rr >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatNumber(stat.rr)} R</span>
                       </div>
@@ -677,26 +683,23 @@ export default function PerformancePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Averages & Time</div>
-            <div className="flex justify-between"><span className="text-stone-500">Avg Win</span><span className="font-bold text-orange-400">{formatCurrency(data.avgWin)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Avg Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.avgLoss)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-500">Avg Win</span><span className="font-bold text-orange-400">{formatCurrency(data.avgWin)} <span className="text-stone-300 font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
+            <div className="flex justify-between"><span className="text-stone-500">Avg Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.avgLoss)} <span className="text-stone-300 font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Avg BE</span><span className="font-bold text-stone-400">{formatCurrency(data.avgBE)}</span></div>
             <div className="flex justify-between pt-1"><span className="text-stone-500">Hold (Win)</span><span className="font-bold text-stone-950">{data.holdWin}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Hold (Loss)</span><span className="font-bold text-stone-950">{data.holdLoss}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Totals & Extremes</div>
-            <div className="flex justify-between"><span className="text-stone-500">Gross Profit</span><span className="font-bold text-orange-400">{formatCurrency(data.grossProfit)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Gross Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.grossLoss)}</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-500">Largest Win</span><span className="font-bold text-orange-400">{formatCurrency(data.largestProfit)}</span></div>
+            <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Extremes</div>
+            <div className="flex justify-between"><span className="text-stone-500">Largest Win</span><span className="font-bold text-orange-400">{formatCurrency(data.largestProfit)}</span></div>
             <div className="flex justify-between"><span className="text-stone-500">Largest Loss</span><span className="font-bold text-red-900">{formatCurrency(data.largestLoss)}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Risk & Drawdowns</div>
-            <div className="flex justify-between"><span className="text-stone-500">Absolute DD</span><span className="font-bold text-red-900">{formatCurrency(data.absoluteDD)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Maximal DD</span><span className="font-bold text-red-900">{formatCurrency(data.maxDrawdownAmt)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Relative DD</span><span className="font-bold text-red-900">{formatNumber(data.maxDrawdownPct)}%</span></div>
+            {/* The deepest fall from a peak, in dollars and, separately, the largest in % (they can be different falls). */}
+            <div className="flex justify-between"><span className="text-stone-500">Max DD</span><span className="font-bold text-red-900">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-500">Max DD (%)</span><span className="font-bold text-red-900">{formatNumber(data.maxDrawdownPct)}%</span></div>
             <div className="flex justify-between pt-1"><span className="text-stone-500">Recovery</span><span className="font-bold text-stone-950">{formatNumber(data.recoveryFactor)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Sharpe Ratio</span><span className="font-bold text-stone-950">{formatNumber(data.sharpeRatio)}</span></div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-4">
             <div className="text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Streaks</div>

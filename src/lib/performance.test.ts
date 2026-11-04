@@ -171,3 +171,14 @@ test('Avg R is the R per trade of each hour, weekday and month, and each bar kno
   close(p.moyRRData[1]!, 0.07);
   assert.deepEqual(p.activeMoyCounts.slice(0, 3), [2, 1, 0]);
 });
+
+test('Buy and Sell carry their P&L and R, and wins and losses their average R', () => {
+  const p = computePerformance(trades, funding, filters());
+  assert.equal(p.longPnl, 3.1);
+  close(p.longRr, 2.07);
+  assert.equal(p.shortPnl, -1.5);
+  close(p.shortRr, -1);
+  // The break-even is in neither average.
+  close(p.avgWinR, 2);
+  close(p.avgLossR, -1);
+});
