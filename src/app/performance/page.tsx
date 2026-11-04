@@ -314,7 +314,7 @@ export default function PerformancePage() {
             </span>
           )}
         </div>
-        <div className="flex-1 relative w-full h-full">
+        <div className="flex-1 min-h-0 relative w-full">
           <Line
             key={`pnl-${isPrivacyMode}`}
             data={{
@@ -764,7 +764,7 @@ export default function PerformancePage() {
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Hour of Day
           </h3>
-          <div className="flex-1 relative w-full h-full">
+          <div className="flex-1 min-h-0 relative w-full">
             <Bar
               key={`hour-${selectedMetric}-${isPrivacyMode}`}
               data={{
@@ -791,7 +791,7 @@ export default function PerformancePage() {
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Day of Week
           </h3>
-          <div className="flex-1 relative w-full h-full">
+          <div className="flex-1 min-h-0 relative w-full">
             <Bar
               key={`dow-${selectedMetric}-${isPrivacyMode}`}
               data={{
@@ -821,7 +821,7 @@ export default function PerformancePage() {
         <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Month of Year
         </h3>
-        <div className="flex-1 relative w-full h-full">
+        <div className="flex-1 min-h-0 relative w-full">
           <Bar
             key={`moy-${selectedMetric}-${isPrivacyMode}`}
             data={{
