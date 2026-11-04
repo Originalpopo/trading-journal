@@ -97,7 +97,7 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
     today: "border-2 border-orange-400 bg-white",
     missed: "border-2 border-orange-400 bg-white text-orange-400",
     noTrades: "border-2 border-dashed border-stone-300 bg-stone-50",
-    upcoming: "border-2 border-stone-200 bg-white",
+    upcoming: "border-2 border-stone-200",
   };
   return (
     <div className="flex items-center pb-4">
