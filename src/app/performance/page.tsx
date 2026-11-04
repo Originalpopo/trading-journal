@@ -617,7 +617,8 @@ export default function PerformancePage() {
                     </div>
                   )}
                 </div>
-                <div className="space-y-3 mt-2">
+                {/* One grid for all rows, so every bar has the same width whatever its figures. */}
+                <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
                   {validTfs.length === 0 ? null : (() => {
                 
                 const totalPages = Math.ceil(validTfs.length / 4);
@@ -630,6 +631,8 @@ export default function PerformancePage() {
                 
                 const negRatio = totalRange > 0 ? (maxNegPnl / totalRange) * 100 : 50;
                 const posRatio = totalRange > 0 ? (maxPosPnl / totalRange) * 100 : 50;
+                // Each side's exact width, less half the 4px gap when both sides are there, so 0 lines up on every row.
+                const trackWidth = (ratio: number) => (maxPosPnl > 0 && maxNegPnl > 0 ? `calc(${ratio}% - 2px)` : '100%');
                 
                 return validTfs.slice(normalizedPage * 4, normalizedPage * 4 + 4).map(tf => {
                   const stat = data.tfStats[tf];
@@ -640,21 +643,23 @@ export default function PerformancePage() {
                   if (stat.pnl > 0 && maxPosPnl > 0) posWidth = (stat.pnl / maxPosPnl) * 100;
                   
                   return (
-                    <div key={tf} className="flex items-center gap-2">
+                    <div key={tf} className="contents">
                       <div className="w-7 shrink-0 flex items-baseline text-[10px]">
                         <span className="font-bold text-stone-950">{tf}</span>
                       </div>
-                      <div className="flex-1 h-2.5 bg-stone-100 rounded-full flex items-center overflow-hidden">
-                        <div className="h-full flex justify-end" style={{ width: `${negRatio}%` }}>
-                          {stat.pnl < 0 && (
-                            <div className="h-full bg-red-900 rounded-full" style={{ width: `${negWidth}%` }}></div>
-                          )}
-                        </div>
-                        <div className="h-full flex justify-start" style={{ width: `${posRatio}%` }}>
-                          {stat.pnl > 0 && (
-                            <div className="h-full bg-orange-400 rounded-full" style={{ width: `${posWidth}%` }}></div>
-                          )}
-                        </div>
+                      {/* Split at 0 into two bars with a small gap, as the Calendar's target line: losses fill red
+                          leftwards from 0, profits orange rightwards. A side no timeframe reaches is left out. */}
+                      <div className="h-2.5 flex items-center justify-between">
+                        {maxNegPnl > 0 && (
+                          <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-end" style={{ width: trackWidth(negRatio) }}>
+                            {stat.pnl < 0 && <div className="h-full bg-red-900 rounded-full" style={{ width: `${negWidth}%` }}></div>}
+                          </div>
+                        )}
+                        {maxPosPnl > 0 && (
+                          <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-start" style={{ width: trackWidth(posRatio) }}>
+                            {stat.pnl > 0 && <div className="h-full bg-orange-400 rounded-full" style={{ width: `${posWidth}%` }}></div>}
+                          </div>
+                        )}
                       </div>
                       <div className={`w-auto shrink-0 text-left text-[10px] font-bold ${stat.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
                         {formatCurrency(stat.pnl)} <span className="text-stone-300 font-normal mx-0.5">|</span> <span className={stat.rr >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatNumber(stat.rr)} R</span>
