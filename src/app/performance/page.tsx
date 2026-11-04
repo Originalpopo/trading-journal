@@ -24,6 +24,7 @@ import {
 import { Line, Bar } from 'react-chartjs-2';
 
 import PageHeader from "@/components/PageHeader";
+import SystemReview from "@/components/SystemReview";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -887,6 +888,7 @@ export default function PerformancePage() {
 
       <SideMatrixTable title="Buy VS Sell Analysis" firstColumn="Symbol" rows={data.matrixSorted} formatCurrency={formatCurrency} />
       <SideMatrixTable title="Timeframe Analysis" firstColumn="Timeframe" shortFirstColumn="TF" rows={data.tfMatrixSorted} formatCurrency={formatCurrency} />
+      <SystemReview />
     </div>
   );
 }
