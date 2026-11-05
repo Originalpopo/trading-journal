@@ -18,6 +18,7 @@ import { formatNumber } from "@/lib/utils";
 import { classifyTrade, parseRisk } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
 import PageHeader from "@/components/PageHeader";
+import "@/lib/chartTooltip";
 import {
   simulatePath, simulateOutlook, binaryOutcomes, cautiousWinRate,
   type SimParams, type SimPath, type SimOutlook,
@@ -376,6 +377,15 @@ export default function SimulationPage() {
                       display: true,
                       position: 'top',
                       labels: { usePointStyle: true, boxWidth: 8 }
+                    },
+                    // Each path's balance at that trade, in dollars.
+                    tooltip: {
+                      callbacks: {
+                        label: (item) => {
+                          const v = Number(item.raw ?? 0);
+                          return `${item.dataset.label}: ${v < 0 ? '-' : ''}$${formatNumber(Math.abs(v))}`;
+                        }
+                      }
                     }
                   },
                   scales: {

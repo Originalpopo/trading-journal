@@ -29,6 +29,7 @@ import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } fro
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 import PageHeader from "@/components/PageHeader";
+import "@/lib/chartTooltip";
 const LAST_DOT_RADIUS = 6;
 // An orange dot on the Equity line's last point (its number is on the chart's title line).
 const dashboardLastPointsPlugin: Plugin<'line'> = {
@@ -47,15 +48,20 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
   }
 };
 
-// While the equity is below its highest point, a faint dashed line marks that peak.
-const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: number; labelX?: number }> = {
+// While the equity is below its highest point, a faint dashed line marks that peak: from the peak's point on the
+// orange line to its latest point, the stretch the equity has been under it.
+const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: number; current: number }> = {
   id: 'peakEquityLine',
   afterDatasetsDraw: (chart, _args, options) => {
-    const { peak, current, labelX = 0 } = options;
-    if (peak === null || current >= peak || chart.getDatasetMeta(0).hidden) return;
+    const { peak, peakIndex, current } = options;
+    const meta = chart.getDatasetMeta(0);
+    if (peak === null || current >= peak || meta.hidden) return;
     const yScale = chart.scales.y;
-    if (!yScale) return;
-    const { left, right } = chart.chartArea;
+    const start = meta.data[Math.min(peakIndex, meta.data.length - 1)];
+    const end = meta.data[meta.data.length - 1];
+    if (!yScale || !start || !end) return;
+    const left = start.x;
+    const right = end.x;
     const y = yScale.getPixelForValue(peak);
     const ctx = chart.ctx;
     ctx.save();
@@ -73,11 +79,12 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; current: numbe
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
     const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
-    ctx.fillText(
-      isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)}`,
-      left + labelX + 4,
-      y - 4,
-    );
+    // With how far the equity now is below it, e.g. "Peak $41.08 (-$13.30)".
+    const gap = subMoney(current, peak);
+    const label = isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)} (-$${formatNumber(Math.abs(gap))})`;
+    // Above the line's start; moved left when it would run past the page's right edge (a recent peak).
+    const labelX = Math.max(0, Math.min(left + 4, chart.width - ctx.measureText(label).width - 4));
+    ctx.fillText(label, labelX, y - 4);
     ctx.restore();
   }
 };
@@ -210,6 +217,9 @@ export default function Dashboard() {
     let cumulativePnL = 0;
     // Taken from every trade, so a peak inside a day still counts when the chart shows one point per day.
     let peakPnL = 0;
+    // Where on the chart the peak is: its point, or with one point per day, that day's point.
+    let peakIndex = 0;
+    let peakDateKey = '';
 
     const equityData = [0];
     const balanceData = [0];
@@ -235,13 +245,16 @@ export default function Dashboard() {
         const t = evt.data;
         runningBalance = addMoney(runningBalance, t.profit);
         cumulativePnL = addMoney(cumulativePnL, t.profit);
-        if (cumulativePnL > peakPnL) peakPnL = cumulativePnL;
+        const isNewPeak = cumulativePnL > peakPnL;
+        if (isNewPeak) peakPnL = cumulativePnL;
 
         if (shouldAggregate) {
           const d = new Date(evt.timeObj);
           const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
           dailyPoints.set(dateKey, { balance: runningBalance, pnl: cumulativePnL, timestamp: evt.timeObj });
+          if (isNewPeak) peakDateKey = dateKey;
         } else {
+          if (isNewPeak) peakIndex = equityData.length;
           equityData.push(cumulativePnL);
           balanceData.push(runningBalance);
           const d = new Date(evt.timeObj);
@@ -255,8 +268,9 @@ export default function Dashboard() {
     const drawdowns = computePnlDrawdown(timelineEvents.map(evt => ({ ...evt.data, type: evt.type, time: evt.timeObj })));
 
     if (shouldAggregate) {
-      const sortedDaily = Array.from(dailyPoints.values()).sort((a, b) => a.timestamp - b.timestamp);
-      sortedDaily.forEach(day => {
+      const sortedDaily = Array.from(dailyPoints.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
+      sortedDaily.forEach(([dateKey, day]) => {
+        if (dateKey === peakDateKey) peakIndex = equityData.length;
         equityData.push(day.pnl);
         balanceData.push(day.balance);
         const d = new Date(day.timestamp);
@@ -277,7 +291,7 @@ export default function Dashboard() {
       avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
       maxStreakW: summary.maxConsWinCount, maxStreakL: summary.maxConsLossCount,
       drawdowns,
-      peakPnL, currentPnL: cumulativePnL,
+      peakPnL, peakIndex, currentPnL: cumulativePnL,
       equityData, balanceData, chartLabels
     };
   }, [trades, funding]);
@@ -307,6 +321,11 @@ export default function Dashboard() {
           fill: false,
           tension: 0.4,
           pointRadius: 0,
+          // A small orange dot, ringed in white, on the point being looked at.
+          pointHoverRadius: 4,
+          pointHoverBorderWidth: 2,
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBackgroundColor: '#fb923c',
           yAxisID: 'y'
         },
         {
@@ -318,6 +337,7 @@ export default function Dashboard() {
           fill: true,
           tension: 0.4,
           pointRadius: 0,
+          pointHoverRadius: 0,
           yAxisID: 'y1'
         }
       ]
@@ -330,8 +350,6 @@ export default function Dashboard() {
   const netText = isPrivacyMode ? '***' : `${data.net < 0 ? '-' : ''}$${formatNumber(Math.abs(data.net))}`;
   const balanceText = isPrivacyMode ? '***' : `$${formatNumber(data.runningBalance)}`;
 
-  const lastEquity = data.equityData[data.equityData.length - 1] ?? 0;
-  const lastLabel = (value: number) => isPrivacyMode ? '***' : formatNumber(value);
   // The last dot ends 10px short of the page's right edge.
   const chartRightPadding = LAST_DOT_RADIUS + 10;
 
@@ -346,8 +364,15 @@ export default function Dashboard() {
       tooltip: {
         mode: 'index' as const,
         intersect: false,
+        callbacks: {
+          label: (item: { datasetIndex: number; raw: unknown }) => {
+            const v = Number(item.raw ?? 0);
+            const name = item.datasetIndex === 0 ? 'Equity' : 'Balance';
+            return `${name}: ${isPrivacyMode ? '***' : `${v < 0 ? '-' : ''}$${formatNumber(Math.abs(v))}`}`;
+          },
+        },
       },
-      peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, current: data.currentPnL, labelX: bleed.left }
+      peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, peakIndex: data.peakIndex, current: data.currentPnL }
     },
     scales: {
       x: { display: false },
@@ -515,13 +540,11 @@ export default function Dashboard() {
       </div>
 
       <div className="px-6 pt-6 h-[350px] flex flex-col">
-        {/* The Equity's last number follows the title (the chart reaches the page edge, no room beside the
-            dot); on a narrow screen it wraps onto a line of its own. */}
-        <div ref={chartTitleRef} className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4">
+        {/* The title alone; the equity's figure is not shown (the Peak line's label gives how far below it is). */}
+        <div ref={chartTitleRef} className="flex items-center mb-4">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
           </h3>
-          <span title="Equity (PnL)" className="text-[11px] font-bold text-orange-400 tabular-nums">{lastLabel(lastEquity)}</span>
         </div>
         <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
           <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin, pageFillPlugin]} />

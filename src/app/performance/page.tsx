@@ -25,6 +25,7 @@ import { Line, Bar } from 'react-chartjs-2';
 
 import PageHeader from "@/components/PageHeader";
 import SystemReview from "@/components/SystemReview";
+import "@/lib/chartTooltip";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -413,12 +414,12 @@ export default function PerformancePage() {
                     label: function(context: any) {
                       const val = context.parsed.y;
                       if (context.dataset.label === 'Account Balance') {
-                        return ` Balance: ${isPrivacyMode ? '***' : (val < 0 ? '-$' : '$') + formatNumber(Math.abs(val))}`;
+                        return `Balance: ${isPrivacyMode ? '***' : (val < 0 ? '-$' : '$') + formatNumber(Math.abs(val))}`;
                       }
                       if (context.dataset.label === 'Net P&L') {
-                        return ` Net P&L: ${isPrivacyMode ? '***' : (val < 0 ? '-$' : '$') + formatNumber(Math.abs(val))}`;
+                        return `Net P&L: ${isPrivacyMode ? '***' : (val < 0 ? '-$' : '$') + formatNumber(Math.abs(val))}`;
                       }
-                      return ` ${context.dataset.label}: ${val}`;
+                      return `${context.dataset.label}: ${val}`;
                     }
                   }
                 }

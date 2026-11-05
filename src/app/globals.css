@@ -37,6 +37,29 @@ body {
     @apply bg-white border border-stone-200 rounded-[1.25rem] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)];
 }
 
+/* The balloon of every chart (src/lib/chartTooltip.ts): white, a thin border, a circle per line. */
+.chart-tooltip {
+    @apply absolute z-20 pointer-events-none whitespace-nowrap min-w-[120px] bg-white border border-stone-200 rounded-xl px-3 py-2 shadow-[0_4px_12px_rgba(0,0,0,0.06)] opacity-0 transition-opacity duration-150;
+}
+.chart-tooltip-title {
+    @apply text-[10px] font-semibold text-stone-400 mb-1;
+}
+.chart-tooltip-row {
+    @apply flex items-center gap-2 text-[11px] leading-5;
+}
+.chart-tooltip-dot {
+    @apply w-1.5 h-1.5 rounded-full shrink-0;
+}
+.chart-tooltip-name {
+    @apply font-semibold text-stone-500;
+}
+.chart-tooltip-value {
+    @apply ml-auto pl-4 font-bold text-stone-950 tabular-nums;
+}
+.chart-tooltip-footer {
+    @apply mt-1 pt-1 border-t border-stone-100 text-[10px] font-semibold text-stone-400;
+}
+
 .page-btn.active {
     @apply bg-orange-400 text-white border-orange-400 shadow-[0_4px_12px_rgba(251,146,60,0.2)];
 }
