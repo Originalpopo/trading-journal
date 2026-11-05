@@ -376,7 +376,14 @@ export default function SimulationPage() {
                     legend: {
                       display: true,
                       position: 'top',
-                      labels: { usePointStyle: true, boxWidth: 8 }
+                      // Small solid circles (6px, as in the charts' tooltips), without the line's 2px ring.
+                      labels: {
+                        usePointStyle: true,
+                        boxWidth: 6,
+                        boxHeight: 6,
+                        generateLabels: (chart) =>
+                          ChartJS.defaults.plugins.legend.labels.generateLabels(chart).map(item => ({ ...item, lineWidth: 0 })),
+                      }
                     },
                     // Each path's balance at that trade, in dollars.
                     tooltip: {
