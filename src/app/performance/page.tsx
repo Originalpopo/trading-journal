@@ -37,7 +37,31 @@ ChartJS.register(
   Filler
 );
 
-const formatCurrencyHelper = (val: number, isPrivacyMode?: boolean) => {
+// The Balance area's grey carried out past the chart, as on the Dashboard: from the last Balance point to the
+// page's right edge (and from the left edge to the first point), and under the chart's bottom down to the canvas edge, where the Results band (same grey)
+// takes over.
+const BALANCE_FILL = 'rgba(0, 0, 0, 0.03)';
+const balanceFillPlugin: Plugin<'line'> = {
+  id: 'balanceFill',
+  beforeDatasetsDraw: (chart) => {
+    const points = chart.getDatasetMeta(0).data;
+    const first = points[0];
+    const last = points[points.length - 1];
+    if (!first || !last) return;
+    const x = Math.round(last.x);
+    const x0 = Math.round(first.x);
+    const { bottom } = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.fillStyle = BALANCE_FILL;
+    ctx.fillRect(0, first.y, x0, bottom - first.y); // left of the first point, from the page's left edge
+    ctx.fillRect(x, last.y, chart.width - x, bottom - last.y);
+    ctx.fillRect(0, bottom, chart.width, chart.height - bottom);
+    ctx.restore();
+  },
+};
+
+const formatCurrencyHelper =(val: number, isPrivacyMode?: boolean) => {
   if (isPrivacyMode) return '***';
   return val < 0 ? `-$${formatNumber(Math.abs(val))}` : `$${formatNumber(val)}`;
 };
@@ -170,17 +194,39 @@ export default function PerformancePage() {
   }, []);
 
   const [selectedMetric, setSelectedMetric] = useState('GAIN');
-  // Below md the balance chart's last number moves to its title line, so the chart gets the full width (as the
-  // Dashboard's Equity and Balance does).
-  const [isPhone, setIsPhone] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsPhone(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
   const [tfPage, setTfPage] = useState(0);
+
+  // Profit and Balance has no card: as the Dashboard's Equity and Balance, the chart runs edge to edge of the
+  // page (sidebar to the right edge) while its title stays in the column. `bleed` is how far the page reaches
+  // past the title row on each side, measured whenever the page changes width.
+  const chartTitleRef = useRef<HTMLDivElement>(null);
+  const chartBoxRef = useRef<HTMLDivElement>(null);
+  const [bleed, setBleed] = useState({ left: 0, right: 0 });
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+    const observer = new ResizeObserver(() => {
+      const title = chartTitleRef.current;
+      if (title) {
+        const box = main.getBoundingClientRect();
+        const row = title.getBoundingClientRect();
+        const left = Math.max(0, Math.floor(row.left - box.left - main.clientLeft));
+        const right = Math.max(0, Math.floor(box.left + main.clientLeft + main.clientWidth - row.right));
+        setBleed(b => (b.left === left && b.right === right ? b : { left, right }));
+      }
+    });
+    observer.observe(main);
+    return () => observer.disconnect();
+    // Again once loading is over: the chart's title row isn't on the page before that.
+  }, [isLoading]);
+  // A new bleed widens the chart's box; Chart.js can miss that change, so the chart is sized to it again.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const canvas = chartBoxRef.current?.querySelector('canvas');
+      if (canvas) ChartJS.getChart(canvas)?.resize();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [bleed]);
 
   const availableYears = useMemo(() => {
     const years = Array.from(new Set(trades.map(t => new Date(t.time.replace(' ', 'T')).getFullYear()))).sort((a, b) => b - a);
@@ -210,33 +256,6 @@ export default function PerformancePage() {
     [trades, funding, selectedYear, selectedTfs, selectedPlan, selectedMetric],
   );
 
-  const lastBalancePointPlugin: Plugin<'line'> = useMemo(() => ({
-    id: 'lastBalancePointPlugin',
-    afterDatasetsDraw(chart) {
-      const ctx = chart.ctx;
-      const meta = chart.getDatasetMeta(0);
-      if (!meta.hidden && meta.data.length > 0) {
-        const lastElement = meta.data[meta.data.length - 1];
-        const lastVal = chart.data.datasets[0].data[meta.data.length - 1] as number;
-        const position = tooltipPositionOf(lastElement);
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(position.x, position.y, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = '#1c1917';
-        ctx.fill();
-
-        if (!isPhone) {
-          ctx.fillStyle = '#1c1917';
-          ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(isPrivacyMode ? '***' : formatNumber(lastVal), position.x + 12, position.y);
-        }
-        ctx.restore();
-      }
-    }
-  }), [isPrivacyMode, isPhone]);
 
   // The Hour, Day and Month charts draw their 0 line darker, and no axis line at the bottom, so a loss
   // hangs from the line its bar starts at rather than looking as if it floats.
@@ -340,8 +359,9 @@ export default function PerformancePage() {
         <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
       </PageHeader>
 
-      <div className="glass-card p-6 h-[350px] flex flex-col w-full">
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
+      {/* No card: the chart reaches the page's edges and its grey runs straight into the Results band below. */}
+      <div className="!mb-0 pt-6 h-[350px] flex flex-col w-full">
+        <div ref={chartTitleRef} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
           <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
             <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Profit and Balance
           </h3>
@@ -350,14 +370,10 @@ export default function PerformancePage() {
               Daily Aggregated ({data.perfBalanceData.length - 1} Days)
             </span>
           )}
-          <span title="Balance" className="md:hidden ml-auto flex items-center gap-1 text-[11px] font-bold text-stone-900">
-            <span className="w-2 h-2 rounded-full bg-stone-900"></span>
-            {isPrivacyMode ? '***' : formatNumber(data.perfBalanceData[data.perfBalanceData.length - 1] ?? 0)}
-          </span>
         </div>
-        <div className="flex-1 min-h-0 relative w-full">
+        <div ref={chartBoxRef} className="flex-1 min-h-0 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
           <Line
-            key={`pnl-${isPrivacyMode}-${isPhone}`}
+            key={`pnl-${isPrivacyMode}`}
             data={{
               labels: data.perfBalanceLabels,
               datasets: [
@@ -366,8 +382,9 @@ export default function PerformancePage() {
                   data: data.perfBalanceData,
                   borderColor: 'transparent',
                   borderWidth: 0,
-                  backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                  fill: true,
+                  backgroundColor: BALANCE_FILL,
+                  // Down to the chart's bottom (not the 0 line), where the grey carries on into Results.
+                  fill: 'start',
                   tension: 0.4,
                   pointRadius: 0,
                   yAxisID: 'y'
@@ -385,7 +402,8 @@ export default function PerformancePage() {
             }}
             options={{
               responsive: true, maintainAspectRatio: false,
-              layout: { padding: { top: 20, right: isPhone ? 8 : 80 } },
+              // No dot or figure on the last Balance point; the last bar ends 16px short of the page's right edge.
+              layout: { padding: { top: 20, right: 16 } },
               plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -411,12 +429,14 @@ export default function PerformancePage() {
                 y1: { display: true, position: 'left', grid: { color: '#fafaf9', drawOnChartArea: true }, ticks: { display: false }, border: { display: false }, grace: '10%' }
               }
             }}
-            plugins={[lastBalancePointPlugin]}
+            plugins={[balanceFillPlugin]}
           />
         </div>
       </div>
 
-      <div className="bg-stone-100/60 border border-stone-200 rounded-[1.25rem] p-6 flex flex-col w-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)]">
+      {/* No card around Results: a band of the Dashboard's grey (rgba(0,0,0,0.03)) behind it, reaching the page's
+          edges (sidebar to the right edge, clipped by <main>) while the content keeps to the column. */}
+      <div className="bg-black/[0.03] shadow-[0_0_0_100vmax_rgba(0,0,0,0.03)] [clip-path:inset(0_-100vmax)] py-6 flex flex-col w-full">
         {/* The filters sit in the corner of Results; folded behind the button, which turns orange while open,
             or while a filter is off its default even when folded. They filter the whole page, the charts too. */}
         <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 mb-4">
@@ -681,29 +701,30 @@ export default function PerformancePage() {
       })()}
     </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Averages & Time</div>
-            <div className="flex justify-between"><span className="text-stone-500">Avg Win</span><span className="font-bold text-orange-400">{formatCurrency(data.avgWin)} <span className="text-stone-300 font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Avg Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.avgLoss)} <span className="text-stone-300 font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Avg BE</span><span className="font-bold text-stone-400">{formatCurrency(data.avgBE)}</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-500">Hold (Win)</span><span className="font-bold text-stone-950">{data.holdWin}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Hold (Loss)</span><span className="font-bold text-stone-950">{data.holdLoss}</span></div>
+        {/* No cards here: the figures sit straight on the Results grey, in colours a step darker than in a white card so they stay clear. Same gaps and inset as the cards above (20px + their 1px border), so the text lines up with theirs. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="pt-1 px-[21px] text-[10px] space-y-2">
+            <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Averages & Time</div>
+            <div className="flex justify-between"><span className="text-stone-600">Avg Win</span><span className="font-bold text-orange-400">{formatCurrency(data.avgWin)} <span className="text-stone-400 font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Avg Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.avgLoss)} <span className="text-stone-400 font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Avg BE</span><span className="font-bold text-stone-500">{formatCurrency(data.avgBE)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-stone-600">Hold (Win)</span><span className="font-bold text-stone-950">{data.holdWin}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Hold (Loss)</span><span className="font-bold text-stone-950">{data.holdLoss}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Extremes</div>
-            <div className="flex justify-between"><span className="text-stone-500">Largest Win</span><span className="font-bold text-orange-400">{formatCurrency(data.largestProfit)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Largest Loss</span><span className="font-bold text-red-900">{formatCurrency(data.largestLoss)}</span></div>
+          <div className="pt-1 px-[21px] text-[10px] space-y-2">
+            <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Extremes</div>
+            <div className="flex justify-between"><span className="text-stone-600">Largest Win</span><span className="font-bold text-orange-400">{formatCurrency(data.largestProfit)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Largest Loss</span><span className="font-bold text-red-900">{formatCurrency(data.largestLoss)}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Risk & Drawdowns</div>
+          <div className="pt-1 px-[21px] text-[10px] space-y-2">
+            <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Risk & Drawdowns</div>
             {/* The deepest fall from a peak, in dollars and, separately, the largest in % (they can be different falls). */}
-            <div className="flex justify-between"><span className="text-stone-500">Max DD</span><span className="font-bold text-red-900">{formatCurrency(data.maxDrawdownAmt)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Max DD (%)</span><span className="font-bold text-red-900">{formatNumber(data.maxDrawdownPct)}%</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-500">Recovery</span><span className="font-bold text-stone-950">{formatNumber(data.recoveryFactor)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Max DD</span><span className="font-bold text-red-900">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Max DD (%)</span><span className="font-bold text-red-900">{formatNumber(data.maxDrawdownPct)}%</span></div>
+            <div className="flex justify-between pt-1"><span className="text-stone-600">Recovery</span><span className="font-bold text-stone-950">{formatNumber(data.recoveryFactor)}</span></div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-4">
-            <div className="text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 pb-1.5 mb-2">Streaks</div>
+          <div className="pt-1 px-[21px] space-y-4">
+            <div className="text-[10px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Streaks</div>
             
             {(() => {
               const maxWin = data.countAtMaxWinAmt || 0;
@@ -725,7 +746,7 @@ export default function PerformancePage() {
                       <span>Win Streaks</span>
                       <span>Loss Streaks</span>
                     </div>
-                    <div className="w-full h-6 bg-stone-100 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
+                    <div className="w-full h-6 bg-stone-200 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
                       <div className="h-full bg-orange-400 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${winPct}%` }}>
                         {maxWin > 0 ? maxWin : ''}
                       </div>
@@ -736,11 +757,11 @@ export default function PerformancePage() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <div className="w-full h-6 bg-stone-100 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
+                    <div className="w-full h-6 bg-stone-200 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
                       <div className="h-full bg-stone-950 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${avgWinPct}%` }}>
                         {avgWin > 0 ? avgWin : ''}
                       </div>
-                      <div className="h-full bg-stone-100 flex items-center justify-center text-stone-500 transition-all duration-500" style={{ width: `${avgLossPct}%` }}>
+                      <div className="h-full bg-stone-200 flex items-center justify-center text-stone-600 transition-all duration-500" style={{ width: `${avgLossPct}%` }}>
                         {avgLoss > 0 ? avgLoss : ''}
                       </div>
                     </div>
