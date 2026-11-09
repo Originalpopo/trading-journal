@@ -13,7 +13,7 @@ export default function PageHeader({ title, shortTitle, children }: {
 }) {
   return (
     <div className="flex items-center justify-between gap-4 h-9">
-      <h2 className="text-3xl font-extrabold text-stone-950 tracking-tight whitespace-nowrap">
+      <h2 className="text-3xl font-extrabold text-ink tracking-tight whitespace-nowrap">
         {shortTitle ? <><span className="md:hidden">{shortTitle}</span><span className="hidden md:inline">{title}</span></> : title}
       </h2>
       {children && <div className="flex items-center gap-2 md:gap-4 shrink-0">{children}</div>}
@@ -23,13 +23,13 @@ export default function PageHeader({ title, shortTitle, children }: {
 
 const VARIANTS = {
   // The page's main action.
-  primary: 'bg-orange-400 hover:bg-orange-500 disabled:bg-orange-200 text-white border border-transparent shadow-sm',
+  primary: 'bg-accent hover:bg-accent-strong disabled:bg-orange-200 text-white border border-transparent shadow-sm',
   // A second action beside a primary one.
-  secondary: 'bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-600 border border-transparent',
+  secondary: 'bg-surface-2 hover:bg-stone-200 disabled:opacity-50 text-stone-600 border border-transparent',
   // A lighter action in the orange family.
-  outline: 'bg-white hover:bg-orange-50 disabled:opacity-50 text-orange-400 border border-orange-200 shadow-sm',
+  outline: 'bg-white hover:bg-accent-soft disabled:opacity-50 text-accent border border-accent-line shadow-sm',
   // A small extra action, such as "+".
-  plain: 'bg-white border border-stone-200 hover:border-orange-300 hover:text-orange-400 disabled:opacity-50 text-stone-500 shadow-sm',
+  plain: 'bg-white border border-line hover:border-orange-300 hover:text-accent disabled:opacity-50 text-ink-muted shadow-sm',
 };
 
 // A title-line button: icon and label on a computer, the icon alone (36px square) on a phone.

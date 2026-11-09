@@ -49,7 +49,7 @@ export default function RiskStepSetting() {
 
   const field = (f: Field, label: string, def: number, max: number, step: string) => (
     <div className="space-y-2">
-      <label className="block text-sm font-bold text-stone-950">{label} <span className="font-medium text-stone-400">(default {def})</span></label>
+      <label className="block text-sm font-bold text-ink">{label} <span className="font-medium text-ink-faint">(default {def})</span></label>
       <input type="number" step={step} min="0" max={max} value={shown(f)} onChange={(e) => setEdits(x => ({ ...x, [f]: e.target.value }))} className={SETTINGS_INPUT} />
     </div>
   );
@@ -69,7 +69,7 @@ export default function RiskStepSetting() {
       </div>
 
       {pct > 0 && (
-        <p className="mt-4 text-xs font-medium text-stone-500">
+        <p className="mt-4 text-xs font-medium text-ink-muted">
           ที่ {+pct.toFixed(2)}% ต่อเทรด แพ้ติดกัน 13 ไม้ ทุนลดราว {Math.round(drawdownAfterLosses(pct, 13))}% และ 20 ไม้ ราว {Math.round(drawdownAfterLosses(pct, 20))}%
         </p>
       )}

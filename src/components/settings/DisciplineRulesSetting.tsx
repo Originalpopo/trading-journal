@@ -52,12 +52,12 @@ export default function DisciplineRulesSetting() {
       description="กฎการเทรดระดับทั้งวันที่ผูกกับเทรดใดเทรดหนึ่งไม่ได้ เช่น เทรดแก้แค้น หรือเทรดเกินจำนวน (ความผิดในเทรดเดียวให้ใช้ Off Plan Reasons) ในโน้ตรายวันติ๊กได้ว่าวันนั้นทำผิดข้อไหน หน้า Notes จะนับว่าผิดข้อไหนบ่อยที่สุด และนับวันที่เทรดตามแผนติดกัน ลบกฎแล้วโน้ตเก่าที่เคยติ๊กข้อนั้นจะไม่นับข้อนั้นอีก"
     >
       <div className="space-y-2">
-        {rules.length === 0 && <p className="text-sm font-medium text-stone-400">No rules yet. Add your own below, or pick a suggestion.</p>}
+        {rules.length === 0 && <p className="text-sm font-medium text-ink-faint">No rules yet. Add your own below, or pick a suggestion.</p>}
         {rules.map(rule => (
           <div key={rule.id} className="flex items-center gap-2">
             <input type="text" value={rule.name} onChange={(e) => rename(rule.id, e.target.value)} aria-label="Rule" className={SETTINGS_INPUT} />
             <button type="button" onClick={() => remove(rule.id)} title="Remove this rule" aria-label={`Remove ${rule.name}`}
-              className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-stone-100 hover:bg-red-50 text-stone-500 hover:text-red-900 transition">
+              className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-surface-2 hover:bg-loss-soft text-ink-muted hover:text-loss transition">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
@@ -65,7 +65,7 @@ export default function DisciplineRulesSetting() {
         <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); add(draft); }}>
           <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="A rule you keep breaking, e.g. Revenge trade" className={SETTINGS_INPUT} />
           <button type="submit" disabled={!draft.trim()} title="Add this rule" aria-label="Add this rule"
-            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-white border border-orange-400 text-orange-400 hover:bg-orange-50 disabled:opacity-40 transition">
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-white border border-accent text-accent hover:bg-accent-soft disabled:opacity-40 transition">
             <Plus className="w-4 h-4" />
           </button>
         </form>
@@ -73,11 +73,11 @@ export default function DisciplineRulesSetting() {
 
       {suggestions.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Suggestions</p>
+          <p className="text-xs font-bold text-ink-faint uppercase tracking-widest mb-2">Suggestions</p>
           <div className="flex flex-wrap gap-2">
             {suggestions.map(name => (
               <button key={name} type="button" onClick={() => add(name)}
-                className="h-8 px-3 rounded-full flex items-center gap-1 text-xs font-bold bg-stone-50 border border-stone-200 text-stone-500 hover:text-orange-400 hover:border-orange-200 transition">
+                className="h-8 px-3 rounded-full flex items-center gap-1 text-xs font-bold bg-surface border border-line text-ink-muted hover:text-accent hover:border-accent-line transition">
                 <Plus className="w-3.5 h-3.5" />
                 {name}
               </button>

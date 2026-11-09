@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakarta.className} text-stone-950 h-[100dvh] flex overflow-hidden bg-stone-50 print:h-auto print:block print:overflow-visible print:bg-white`}>
+      <body className={`${plusJakarta.className} text-ink h-[100dvh] flex overflow-hidden bg-surface print:h-auto print:block print:overflow-visible print:bg-white`}>
         <AuthProvider>
           <Sidebar />
           <main className="flex-1 p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:p-8 md:pl-[calc(var(--rail,96px)+2rem)] print:pl-0 transition-[padding] duration-300 overflow-y-auto w-full print:overflow-visible print:p-0">

@@ -235,17 +235,17 @@ export default function CalendarPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-stone-500 font-semibold animate-pulse">Loading calendar...</p>
+        <p className="text-ink-muted font-semibold animate-pulse">Loading calendar...</p>
       </div>
     );
   }
 
   // The month or year's figures: all four beside the title on a computer, one at a time on a phone.
   const stats = [
-    { label: 'Trades', value: String(headline.count), tone: 'text-stone-400' },
-    { label: 'PnL', value: isPrivacyMode ? '***' : rate ? formatApproxBaht(headline.net, rate) : `${headline.net < 0 ? '-' : ''}$${formatNumber(Math.abs(headline.net))}`, tone: headline.net > 0 ? 'text-orange-400' : headline.net < 0 ? 'text-red-900' : 'text-stone-400', title: rate ? bahtRateNote : undefined },
-    { label: 'RR', value: `${formatNumber(headline.rr)} R`, tone: 'text-stone-400' },
-    { label: 'Win Rate', value: `${formatNumber(headline.winRate)}%`, tone: 'text-orange-400' },
+    { label: 'Trades', value: String(headline.count), tone: 'text-ink-faint' },
+    { label: 'PnL', value: isPrivacyMode ? '***' : rate ? formatApproxBaht(headline.net, rate) : `${headline.net < 0 ? '-' : ''}$${formatNumber(Math.abs(headline.net))}`, tone: headline.net > 0 ? 'text-accent' : headline.net < 0 ? 'text-loss' : 'text-ink-faint', title: rate ? bahtRateNote : undefined },
+    { label: 'RR', value: `${formatNumber(headline.rr)} R`, tone: 'text-ink-faint' },
+    { label: 'Win Rate', value: `${formatNumber(headline.winRate)}%`, tone: 'text-accent' },
   ];
   const shownStat = stats[statIndex];
   const stepStat = (offset: number) => setStatIndex(i => (i + offset + stats.length) % stats.length);
@@ -258,7 +258,7 @@ export default function CalendarPage() {
             <div key={stat.label} className="flex items-center gap-4">
               {i > 0 && <div className="w-[1px] bg-stone-200 h-8 shrink-0"></div>}
               <div className="flex flex-col justify-center items-center text-center shrink-0 px-2">
-                <span className="text-[9px] leading-none font-black text-stone-400 uppercase tracking-widest mb-1">{stat.label}</span>
+                <span className="text-[9px] leading-none font-black text-ink-faint uppercase tracking-widest mb-1">{stat.label}</span>
                 <span title={stat.title} className={`text-lg leading-none font-black ${stat.tone}`}>{stat.value}</span>
               </div>
             </div>
@@ -276,11 +276,11 @@ export default function CalendarPage() {
           }}
         >
           <div className="flex items-center gap-3 mb-1">
-            <button onClick={() => stepStat(-1)} aria-label="Previous figure" className="p-2 -m-2 text-stone-300 hover:text-stone-500 transition">
+            <button onClick={() => stepStat(-1)} aria-label="Previous figure" className="p-2 -m-2 text-ink-disabled hover:text-ink-muted transition">
               <ChevronLeft className="w-3 h-3" strokeWidth={3} />
             </button>
-            <span className="text-[9px] leading-none font-black text-stone-400 uppercase tracking-widest min-w-[52px]">{shownStat.label}</span>
-            <button onClick={() => stepStat(1)} aria-label="Next figure" className="p-2 -m-2 text-stone-300 hover:text-stone-500 transition">
+            <span className="text-[9px] leading-none font-black text-ink-faint uppercase tracking-widest min-w-[52px]">{shownStat.label}</span>
+            <button onClick={() => stepStat(1)} aria-label="Next figure" className="p-2 -m-2 text-ink-disabled hover:text-ink-muted transition">
               <ChevronRight className="w-3 h-3" strokeWidth={3} />
             </button>
           </div>
@@ -290,44 +290,44 @@ export default function CalendarPage() {
       <div className="glass-card p-3 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 gap-2 md:gap-4">
           <div className="flex items-center md:-ml-3">
-            <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
+            <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-surface-2 rounded-full text-ink-faint transition">
               <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
             </button>
-            <h2 className="text-xl md:text-3xl font-extrabold text-stone-950 min-w-[100px] md:min-w-[145px] text-center tracking-tight">
+            <h2 className="text-xl md:text-3xl font-extrabold text-ink min-w-[100px] md:min-w-[145px] text-center tracking-tight">
               {headline.label}
             </h2>
-            <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-stone-100 rounded-full text-stone-400 transition">
+            <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-surface-2 rounded-full text-ink-faint transition">
               <ChevronRight className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
             </button>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
-            <div className="flex bg-stone-100 rounded-lg p-0.5">
+            <div className="flex bg-surface-2 rounded-lg p-0.5">
               {(['month', 'year'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => changeView(v)}
-                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-stone-600'}`}
                 >
                   {v}
                 </button>
               ))}
             </div>
-            <div className="flex bg-stone-100 rounded-lg p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
+            <div className="flex bg-surface-2 rounded-lg p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
               {(['USD', 'THB'] as const).map(c => (
                 <button
                   key={c}
                   onClick={() => changeCurrency(c)}
                   disabled={c === 'THB' && !bahtRate}
-                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-orange-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-stone-600'}`}
                 >
                   {c === 'USD' ? '$' : '฿'}
                 </button>
               ))}
             </div>
-            <button onClick={goToToday} className="h-8 px-3 md:px-4 bg-orange-400 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition uppercase md:tracking-wider">
+            <button onClick={goToToday} className="h-8 px-3 md:px-4 bg-accent hover:bg-accent-strong text-white text-xs font-bold rounded-lg transition uppercase md:tracking-wider">
               Today
             </button>
-            <select value={data.year} onChange={jumpToYear} className="bg-stone-50 border border-stone-200 text-stone-950 text-xs font-bold rounded-lg h-8 px-2 md:px-3 py-0 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+            <select value={data.year} onChange={jumpToYear} className="bg-surface border border-line text-ink text-xs font-bold rounded-lg h-8 px-2 md:px-3 py-0 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
               {data.availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
@@ -339,7 +339,7 @@ export default function CalendarPage() {
         <div className="flex flex-col xl:flex-row gap-4">
           <div className="calendar-grid flex-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(dayName => (
-              <div key={dayName} className="bg-stone-50 px-0 py-2 md:p-3 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">
+              <div key={dayName} className="bg-surface px-0 py-2 md:p-3 text-center text-[10px] font-black text-ink-faint uppercase tracking-widest">
                 {dayName}
               </div>
             ))}
@@ -353,7 +353,7 @@ export default function CalendarPage() {
               const note = notesByDay.get(date);
               let bgColor = "bg-white";
               if (stats) {
-                bgColor = stats.pnl > 0 ? "bg-orange-50" : (stats.pnl < 0 ? "bg-red-50" : "bg-stone-50");
+                bgColor = stats.pnl > 0 ? "bg-accent-soft" : (stats.pnl < 0 ? "bg-loss-soft" : "bg-surface");
               }
 
               const noteControl = <NoteControl mood={note?.mood} hasNote={!!note} onOpen={(edit) => setOpenNote({ date, edit })} />;
@@ -383,9 +383,9 @@ export default function CalendarPage() {
                   <div className="flex items-start justify-between h-5 md:h-6">
                     <span className="flex items-center gap-1.5">
                       {isToday ? (
-                        <span className="text-xs font-bold bg-orange-400 text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
+                        <span className="text-xs font-bold bg-accent text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
                       ) : (
-                        <span className="text-xs font-bold text-stone-400">{day}</span>
+                        <span className="text-xs font-bold text-ink-faint">{day}</span>
                       )}
                     </span>
                     {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
@@ -398,19 +398,19 @@ export default function CalendarPage() {
                     </span>
                   )}
                   {targetDay?.hitAt && (
-                    <span title="Target reached" className={`absolute inset-x-1.5 bottom-1 md:inset-x-3 md:bottom-1.5 ${TARGET_LINE_HEIGHT} rounded-full bg-orange-400`} />
+                    <span title="Target reached" className={`absolute inset-x-1.5 bottom-1 md:inset-x-3 md:bottom-1.5 ${TARGET_LINE_HEIGHT} rounded-full bg-accent`} />
                   )}
 
                   {stats && (
                     <div className="mt-auto md:hidden text-center leading-tight">
                       <div style={phoneFit(isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl, rate), '10px')} className={`whitespace-nowrap font-black tracking-tighter tabular-nums ${
-                        (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' :
-                        (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
+                        (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-accent' :
+                        (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-loss' : 'text-ink-faint'
                       }`}>
                         {isPrivacyMode ? `${formatNumber(stats.rr)}R` : cellMoney(stats.pnl, rate)}
                       </div>
                       {!isPrivacyMode && (
-                        <div style={phoneFit(`${formatNumber(stats.rr)}R`, '9px')} className={`whitespace-nowrap font-bold tracking-tighter tabular-nums ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                        <div style={phoneFit(`${formatNumber(stats.rr)}R`, '9px')} className={`whitespace-nowrap font-bold tracking-tighter tabular-nums ${stats.rr > 0 ? 'text-accent' : stats.rr < 0 ? 'text-loss' : 'text-ink-faint'}`}>
                           {formatNumber(stats.rr)}R
                         </div>
                       )}
@@ -422,8 +422,8 @@ export default function CalendarPage() {
                     <>
                       {/* 16px, or smaller when a long figure would not fit the cell; 160 leaves room for the note icon beside it. */}
                       <div style={fitFontSize(isPrivacyMode ? `${formatNumber(stats.rr)} R` : formatPnl(stats.pnl, rate), '1rem', 160)} className={`leading-6 font-black whitespace-nowrap ${
-                        (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-orange-400' : 
-                        (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-red-900' : 'text-stone-400'
+                        (isPrivacyMode ? stats.rr : stats.pnl) > 0 ? 'text-accent' : 
+                        (isPrivacyMode ? stats.rr : stats.pnl) < 0 ? 'text-loss' : 'text-ink-faint'
                       }`}>
                         {isPrivacyMode ? (
                           `${formatNumber(stats.rr)} R`
@@ -432,11 +432,11 @@ export default function CalendarPage() {
                         )}
                       </div>
                       {!isPrivacyMode && (
-                        <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-orange-400' : stats.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight mt-1`}>
+                        <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-accent' : stats.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight mt-1`}>
                           {formatNumber(stats.rr)} R
                         </div>
                       )}
-                      <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-0.5">
+                      <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter mt-0.5">
                         Trades : {stats.count}
                       </div>
                     </>
@@ -449,14 +449,14 @@ export default function CalendarPage() {
             })}
           </div>
 
-          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-stone-200 gap-[1px] border border-stone-200 rounded-xl overflow-hidden">
-            <div className="bg-orange-50 p-3 text-center text-[10px] font-black text-orange-400 uppercase tracking-widest shrink-0 flex items-center justify-center xl:min-h-[41px]">
+          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-stone-200 gap-[1px] border border-line rounded-xl overflow-hidden">
+            <div className="bg-accent-soft p-3 text-center text-[10px] font-black text-accent uppercase tracking-widest shrink-0 flex items-center justify-center xl:min-h-[41px]">
               Summary
             </div>
             {data.weeklySummaries.map((cell: any, index: number) => {
               let bgBorder = "bg-stone-50/50";
-              if (cell.pnl > 0) bgBorder = "bg-orange-50";
-              else if (cell.pnl < 0) bgBorder = "bg-red-50";
+              if (cell.pnl > 0) bgBorder = "bg-accent-soft";
+              else if (cell.pnl < 0) bgBorder = "bg-loss-soft";
               const weekNote = notesByWeek.get(cell.week);
               // The whole week (also its days in the next or last month), as on the Dashboard: its P&L reached the
               // sum of its days' targets up to today.
@@ -480,13 +480,13 @@ export default function CalendarPage() {
                   onClick={() => { if (isPhone()) setOpenWeekNote({ week: cell.week, edit: false }); }}
                 >
                   {isWeekHit ? (
-                    <span title={weekTitle} className={`absolute inset-x-4 bottom-1 xl:inset-x-3 xl:bottom-1.5 ${TARGET_LINE_HEIGHT} rounded-full bg-orange-400`} />
+                    <span title={weekTitle} className={`absolute inset-x-4 bottom-1 xl:inset-x-3 xl:bottom-1.5 ${TARGET_LINE_HEIGHT} rounded-full bg-accent`} />
                   ) : weekSum.target > 0 && (
                     <span title={weekTitle} className="absolute inset-x-4 bottom-1 xl:inset-x-3 xl:bottom-1.5">
                       <SegmentBar share={weekShare} depth={weekSum.pnl > 0 ? 0 : -weekShare} isShown isHit={false} isPlain heightClass={TARGET_LINE_HEIGHT} trackClass={TARGET_LINE_TRACK} />
                     </span>
                   )}
-                  <span className="mr-auto xl:mr-0 text-[10px] font-black text-stone-400 uppercase tracking-widest xl:h-6">
+                  <span className="mr-auto xl:mr-0 text-[10px] font-black text-ink-faint uppercase tracking-widest xl:h-6">
                     <span className="xl:hidden">Week </span><span className="hidden xl:inline">W</span>{index + 1}
                   </span>
                   <div className="xl:mt-auto flex items-center xl:items-end justify-end xl:justify-between gap-4 xl:gap-1">
@@ -494,14 +494,14 @@ export default function CalendarPage() {
                       {cell.count > 0 && (
                         <>
                           {!isPrivacyMode && (
-                            <div className={`text-sm xl:text-base font-black ${cell.pnl > 0 ? 'text-orange-400' : cell.pnl < 0 ? 'text-red-900' : 'text-stone-400'}`}>
+                            <div className={`text-sm xl:text-base font-black ${cell.pnl > 0 ? 'text-accent' : cell.pnl < 0 ? 'text-loss' : 'text-ink-faint'}`}>
                               {formatPnl(cell.pnl, rate)}
                             </div>
                           )}
-                          <div className={`${isPrivacyMode ? 'text-sm xl:text-base' : 'text-xs xl:text-[10px] xl:mt-1'} font-black xl:font-bold ${cell.rr > 0 ? 'text-orange-400' : cell.rr < 0 ? 'text-red-900' : 'text-stone-400'} tracking-tight`}>
+                          <div className={`${isPrivacyMode ? 'text-sm xl:text-base' : 'text-xs xl:text-[10px] xl:mt-1'} font-black xl:font-bold ${cell.rr > 0 ? 'text-accent' : cell.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight`}>
                             {formatNumber(cell.rr)} R
                           </div>
-                          <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter xl:mt-0.5">
+                          <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter xl:mt-0.5">
                             Trades : {cell.count}
                           </div>
                         </>
@@ -518,16 +518,16 @@ export default function CalendarPage() {
       </div>
 
       {((view === 'month' && targetPct > 0) || hourNow > 0) && (
-        <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-[10px] font-bold text-stone-400">
+        <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-[10px] font-bold text-ink-faint">
           {view === 'month' && targetPct > 0 && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1">
               {/* The line along the bottom of a day or a week: a bar while short of the target, full once reached. */}
               <span className="flex items-center gap-1.5">
-                <span className="w-4 h-[3px] rounded-full bg-stone-200 overflow-hidden"><span className="block h-full w-1/2 rounded-full bg-orange-400" /></span>
+                <span className="w-4 h-[3px] rounded-full bg-stone-200 overflow-hidden"><span className="block h-full w-1/2 rounded-full bg-accent" /></span>
                 Progress to the target
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-4 h-[3px] rounded-full bg-orange-400" />
+                <span className="w-4 h-[3px] rounded-full bg-accent" />
                 Target reached
               </span>
             </div>
@@ -557,8 +557,8 @@ export default function CalendarPage() {
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const toneOf = (n: number) => (n > 0 ? 'text-orange-400' : n < 0 ? 'text-red-900' : 'text-stone-400');
-const bgOf = (pnl: number, count: number) => (!count ? 'bg-white' : pnl > 0 ? 'bg-orange-50' : pnl < 0 ? 'bg-red-50' : 'bg-stone-50');
+const toneOf = (n: number) => (n > 0 ? 'text-accent' : n < 0 ? 'text-loss' : 'text-ink-faint');
+const bgOf = (pnl: number, count: number) => (!count ? 'bg-white' : pnl > 0 ? 'bg-accent-soft' : pnl < 0 ? 'bg-loss-soft' : 'bg-surface');
 
 // One row per month, one cell per week. No notes here: those live on days. The months' totals sit
 // in their own column beside the grid, like the Summary column of the month view; every row has the
@@ -575,10 +575,10 @@ interface YearGridProps {
 function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenWeekNote }: YearGridProps) {
   return (
     <div className="flex flex-col xl:flex-row gap-4">
-      <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-stone-200 border border-stone-200 rounded-xl overflow-hidden">
-        <div className="bg-stone-50 h-10"></div>
+      <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-stone-200 border border-line rounded-xl overflow-hidden">
+        <div className="bg-surface h-10"></div>
         {[1, 2, 3, 4, 5, 6].map(n => (
-          <div key={n} className="bg-stone-50 h-10 flex items-center justify-center text-[10px] font-black text-stone-400 uppercase tracking-widest">W{n}</div>
+          <div key={n} className="bg-surface h-10 flex items-center justify-center text-[10px] font-black text-ink-faint uppercase tracking-widest">W{n}</div>
         ))}
 
         {year.months.map(m => (
@@ -587,9 +587,9 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
               type="button"
               onClick={() => onOpenMonth(m.month)}
               title="Open this month"
-              className="bg-stone-50 hover:bg-stone-100 transition p-1 md:p-3 flex flex-col items-center justify-center text-center"
+              className="bg-surface hover:bg-surface-2 transition p-1 md:p-3 flex flex-col items-center justify-center text-center"
             >
-              <span className="text-[10px] md:text-xs font-black text-stone-950 uppercase tracking-widest">{MONTH_NAMES[m.month]}</span>
+              <span className="text-[10px] md:text-xs font-black text-ink uppercase tracking-widest">{MONTH_NAMES[m.month]}</span>
               {/* Until the month column fits beside the grid, the total sits under the name. */}
               {m.count > 0 && (
                 <span className={`xl:hidden text-[9px] font-bold tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? m.rr : m.pnl)}`}>
@@ -614,7 +614,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                   className={`${bgOf(w.pnl, w.count)} @container group cursor-pointer hover:brightness-95 transition min-h-[56px] md:min-h-[92px] p-1 md:p-3 flex flex-col text-left select-none`}
                 >
                   <div className="flex items-start justify-between">
-                    <span className={`text-[9px] md:text-[10px] font-bold tabular-nums ${w.isFuture ? 'text-stone-300' : 'text-stone-400'}`}>
+                    <span className={`text-[9px] md:text-[10px] font-bold tabular-nums ${w.isFuture ? 'text-ink-disabled' : 'text-ink-faint'}`}>
                       {w.startDay === w.endDay ? w.startDay : `${w.startDay}–${w.endDay}`}
                     </span>
                     {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
@@ -640,7 +640,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                         {!isPrivacyMode && (
                           <div className={`text-[10px] font-bold tracking-tight ${toneOf(w.rr)}`}>{formatNumber(w.rr)} R</div>
                         )}
-                        <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-0.5">Trades : {w.count}</div>
+                        <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter mt-0.5">Trades : {w.count}</div>
                       </div>
                     </>
                   )}
@@ -653,8 +653,8 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
         ))}
       </div>
 
-      <div className="hidden xl:flex w-[140px] shrink-0 flex-col bg-stone-200 gap-[1px] border border-stone-200 rounded-xl overflow-hidden">
-        <div className="bg-orange-50 h-10 shrink-0 flex items-center justify-center text-[10px] font-black text-orange-400 uppercase tracking-widest">
+      <div className="hidden xl:flex w-[140px] shrink-0 flex-col bg-stone-200 gap-[1px] border border-line rounded-xl overflow-hidden">
+        <div className="bg-accent-soft h-10 shrink-0 flex items-center justify-center text-[10px] font-black text-accent uppercase tracking-widest">
           Month
         </div>
         {year.months.map(m => (
@@ -663,7 +663,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
               <>
                 {!isPrivacyMode && <div className={`text-base font-black ${toneOf(m.pnl)} mb-1`}>{formatPnl(m.pnl, rate)}</div>}
                 <div className={`${isPrivacyMode ? 'text-base mb-1' : 'text-xs'} font-black tracking-tight ${toneOf(m.rr)}`}>{formatNumber(m.rr)} R</div>
-                <div className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter mt-1">Trades : {m.count}</div>
+                <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter mt-1">Trades : {m.count}</div>
               </>
             )}
           </div>
@@ -682,7 +682,7 @@ function NoteControl({ hasNote, mood, label = "the note", onOpen }: { hasNote: b
       title={`Read ${label}`}
       onClick={(e) => { e.stopPropagation(); onOpen(false); }}
       onDoubleClick={(e) => e.stopPropagation()}
-      className={`block text-stone-400 md:opacity-40 md:hover:opacity-100 ${moodTone(mood).hoverText} hover:scale-110 transition`}
+      className={`block text-ink-faint md:opacity-40 md:hover:opacity-100 ${moodTone(mood).hoverText} hover:scale-110 transition`}
     >
       <MoodIcon mood={mood} className="w-4 h-4 md:w-5 md:h-5" />
     </button>
@@ -692,7 +692,7 @@ function NoteControl({ hasNote, mood, label = "the note", onOpen }: { hasNote: b
       title={`Write ${label}`}
       onClick={(e) => { e.stopPropagation(); onOpen(true); }}
       onDoubleClick={(e) => e.stopPropagation()}
-      className="hidden md:block text-stone-300 hover:text-orange-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+      className="hidden md:block text-ink-disabled hover:text-accent opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
     >
       <Plus className="w-4 h-4" />
     </button>

@@ -17,7 +17,7 @@ export default function TaxStepsInfo() {
     >
       <div className="overflow-hidden border border-stone-100 rounded-xl">
         <table className="w-full text-sm">
-          <thead className="bg-stone-50 text-stone-400">
+          <thead className="bg-surface text-ink-faint">
             <tr>
               <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Net income (฿)</th>
               <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Rate</th>
@@ -29,7 +29,7 @@ export default function TaxStepsInfo() {
                 <td className="px-4 py-2.5 font-semibold text-stone-600 tabular-nums">
                   {upper === Infinity ? `over ${baht(from)}` : `${baht(from === 0 ? 0 : from + 1)} – ${baht(upper)}`}
                 </td>
-                <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${rate === 0 ? "text-orange-400" : "text-stone-950"}`}>
+                <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${rate === 0 ? "text-accent" : "text-ink"}`}>
                   {rate === 0 ? "exempt" : `${Math.round(rate * 100)}%`}
                 </td>
               </tr>

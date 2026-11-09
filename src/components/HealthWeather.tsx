@@ -4,9 +4,9 @@ import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucid
 const WEATHER = [
   { Icon: CloudRainWind, title: "PF < 0.5", tone: "text-stone-900" },
   { Icon: CloudLightning, title: "PF 0.5 - 0.79", tone: "text-stone-700" },
-  { Icon: Cloud, title: "PF 0.8 - 1.19", tone: "text-stone-500" },
+  { Icon: Cloud, title: "PF 0.8 - 1.19", tone: "text-ink-muted" },
   { Icon: CloudSun, title: "PF 1.2 - 1.99", tone: "text-orange-300" },
-  { Icon: SunMedium, title: "PF >= 2.0", tone: "text-orange-400" },
+  { Icon: SunMedium, title: "PF >= 2.0", tone: "text-accent" },
 ];
 
 // For a page's title line: all five with the current one large on a computer, only the current one on a phone.
@@ -17,7 +17,7 @@ export default function HealthWeather({ tier }: { tier: number }) {
         const isCurrent = tier === i + 1;
         return (
           <div key={title} title={title} className={`${isCurrent ? 'flex' : 'hidden md:flex'} items-center justify-center w-9 h-9 md:w-10 md:h-10 cursor-help`}>
-            <Icon className={`transition-all duration-500 hover:scale-110 ${isCurrent ? `w-8 h-8 md:w-10 md:h-10 ${tone} drop-shadow-md` : 'w-4 h-4 text-stone-400'}`} />
+            <Icon className={`transition-all duration-500 hover:scale-110 ${isCurrent ? `w-8 h-8 md:w-10 md:h-10 ${tone} drop-shadow-md` : 'w-4 h-4 text-ink-faint'}`} />
           </div>
         );
       })}

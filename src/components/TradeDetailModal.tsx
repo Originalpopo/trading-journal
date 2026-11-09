@@ -120,35 +120,35 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
       {/* Modal Container */}
       <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl shadow-[0_32px_64px_rgba(0,0,0,0.15)] relative flex flex-col max-h-[90vh] overflow-hidden" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         {/* Header - Hero Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between p-6 md:p-8 border-b border-stone-200/60 bg-gradient-to-r from-stone-50 to-stone-100/50 relative">
+        <div className="flex flex-col md:flex-row md:items-end justify-between p-6 md:p-8 border-b border-stone-200/60 bg-gradient-to-r from-surface to-stone-100/50 relative">
           <div className="flex flex-col gap-2">
-            <h3 className="text-2xl font-black text-stone-950 tracking-tight leading-none">{symbol}</h3>
+            <h3 className="text-2xl font-black text-ink tracking-tight leading-none">{symbol}</h3>
             {!isFunding && (
               <div className="flex items-center gap-2 font-bold text-xs leading-none mt-1">
                 <div className="flex items-center gap-1.5">
                   {badgeText === 'TP' && (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-400" />
-                      <span className="text-orange-400 text-xs font-bold uppercase tracking-wider">Result: TP</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
+                      <span className="text-accent text-xs font-bold uppercase tracking-wider">Result: TP</span>
                     </>
                   )}
                   {badgeText === 'SL' && (
                     <>
-                      <XCircle className="w-3.5 h-3.5 text-red-900" />
-                      <span className="text-red-900 text-xs font-bold uppercase tracking-wider">Result: SL</span>
+                      <XCircle className="w-3.5 h-3.5 text-loss" />
+                      <span className="text-loss text-xs font-bold uppercase tracking-wider">Result: SL</span>
                     </>
                   )}
                   {badgeText === 'BE' && (
                     <>
-                      <MinusCircle className="w-3.5 h-3.5 text-stone-400" />
-                      <span className="text-stone-400 text-xs font-bold uppercase tracking-wider">Result: BE</span>
+                      <MinusCircle className="w-3.5 h-3.5 text-ink-faint" />
+                      <span className="text-ink-faint text-xs font-bold uppercase tracking-wider">Result: BE</span>
                     </>
                   )}
                 </div>
                 {t.rr !== undefined && t.rr !== 0 && (
                   <>
                     <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
-                    <span className={`text-xs font-black tracking-widest ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
+                    <span className={`text-xs font-black tracking-widest ${isBE ? 'text-ink-faint' : (profit > 0 ? 'text-accent' : 'text-loss')}`}>
                       {format2Decimals(t.rr)} R
                     </span>
                   </>
@@ -156,17 +156,17 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 {t.side && (
                   <>
                     <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
-                    <span className="text-xs font-black text-stone-400 uppercase tracking-widest">
+                    <span className="text-xs font-black text-ink-faint uppercase tracking-widest">
                       {t.side}
                     </span>
                   </>
                 )}
                 {isOnPlan ? (
-                  <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-orange-50 text-orange-400 border-orange-200 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-accent-soft text-accent border-accent-line text-[10px] font-bold uppercase tracking-wider">
                     <CheckCircle2 className="w-3 h-3" /> On Plan
                   </span>
                 ) : (
-                  <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-stone-50 text-stone-400 border-stone-200 opacity-70 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-surface text-ink-faint border-line opacity-70 text-[10px] font-bold uppercase tracking-wider">
                     <XCircle className="w-3 h-3" /> Off Plan
                   </span>
                 )}
@@ -174,7 +174,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             )}
           </div>
           <div className="mt-4 md:mt-0 text-left md:text-right">
-            <div className={`text-3xl md:text-4xl font-black tracking-tighter leading-none ${isBE ? 'text-stone-400' : (profit > 0 ? 'text-orange-400' : 'text-red-900')}`}>
+            <div className={`text-3xl md:text-4xl font-black tracking-tighter leading-none ${isBE ? 'text-ink-faint' : (profit > 0 ? 'text-accent' : 'text-loss')}`}>
               {isPrivacyMode ? (!isFunding && t.rr !== undefined && t.rr !== 0 ? `${format2Decimals(t.rr)} R` : '***') : `${profit < 0 ? '-' : ''}$${format2Decimals(Math.abs(profit))}`}
             </div>
           </div>
@@ -194,25 +194,25 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
           {isFunding ? (
             <div className="grid grid-cols-2 gap-4 md:gap-6 py-2">
               <div className="flex flex-col items-center text-center gap-1">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Time</p>
-                <p className="text-xs font-bold text-stone-950">{shortTime}</p>
+                <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Time</p>
+                <p className="text-xs font-bold text-ink">{shortTime}</p>
               </div>
               <div className="flex flex-col items-center text-center gap-1">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Type</p>
-                <p className={`text-xs font-bold ${profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
+                <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Type</p>
+                <p className={`text-xs font-bold ${profit > 0 ? 'text-accent' : 'text-loss'}`}>
                   {badgeText}
                 </p>
               </div>
               <div className="flex flex-col items-center text-center gap-1">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{profit > 0 ? 'Baht paid' : 'Baht received'}</p>
-                <p className={`text-xs font-bold ${f.thb ? 'text-stone-950' : 'text-red-900'}`}>
+                <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">{profit > 0 ? 'Baht paid' : 'Baht received'}</p>
+                <p className={`text-xs font-bold ${f.thb ? 'text-ink' : 'text-loss'}`}>
                   {f.thb ? (isPrivacyMode ? '***' : `฿${format2Decimals(f.thb)}`) : 'Not entered yet'}
                 </p>
-                {f.thb && f.bankDate && <p className="text-[10px] font-medium text-stone-400">Bank date {f.bankDate}</p>}
+                {f.thb && f.bankDate && <p className="text-[10px] font-medium text-ink-faint">Bank date {f.bankDate}</p>}
               </div>
               <div className="flex flex-col items-center text-center gap-1">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Rate</p>
-                <p className="text-xs font-bold text-stone-950">
+                <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Rate</p>
+                <p className="text-xs font-bold text-ink">
                   {f.thb && profit !== 0 ? `1 USD = ${(f.thb / Math.abs(profit)).toFixed(4)} THB` : '-'}
                 </p>
               </div>
@@ -221,32 +221,32 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
             <FoldBar
               isOpen={isDetailsOpen}
               onToggle={() => setIsDetailsOpen(!isDetailsOpen)}
-              header={<span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Trade details</span>}
+              header={<span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Trade details</span>}
             >
             <div className="flex flex-col md:flex-row gap-4 md:gap-6">
               <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time Entry</span>
-                  <span className="text-xs font-extrabold text-stone-950">{entryShortTime}</span>
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Time Entry</span>
+                  <span className="text-xs font-extrabold text-ink">{entryShortTime}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Time Exit</span>
-                  <span className="text-xs font-extrabold text-stone-950 inline-flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Time Exit</span>
+                  <span className="text-xs font-extrabold text-ink inline-flex items-center gap-1.5">
                     <ExitConfidenceBadge confidence={t.exitTimeConfidence} />
                     {exitShortTime}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Duration</span>
-                  <span className="text-xs font-extrabold text-stone-950">{durationDisplay}</span>
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Duration</span>
+                  <span className="text-xs font-extrabold text-ink">{durationDisplay}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
-                  <span className="text-xs font-extrabold text-stone-950">{t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}</span>
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Timeframe</span>
+                  <span className="text-xs font-extrabold text-ink">{t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Risk</span>
-                  <span className="text-xs font-extrabold text-stone-950">{isPrivacyMode ? '***' : (rawRisk > 0 ? `${t.riskIsEstimate ? "≈" : ""}$${format2Decimals(rawRisk)}${t.riskIsEstimate ? " (default 1R)" : ""}` : '-')}</span>
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Risk</span>
+                  <span className="text-xs font-extrabold text-ink">{isPrivacyMode ? '***' : (rawRisk > 0 ? `${t.riskIsEstimate ? "≈" : ""}$${format2Decimals(rawRisk)}${t.riskIsEstimate ? " (default 1R)" : ""}` : '-')}</span>
                 </div>
               </div>
 
@@ -254,34 +254,34 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               {t.positionId && (
                  <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4 relative">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Size</span>
-                      <span className="text-xs font-extrabold text-stone-950">{t.size ?? DEFAULT_LOT_SIZE} lot</span>
+                      <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Size</span>
+                      <span className="text-xs font-extrabold text-ink">{t.size ?? DEFAULT_LOT_SIZE} lot</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Entry</span>
+                        <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Entry</span>
                         {t.entryType && (
-                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.entryType}</span>
+                          <span className="text-[8px] font-bold text-ink-faint bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.entryType}</span>
                         )}
                       </div>
-                      <span className="text-xs font-extrabold text-stone-950">{t.entryPrice?.toFixed(2) || '-'}</span>
+                      <span className="text-xs font-extrabold text-ink">{t.entryPrice?.toFixed(2) || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Exit</span>
+                        <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Exit</span>
                         {t.exitType && (
-                          <span className="text-[8px] font-bold text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.exitType}</span>
+                          <span className="text-[8px] font-bold text-ink-faint bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.exitType}</span>
                         )}
                       </div>
-                      <span className="text-xs font-extrabold text-stone-950">{t.exitPrice?.toFixed(2) || '-'}</span>
+                      <span className="text-xs font-extrabold text-ink">{t.exitPrice?.toFixed(2) || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Take Profit</span>
-                      <span className={`text-xs font-extrabold ${profit > 0 ? 'text-orange-400' : 'text-stone-950'}`}>{t.tpPrice?.toFixed(2) || '-'}</span>
+                      <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Take Profit</span>
+                      <span className={`text-xs font-extrabold ${profit > 0 ? 'text-accent' : 'text-ink'}`}>{t.tpPrice?.toFixed(2) || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Stop Loss</span>
-                      <span className={`text-xs font-extrabold ${profit < 0 ? 'text-red-900' : 'text-stone-950'}`}>{t.slPrice?.toFixed(2) || '-'}</span>
+                      <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Stop Loss</span>
+                      <span className={`text-xs font-extrabold ${profit < 0 ? 'text-loss' : 'text-ink'}`}>{t.slPrice?.toFixed(2) || '-'}</span>
                     </div>
                  </div>
               )}
@@ -293,19 +293,19 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
           {/* Notes / Strategy Section */}
           <div>
-            <div className={`bg-stone-50/70 border border-stone-100 rounded-2xl text-stone-950 text-xs leading-relaxed font-medium whitespace-pre-wrap ${notes ? 'p-5 min-h-[100px]' : 'px-5 py-4'}`}>
-              {notes || <span className="text-stone-400 italic">No notes provided for this entry.</span>}
+            <div className={`bg-stone-50/70 border border-stone-100 rounded-2xl text-ink text-xs leading-relaxed font-medium whitespace-pre-wrap ${notes ? 'p-5 min-h-[100px]' : 'px-5 py-4'}`}>
+              {notes || <span className="text-ink-faint italic">No notes provided for this entry.</span>}
             </div>
           </div>
 
           {/* Why it was off plan, as set in Edit: shown only. */}
           {offPlanReasons.length > 0 && (
             <div className="pb-2">
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Off plan</p>
+              <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-2">Off plan</p>
               <div className="flex flex-wrap gap-2">
                 {offPlanReasons.map(r => (
-                  <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-stone-50 text-stone-600 border border-stone-200">
-                    <ClipboardX className="w-3.5 h-3.5 text-red-900" />
+                  <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-surface text-stone-600 border border-line">
+                    <ClipboardX className="w-3.5 h-3.5 text-loss" />
                     {r.name}
                   </span>
                 ))}
@@ -318,18 +318,18 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
         {/* Footer Actions */}
         <div className="px-6 md:px-8 pb-6 bg-white shrink-0 border-0 border-transparent" style={{ outline: 'none' }}>
-          <div className="flex items-center justify-between pt-4 border-t border-stone-200">
+          <div className="flex items-center justify-between pt-4 border-t border-line">
             <div className="flex items-center gap-2 md:gap-3">
               <button
                 onClick={() => onDelete(trade.id, !!isFunding)}
                 title="Delete Trade"
-                className="p-2.5 bg-stone-100 hover:bg-red-50 text-stone-600 hover:text-red-900 rounded-xl transition">
+                className="p-2.5 bg-surface-2 hover:bg-loss-soft text-stone-600 hover:text-loss rounded-xl transition">
                 <Trash2 className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => onEdit({ ...trade })}
                 title="Edit"
-                className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-2.5 md:px-5 py-2.5 rounded-xl transition">
+                className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-surface-2 hover:bg-stone-200 px-2.5 md:px-5 py-2.5 rounded-xl transition">
                 <Edit2 className="w-4 h-4" />
                 <span className="hidden md:inline">Edit</span>
               </button>
@@ -339,18 +339,18 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 <button
                   onClick={onPrev}
                   disabled={!hasPrev}
-                  className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
+                  className="p-2 bg-surface-2 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 {currentIndex !== undefined && totalItems !== undefined && (
-                  <span className="text-xs font-black text-stone-400 font-mono tracking-widest">
+                  <span className="text-xs font-black text-ink-faint font-mono tracking-widest">
                     {currentIndex} <span className="opacity-40 font-normal">|</span> {totalItems}
                   </span>
                 )}
                 <button 
                   onClick={onNext}
                   disabled={!hasNext}
-                  className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
+                  className="p-2 bg-surface-2 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>

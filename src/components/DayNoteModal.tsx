@@ -29,8 +29,8 @@ const MOODS: Record<MoodId, { label: string; Icon: LucideIcon; happy: boolean }>
 };
 
 // The happy half reads in the main orange, the unhappy half in the red of a losing P&L.
-const HAPPY_TONE = { text: 'text-orange-400', hoverText: 'hover:text-orange-400', badge: 'bg-orange-50 text-orange-400', selected: 'text-orange-400 bg-orange-50 border-orange-400' };
-const UNHAPPY_TONE = { text: 'text-red-900', hoverText: 'hover:text-red-900', badge: 'bg-red-50 text-red-900', selected: 'text-red-900 bg-red-50 border-red-900' };
+const HAPPY_TONE = { text: 'text-accent', hoverText: 'hover:text-accent', badge: 'bg-accent-soft text-accent', selected: 'text-accent bg-accent-soft border-accent' };
+const UNHAPPY_TONE = { text: 'text-loss', hoverText: 'hover:text-loss', badge: 'bg-loss-soft text-loss', selected: 'text-loss bg-loss-soft border-loss' };
 
 export const moodTone = (mood?: string) => (MOODS[normalizeMood(mood)].happy ? HAPPY_TONE : UNHAPPY_TONE);
 
@@ -70,10 +70,10 @@ function OffPlanChips({ items }: { items: { id: string; name: string; count: num
   return (
     <div className="flex flex-wrap gap-2">
       {items.map(r => (
-        <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-stone-50 text-stone-600 border border-stone-200">
-          <ClipboardX className="w-3.5 h-3.5 text-red-900" />
+        <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-surface text-stone-600 border border-line">
+          <ClipboardX className="w-3.5 h-3.5 text-loss" />
           {r.name}
-          {r.count > 1 && <span className="text-stone-400">×{r.count}</span>}
+          {r.count > 1 && <span className="text-ink-faint">×{r.count}</span>}
         </span>
       ))}
     </div>
@@ -84,12 +84,12 @@ function OffPlanChips({ items }: { items: { id: string; name: string; count: num
 export function NoteAccordion({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className="mb-5 shrink-0 border border-stone-200 rounded-xl">
+    <div className="mb-5 shrink-0 border border-line rounded-xl">
       <button type="button" onClick={() => setIsOpen(!isOpen)} aria-expanded={isOpen}
         className="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] font-bold text-left">
-        <span className="uppercase tracking-widest text-[10px] text-stone-400">{title}</span>
+        <span className="uppercase tracking-widest text-[10px] text-ink-faint">{title}</span>
         <span className="ml-auto">{extra}</span>
-        <ChevronDown className={`w-4 h-4 shrink-0 text-stone-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && <div className="flex flex-col gap-1.5 px-2 pb-2 max-h-[30vh] overflow-y-auto">{children}</div>}
     </div>
@@ -158,7 +158,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
     }
   };
 
-  const pnlClass = day.pnl > 0 ? 'text-orange-400' : day.pnl < 0 ? 'text-red-900' : 'text-stone-400';
+  const pnlClass = day.pnl > 0 ? 'text-accent' : day.pnl < 0 ? 'text-loss' : 'text-ink-faint';
 
   return (
     // m-0: a page's space-y gap would otherwise shorten this backdrop while a trade is open on top.
@@ -170,34 +170,34 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
               <MoodIcon mood={isEditing ? mood : note?.mood} />
             </div>
             <div className="min-w-0">
-              {kind === 'week' && <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Week</p>}
-              <h3 className="text-xl font-black text-stone-950 tracking-tight leading-tight">{title}</h3>
-              <p className="text-[11px] font-semibold text-stone-400 mt-0.5">
+              {kind === 'week' && <p className="text-[10px] font-black text-accent uppercase tracking-widest">Week</p>}
+              <h3 className="text-xl font-black text-ink tracking-tight leading-tight">{title}</h3>
+              <p className="text-[11px] font-semibold text-ink-faint mt-0.5">
                 {!note ? 'No note yet' : note.updatedAt ? `Last edited ${new Date(note.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : kind === 'week' ? 'Week note' : 'Day note'}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition shrink-0 ml-4">
+          <button onClick={onClose} className="text-ink-faint hover:text-stone-600 p-1 rounded-full hover:bg-surface-2 transition shrink-0 ml-4">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <div className="grid grid-cols-4 gap-2 md:gap-3 mb-5 shrink-0">
-          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
-            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">Trades</p>
-            <p className="text-sm font-black text-stone-950">{day.count}</p>
+          <div className="bg-surface rounded-xl px-1 py-3 md:p-3 text-center">
+            <p className="text-[9px] font-black text-ink-faint uppercase tracking-widest mb-0.5">Trades</p>
+            <p className="text-sm font-black text-ink">{day.count}</p>
           </div>
-          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
-            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">P&L</p>
+          <div className="bg-surface rounded-xl px-1 py-3 md:p-3 text-center">
+            <p className="text-[9px] font-black text-ink-faint uppercase tracking-widest mb-0.5">P&L</p>
             <p className={`text-sm font-black ${pnlClass}`}>{day.count === 0 ? '-' : isPrivacyMode ? '***' : formatPnl(day.pnl, bahtRate)}</p>
           </div>
-          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center">
-            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">RR</p>
-            <p className={`text-sm font-black ${day.rr > 0 ? 'text-orange-400' : day.rr < 0 ? 'text-red-900' : 'text-stone-400'}`}>{day.count === 0 ? '-' : `${formatNumber(day.rr)} R`}</p>
+          <div className="bg-surface rounded-xl px-1 py-3 md:p-3 text-center">
+            <p className="text-[9px] font-black text-ink-faint uppercase tracking-widest mb-0.5">RR</p>
+            <p className={`text-sm font-black ${day.rr > 0 ? 'text-accent' : day.rr < 0 ? 'text-loss' : 'text-ink-faint'}`}>{day.count === 0 ? '-' : `${formatNumber(day.rr)} R`}</p>
           </div>
-          <div className="bg-stone-50 rounded-xl px-1 py-3 md:p-3 text-center" title="Wins / break-evens / losses">
-            <p className="text-[9px] font-black text-stone-400 uppercase md:tracking-widest mb-0.5">TP / BE / SL</p>
-            <p className="text-sm font-black text-stone-950">{day.count === 0 ? '-' : `${day.wins} / ${day.bes} / ${day.losses}`}</p>
+          <div className="bg-surface rounded-xl px-1 py-3 md:p-3 text-center" title="Wins / break-evens / losses">
+            <p className="text-[9px] font-black text-ink-faint uppercase md:tracking-widest mb-0.5">TP / BE / SL</p>
+            <p className="text-sm font-black text-ink">{day.count === 0 ? '-' : `${day.wins} / ${day.bes} / ${day.losses}`}</p>
           </div>
         </div>
 
@@ -207,7 +207,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
           // Scrolls when the trades list above is open and the form no longer fits the popup.
           <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto -mx-1 px-1">
             <div className="shrink-0">
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{kind === 'week' ? 'How the week felt' : 'How the day felt'}</label>
+              <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">{kind === 'week' ? 'How the week felt' : 'How the day felt'}</label>
               <div className="flex flex-wrap gap-2">
                 {MOOD_IDS.map(id => (
                   <button
@@ -215,7 +215,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                     type="button"
                     title={MOODS[id].label}
                     onClick={() => setMood(id)}
-                    className={`h-10 pl-2.5 pr-3.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold transition border-2 ${mood === id ? moodTone(id).selected :'text-stone-400 bg-stone-50 hover:bg-stone-100 border-transparent'}`}
+                    className={`h-10 pl-2.5 pr-3.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold transition border-2 ${mood === id ? moodTone(id).selected :'text-ink-faint bg-surface hover:bg-surface-2 border-transparent'}`}
                   >
                     <MoodIcon mood={id} />
                     {MOODS[id].label}
@@ -225,16 +225,16 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
             </div>
             {offPlan && offPlan.length > 0 && (
               <div className="shrink-0">
-                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Off plan today (from the trades)</label>
+                <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Off plan today (from the trades)</label>
                 <OffPlanChips items={offPlan} />
               </div>
             )}
             {rules && (
               <div className="shrink-0">
-                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Rules broken today</label>
+                <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Rules broken today</label>
                 {rules.length === 0 ? (
-                  <p className="text-[11px] font-medium text-stone-400">
-                    No rules yet. <Link href="/settings" className="font-bold text-orange-400 hover:underline">Set your trading rules in Settings</Link>, then tick here the ones you broke.
+                  <p className="text-[11px] font-medium text-ink-faint">
+                    No rules yet. <Link href="/settings" className="font-bold text-accent hover:underline">Set your trading rules in Settings</Link>, then tick here the ones you broke.
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
@@ -243,7 +243,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                       return (
                         <button key={rule.id} type="button" onClick={() => toggleRule(rule.id)} aria-pressed={isBroken}
                           className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition ${
-                            isBroken ? 'bg-red-50 text-red-900 border-red-200' : 'bg-stone-50 text-stone-400 border-stone-200 hover:text-stone-600'
+                            isBroken ? 'bg-loss-soft text-loss border-loss-line' : 'bg-surface text-ink-faint border-line hover:text-stone-600'
                           }`}>
                           {isBroken && <XCircle className="w-3.5 h-3.5" />}
                           {rule.name}
@@ -256,7 +256,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
             )}
             {/* Never squeezed below a few lines: with the trades list open the form scrolls instead. */}
             <div className="flex-1 min-h-48 flex flex-col">
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Note</label>
+              <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Note</label>
               <textarea
                 // Not on a phone: the keyboard would cover what happened as soon as a day or week is tapped.
                 autoFocus={!window.matchMedia('(max-width: 767px)').matches}
@@ -266,7 +266,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                 onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
                 rows={10}
                 placeholder="What happened, how it felt, what to keep or change..."
-                className="w-full flex-1 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 leading-relaxed focus:outline-none focus:border-orange-400 transition resize-y placeholder:text-stone-300"
+                className="w-full flex-1 bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink leading-relaxed focus:outline-none focus:border-accent transition resize-y placeholder:text-ink-disabled"
               />
             </div>
             {/* -mt-4 takes back the column gap, so nothing is left below the note while Save is hidden. */}
@@ -284,27 +284,27 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
             {brokenNames.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4 shrink-0">
                 {brokenNames.map(rule => (
-                  <span key={rule.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-red-50 text-red-900 border border-red-200">
+                  <span key={rule.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-loss-soft text-loss border border-loss-line">
                     <XCircle className="w-3.5 h-3.5" />
                     {rule.name}
                   </span>
                 ))}
               </div>
             )}
-            <div className="text-stone-950 text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] pr-2">
+            <div className="text-ink text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] pr-2">
               {note?.content}
             </div>
             <div className="flex items-center justify-between pt-4 mt-5 border-t border-stone-100 shrink-0">
               <div className="flex items-center gap-3">
-                <button onClick={handleDelete} className="p-2.5 bg-stone-100 hover:bg-red-50 text-stone-600 hover:text-red-900 rounded-xl transition" title="Delete">
+                <button onClick={handleDelete} className="p-2.5 bg-surface-2 hover:bg-loss-soft text-stone-600 hover:text-loss rounded-xl transition" title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
+                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-surface-2 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
                   <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
               </div>
-              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">
+              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-stone-600 hover:bg-stone-200 transition">
                 Close
               </button>
             </div>
@@ -379,7 +379,7 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
         {/* The daily target of a day that was traded: reached or not, and what came after it. */}
         {target && target.target > 0 && dayTrades.length > 0 && (
           <p className={`mb-3 shrink-0 text-[11px] font-bold flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${
-            target.hitAt ? 'text-orange-400' : 'text-stone-400'
+            target.hitAt ? 'text-accent' : 'text-ink-faint'
           }`}>
             <Target className="w-3.5 h-3.5 shrink-0" />
             {isPrivacyMode ? 'Daily target' : `Target ${formatPnl(target.target, bahtRate)}`}
@@ -389,7 +389,7 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
               : `reached at ${clockOf(target.hitAt)}`}
             {/* What came after the target, as plain figures in grey. */}
             {target.afterCount > 0 && (
-              <span className="text-stone-400">
+              <span className="text-ink-faint">
                 · {target.afterCount} {target.afterCount === 1 ? 'trade' : 'trades'} after
                 {!isPrivacyMode && `: ${formatPnl(target.afterPnl, bahtRate)}`} · {formatNumber(target.afterRr)} R
               </span>
@@ -399,11 +399,11 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
         {dayTrades.length > 0 && (
           <NoteAccordion
             title={`Trades · ${dayTrades.length}`}
-            extra={offPlanCount > 0 && <span className="text-red-900">{offPlanCount} off plan</span>}
+            extra={offPlanCount > 0 && <span className="text-loss">{offPlanCount} off plan</span>}
           >
             {dayTrades.map(t => {
               const outcome = classifyTrade(t);
-              const tone = outcome === 'win' ? 'text-orange-400' : outcome === 'loss' ? 'text-red-900' : 'text-stone-400';
+              const tone = outcome === 'win' ? 'text-accent' : outcome === 'loss' ? 'text-loss' : 'text-ink-faint';
               const entryClock = clockOf(t.entryTime);
               // Closed after midnight, before the trading day rolled over: its real date is the next day.
               const closedNextDay = dayKeyOfTime(t.time, 0) !== date;
@@ -413,17 +413,17 @@ export default function DayNoteModal({ date, startEditing, bahtRate, onClose }: 
                   type="button"
                   title="Open this trade"
                   onClick={() => setDetailId(t.id)}
-                  className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
+                  className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-surface hover:bg-surface-2 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
                 >
-                  <span className="text-stone-400 tabular-nums w-[88px] md:w-[96px] shrink-0">
+                  <span className="text-ink-faint tabular-nums w-[88px] md:w-[96px] shrink-0">
                     {entryClock && `${entryClock} – `}{clockOf(t.time)}
                     {closedNextDay && <sup className="ml-0.5 text-[8px]" title="Closed after midnight, the next day by the clock">+1</sup>}
                   </span>
-                  <span className="text-stone-950 w-8 shrink-0">{t.side}</span>
+                  <span className="text-ink w-8 shrink-0">{t.side}</span>
                   <span className="w-3.5 shrink-0" title={isOnPlan(t) ? undefined : "Off plan"}>
-                    {!isOnPlan(t) && <XCircle className="w-3.5 h-3.5 text-red-900" />}
+                    {!isOnPlan(t) && <XCircle className="w-3.5 h-3.5 text-loss" />}
                   </span>
-                  <span className="text-stone-500 flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
+                  <span className="text-ink-muted flex-1 min-w-0 truncate"><span className="hidden md:inline">{t.symbol}{t.tf && t.tf !== 'none' ? ` · ${t.tf}` : ''}</span></span>
                   <span className={`${tone} w-6 shrink-0`}>{outcomeLabel(outcome)}</span>
                   {!isPrivacyMode && (
                     <span className={`${tone} tabular-nums w-14 md:w-16 shrink-0 text-right`}>{formatPnl(t.profit, bahtRate)}</span>

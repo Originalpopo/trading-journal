@@ -49,9 +49,9 @@ export default function DailyTargetSetting() {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-stone-950">Target (% of the day&apos;s starting balance) <span className="font-medium text-stone-400">(default {DEFAULT_TARGET_PCT})</span></label>
+          <label className="block text-sm font-bold text-ink">Target (% of the day&apos;s starting balance) <span className="font-medium text-ink-faint">(default {DEFAULT_TARGET_PCT})</span></label>
           <input type="number" step="0.1" min="0" max="100" value={shown} onChange={(e) => setValue(e.target.value)} className={SETTINGS_INPUT} />
-          <p className="text-xs font-medium text-stone-500">วันที่ผ่านมาใช้ % ที่ตั้งไว้ในตอนนั้น ค่าใหม่มีผลตั้งแต่วันนี้</p>
+          <p className="text-xs font-medium text-ink-muted">วันที่ผ่านมาใช้ % ที่ตั้งไว้ในตอนนั้น ค่าใหม่มีผลตั้งแต่วันนี้</p>
         </div>
 
       </div>
@@ -59,12 +59,12 @@ export default function DailyTargetSetting() {
       {/* Every change of the %, newest first. */}
       {changes.length > 0 && (
         <div className="mt-6 space-y-2">
-          <span className="block text-sm font-bold text-stone-950">Changes</span>
-          <ul className="bg-stone-50 rounded-xl divide-y divide-stone-100 text-sm">
+          <span className="block text-sm font-bold text-ink">Changes</span>
+          <ul className="bg-surface rounded-xl divide-y divide-stone-100 text-sm">
             {changes.map(c => (
               <li key={c.from} className="flex items-center justify-between px-4 py-2.5">
-                <span className="font-medium text-stone-500">{c.from ? `From ${dateText(c.from)}` : "Before that"}</span>
-                <span className="font-bold text-stone-950 tabular-nums">{c.pct}%</span>
+                <span className="font-medium text-ink-muted">{c.from ? `From ${dateText(c.from)}` : "Before that"}</span>
+                <span className="font-bold text-ink tabular-nums">{c.pct}%</span>
               </li>
             ))}
           </ul>

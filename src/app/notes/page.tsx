@@ -17,7 +17,7 @@ const WEEKS_PER_PAGE = 5;
 // "$12.40 · 3 trades", or "No trades".
 function ResultLine({ summary, isPrivacyMode }: { summary: DaySummary; isPrivacyMode: boolean }) {
   if (summary.count === 0) return <>No trades</>;
-  const pnlClass = summary.pnl > 0 ? 'text-orange-400' : summary.pnl < 0 ? 'text-red-900' : 'text-stone-400';
+  const pnlClass = summary.pnl > 0 ? 'text-accent' : summary.pnl < 0 ? 'text-loss' : 'text-ink-faint';
   return (
     <>
       <span className={pnlClass}>{isPrivacyMode ? `${formatNumber(summary.rr)} R` : `${summary.pnl < 0 ? '-' : ''}$${formatNumber(Math.abs(summary.pnl))}`}</span>
@@ -30,7 +30,7 @@ function ResultLine({ summary, isPrivacyMode }: { summary: DaySummary; isPrivacy
 // `brokenCount`: how many of the user's rules the day's note ticks as broken.
 function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick, brokenCount = 0 }: { mood: string; title: string; content: string; summary: DaySummary; isPrivacyMode: boolean; onClick: () => void; brokenCount?: number }) {
   return (
-    <div className="py-3 px-2 rounded-xl hover:bg-stone-50 transition cursor-pointer flex gap-4 items-start" onClick={onClick}>
+    <div className="py-3 px-2 rounded-xl hover:bg-surface transition cursor-pointer flex gap-4 items-start" onClick={onClick}>
       <div className={`w-10 h-10 rounded-full ${moodTone(mood).badge} flex items-center justify-center shrink-0 mt-0.5`}>
         <MoodIcon mood={mood} />
       </div>
@@ -39,15 +39,15 @@ function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick, broken
         <div className="flex items-center gap-2 mb-1 min-w-0">
           <h4 className="text-sm font-bold text-stone-900 truncate">{title}</h4>
           {brokenCount > 0 && (
-            <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-red-900 bg-red-50 rounded-full px-2 py-0.5">
+            <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-loss bg-loss-soft rounded-full px-2 py-0.5">
               <XCircle className="w-3 h-3" />
               {brokenCount} {brokenCount === 1 ? "rule" : "rules"}
             </span>
           )}
         </div>
-        <p className="text-sm text-stone-500 line-clamp-2 whitespace-pre-line max-w-2xl">{content}</p>
+        <p className="text-sm text-ink-muted line-clamp-2 whitespace-pre-line max-w-2xl">{content}</p>
       </div>
-      <span className="text-xs font-bold shrink-0 text-stone-400 mt-0.5">
+      <span className="text-xs font-bold shrink-0 text-ink-faint mt-0.5">
         <ResultLine summary={summary} isPrivacyMode={isPrivacyMode} />
       </span>
     </div>
@@ -78,7 +78,7 @@ export default function NotesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[500px]">
-        <p className="text-stone-500 font-semibold animate-pulse">Loading notes...</p>
+        <p className="text-ink-muted font-semibold animate-pulse">Loading notes...</p>
       </div>
     );
   }
@@ -94,19 +94,19 @@ export default function NotesPage() {
 
       <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col">
         <div className="relative mb-2">
-          <Search className="w-4 h-4 text-stone-300 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-ink-disabled absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             placeholder="Search notes"
-            className="w-full bg-stone-50 border border-stone-200 rounded-lg pl-9 pr-4 py-2 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 transition placeholder:text-stone-300"
+            className="w-full bg-surface border border-line rounded-lg pl-9 pr-4 py-2 text-sm font-medium text-ink focus:outline-none focus:border-accent transition placeholder:text-ink-disabled"
           />
         </div>
 
         <div className="flex flex-col divide-y divide-stone-100">
           {found.length === 0 ? (
-            <div className="py-8 text-center text-stone-400 font-semibold">
+            <div className="py-8 text-center text-ink-faint font-semibold">
               {dayNotes.length === 0 && weekNotes.length === 0
                 ? "No notes yet. Write today's or this week's, or double-click a day or a week on the Calendar."
                 : "No note matches your search."}
@@ -117,9 +117,9 @@ export default function NotesPage() {
               return (
                 <section key={group.week} className="py-4">
                   <div className="flex items-center gap-2 px-2 mb-1">
-                    <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Week</span>
-                    <h3 className="text-sm font-black text-stone-950 truncate">{formatWeekRange(group.week)}</h3>
-                    <span className="ml-auto text-xs font-bold shrink-0 text-stone-400">
+                    <span className="text-[10px] font-black text-accent uppercase tracking-widest">Week</span>
+                    <h3 className="text-sm font-black text-ink truncate">{formatWeekRange(group.week)}</h3>
+                    <span className="ml-auto text-xs font-bold shrink-0 text-ink-faint">
                       <ResultLine summary={week} isPrivacyMode={isPrivacyMode} />
                     </span>
                   </div>
@@ -136,7 +136,7 @@ export default function NotesPage() {
                   ) : (
                     <button
                       onClick={() => setOpenWeek({ week: group.week, edit: true })}
-                      className="mx-2 py-2 text-xs font-bold text-stone-400 hover:text-orange-400 transition flex items-center gap-1.5"
+                      className="mx-2 py-2 text-xs font-bold text-ink-faint hover:text-accent transition flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Write this week&apos;s note
@@ -168,10 +168,10 @@ export default function NotesPage() {
         {totalPages > 1 && (
           <div className="pt-4 flex justify-center items-center gap-3 border-t border-stone-100 mt-2">
             <button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 1}
-              className="px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">Prev</button>
-            <span className="text-[11px] font-bold text-stone-400">{currentPage} / {totalPages}</span>
+              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">Prev</button>
+            <span className="text-[11px] font-bold text-ink-faint">{currentPage} / {totalPages}</span>
             <button onClick={() => setPage(currentPage + 1)} disabled={currentPage === totalPages}
-              className="px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">Next</button>
+              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">Next</button>
           </div>
         )}
       </div>

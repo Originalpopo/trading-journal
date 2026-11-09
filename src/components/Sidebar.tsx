@@ -114,12 +114,12 @@ export default function Sidebar() {
           }}
           className="cursor-pointer hover:opacity-80 transition flex-shrink-0 focus:outline-none"
         >
-          <Flame className="w-9 h-9 text-orange-400" strokeWidth={1.5} />
+          <Flame className="w-9 h-9 text-accent" strokeWidth={1.5} />
         </button>
         {!isCollapsed && (
           <Link href="/" className="cursor-pointer hover:opacity-80 transition flex-shrink-0 overflow-hidden">
             <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight whitespace-nowrap">
-              Trade<span className="text-orange-400">Journal</span>
+              Trade<span className="text-accent">Journal</span>
             </h1>
           </Link>
         )}
@@ -137,8 +137,8 @@ export default function Sidebar() {
                   isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
                 } ${
                   isActive
-                    ? "bg-orange-50 text-orange-400 font-bold"
-                    : "text-stone-500 hover:text-stone-950 hover:bg-stone-50 font-semibold"
+                    ? "bg-accent-soft text-accent font-bold"
+                    : "text-ink-muted hover:text-ink hover:bg-surface font-semibold"
                 }`}
               >
                 <Icon className={`w-5 h-5 shrink-0 ${isCollapsed && isActive ? "scale-110" : ""}`} />
@@ -154,7 +154,7 @@ export default function Sidebar() {
         <button
           title="Import & Backup"
           onClick={() => setIsUploadModalOpen(true)}
-          className={`relative bg-white border border-stone-200 hover:border-orange-200 hover:text-orange-400 text-stone-500 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
+          className={`relative bg-white border border-line hover:border-accent-line hover:text-accent text-ink-muted rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"
           }`}
         >
@@ -167,8 +167,8 @@ export default function Sidebar() {
           onClick={() => setIsPrivacyMode(!isPrivacyMode)}
           className={`flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition shadow-sm border ${
             isPrivacyMode
-              ? 'bg-orange-50 text-orange-400 border-orange-200'
-              : 'bg-white border-stone-200 text-stone-500 hover:border-orange-200 hover:text-orange-400'
+              ? 'bg-accent-soft text-accent border-accent-line'
+              : 'bg-white border-line text-ink-muted hover:border-accent-line hover:text-accent'
           } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"}`}
         >
           {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
@@ -184,8 +184,8 @@ export default function Sidebar() {
             isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
           } ${
             pathname === "/settings"
-              ? "bg-orange-50 text-orange-400 font-bold"
-              : "text-stone-500 hover:text-stone-950 hover:bg-stone-50 font-semibold"
+              ? "bg-accent-soft text-accent font-bold"
+              : "text-ink-muted hover:text-ink hover:bg-surface font-semibold"
           }`}
         >
           <Settings className={`w-5 h-5 shrink-0 ${isCollapsed && pathname === "/settings" ? "scale-110" : ""}`} />
@@ -210,7 +210,7 @@ export default function Sidebar() {
                   href={item.href}
                   onClick={() => setIsMoreOpen(false)}
                   className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
-                    isActive ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
+                    isActive ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -220,7 +220,7 @@ export default function Sidebar() {
             })}
             <button
               onClick={() => { setIsMoreOpen(false); setIsUploadModalOpen(true); }}
-              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-stone-50 text-stone-500 font-semibold transition"
+              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-surface text-ink-muted font-semibold transition"
             >
               <Upload className="w-5 h-5" />
               Import
@@ -229,7 +229,7 @@ export default function Sidebar() {
             <button
               onClick={() => setIsPrivacyMode(!isPrivacyMode)}
               className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
-                isPrivacyMode ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
+                isPrivacyMode ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
               }`}
             >
               {isPrivacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -239,7 +239,7 @@ export default function Sidebar() {
               href="/settings"
               onClick={() => setIsMoreOpen(false)}
               className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
-                pathname === "/settings" ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
+                pathname === "/settings" ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
               }`}
             >
               <Settings className="w-5 h-5" />
@@ -264,7 +264,7 @@ export default function Sidebar() {
               href={item.href}
               onClick={() => setIsMoreOpen(false)}
               className={`flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
-                isActive ? "bg-orange-50 text-orange-400 font-bold" : "text-stone-400 font-semibold"
+                isActive ? "bg-accent-soft text-accent font-bold" : "text-ink-faint font-semibold"
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -275,7 +275,7 @@ export default function Sidebar() {
         <button
           onClick={() => setIsMoreOpen(!isMoreOpen)}
           className={`flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
-            isMoreActive ? "bg-orange-50 text-orange-400 font-bold" : "text-stone-400 font-semibold"
+            isMoreActive ? "bg-accent-soft text-accent font-bold" : "text-ink-faint font-semibold"
           }`}
         >
           <Ellipsis className="w-5 h-5" />

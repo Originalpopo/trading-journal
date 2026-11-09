@@ -72,30 +72,30 @@ const formatCurrencyHelper =(val: number, isPrivacyMode?: boolean) => {
 function SideMatrixTable({ title, firstColumn, shortFirstColumn, rows, formatCurrency }: { title: string; firstColumn: string; shortFirstColumn?: string; rows: [string, SideMatrix][]; formatCurrency: (val: number) => string }) {
   return (
     <div className="glass-card p-4 md:p-6 overflow-hidden flex flex-col">
-      <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-        <span className="w-2 h-2 bg-orange-400 rounded-full"></span> {title}
+      <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+        <span className="w-2 h-2 bg-accent rounded-full"></span> {title}
       </h3>
       {/* Below lg only the All group shows, so the table fits without scrolling sideways. */}
       <div className="overflow-x-auto">
         <table className="w-full text-center text-sm whitespace-nowrap border-collapse">
           <thead>
-            <tr className="text-stone-400 bg-stone-100">
+            <tr className="text-ink-faint bg-surface-2">
               <th className="py-2 px-1.5 md:px-4 rounded-tl-xl"></th>
-              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Buy</th>
-              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200">Sell</th>
-              <th colSpan={4} className="py-2 px-1.5 md:px-4 font-black text-stone-950 uppercase text-[10px] tracking-widest text-center border-l border-stone-200 rounded-tr-xl">All</th>
+              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-ink uppercase text-[10px] tracking-widest text-center border-l border-line">Buy</th>
+              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-ink uppercase text-[10px] tracking-widest text-center border-l border-line">Sell</th>
+              <th colSpan={4} className="py-2 px-1.5 md:px-4 font-black text-ink uppercase text-[10px] tracking-widest text-center border-l border-line rounded-tr-xl">All</th>
             </tr>
-            <tr className="text-stone-400 bg-stone-100">
+            <tr className="text-ink-faint bg-surface-2">
               <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">{shortFirstColumn ? <><span className="md:hidden">{shortFirstColumn}</span><span className="hidden md:inline">{firstColumn}</span></> : firstColumn}</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-line">Trades</th>
               <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
               <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
               <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-line">Trades</th>
               <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
               <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
               <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-stone-200">Trades</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-line">Trades</th>
               <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
               <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
               <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Net P&L</th>
@@ -116,20 +116,20 @@ function SideMatrixTable({ title, firstColumn, shortFirstColumn, rows, formatCur
               const allRR = allRRCount ? formatNumber((b.rr || 0) + (s.rr || 0)) + ' R' : '-';
               const total = b.pnl + s.pnl;
               return (
-                <tr key={sym} className="hover:bg-stone-50 transition duration-150">
-                  <td className="py-3 px-1.5 md:px-4 font-extrabold text-stone-950 text-[11px] text-center">{sym}</td>
-                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{b.trades}</td>
-                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{bWR}</td>
-                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{bRR}</td>
-                  <td className={`hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-black ${b.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(b.pnl)}</td>
-                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{s.trades}</td>
-                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{sWR}</td>
-                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{sRR}</td>
-                  <td className={`hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-black ${s.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(s.pnl)}</td>
-                  <td className="py-3 px-1.5 md:px-4 text-center font-semibold text-stone-500 border-l border-stone-200">{allTrades}</td>
-                  <td className="py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{allWR}</td>
-                  <td className="py-3 px-1.5 md:px-4 text-center font-bold text-stone-500">{allRR}</td>
-                  <td className={`py-3 px-1.5 md:px-4 text-center font-black ${total >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(total)}</td>
+                <tr key={sym} className="hover:bg-surface transition duration-150">
+                  <td className="py-3 px-1.5 md:px-4 font-extrabold text-ink text-[11px] text-center">{sym}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-ink-muted border-l border-line">{b.trades}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{bWR}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{bRR}</td>
+                  <td className={`hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-black ${b.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>{formatCurrency(b.pnl)}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-ink-muted border-l border-line">{s.trades}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{sWR}</td>
+                  <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{sRR}</td>
+                  <td className={`hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-black ${s.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>{formatCurrency(s.pnl)}</td>
+                  <td className="py-3 px-1.5 md:px-4 text-center font-semibold text-ink-muted border-l border-line">{allTrades}</td>
+                  <td className="py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{allWR}</td>
+                  <td className="py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{allRR}</td>
+                  <td className={`py-3 px-1.5 md:px-4 text-center font-black ${total >= 0 ? 'text-accent' : 'text-loss'}`}>{formatCurrency(total)}</td>
                 </tr>
               );
             })}
@@ -151,13 +151,13 @@ function SplitBar({ value, maxPos, maxNeg }: { value: number; maxPos: number; ma
   return (
     <div className="h-2.5 flex items-center justify-between">
       {maxNeg > 0 && (
-        <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-end" style={{ width: width(negRatio) }}>
-          {value < 0 && <div className="h-full bg-red-900 rounded-full" style={{ width: `${(-value / maxNeg) * 100}%` }}></div>}
+        <div className="h-full shrink-0 bg-surface-2 rounded-full overflow-hidden flex justify-end" style={{ width: width(negRatio) }}>
+          {value < 0 && <div className="h-full bg-loss rounded-full" style={{ width: `${(-value / maxNeg) * 100}%` }}></div>}
         </div>
       )}
       {maxPos > 0 && (
-        <div className="h-full shrink-0 bg-stone-100 rounded-full overflow-hidden flex justify-start" style={{ width: width(posRatio) }}>
-          {value > 0 && <div className="h-full bg-orange-400 rounded-full" style={{ width: `${(value / maxPos) * 100}%` }}></div>}
+        <div className="h-full shrink-0 bg-surface-2 rounded-full overflow-hidden flex justify-start" style={{ width: width(posRatio) }}>
+          {value > 0 && <div className="h-full bg-accent rounded-full" style={{ width: `${(value / maxPos) * 100}%` }}></div>}
         </div>
       )}
     </div>
@@ -174,7 +174,7 @@ function PieceBar({ pieces, heightClass, className = '' }: {
   const shown = pieces.filter(x => x.share > 0);
   return (
     <div className={`w-full ${heightClass} flex gap-1 ${className}`}>
-      {shown.length === 0 && <div className="h-full w-full rounded-full bg-stone-100" />}
+      {shown.length === 0 && <div className="h-full w-full rounded-full bg-surface-2" />}
       {shown.map(x => (
         <div key={x.key} className={`h-full rounded-full flex items-center justify-center ${x.color} transition-all duration-500`}
           style={{ flexGrow: x.share, flexBasis: 0, minWidth: 'var(--piece-min)' }}>
@@ -375,7 +375,7 @@ export default function PerformancePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-stone-500 font-semibold animate-pulse">Loading performance...</p>
+        <p className="text-ink-muted font-semibold animate-pulse">Loading performance...</p>
       </div>
     );
   }
@@ -389,11 +389,11 @@ export default function PerformancePage() {
       {/* No card: the chart reaches the page's edges and its grey runs straight into the Results band below. */}
       <div className="!mb-0 pt-6 h-[350px] flex flex-col w-full">
         <div ref={chartTitleRef} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Profit and Balance
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Profit and Balance
           </h3>
           {data.isAggregated && (
-            <span className="text-[10px] font-bold text-stone-500 bg-stone-100/90 border border-stone-200/70 px-2 py-0.5 rounded-md tracking-normal normal-case">
+            <span className="text-[10px] font-bold text-ink-muted bg-stone-100/90 border border-stone-200/70 px-2 py-0.5 rounded-md tracking-normal normal-case">
               Daily Aggregated ({data.perfBalanceData.length - 1} Days)
             </span>
           )}
@@ -467,17 +467,17 @@ export default function PerformancePage() {
         {/* The filters sit in the corner of Results; folded behind the button, which turns orange while open,
             or while a filter is off its default even when folded. They filter the whole page, the charts too. */}
         <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 mb-4">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mr-auto flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Results
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mr-auto flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Results
           </h3>
           {/* On a phone the button stays beside the title and the filters open below it as three even
               columns, each named above its box; from an iPad up they sit in a line left of the button. */}
           {isFiltersOpen && (
           <div className="order-3 md:order-2 w-full md:w-auto grid grid-cols-3 gap-2 md:flex md:items-center md:gap-4">
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
+              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
               <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+                className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
                 {/* The last month or three up to today (across a year end), then each year, then everything. */}
                 <option value="LAST_1M">Last 1M</option>
                 <option value="LAST_3M">Last 3M</option>
@@ -489,11 +489,11 @@ export default function PerformancePage() {
               </select>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0" ref={tfRef}>
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">TF<span className="hidden md:inline">:</span></span>
+              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">TF<span className="hidden md:inline">:</span></span>
               <div className="relative">
                 <button
                   onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
-                  className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-orange-400 focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
+                  className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-accent focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
                 >
                   <span className="truncate max-w-[100px]">
                     {selectedTfs.length === 0 
@@ -502,17 +502,17 @@ export default function PerformancePage() {
                         ? selectedTfs.join(", ") 
                         : `${selectedTfs.length} Selected`}
                   </span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isTfMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-ink-faint transition-transform ${isTfMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {isTfMenuOpen && (
-                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-line rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                     <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
-                      <span className="text-[10px] font-bold text-stone-400 uppercase">Select TFs</span>
+                      <span className="text-[10px] font-bold text-ink-faint uppercase">Select TFs</span>
                       {selectedTfs.length > 0 && (
                         <button 
                           onClick={() => setSelectedTfs([])}
-                          className="text-[10px] font-bold text-orange-400 hover:text-orange-500 transition-colors"
+                          className="text-[10px] font-bold text-accent hover:text-accent-strong transition-colors"
                         >
                           Clear
                         </button>
@@ -532,11 +532,11 @@ export default function PerformancePage() {
                               }
                             }}
                             className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
-                              isSelected ? 'bg-orange-50 text-orange-400' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                              isSelected ? 'bg-accent-soft text-accent' : 'text-stone-600 hover:bg-surface hover:text-stone-900'
                             }`}
                           >
                             <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
-                              isSelected ? 'bg-orange-400 border-orange-400' : 'border-stone-200'
+                              isSelected ? 'bg-accent border-accent' : 'border-line'
                             }`}>
                               {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                             </div>
@@ -550,9 +550,9 @@ export default function PerformancePage() {
               </div>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Plan<span className="hidden md:inline">:</span></span>
+              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Plan<span className="hidden md:inline">:</span></span>
               <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+                className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
                 <option value="ALL">ALL</option>
                 <option value="On Plan">On Plan</option>
                 <option value="Off Plan">Off Plan</option>
@@ -568,8 +568,8 @@ export default function PerformancePage() {
             title="Filter"
             className={`order-2 md:order-3 flex items-center justify-center h-8 w-8 border rounded-lg transition ${
               isFiltersOpen || selectedPeriod !== new Date().getFullYear().toString() || selectedTfs.length > 0 || selectedPlan !== 'ALL'
-                ? 'bg-orange-50 text-orange-400 border-orange-200'
-                : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
+                ? 'bg-accent-soft text-accent border-accent-line'
+                : 'bg-white text-ink-muted border-line hover:text-ink'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -577,65 +577,65 @@ export default function PerformancePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-          <div className="@container bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Net Profit</span>
+          <div className="@container bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Net Profit</span>
             {/* 20px, or smaller when a large profit would not fit the card. */}
-            <span style={fitFontSize(formatCurrency(data.netProfit), '1.25rem')} className={`leading-7 font-black ${data.netProfit >= 0 ? 'text-orange-400' : 'text-red-900'}`}>{formatCurrency(data.netProfit)}</span>
+            <span style={fitFontSize(formatCurrency(data.netProfit), '1.25rem')} className={`leading-7 font-black ${data.netProfit >= 0 ? 'text-accent' : 'text-loss'}`}>{formatCurrency(data.netProfit)}</span>
             {bahtRate && !isPrivacyMode && (
-              <span className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
+              <span className="text-xs font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
             )}
           </div>
-          <div className="bg-orange-400 p-5 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+          <div className="bg-accent p-5 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
             <span className="text-xl font-black text-white">{formatNumber(data.mainWinRate)}%</span>
           </div>
-          <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Profit Factor</span>
-            <span className="text-xl font-black text-stone-950">{formatNumber(data.profitFactor)}</span>
+          <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Profit Factor</span>
+            <span className="text-xl font-black text-ink">{formatNumber(data.profitFactor)}</span>
           </div>
-          <div className="bg-white p-5 rounded-[1.25rem] border border-stone-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Expectancy</span>
-            <span className="text-xl font-black text-stone-950">{formatNumber(data.expectancyR)} R</span>
+          <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Expectancy</span>
+            <span className="text-xl font-black text-ink">{formatNumber(data.expectancyR)} R</span>
             {/* The same average trade in the dollars it really made. */}
-            <span className="text-[11px] font-normal text-stone-400 mt-0.5" title="Average profit per trade in dollars">{formatCurrency(data.expectedPayoff)} per trade</span>
+            <span className="text-[11px] font-normal text-ink-faint mt-0.5" title="Average profit per trade in dollars">{formatCurrency(data.expectedPayoff)} per trade</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-2.5">
+          <div className="bg-white p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-2.5">
             <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Outcomes</span>
+              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Outcomes</span>
             </div>
             {/* Bad on the left, good on the right, as in Discipline (Off Plan | On Plan) and Streaks. */}
             <div className="flex justify-between text-[10px] font-bold">
-              <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
-              <span className="text-stone-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
-              <span className="text-orange-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
+              <span className="text-loss flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-loss shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
+              <span className="text-ink-faint flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
+              <span className="text-accent flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
             </div>
             <PieceBar heightClass="h-2.5 [--piece-min:0.625rem]" className="mt-1" pieces={[
-              { key: 'loss', share: data.lossPct, color: 'bg-red-900' },
+              { key: 'loss', share: data.lossPct, color: 'bg-loss' },
               { key: 'be', share: data.bePct, color: 'bg-stone-200' },
-              { key: 'win', share: data.winPct, color: 'bg-orange-400' },
+              { key: 'win', share: data.winPct, color: 'bg-accent' },
             ]} />
             <div className="grid grid-cols-3 gap-2 pt-0.5">
-              <div className="bg-red-50/60 border border-red-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+              <div className="bg-red-50/60 border border-loss-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
                 <span className="text-[9px] font-bold text-red-800 uppercase tracking-wider">SL</span>
-                <span className="text-xs font-black text-red-900">{data.lossTradesCount}</span>
+                <span className="text-xs font-black text-loss">{data.lossTradesCount}</span>
               </div>
-              <div className="bg-stone-50 border border-stone-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">BE</span>
+              <div className="bg-surface border border-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                <span className="text-[9px] font-bold text-ink-faint uppercase tracking-wider">BE</span>
                 <span className="text-xs font-black text-stone-700">{data.beTradesCount}</span>
               </div>
-              <div className="bg-orange-50/60 border border-orange-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">TP</span>
-                <span className="text-xs font-black text-orange-500">{data.profitTradesCount}</span>
+              <div className="bg-orange-50/60 border border-accent-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                <span className="text-[9px] font-bold text-accent uppercase tracking-wider">TP</span>
+                <span className="text-xs font-black text-accent-strong">{data.profitTradesCount}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
+          <div className="bg-white p-5 rounded-xl border border-line shadow-sm space-y-4">
             <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Direction</span>
+              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Direction</span>
             </div>
             {/* Buy and Sell read as the Timeframe rows: P&L as a bar split at 0, then $ and R. Pointing at Buy or
                 Sell shows its trades and win rate. */}
@@ -650,10 +650,10 @@ export default function PerformancePage() {
                 <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
                   {sides.map(x => (
                     <div key={x.label} className="contents">
-                      <span className="w-7 text-[10px] font-bold text-stone-950" title={`${x.trades} ${x.trades === 1 ? 'trade' : 'trades'} · win rate ${formatNumber(x.winPct)}%`}>{x.label}</span>
-                      {x.trades > 0 ? <SplitBar value={x.pnl} maxPos={maxPos} maxNeg={maxNeg} /> : <div className="h-2.5 bg-stone-100 rounded-full" />}
-                      <div className={`text-[10px] font-bold ${x.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
-                        {formatCurrency(x.pnl)} <span className="text-stone-300 font-normal mx-0.5">|</span> <span className={x.rr >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatNumber(x.rr)} R</span>
+                      <span className="w-7 text-[10px] font-bold text-ink" title={`${x.trades} ${x.trades === 1 ? 'trade' : 'trades'} · win rate ${formatNumber(x.winPct)}%`}>{x.label}</span>
+                      {x.trades > 0 ? <SplitBar value={x.pnl} maxPos={maxPos} maxNeg={maxNeg} /> : <div className="h-2.5 bg-surface-2 rounded-full" />}
+                      <div className={`text-[10px] font-bold ${x.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>
+                        {formatCurrency(x.pnl)} <span className="text-ink-disabled font-normal mx-0.5">|</span> <span className={x.rr >= 0 ? 'text-accent' : 'text-loss'}>{formatNumber(x.rr)} R</span>
                       </div>
                     </div>
                   ))}
@@ -662,26 +662,26 @@ export default function PerformancePage() {
             })()}
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-1">
+          <div className="bg-white p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-1">
             <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Discipline</span>
+              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Discipline</span>
             </div>
             <div className="flex justify-between text-[10px] font-bold">
-              <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
-              <span className="text-orange-400 flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
+              <span className="text-loss flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-loss shrink-0"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
+              <span className="text-accent flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
             </div>
             <PieceBar heightClass="h-4 [--piece-min:1rem]" className="mt-1 mb-1" pieces={[
-              { key: 'off', share: data.offPlanPct, color: 'bg-red-900' },
-              { key: 'on', share: data.onPlanPct, color: 'bg-orange-400' },
+              { key: 'off', share: data.offPlanPct, color: 'bg-loss' },
+              { key: 'on', share: data.onPlanPct, color: 'bg-accent' },
             ]} />
             <div className="flex justify-between text-[10px] font-bold mt-2">
               <div className="flex flex-col">
-                <span className="text-red-900">Off Plan</span>
-                <span className="text-red-900">{formatCurrency(data.offPlanPnL)}</span>
+                <span className="text-loss">Off Plan</span>
+                <span className="text-loss">{formatCurrency(data.offPlanPnL)}</span>
               </div>
               <div className="flex flex-col items-end text-right">
-                <span className="text-orange-400">On Plan</span>
-                <span className="text-orange-400">{formatCurrency(data.onPlanPnL)}</span>
+                <span className="text-accent">On Plan</span>
+                <span className="text-accent">{formatCurrency(data.onPlanPnL)}</span>
               </div>
             </div>
           </div>
@@ -692,13 +692,13 @@ export default function PerformancePage() {
               .sort((a, b) => data.tfStats[b].pnl - data.tfStats[a].pnl);
               
             return (
-              <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
+              <div className="bg-white p-5 rounded-xl border border-line shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-stone-100 pb-1.5 mb-2">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Timeframe</span>
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Timeframe</span>
                   {validTfs.length > 4 && (
                     <div className="flex gap-1">
-                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 transition"><ChevronRight className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-stone-600 transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-stone-600 transition"><ChevronRight className="w-3.5 h-3.5" /></button>
                     </div>
                   )}
                 </div>
@@ -718,11 +718,11 @@ export default function PerformancePage() {
                   return (
                     <div key={tf} className="contents">
                       <div className="w-7 shrink-0 flex items-baseline text-[10px]">
-                        <span className="font-bold text-stone-950">{tf}</span>
+                        <span className="font-bold text-ink">{tf}</span>
                       </div>
                       <SplitBar value={stat.pnl} maxPos={maxPosPnl} maxNeg={maxNegPnl} />
-                      <div className={`w-auto shrink-0 text-left text-[10px] font-bold ${stat.pnl >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
-                        {formatCurrency(stat.pnl)} <span className="text-stone-300 font-normal mx-0.5">|</span> <span className={stat.rr >= 0 ? 'text-orange-400' : 'text-red-900'}>{formatNumber(stat.rr)} R</span>
+                      <div className={`w-auto shrink-0 text-left text-[10px] font-bold ${stat.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>
+                        {formatCurrency(stat.pnl)} <span className="text-ink-disabled font-normal mx-0.5">|</span> <span className={stat.rr >= 0 ? 'text-accent' : 'text-loss'}>{formatNumber(stat.rr)} R</span>
                       </div>
                     </div>
                   );
@@ -737,27 +737,27 @@ export default function PerformancePage() {
         {/* No cards here: the figures sit straight on the Results grey, in colours a step darker than in a white card so they stay clear. Same gaps and inset as the cards above (20px + their 1px border), so the text lines up with theirs. */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Averages & Time</div>
-            <div className="flex justify-between"><span className="text-stone-600">Avg Win</span><span className="font-bold text-orange-400">{formatCurrency(data.avgWin)} <span className="text-stone-400 font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Avg Loss</span><span className="font-bold text-red-900">{formatCurrency(-data.avgLoss)} <span className="text-stone-400 font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Avg BE</span><span className="font-bold text-stone-500">{formatCurrency(data.avgBE)}</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-600">Hold (Win)</span><span className="font-bold text-stone-950">{data.holdWin}</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Hold (Loss)</span><span className="font-bold text-stone-950">{data.holdLoss}</span></div>
+            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Averages & Time</div>
+            <div className="flex justify-between"><span className="text-stone-600">Avg Win</span><span className="font-bold text-accent">{formatCurrency(data.avgWin)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Avg Loss</span><span className="font-bold text-loss">{formatCurrency(-data.avgLoss)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Avg BE</span><span className="font-bold text-ink-muted">{formatCurrency(data.avgBE)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-stone-600">Hold (Win)</span><span className="font-bold text-ink">{data.holdWin}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Hold (Loss)</span><span className="font-bold text-ink">{data.holdLoss}</span></div>
           </div>
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Extremes</div>
-            <div className="flex justify-between"><span className="text-stone-600">Largest Win</span><span className="font-bold text-orange-400">{formatCurrency(data.largestProfit)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Largest Loss</span><span className="font-bold text-red-900">{formatCurrency(data.largestLoss)}</span></div>
+            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Extremes</div>
+            <div className="flex justify-between"><span className="text-stone-600">Largest Win</span><span className="font-bold text-accent">{formatCurrency(data.largestProfit)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Largest Loss</span><span className="font-bold text-loss">{formatCurrency(data.largestLoss)}</span></div>
           </div>
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Risk & Drawdowns</div>
+            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Risk & Drawdowns</div>
             {/* The deepest fall from a peak, in dollars and, separately, the largest in % (they can be different falls). */}
-            <div className="flex justify-between"><span className="text-stone-600">Max DD</span><span className="font-bold text-red-900">{formatCurrency(data.maxDrawdownAmt)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Max DD (%)</span><span className="font-bold text-red-900">{formatNumber(data.maxDrawdownPct)}%</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-600">Recovery</span><span className="font-bold text-stone-950">{formatNumber(data.recoveryFactor)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Max DD</span><span className="font-bold text-loss">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-600">Max DD (%)</span><span className="font-bold text-loss">{formatNumber(data.maxDrawdownPct)}%</span></div>
+            <div className="flex justify-between pt-1"><span className="text-stone-600">Recovery</span><span className="font-bold text-ink">{formatNumber(data.recoveryFactor)}</span></div>
           </div>
           <div className="pt-1 px-[21px] space-y-4">
-            <div className="text-[10px] font-bold text-stone-500 uppercase tracking-widest border-b border-stone-200 pb-1.5 mb-2">Streaks</div>
+            <div className="text-[10px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Streaks</div>
             
             {(() => {
               const maxWin = data.countAtMaxWinAmt || 0;
@@ -780,8 +780,8 @@ export default function PerformancePage() {
                       <span>Win Streaks</span>
                     </div>
                     <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold text-white" pieces={[
-                      { key: 'loss', share: lossPct, color: 'bg-red-900', label: maxLoss },
-                      { key: 'win', share: winPct, color: 'bg-orange-400', label: maxWin },
+                      { key: 'loss', share: lossPct, color: 'bg-loss', label: maxLoss },
+                      { key: 'win', share: winPct, color: 'bg-accent', label: maxWin },
                     ]} />
                   </div>
 
@@ -805,7 +805,7 @@ export default function PerformancePage() {
 
       {/* What the three charts below measure, kept just above them. */}
       <div className="flex justify-end mt-4 mb-2">
-        <div className="flex bg-stone-100 p-0.5 rounded-lg" role="group" aria-label="Chart measure">
+        <div className="flex bg-surface-2 p-0.5 rounded-lg" role="group" aria-label="Chart measure">
           {([
             { value: 'COUNT', label: 'W/L', title: 'Wins and losses' },
             { value: 'RR', label: 'RR', title: 'Risk/Reward (R), total' },
@@ -820,7 +820,7 @@ export default function PerformancePage() {
               aria-pressed={selectedMetric === m.value}
               title={m.title}
               className={`h-7 min-w-10 px-2.5 text-[11px] font-bold rounded-md transition ${
-                selectedMetric === m.value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-600'
+                selectedMetric === m.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-stone-600'
               }`}
             >
               {m.label}
@@ -833,8 +833,8 @@ export default function PerformancePage() {
           each takes a row whole (shorter on a phone), so the twelve months have room. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Hour of Day
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Hour of Day
           </h3>
           <div className="flex-1 min-h-0 relative w-full">
             <Bar
@@ -860,8 +860,8 @@ export default function PerformancePage() {
           </div>
         </div>
         <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Day of Week
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Day of Week
           </h3>
           <div className="flex-1 min-h-0 relative w-full">
             <Bar
@@ -892,8 +892,8 @@ export default function PerformancePage() {
       {/* Months only mean something over a year or more: a recent stretch would show one or two bars. */}
       {!isRecentPeriod(selectedPeriod) && (
       <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col w-full md:col-span-2">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Month of Year
+        <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-accent rounded-full"></span> Month of Year
         </h3>
         <div className="flex-1 min-h-0 relative w-full">
           <Bar

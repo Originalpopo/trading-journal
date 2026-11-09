@@ -23,7 +23,7 @@ const usd =(n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
 // a small gap between. The left one holds the deepest point and fills red, leftwards from 0, by the loss now;
 // the right one is the way to the target. The marks go on every 20% of the target on both sides.
 // The Calendar's week cells use it plain and thin: `isPlain` leaves out the marks and the flame.
-export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heightClass = "h-4", trackClass = "bg-stone-100" }: {
+export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heightClass = "h-4", trackClass = "bg-surface-2" }: {
   share: number; depth: number; isShown: boolean; isHit: boolean; isPlain?: boolean; heightClass?: string; trackClass?: string;
 }) {
   const loss = Math.max(0, -share);
@@ -39,12 +39,12 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
         {depth > 0 ? (
           <>
             <div className={`absolute inset-y-0 left-0 rounded-full ${trackClass} overflow-hidden`} style={{ width: `calc(${at(0)} - 2px)` }}>
-              <div className="absolute inset-y-0 right-0 rounded-full bg-red-900 transition-[width] duration-1000 ease-out motion-reduce:transition-none" style={{ width: isShown ? `${(loss * 100) / depth}%` : "0%" }} />
+              <div className="absolute inset-y-0 right-0 rounded-full bg-loss transition-[width] duration-1000 ease-out motion-reduce:transition-none" style={{ width: isShown ? `${(loss * 100) / depth}%` : "0%" }} />
             </div>
             <div className={`absolute inset-y-0 right-0 rounded-full ${trackClass}`} style={{ left: `calc(${at(0)} + 2px)` }} />
           </>
         ) : (
-          <div className={`h-full rounded-full bg-orange-400 transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
+          <div className={`h-full rounded-full bg-accent transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
         )}
         {marks.map(v => (
           <span key={v} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-white" style={{ left: at(v) }} />
@@ -63,7 +63,7 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
           {/* A white edge under the flame keeps it apart from the orange bar behind it. */}
           <g className="flame-outer" strokeLinejoin="round">
             <path className="fill-white stroke-white" strokeWidth={4.5} d={FLAME_PATH} />
-            <path className="fill-orange-400 stroke-orange-400" strokeWidth={1.5} d={FLAME_PATH} />
+            <path className="fill-accent stroke-accent" strokeWidth={1.5} d={FLAME_PATH} />
           </g>
           <path
             className="flame-inner fill-orange-50"
@@ -99,11 +99,11 @@ const weekdayName = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateS
 // Pointing at a circle shows its date and, for a day with a target, that target (its % while in privacy mode).
 function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacyMode: boolean }) {
   const circle: Record<WeekdayState, string> = {
-    hit: "bg-orange-400 text-white",
-    today: "border-2 border-orange-400 bg-white",
-    missed: "border-2 border-orange-400 bg-white text-orange-400",
-    noTrades: "border-2 border-dashed border-stone-300 bg-stone-50",
-    upcoming: "border-2 border-stone-200",
+    hit: "bg-accent text-white",
+    today: "border-2 border-accent bg-white",
+    missed: "border-2 border-accent bg-white text-accent",
+    noTrades: "border-2 border-dashed border-stone-300 bg-surface",
+    upcoming: "border-2 border-line",
   };
   return (
     <div className="flex items-center pb-4">
@@ -112,11 +112,11 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
         return (
         <div key={date} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
           {/* The line into a day is orange once that day has come. */}
-          {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-stone-200" : "bg-orange-400"}`} />}
-          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-red-900 bg-white text-red-900" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
+          {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-stone-200" : "bg-accent"}`} />}
+          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-loss bg-white text-loss" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
             {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
             {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
-            <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-orange-400" : "text-stone-400"}`}>
+            <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-accent" : "text-ink-faint"}`}>
               {weekdayName(date)}
             </span>
           </div>
@@ -171,11 +171,11 @@ export default function DailyTargetBar() {
   const figuresClass = "order-2 md:order-3 ml-auto md:ml-0 md:min-w-28 text-right text-xs font-black tabular-nums whitespace-nowrap";
   const figures = (pnl: number, target: number, hit: boolean, percent: string) =>
     isPrivacyMode ? (
-      <span className={hit ? "text-orange-400" : pnl < 0 ? "text-red-900" : "text-stone-950"}>{percent}</span>
+      <span className={hit ? "text-accent" : pnl < 0 ? "text-loss" : "text-ink"}>{percent}</span>
     ) : (
       <>
-        <span className={pnl > 0 ? "text-orange-400" : pnl < 0 ? "text-red-900" : "text-stone-950"}>{usd(pnl)}</span>
-        <span className="text-stone-400"> / {usd(target)}</span>
+        <span className={pnl > 0 ? "text-accent" : pnl < 0 ? "text-loss" : "text-ink"}>{usd(pnl)}</span>
+        <span className="text-ink-faint"> / {usd(target)}</span>
       </>
     );
 
@@ -184,8 +184,8 @@ export default function DailyTargetBar() {
       {/* One line on a computer: title, bar, figures. On a phone the bar takes a line of its own. */}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
         {/* The title turns orange once the target is reached. */}
-        <h3 className={`${titleClass} ${isHit ? "text-orange-400" : "text-stone-950"}`}>
-          <Target className={`w-4 h-4 ${isHit ? "text-orange-400" : "text-stone-400"}`} />
+        <h3 className={`${titleClass} ${isHit ? "text-accent" : "text-ink"}`}>
+          <Target className={`w-4 h-4 ${isHit ? "text-accent" : "text-ink-faint"}`} />
           Today&apos;s target
         </h3>
         <span className={figuresClass}>{figures(day.pnl, day.target, isHit, percentText)}</span>
@@ -199,13 +199,13 @@ export default function DailyTargetBar() {
           this week and last week. On a computer they sit in the gaps beside the circles, so the circles keep
           the day bar's width; on a phone they sit at the ends of the circles' own line. */}
       <div className="mt-6 flex flex-wrap md:flex-nowrap items-center gap-x-5 gap-y-2.5">
-        <h3 className={`${titleClass} ${isWeekHit ? "text-orange-400" : "text-stone-950"}`}>
-          <CalendarRange className={`w-4 h-4 ${isWeekHit ? "text-orange-400" : "text-stone-400"}`} />
+        <h3 className={`${titleClass} ${isWeekHit ? "text-accent" : "text-ink"}`}>
+          <CalendarRange className={`w-4 h-4 ${isWeekHit ? "text-accent" : "text-ink-faint"}`} />
           {isLastWeek ? "Last week" : "This week"}
         </h3>
         <span className={figuresClass}>
           {weekSum.days === 0 ? (
-            <span className="text-stone-400">No trades</span>
+            <span className="text-ink-faint">No trades</span>
           ) : (
             figures(weekSum.pnl, weekSum.target, isWeekHit, weekPercentText)
           )}
@@ -222,7 +222,7 @@ export default function DailyTargetBar() {
               disabled={!isEnabled}
               onClick={() => setIsLastWeek(go)}
               className={`${side} md:absolute md:top-0 h-6 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors ${
-                isEnabled ? "text-stone-400 hover:text-stone-950 hover:bg-stone-100" : "text-stone-200 cursor-default"
+                isEnabled ? "text-ink-faint hover:text-ink hover:bg-surface-2" : "text-stone-200 cursor-default"
               }`}
             >
               <Icon className="w-4 h-4" strokeWidth={2.5} />

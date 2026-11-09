@@ -12,11 +12,11 @@ import {
 
 type Status = "good" | "bad" | "wait";
 
-const STATUS_DOT: Record<Status, string> = { good: "bg-orange-400", bad: "bg-red-900", wait: "bg-stone-300" };
-const STATUS_TEXT: Record<Status, string> = { good: "text-orange-400", bad: "text-red-900", wait: "text-stone-700" };
+const STATUS_DOT: Record<Status, string> = { good: "bg-accent", bad: "bg-loss", wait: "bg-stone-300" };
+const STATUS_TEXT: Record<Status, string> = { good: "text-accent", bad: "text-loss", wait: "text-stone-700" };
 
 const r = (v: number) => `${formatNumber(v)} R`;
-const tone = (v: number) => (v > 0 ? "text-orange-400" : v < 0 ? "text-red-900" : "text-stone-400");
+const tone = (v: number) => (v > 0 ? "text-accent" : v < 0 ? "text-loss" : "text-ink-faint");
 const hourName = (h: number) => `${String(h).padStart(2, "0")}:00`;
 // Thai month names, Western year: "2 พ.ย. 2026".
 const dateOf = (time: string) =>
@@ -101,8 +101,8 @@ function itemsOf(rep: SystemReport, isPrivacyMode: boolean): Item[] {
       figures: [
         { label: "Win rate", value: `${formatNumber(rep.winRate * 100)}%` },
         { label: "Profit factor", value: formatNumber(rep.profitFactor) },
-        { label: "Avg win", value: r(rep.avgWinR), className: "text-orange-400" },
-        { label: "Avg loss", value: r(rep.avgLossR), className: "text-red-900" },
+        { label: "Avg win", value: r(rep.avgWinR), className: "text-accent" },
+        { label: "Avg loss", value: r(rep.avgLossR), className: "text-loss" },
         { label: "Net", value: `${money(rep.netPnl)} · ${r(rep.netR)}`, className: tone(rep.netR) },
         { label: "TP / BE / SL", value: `${rep.wins} / ${rep.bes} / ${rep.losses}` },
       ],
@@ -127,7 +127,7 @@ function itemsOf(rep: SystemReport, isPrivacyMode: boolean): Item[] {
         ? "ตัดไม้ที่ชนะมากที่สุดออกแล้ว ผลยังเป็นบวก"
         : "ถ้าตัดไม้ที่ชนะมากที่สุดออก ผลจะไม่เป็นบวก ระบบพึ่งไม้ใหญ่ที่เกิดไม่บ่อย การพลาด setup ไม้เดียวจึงเสียมาก",
       figures: [
-        { label: "ไม้ที่ชนะมากที่สุด", value: r(rep.largestWinR), className: "text-orange-400" },
+        { label: "ไม้ที่ชนะมากที่สุด", value: r(rep.largestWinR), className: "text-accent" },
         { label: "รวมเมื่อตัดไม้นี้ออก", value: r(rep.netRWithoutLargest), className: tone(rep.netRWithoutLargest) },
       ],
     },
@@ -135,7 +135,7 @@ function itemsOf(rep: SystemReport, isPrivacyMode: boolean): Item[] {
       title: "Losing Streak",
       status: "wait",
       verdict: `แพ้ติดกันนานสุด ${rep.maxLossStreak} ไม้ ควรวาง risk ต่อเทรดให้ผ่านช่วงแบบนี้ได้`,
-      figures: [{ label: "แพ้ติดกันนานสุด", value: `${rep.maxLossStreak} ไม้`, className: "text-red-900" }],
+      figures: [{ label: "แพ้ติดกันนานสุด", value: `${rep.maxLossStreak} ไม้`, className: "text-loss" }],
     },
     timeItem,
     afterItem,
@@ -171,18 +171,18 @@ export default function SystemReview() {
   return (
     <div className="glass-card p-4 md:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap">
-          <span className="w-2 h-2 bg-orange-400 rounded-full"></span> System Review
+        <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap">
+          <span className="w-2 h-2 bg-accent rounded-full"></span> System Review
         </h3>
-        <span className="text-xs font-bold text-stone-400 tabular-nums whitespace-nowrap" title={next ? `รายงานถัดไปเมื่อครบ ${next} เทรด` : "ครบทั้ง 10 รายงานแล้ว"}>
-          <span className="text-stone-950">{count}</span>{next ? ` / ${next}` : ""} trades
+        <span className="text-xs font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `รายงานถัดไปเมื่อครบ ${next} เทรด` : "ครบทั้ง 10 รายงานแล้ว"}>
+          <span className="text-ink">{count}</span>{next ? ` / ${next}` : ""} trades
         </span>
       </div>
 
       {report && score && (
         <>
           {/* One tab per report; the ones not reached yet are shown faded. */}
-          <div className="mt-4 flex bg-stone-100 p-0.5 rounded-lg overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Report">
+          <div className="mt-4 flex bg-surface-2 p-0.5 rounded-lg overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Report">
             {REVIEW_PHASES.map(p => (
               <button
                 key={p}
@@ -193,7 +193,7 @@ export default function SystemReview() {
                 onClick={() => setPicked(p)}
                 title={p > count ? `เมื่อครบ ${p} เทรด` : `รายงานเทรดที่ 1–${p}`}
                 className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-[11px] font-bold rounded-md tabular-nums transition ${
-                  p === phase ? "bg-white text-stone-950 shadow-sm" : p > count ? "text-stone-300 cursor-default" : "text-stone-400 hover:text-stone-600"
+                  p === phase ? "bg-white text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-stone-600"
                 }`}
               >
                 {p.toLocaleString("en-US")}
@@ -201,24 +201,24 @@ export default function SystemReview() {
             ))}
           </div>
 
-          <p className="mt-3 text-[11px] font-semibold text-stone-400">
+          <p className="mt-3 text-[11px] font-semibold text-ink-faint">
             เทรดที่ 1–{report.trades} · {dateOf(report.firstTime)} – {dateOf(report.lastTime)}
           </p>
 
           <ol className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             {itemsOf(report, isPrivacyMode).map((item, i) => (
-              <li key={item.title} className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
+              <li key={item.title} className="bg-white p-5 rounded-xl border border-line shadow-sm">
                 <div className="flex items-center gap-2 border-b border-stone-100 pb-1.5 mb-2.5">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{i + 1}. {item.title}</span>
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">{i + 1}. {item.title}</span>
                 </div>
                 <p className={`text-xs font-bold leading-relaxed ${STATUS_TEXT[item.status]}`}>{item.verdict}</p>
                 {item.figures.length > 0 && (
                   <dl className="mt-3 space-y-1.5 text-[10px]">
                     {item.figures.map(f => (
                       <div key={f.label} className="flex justify-between gap-3">
-                        <dt className="text-stone-500">{f.label}</dt>
-                        <dd className={`font-bold tabular-nums text-right ${f.className ?? "text-stone-950"}`}>{f.value}</dd>
+                        <dt className="text-ink-muted">{f.label}</dt>
+                        <dd className={`font-bold tabular-nums text-right ${f.className ?? "text-ink"}`}>{f.value}</dd>
                       </div>
                     ))}
                   </dl>
@@ -228,7 +228,7 @@ export default function SystemReview() {
 
             {/* 8. The score out of 10, orange as the Win Rate card: the five checks that can be scored, each
                 with its points (how they are weighed is in systemScore). */}
-            <li className="bg-orange-400 p-5 rounded-xl border border-orange-300 shadow-lg shadow-orange-400/20 text-white">
+            <li className="bg-accent p-5 rounded-xl border border-orange-300 shadow-lg shadow-orange-400/20 text-white">
               <div className="flex items-center gap-2 border-b border-white/30 pb-1.5 mb-2.5">
                 <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest">8. System Score</span>
               </div>

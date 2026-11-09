@@ -72,14 +72,14 @@ export default function BackupSetting() {
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-stone-100">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Last backup</p>
-          <p className={`font-bold ${age?.isDue ? "text-red-900" : "text-stone-950"}`}>
+          <p className="text-xs font-bold text-ink-faint uppercase tracking-widest mb-1">Last backup</p>
+          <p className={`font-bold ${age?.isDue ? "text-loss" : "text-ink"}`}>
             {lastBackup ? lastBackup.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "Never"}
-            {age && <span className="font-medium text-stone-400 ml-2">{age.label}</span>}
+            {age && <span className="font-medium text-ink-faint ml-2">{age.label}</span>}
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
-          <label className={`flex-1 md:flex-none cursor-pointer px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 ${restoreStatus ? "opacity-50 pointer-events-none" : ""}`}>
+          <label className={`flex-1 md:flex-none cursor-pointer px-5 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 ${restoreStatus ? "opacity-50 pointer-events-none" : ""}`}>
             <Upload className="w-4 h-4" />
             {restoreStatus ?? "Restore"}
             <input type="file" accept=".json" className="hidden" onChange={onRestore} />
@@ -87,7 +87,7 @@ export default function BackupSetting() {
           <button
             type="button"
             onClick={() => downloadDatabase(trades, funding, dayNotes, weekNotes, preferences)}
-            className="flex-1 md:flex-none px-5 py-2.5 bg-white hover:bg-orange-50 text-orange-400 font-bold rounded-xl transition border border-orange-400 flex items-center justify-center gap-2"
+            className="flex-1 md:flex-none px-5 py-2.5 bg-white hover:bg-accent-soft text-accent font-bold rounded-xl transition border border-accent flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span className="whitespace-nowrap">Download<span className="hidden md:inline"> Backup</span></span>
@@ -98,7 +98,7 @@ export default function BackupSetting() {
       {/* Same grid as two-field cards, so a single field is one column wide */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-stone-950">Remind after (days) <span className="font-medium text-stone-400">(default {BACKUP_DUE_DAYS})</span></label>
+          <label className="block text-sm font-bold text-ink">Remind after (days) <span className="font-medium text-ink-faint">(default {BACKUP_DUE_DAYS})</span></label>
           <input type="number" step="1" min="1" max="365" value={shownDays} onChange={(e) => setDays(e.target.value)} className={SETTINGS_INPUT} />
         </div>
       </div>

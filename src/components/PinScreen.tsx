@@ -42,9 +42,9 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
       <div className="flex flex-col items-center max-w-sm w-full px-6">
         {/* Logo */}
         <div className="flex items-center gap-2 mb-12">
-          <Flame className="w-12 h-12 text-orange-400" strokeWidth={1.5} />
+          <Flame className="w-12 h-12 text-accent" strokeWidth={1.5} />
           <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight">
-            Trade<span className="text-orange-400">Journal</span>
+            Trade<span className="text-accent">Journal</span>
           </h1>
         </div>
 
@@ -54,14 +54,14 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
             <div
               key={i}
               className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                pin.length > i ? "bg-orange-400 scale-110" : "bg-stone-200"
+                pin.length > i ? "bg-accent scale-110" : "bg-stone-200"
               }`}
             />
           ))}
         </div>
 
         {/* Hint */}
-        <p className={`text-stone-400 text-sm font-medium mb-12 text-center transition-opacity duration-500 ${hint && failedAttempts >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-ink-faint text-sm font-medium mb-12 text-center transition-opacity duration-500 ${hint && failedAttempts >= 3 ? 'opacity-100' : 'opacity-0'}`}>
           Hint: {hint}
         </p>
 
@@ -71,7 +71,7 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
             <button
               key={num}
               onClick={() => handleNumberClick(num)}
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-stone-950 bg-stone-50 hover:bg-stone-100 active:bg-stone-200 transition-colors mx-auto"
+              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-ink bg-surface hover:bg-surface-2 active:bg-stone-200 transition-colors mx-auto"
             >
               {num}
             </button>
@@ -79,13 +79,13 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
           <div className="w-16 h-16"></div> {/* Empty space */}
           <button
             onClick={() => handleNumberClick(0)}
-            className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-stone-950 bg-stone-50 hover:bg-stone-100 active:bg-stone-200 transition-colors mx-auto"
+            className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-ink bg-surface hover:bg-surface-2 active:bg-stone-200 transition-colors mx-auto"
           >
             0
           </button>
           <button
             onClick={handleDelete}
-            className="w-16 h-16 rounded-full flex items-center justify-center text-stone-500 bg-stone-50 hover:bg-stone-100 hover:text-orange-400 active:bg-stone-200 transition-colors mx-auto"
+            className="w-16 h-16 rounded-full flex items-center justify-center text-ink-muted bg-surface hover:bg-surface-2 hover:text-accent active:bg-stone-200 transition-colors mx-auto"
           >
             <Delete className="w-6 h-6" />
           </button>

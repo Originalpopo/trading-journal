@@ -104,7 +104,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -150,9 +150,9 @@ export default function SettingsPage() {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1 min-w-0">
-            <p className="text-sm font-bold text-stone-950">{currentUser?.email || "-"}</p>
+            <p className="text-sm font-bold text-ink">{currentUser?.email || "-"}</p>
             <div className="flex items-center gap-2">
-              <p className="text-xs font-mono text-stone-500 break-all select-all">UID: {currentUser?.uid || "-"}</p>
+              <p className="text-xs font-mono text-ink-muted break-all select-all">UID: {currentUser?.uid || "-"}</p>
               {currentUser && (
                 <button
                   type="button"
@@ -162,9 +162,9 @@ export default function SettingsPage() {
                     setIsUidCopied(true);
                     setTimeout(() => setIsUidCopied(false), 1500);
                   }}
-                  className="text-stone-400 hover:text-orange-400 transition shrink-0"
+                  className="text-ink-faint hover:text-accent transition shrink-0"
                 >
-                  {isUidCopied ? <Check className="w-3.5 h-3.5 text-orange-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {isUidCopied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               )}
             </div>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => signOut(auth)}
-            className="px-6 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 shrink-0"
+            className="px-6 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 shrink-0"
           >
             <LogOut className="w-4 h-4" />
             Sign out
@@ -189,28 +189,28 @@ export default function SettingsPage() {
         <form onSubmit={handleSave}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-stone-950">4-Digit PIN</label>
+              <label className="block text-sm font-bold text-ink">4-Digit PIN</label>
               <input
                 type="text"
                 maxLength={4}
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                 placeholder="4 digits"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium"
               />
-              <p className="text-xs text-stone-400 font-medium">Numbers only. Exactly 4 digits.</p>
+              <p className="text-xs text-ink-faint font-medium">Numbers only. Exactly 4 digits.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-stone-950">PIN Hint</label>
+              <label className="block text-sm font-bold text-ink">PIN Hint</label>
               <input
                 type="text"
                 value={hint}
                 onChange={(e) => setHint(e.target.value)}
                 placeholder="Something only you would recognize"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-medium text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition"
               />
-              <p className="text-xs text-stone-400 font-medium">Visible to anyone who tries to log in.</p>
+              <p className="text-xs text-ink-faint font-medium">Visible to anyone who tries to log in.</p>
             </div>
           </div>
 

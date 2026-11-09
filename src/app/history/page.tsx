@@ -208,7 +208,7 @@ export default function HistoryPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-stone-500 font-semibold animate-pulse">Loading history...</p>
+        <p className="text-ink-muted font-semibold animate-pulse">Loading history...</p>
       </div>
     );
   }
@@ -222,7 +222,7 @@ export default function HistoryPage() {
     const pages = [];
     pages.push(
       <button key="prev" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-        className="px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
+        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
         Prev
       </button>
     );
@@ -231,18 +231,18 @@ export default function HistoryPage() {
       if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
         pages.push(
           <button key={i} onClick={() => handlePageChange(i)}
-            className={`px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-orange-400 text-white border-orange-400' : 'text-stone-600 hover:bg-stone-50'}`}>
+            className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-accent text-white border-accent' : 'text-stone-600 hover:bg-surface'}`}>
             {i}
           </button>
         );
       } else if (i === currentPage - 2 || i === currentPage + 2) {
-        pages.push(<span key={`dots-${i}`} className="px-2 text-stone-300">...</span>);
+        pages.push(<span key={`dots-${i}`} className="px-2 text-ink-disabled">...</span>);
       }
     }
 
     pages.push(
       <button key="next" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-        className="px-3 py-1.5 border border-stone-200 rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
+        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
         Next
       </button>
     );
@@ -274,7 +274,7 @@ export default function HistoryPage() {
               aria-label="Select trades"
               title={isSelecting ? "Stop selecting" : "Select trades to edit together"}
               className={`flex items-center justify-center h-8 w-8 border rounded-lg text-[11px] font-bold transition ${
-                isSelecting ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
+                isSelecting ? 'bg-accent-soft text-accent border-accent-line' : 'bg-white text-ink-muted border-line hover:text-ink'
               }`}
             >
               <SquareCheck className="w-3.5 h-3.5" />
@@ -286,13 +286,13 @@ export default function HistoryPage() {
         {isColumnsOpen && <HistoryColumnsPanel columns={columns} />}
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
-            <span className="text-xs font-bold text-orange-400">{selectedIds.size} trade{selectedIds.size > 1 ? 's' : ''} selected</span>
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-2.5 bg-accent-soft border border-accent-line rounded-xl">
+            <span className="text-xs font-bold text-accent">{selectedIds.size} trade{selectedIds.size > 1 ? 's' : ''} selected</span>
             <div className="flex items-center gap-2">
               <button onClick={() => setSelectedIds(new Set())}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-stone-500 hover:bg-white transition">Clear</button>
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-ink-muted hover:bg-white transition">Clear</button>
               <button onClick={() => setIsBulkEditOpen(true)}
-                className="px-4 py-1.5 rounded-lg text-[11px] font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-sm transition flex items-center gap-1.5">
+                className="px-4 py-1.5 rounded-lg text-[11px] font-bold bg-accent text-white hover:bg-accent-strong shadow-sm transition flex items-center gap-1.5">
                 <Edit2 className="w-3.5 h-3.5" /> Edit On Plan / TF
               </button>
             </div>
@@ -302,7 +302,7 @@ export default function HistoryPage() {
         <div ref={containerRef} className="overflow-auto rounded-xl">
           <table className="w-full text-left text-sm whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
-              <tr className="text-stone-400 border-b border-stone-100 bg-stone-50">
+              <tr className="text-ink-faint border-b border-stone-100 bg-surface">
                 {/* The whole cell toggles, so the box is easy to hit with a finger. */}
                 {isSelecting && (
                 <th className="py-4 pl-2 md:pl-4 pr-0 w-8 cursor-pointer" onClick={(e) => { if (e.target === e.currentTarget && filteredTradeIds.length > 0) toggleSelectAllFiltered(); }}>
@@ -312,7 +312,7 @@ export default function HistoryPage() {
                     onChange={toggleSelectAllFiltered}
                     disabled={filteredTradeIds.length === 0}
                     title={allFilteredSelected ? "Unselect all" : `Select all ${filteredTradeIds.length} trades shown by the filters`}
-                    className="w-4 h-4 md:w-3.5 md:h-3.5 accent-orange-400 cursor-pointer align-middle"
+                    className="w-4 h-4 md:w-3.5 md:h-3.5 accent-accent cursor-pointer align-middle"
                   />
                 </th>
                 )}
@@ -342,27 +342,27 @@ export default function HistoryPage() {
                 } catch { }
 
                 if (t.isFunding) {
-                  const badge = t.profit > 0 ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200';
+                  const badge = t.profit > 0 ? 'bg-accent-soft text-accent border-accent-line' : 'bg-loss-soft text-loss border-loss-line';
                   const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                   return (
-                    <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-stone-50 transition duration-150 border-b border-stone-50 cursor-pointer">
+                    <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-surface transition duration-150 border-b border-stone-50 cursor-pointer">
                       {isSelecting && <td className="py-4 pl-2 md:pl-4 pr-0"></td>}
-                      <td className={`py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight ${firstColClass}`}><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
-                      <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap`}>
+                      <td className={`py-4 px-1 md:px-4 text-ink-muted text-[11px] font-semibold leading-tight ${firstColClass}`}><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
+                      <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-ink whitespace-nowrap`}>
                         {badgeText}
                       </td>
-                      <td className={`${col("tf")} py-4 px-1 md:px-4 text-center text-stone-500`}>-</td>
+                      <td className={`${col("tf")} py-4 px-1 md:px-4 text-center text-ink-muted`}>-</td>
                       <td className={`${col("onPlan")} py-4 px-1 md:px-4 text-center`}>-</td>
-                      <td className={`${col("side")} py-4 px-1 md:px-4 text-center text-stone-500`}>-</td>
+                      <td className={`${col("side")} py-4 px-1 md:px-4 text-center text-ink-muted`}>-</td>
                       <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
-                      <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>-</td>
-                      <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>-</td>
-                      <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-orange-400' : 'text-red-900'}`}>
+                      <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>-</td>
+                      <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>-</td>
+                      <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-accent' : 'text-loss'}`}>
                         {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                       </td>
                       <td className={`${col("actions")} py-4 px-1 md:px-4`}><div className="flex justify-center gap-3">
-                        <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-ink-faint hover:text-ink transition"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-ink-faint hover:text-loss transition"><Trash2 className="w-4 h-4" /></button>
                       </div></td>
                     </tr>
                   );
@@ -372,35 +372,35 @@ export default function HistoryPage() {
                 const isBE = outcome === 'be';
                 const rawRisk = parseRisk(t.risk);
 
-                const badge = isBE ? 'bg-stone-50 text-stone-400 border-stone-200' : (outcome === 'win' ? 'bg-orange-50 text-orange-400 border-orange-200' : 'bg-red-50 text-red-900 border-red-200');
+                const badge = isBE ? 'bg-surface text-ink-faint border-line' : (outcome === 'win' ? 'bg-accent-soft text-accent border-accent-line' : 'bg-loss-soft text-loss border-loss-line');
                 const badgeText = outcomeLabel(outcome);
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 const sec = calculateDurationInSeconds(t);
-                const durationStr = <><br/><span className="text-[9px] text-stone-400 font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
+                const durationStr = <><br/><span className="text-[9px] text-ink-faint font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
 
 
                 const isSelected = selectedIds.has(t.id);
 
                 return (
-                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-stone-50'}`}>
+                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-accent-soft' : 'hover:bg-surface'}`}>
                     {isSelecting && (
                     <td className="py-4 pl-2 md:pl-4 pr-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleSelected(t.id); }}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelected(t.id)}
-                        className="w-4 h-4 md:w-3.5 md:h-3.5 accent-orange-400 cursor-pointer align-middle"
+                        className="w-4 h-4 md:w-3.5 md:h-3.5 accent-accent cursor-pointer align-middle"
                       />
                     </td>
                     )}
-                    <td className={`py-4 px-1 md:px-4 text-stone-500 text-[11px] font-semibold leading-tight ${firstColClass}`}>
+                    <td className={`py-4 px-1 md:px-4 text-ink-muted text-[11px] font-semibold leading-tight ${firstColClass}`}>
                       <span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span>{durationStr}
                     </td>
-                    <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-stone-950 whitespace-nowrap`}>
+                    <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-ink whitespace-nowrap`}>
                       {t.symbol}
                     </td>
-                    <td className={`${col("tf")} py-4 px-1 md:px-4 text-center font-bold text-stone-500`}>
+                    <td className={`${col("tf")} py-4 px-1 md:px-4 text-center font-bold text-ink-muted`}>
                       {t.tf && t.tf !== 'none' ? (t.tf.includes(',') ? t.tf.split(',')[0].trim() : t.tf) : '-'}
                     </td>
                     <td className={`${col("onPlan")} py-4 px-1 md:px-4`}>
@@ -410,31 +410,31 @@ export default function HistoryPage() {
                           // Trades saved before checklists existed count as on plan unless marked otherwise.
                           const isSelected = t.checklists?.includes(name) || (name === 'On Plan' && t.isOnPlan !== false);
                           return (
-                            <span key={name} title={isSelected ? name : `${name} (Not Selected)`} className={isSelected ? 'text-orange-400' : 'text-stone-300'}>
+                            <span key={name} title={isSelected ? name : `${name} (Not Selected)`} className={isSelected ? 'text-accent' : 'text-ink-disabled'}>
                               <Icon className="w-4 h-4" />
                             </span>
                           );
                         })}
                       </div>
                     </td>
-                    <td className={`${col("side")} py-4 px-1 md:px-4 text-center font-extrabold text-stone-500 uppercase text-[11px]`}>
+                    <td className={`${col("side")} py-4 px-1 md:px-4 text-center font-extrabold text-ink-muted uppercase text-[11px]`}>
                       {t.side}
                     </td>
                     <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}>
                       <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
-                    <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>
+                    <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>
                       {isPrivacyMode ? '***' : riskText}
                     </td>
-                    <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-stone-500`}>
+                    <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>
                       {t.rr ? (t.riskIsEstimate ? '≈' : '') + format2Decimals(t.rr) + ' R' : '-'}
                     </td>
-                    <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-stone-400' : (outcome === 'win' ? 'text-orange-400' : 'text-red-900')}`}>
+                    <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-ink-faint' : (outcome === 'win' ? 'text-accent' : 'text-loss')}`}>
                       {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                     </td>
                     <td className={`${col("actions")} py-4 px-1 md:px-4`}><div className="flex justify-center gap-3">
-                      <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-stone-400 hover:text-stone-950 transition"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-stone-400 hover:text-red-900 transition"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="text-ink-faint hover:text-ink transition"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.isFunding); }} className="text-ink-faint hover:text-loss transition"><Trash2 className="w-4 h-4" /></button>
                     </div></td>
                   </tr>
                 );
@@ -442,7 +442,7 @@ export default function HistoryPage() {
             </tbody>
           </table>
           {filteredData.length === 0 && (
-            <p className="py-10 text-center text-xs font-semibold text-stone-400">
+            <p className="py-10 text-center text-xs font-semibold text-ink-faint">
               {combinedData.length === 0 ? "No trades yet." : "No entries match these filters."}
             </p>
           )}

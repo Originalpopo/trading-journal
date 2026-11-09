@@ -27,7 +27,7 @@ export default function OffPlanReasonPicker({ reasons, value, saved = [], onChan
               aria-pressed={isOn}
               onClick={() => onChange(isOn ? value.filter(id => id !== r.id) : [...value, r.id])}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg border transition ${
-                isOn ? "bg-orange-50 text-orange-400 border-orange-200" : "bg-stone-50 text-stone-400 border-stone-200 opacity-70 hover:opacity-100"
+                isOn ? "bg-accent-soft text-accent border-accent-line" : "bg-surface text-ink-faint border-line opacity-70 hover:opacity-100"
               }`}
             >
               <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -37,7 +37,7 @@ export default function OffPlanReasonPicker({ reasons, value, saved = [], onChan
         })}
       </div>
       {!hasReason && (
-        <p className="mt-1.5 text-[11px] font-bold text-red-900">
+        <p className="mt-1.5 text-[11px] font-bold text-loss">
           {!reasons.some(r => !r.removed) ? "Add Off Plan reasons in Settings first" : "Pick at least one reason"}
         </p>
       )}

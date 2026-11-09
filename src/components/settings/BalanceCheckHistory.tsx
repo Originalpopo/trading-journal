@@ -20,7 +20,7 @@ export default function BalanceCheckHistory() {
       {history && history.length > 0 ? (
         <div className="max-h-80 overflow-auto border border-stone-100 rounded-xl">
           <table className="w-full text-xs md:text-sm">
-            <thead className="bg-stone-50 text-stone-400 sticky top-0">
+            <thead className="bg-surface text-ink-faint sticky top-0">
               <tr>
                 <th className="px-3 md:px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Checked at</th>
                 <th className="px-3 md:px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Broker</th>
@@ -31,10 +31,10 @@ export default function BalanceCheckHistory() {
             <tbody className="divide-y divide-stone-50">
               {[...history].reverse().map((h, i) => (
                 <tr key={`${h.time}-${i}`}>
-                  <td className="px-3 md:px-4 py-2.5 font-semibold text-stone-500 tabular-nums">{h.time.replace("T", " ")}</td>
-                  <td className="px-3 md:px-4 py-2.5 text-right font-bold text-stone-950 tabular-nums">{usd(h.balance)}</td>
+                  <td className="px-3 md:px-4 py-2.5 font-semibold text-ink-muted tabular-nums">{h.time.replace("T", " ")}</td>
+                  <td className="px-3 md:px-4 py-2.5 text-right font-bold text-ink tabular-nums">{usd(h.balance)}</td>
                   <td className="hidden md:table-cell px-4 py-2.5 text-right font-semibold text-stone-600 tabular-nums">{usd(h.journalBalance)}</td>
-                  <td className={`px-3 md:px-4 py-2.5 text-right font-bold tabular-nums ${h.difference === 0 ? "text-orange-400" : "text-red-900"}`}>
+                  <td className={`px-3 md:px-4 py-2.5 text-right font-bold tabular-nums ${h.difference === 0 ? "text-accent" : "text-loss"}`}>
                     {h.difference === 0 ? "matched" : `journal ${h.difference > 0 ? "+" : "-"}${usd(Math.abs(h.difference))}`}
                   </td>
                 </tr>
@@ -43,7 +43,7 @@ export default function BalanceCheckHistory() {
           </table>
         </div>
       ) : (
-        <p className="text-sm font-medium text-stone-400">No balance checks saved yet.</p>
+        <p className="text-sm font-medium text-ink-faint">No balance checks saved yet.</p>
       )}
     </SettingsCard>
   );

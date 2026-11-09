@@ -23,14 +23,14 @@ export default function SettingsCard({ icon: Icon, title, description, children 
         aria-controls={bodyId}
         className="w-full flex items-center gap-3 p-5 md:px-8 text-left rounded-2xl hover:bg-stone-50/60 transition-colors"
       >
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-orange-400" />
+        <div className="w-10 h-10 shrink-0 rounded-xl bg-accent-soft flex items-center justify-center">
+          <Icon className="w-5 h-5 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-stone-950">{title}</h3>
-          <p className={`text-sm text-stone-500 font-medium ${isOpen ? "" : "line-clamp-1"}`}>{description}</p>
+          <h3 className="text-lg font-bold text-ink">{title}</h3>
+          <p className={`text-sm text-ink-muted font-medium ${isOpen ? "" : "line-clamp-1"}`}>{description}</p>
         </div>
-        <ChevronDown className={`w-5 h-5 shrink-0 text-stone-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-5 h-5 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       <div id={bodyId} hidden={!isOpen} className="px-5 pb-5 md:px-8 md:pb-8">
         <div className="pt-6 border-t border-stone-100">{children}</div>
@@ -39,4 +39,4 @@ export default function SettingsCard({ icon: Icon, title, description, children 
   );
 }
 
-export const SETTINGS_INPUT = "w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-950 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium";
+export const SETTINGS_INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium";

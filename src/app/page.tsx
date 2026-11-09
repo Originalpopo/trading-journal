@@ -551,7 +551,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-stone-500 font-semibold animate-pulse">Loading dashboard...</p>
+        <p className="text-ink-muted font-semibold animate-pulse">Loading dashboard...</p>
       </div>
     );
   }
@@ -572,43 +572,43 @@ export default function Dashboard() {
         </PageHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
-            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
+            <p className="text-ink-faint text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
             {/* Pointing at the figure (or tapping it on a phone) shows the return on deposits, which unlike
                 Account Growth falls when more money is deposited. */}
-            <p style={fitFontSize(growthText, '1.875rem')} tabIndex={0} className="group relative leading-9 font-extrabold stat-value text-stone-950 cursor-default outline-none">
+            <p style={fitFontSize(growthText, '1.875rem')} tabIndex={0} className="group relative leading-9 font-extrabold stat-value text-ink cursor-default outline-none">
               {growthText}
               <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-0.5 whitespace-nowrap rounded-md bg-stone-950 px-2 py-1 text-[10px] font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100 z-10">
                 On deposits {formatNumber(data.returnOnDeposits)}%
               </span>
             </p>
           </div>
-          <div className="@container bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
+          <div className="@container bg-accent p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
             <span style={fitFontSize(winRateText, '1.875rem')} className="leading-9 font-extrabold stat-value text-white">
               {winRateText}
             </span>
           </div>
           <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
-            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
-            <p style={fitFontSize(netText, '1.875rem')} className={`leading-9 font-extrabold stat-value ${data.net >= 0 ? 'text-orange-400' : 'text-red-900'}`}>
+            <p className="text-ink-faint text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
+            <p style={fitFontSize(netText, '1.875rem')} className={`leading-9 font-extrabold stat-value ${data.net >= 0 ? 'text-accent' : 'text-loss'}`}>
               {netText}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
+              <p className="text-xs font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
             )}
           </div>
           <div className="@container glass-card p-6 h-full flex flex-col justify-center items-center text-center">
             {/* The broker check sits as icons beside the label, so the card keeps the same three lines as Net Profit:
                 a mismatch first, else Yes / No when a check is due, else the tick of the last match. */}
             <div className="flex items-center gap-1.5 mb-1">
-              <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider">Balance</p>
+              <p className="text-ink-faint text-[10px] font-bold uppercase tracking-wider">Balance</p>
               {brokerCheck && !brokerCheck.matches && (
                 <button
                   type="button"
                   onClick={() => setIsBalanceCheckOpen(true)}
                   title={`${isPrivacyMode ? 'Differs from broker' : `$${formatNumber(Math.abs(brokerCheck.difference))} ${brokerCheck.difference > 0 ? 'higher' : 'lower'} than broker`} on ${balanceCheck!.time.split('T')[0]}: open the check`}
                   aria-label="Differs from broker: open the check"
-                  className="-m-1.5 p-1.5 text-red-900 hover:opacity-70 transition"
+                  className="-m-1.5 p-1.5 text-loss hover:opacity-70 transition"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                 </button>
@@ -619,7 +619,7 @@ export default function Dashboard() {
                   onClick={() => setIsBalanceCheckOpen(true)}
                   title={`Matched broker on ${balanceCheck!.time.split('T')[0]}`}
                   aria-label="Matched broker: open the check"
-                  className="-m-1.5 p-1.5 text-orange-400 hover:opacity-70 transition"
+                  className="-m-1.5 p-1.5 text-accent hover:opacity-70 transition"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </button>
@@ -632,7 +632,7 @@ export default function Dashboard() {
                     onClick={confirmBrokerMatch}
                     title={isPrivacyMode ? "The broker's Balance is the same as this one" : `The broker's Balance is exactly $${formatNumber(data.runningBalance)} right now`}
                     aria-label="Same as broker"
-                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-orange-50 text-orange-400 border-orange-200 hover:bg-orange-100 transition disabled:opacity-50"
+                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-accent-soft text-accent border-accent-line hover:bg-orange-100 transition disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" />
                   </button>
@@ -641,18 +641,18 @@ export default function Dashboard() {
                     onClick={() => setIsBalanceCheckOpen(true)}
                     title="The broker shows a different amount: enter it to see the difference"
                     aria-label="Differs from broker"
-                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 transition"
+                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-surface text-ink-muted border-line hover:bg-surface-2 transition"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </span>
               )}
             </div>
-            <p style={fitFontSize(balanceText, '1.875rem')} className="leading-9 font-extrabold stat-value text-stone-950">
+            <p style={fitFontSize(balanceText, '1.875rem')} className="leading-9 font-extrabold stat-value text-ink">
               {balanceText}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-normal text-stone-400" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
+              <p className="text-xs font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
             )}
           </div>
         </div>
@@ -672,18 +672,18 @@ export default function Dashboard() {
       <div className="px-6 pt-6 h-[350px] flex flex-col">
         {/* The title alone; the equity's figure is not shown (the Peak line's label gives how far below it is). */}
         <div ref={chartTitleRef} className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 bg-orange-400 rounded-full shrink-0"></span> {/* Shorter on a phone, so it shares the line with the range buttons */}
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 bg-accent rounded-full shrink-0"></span> {/* Shorter on a phone, so it shares the line with the range buttons */}
             <span className="truncate"><span className="sm:hidden">Equity</span><span className="hidden sm:inline">Equity and Balance</span></span>
           </h3>
           {/* Same look as the Drawdown card's R / $ switch. */}
-          <div className="flex items-center bg-stone-100 p-0.5 rounded-md border border-stone-200 shadow-sm shrink-0">
+          <div className="flex items-center bg-surface-2 p-0.5 rounded-md border border-line shadow-sm shrink-0">
             {CHART_RANGES.map(range => (
               <button
                 key={range}
                 onClick={() => pickChartRange(range)}
                 className={`text-[10px] font-bold px-2.5 md:px-3 py-1.5 md:py-1 rounded transition-all ${
-                  chartRange === range ? 'bg-white text-stone-950 shadow-md' : 'text-stone-400 hover:text-stone-600'
+                  chartRange === range ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-stone-600'
                 }`}
               >
                 {range === 'ALL' ? 'All' : range}
@@ -698,80 +698,80 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Statistics
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Statistics
           </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Total Trades</span>
-              <span className="font-black text-stone-950 text-2xl">{data.totalTrades}</span>
+              <span className="text-xs font-bold text-ink-faint">Total Trades</span>
+              <span className="font-black text-ink text-2xl">{data.totalTrades}</span>
             </div>
             {/* Bad on the left, good on the right, as on the Performance page. */}
             <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="bg-red-50 p-3 rounded-lg text-center border border-red-200">
-                <p className="text-[9px] font-bold text-red-900 uppercase mb-1">SL</p>
-                <p className="text-sm font-black text-red-900">{data.countSL}</p>
+              <div className="bg-loss-soft p-3 rounded-lg text-center border border-loss-line">
+                <p className="text-[9px] font-bold text-loss uppercase mb-1">SL</p>
+                <p className="text-sm font-black text-loss">{data.countSL}</p>
               </div>
-              <div className="bg-stone-50 p-3 rounded-lg text-center border border-stone-200">
-                <p className="text-[9px] font-bold text-stone-400 uppercase mb-1">BE</p>
-                <p className="text-sm font-black text-stone-400">{data.countBE}</p>
+              <div className="bg-surface p-3 rounded-lg text-center border border-line">
+                <p className="text-[9px] font-bold text-ink-faint uppercase mb-1">BE</p>
+                <p className="text-sm font-black text-ink-faint">{data.countBE}</p>
               </div>
-              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
-                <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">TP</p>
-                <p className="text-sm font-black text-orange-400">{data.countTP}</p>
+              <div className="bg-accent-soft p-3 rounded-lg text-center border border-accent-line">
+                <p className="text-[9px] font-bold text-accent uppercase mb-1">TP</p>
+                <p className="text-sm font-black text-accent">{data.countTP}</p>
               </div>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
-              <span className="text-xs font-bold text-stone-400">Total Deposit</span>
-              <span className="font-black text-sm text-red-900">{isPrivacyMode ? '***' : `$${formatNumber(data.totalDeposit)}`}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-line">
+              <span className="text-xs font-bold text-ink-faint">Total Deposit</span>
+              <span className="font-black text-sm text-loss">{isPrivacyMode ? '***' : `$${formatNumber(data.totalDeposit)}`}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Total Withdraw</span>
-              <span className="font-black text-sm text-orange-400">{isPrivacyMode ? '***' : `$${formatNumber(data.totalWithdraw)}`}</span>
+              <span className="text-xs font-bold text-ink-faint">Total Withdraw</span>
+              <span className="font-black text-sm text-accent">{isPrivacyMode ? '***' : `$${formatNumber(data.totalWithdraw)}`}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
-              <span className="text-xs font-bold text-stone-400">Capital</span>
-              <span className="font-black text-sm text-stone-950">{isPrivacyMode ? '***' : `$${formatNumber(data.totalFunded)}`}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-line">
+              <span className="text-xs font-bold text-ink-faint">Capital</span>
+              <span className="font-black text-sm text-ink">{isPrivacyMode ? '***' : `$${formatNumber(data.totalFunded)}`}</span>
             </div>
           </div>
         </div>
 
         <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Reward to Risk
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Reward to Risk
           </h3>
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-stone-400">Avg TP RR</span>
-              <span className="text-[12px] font-black text-orange-400">{formatNumber(data.avgTPRR)} R</span>
+              <span className="text-[11px] font-bold text-ink-faint">Avg TP RR</span>
+              <span className="text-[12px] font-black text-accent">{formatNumber(data.avgTPRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-stone-400">Max TP RR</span>
-              <span className="text-[12px] font-black text-orange-400">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
+              <span className="text-[11px] font-bold text-ink-faint">Max TP RR</span>
+              <span className="text-[12px] font-black text-accent">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
-              <span className="text-[11px] font-bold text-stone-400">Avg SL RR</span>
-              <span className="text-[12px] font-black text-red-900">{formatNumber(data.avgSLRR)} R</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-stone-400">Max SL RR</span>
-              <span className="text-[12px] font-black text-red-900">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
-              <span className="text-[11px] font-bold text-stone-400">Consecutive Loss (Max)</span>
-              <span className="text-[12px] font-black text-red-900">{data.maxStreakL}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-line">
+              <span className="text-[11px] font-bold text-ink-faint">Avg SL RR</span>
+              <span className="text-[12px] font-black text-loss">{formatNumber(data.avgSLRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-stone-400">Consecutive Win (Max)</span>
-              <span className="text-[12px] font-black text-orange-400">{data.maxStreakW}</span>
+              <span className="text-[11px] font-bold text-ink-faint">Max SL RR</span>
+              <span className="text-[12px] font-black text-loss">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-line">
+              <span className="text-[11px] font-bold text-ink-faint">Consecutive Loss (Max)</span>
+              <span className="text-[12px] font-black text-loss">{data.maxStreakL}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-bold text-ink-faint">Consecutive Win (Max)</span>
+              <span className="text-[12px] font-black text-accent">{data.maxStreakW}</span>
             </div>
           </div>
         </div>
 
         <div className="glass-card p-6 flex flex-col h-full relative">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Drawdown
+            <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent rounded-full"></span> Drawdown
             </h3>
           </div>
 
@@ -780,28 +780,28 @@ export default function Dashboard() {
               {/* Active DD first: the drawdown under way now, then the deepest there has been. In $ mode the dollars
                   sit after the label, so no line moves when switching R and $. */}
               <div>
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
+                <p className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-1">
                   Active DD
                   {!isRMode && (
-                    <span className="ml-1.5 normal-case tracking-normal font-bold text-stone-500">
+                    <span className="ml-1.5 normal-case tracking-normal font-bold text-ink-muted">
                       {isPrivacyMode ? '***' : `$${formatNumber(displayDD.active)}`}
                     </span>
                   )}
                 </p>
-                <p className="text-2xl font-extrabold text-red-900">{formatNumber(ddActive)}{ddUnit}</p>
-                <p className="text-[10px] font-normal text-stone-400 mt-1">
+                <p className="text-2xl font-extrabold text-loss">{formatNumber(ddActive)}{ddUnit}</p>
+                <p className="text-[10px] font-normal text-ink-faint mt-1">
                   {belowPeakLines.map((line, i) => <span key={i} className="block">{line}</span>)}
                 </p>
-                {longestText && <p className="text-[10px] font-normal text-stone-400">{longestText}</p>}
+                {longestText && <p className="text-[10px] font-normal text-ink-faint">{longestText}</p>}
               </div>
 
-              <div className="w-full border-t border-stone-200 my-auto"></div>
+              <div className="w-full border-t border-line my-auto"></div>
 
               <div>
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
+                <p className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-1">
                   Max DD
                   {!isRMode && (
-                    <span className="ml-1.5 normal-case tracking-normal font-bold text-stone-500" title="The same drop as the % below, in dollars.">
+                    <span className="ml-1.5 normal-case tracking-normal font-bold text-ink-muted" title="The same drop as the % below, in dollars.">
                       {isPrivacyMode ? '***' : `$${formatNumber(displayDD.maxPercentAmount)}`}
                     </span>
                   )}
@@ -810,10 +810,10 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div title={gaugeNote} className="w-16 h-full bg-stone-50 rounded-xl p-1.5 border border-stone-200 flex flex-col justify-end items-center relative z-10 shadow-inner">
+            <div title={gaugeNote} className="w-16 h-full bg-surface rounded-xl p-1.5 border border-line flex flex-col justify-end items-center relative z-10 shadow-inner">
               {/* Deepest point of the drawdown still under way */}
               {isInDrawdown && <div 
-                className="absolute left-1.5 right-1.5 h-1.5 bg-red-900 rounded-full shadow-[0_0_8px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out z-20"
+                className="absolute left-1.5 right-1.5 h-1.5 bg-loss rounded-full shadow-[0_0_8px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out z-20"
                 style={{ bottom: `${maxCapBottomPct}%` }}
                 title={`Deepest point of this drawdown: ${formatNumber(ddActiveMax)}${ddUnit}`}
               />}
@@ -832,7 +832,7 @@ export default function Dashboard() {
           
           {/* Lined up with the figures on the left (the card's 24px padding). */}
           <div className="absolute bottom-4 left-6 flex">
-            <div className="flex items-center bg-stone-100 p-0.5 rounded-md border border-stone-200 shadow-sm">
+            <div className="flex items-center bg-surface-2 p-0.5 rounded-md border border-line shadow-sm">
               {([['r', 'R', 'Drawdown of your cumulative R'], ['usd', '$', 'Drawdown of your cumulative profit and loss in dollars']] as const).map(([mode, label, hint]) => (
                 <button
                   key={mode}
@@ -840,8 +840,8 @@ export default function Dashboard() {
                   title={`${hint}; deposits and withdrawals are not counted`}
                   className={`text-[10px] font-bold px-5 py-1.5 md:py-1 rounded transition-all ${
                     ddMode === mode
-                      ? 'bg-white text-stone-950 shadow-md'
-                      : 'text-stone-400 hover:text-stone-600'
+                      ? 'bg-white text-ink shadow-md'
+                      : 'text-ink-faint hover:text-stone-600'
                   }`}
                 >
                   {label}
@@ -852,20 +852,20 @@ export default function Dashboard() {
         </div>
 
         <div className="glass-card p-6 flex flex-col space-y-5 h-full">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Performance
+          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-accent rounded-full"></span> Performance
           </h3>
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Profit Factor</span>
-              <span className="font-black text-stone-950">{formatNumber(data.profitFactor)}</span>
+              <span className="text-xs font-bold text-ink-faint">Profit Factor</span>
+              <span className="font-black text-ink">{formatNumber(data.profitFactor)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Expectancy</span>
+              <span className="text-xs font-bold text-ink-faint">Expectancy</span>
               {/* The average trade in the dollars it really made, and in R, as if every trade risked the same. */}
-              <span className="font-black text-stone-950">
+              <span className="font-black text-ink">
                 {!isPrivacyMode && (
-                  <span className="mr-1.5 text-[11px] font-bold text-stone-400" title="Average profit per trade in dollars">
+                  <span className="mr-1.5 text-[11px] font-bold text-ink-faint" title="Average profit per trade in dollars">
                     {data.expectedPayoff < 0 ? '-' : ''}${formatNumber(Math.abs(data.expectedPayoff))}
                   </span>
                 )}
@@ -873,29 +873,29 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Sharpe Ratio</span>
-              <span className="font-black text-stone-950">{formatNumber(data.sharpeRatio)}</span>
+              <span className="text-xs font-bold text-ink-faint">Sharpe Ratio</span>
+              <span className="font-black text-ink">{formatNumber(data.sharpeRatio)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-stone-400">Net RR</span>
-              <span className="font-black text-stone-950">
+              <span className="text-xs font-bold text-ink-faint">Net RR</span>
+              <span className="font-black text-ink">
                 {formatNumber(data.netRR)} R
               </span>
             </div>
             {/* One row, label over the best run, so the card stays the height of its neighbours. */}
-            <div className="flex justify-between items-center gap-3 pt-4 border-t border-stone-200"
+            <div className="flex justify-between items-center gap-3 pt-4 border-t border-line"
               title="Trading days in a row with every trade on plan, no rule broken in the day's note. Days without trades are skipped.">
               <div className="min-w-0">
-                <p className="text-xs font-bold text-stone-400">On Plan in a Row</p>
-                <p className="text-[10px] font-semibold text-stone-400">Best {streak.best} {streak.best === 1 ? 'day' : 'days'}</p>
+                <p className="text-xs font-bold text-ink-faint">On Plan in a Row</p>
+                <p className="text-[10px] font-semibold text-ink-faint">Best {streak.best} {streak.best === 1 ? 'day' : 'days'}</p>
               </div>
-              <span className="font-black text-stone-950 flex items-center gap-1 shrink-0">
-                <Flame className={`w-4 h-4 ${streak.current > 0 ? 'text-orange-400' : 'text-stone-300'}`} />
-                {streak.current} <span className="text-[11px] font-bold text-stone-400">{streak.current === 1 ? 'day' : 'days'}</span>
+              <span className="font-black text-ink flex items-center gap-1 shrink-0">
+                <Flame className={`w-4 h-4 ${streak.current > 0 ? 'text-accent' : 'text-ink-disabled'}`} />
+                {streak.current} <span className="text-[11px] font-bold text-ink-faint">{streak.current === 1 ? 'day' : 'days'}</span>
               </span>
             </div>
             {data.estimatedRCount > 0 && (
-              <p className="text-[10px] font-semibold text-stone-400 text-right" title="Their first stop is unknown, so R uses the default 1R. Enter the first stop on the trade (marked ≈ in History) to make it exact.">
+              <p className="text-[10px] font-semibold text-ink-faint text-right" title="Their first stop is unknown, so R uses the default 1R. Enter the first stop on the trade (marked ≈ in History) to make it exact.">
                 ≈ {data.estimatedRCount} {data.estimatedRCount > 1 ? 'trades' : 'trade'} on a default 1R
               </p>
             )}

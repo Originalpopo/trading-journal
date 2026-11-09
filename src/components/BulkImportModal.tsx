@@ -39,11 +39,11 @@ const Approx = ({ className }: { className?: string }) => (
   <span className={`${className} inline-flex items-center justify-center text-[12px] font-bold leading-none`}>≈</span>
 );
 const SOURCE_MARKS: Record<SourceKind, { Icon: LucideIcon | typeof Approx; label: string; hint: string; color: string }> = {
-  yours: { Icon: UserRound, label: 'Yours', hint: 'Set by you', color: 'text-orange-400' },
-  log: { Icon: ScrollText, label: 'Log', hint: 'From the Notifications log', color: 'text-orange-400' },
-  risk: { Icon: Calculator, label: 'From risk', hint: 'Worked out from the risk you typed', color: 'text-orange-400' },
-  check: { Icon: AlertTriangle, label: 'Check exit', hint: 'Hit SL with no TP: the broker data has no reliable exit time. Click the time to set it.', color: 'text-red-900' },
-  est: { Icon: Approx, label: 'Est. exit', hint: 'Exit time estimated from a TP/SL placed after entry', color: 'text-stone-400' },
+  yours: { Icon: UserRound, label: 'Yours', hint: 'Set by you', color: 'text-accent' },
+  log: { Icon: ScrollText, label: 'Log', hint: 'From the Notifications log', color: 'text-accent' },
+  risk: { Icon: Calculator, label: 'From risk', hint: 'Worked out from the risk you typed', color: 'text-accent' },
+  check: { Icon: AlertTriangle, label: 'Check exit', hint: 'Hit SL with no TP: the broker data has no reliable exit time. Click the time to set it.', color: 'text-loss' },
+  est: { Icon: Approx, label: 'Est. exit', hint: 'Exit time estimated from a TP/SL placed after entry', color: 'text-ink-faint' },
 };
 
 function SourceMark({ kind, kept }: { kind: SourceKind; kept?: boolean }) {
@@ -317,22 +317,22 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
   };
 
   const actionLabel: Record<ImportAction, { text: string; className: string }> = {
-    new: { text: 'New', className: 'bg-orange-50 text-orange-400 border-orange-200' },
-    update: { text: 'Update', className: 'bg-stone-100 text-stone-600 border-stone-200' },
-    same: { text: 'Same', className: 'bg-stone-50 text-stone-300 border-stone-100' },
+    new: { text: 'New', className: 'bg-accent-soft text-accent border-accent-line' },
+    update: { text: 'Update', className: 'bg-surface-2 text-stone-600 border-line' },
+    same: { text: 'Same', className: 'bg-surface text-ink-disabled border-stone-100' },
   };
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={() => onClose()}>
       <div className="bg-white border-0 rounded-3xl w-fit min-w-[min(100%,64rem)] max-w-full p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100 flex-wrap gap-4">
-          <h3 className="text-2xl font-black text-stone-950 tracking-tight">
+          <h3 className="text-2xl font-black text-ink tracking-tight">
             Import from TradingView
           </h3>
 
           <div className="ml-auto flex items-center gap-4">
             {usedMarks.length > 0 && (
-              <div className="flex items-center gap-3 text-[10px] font-semibold text-stone-400">
+              <div className="flex items-center gap-3 text-[10px] font-semibold text-ink-faint">
                 {usedMarks.map(kind => {
                   const { Icon, label, hint, color } = SOURCE_MARKS[kind];
                   return (
@@ -343,7 +343,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                 })}
               </div>
             )}
-            <button onClick={() => onClose()} className="text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition">
+            <button onClick={() => onClose()} className="text-ink-faint hover:text-stone-600 p-1 rounded-full hover:bg-surface-2 transition">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -351,7 +351,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
 
         <div className="space-y-6 overflow-y-auto pr-2 flex-1">
           {error && (
-            <div className="bg-red-50 text-red-900 text-sm p-3 rounded-lg flex items-center gap-2">
+            <div className="bg-loss-soft text-loss text-sm p-3 rounded-lg flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
               {error}
             </div>
@@ -360,7 +360,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
           {notices.length > 0 && (
             <div className="space-y-1.5">
               {notices.map(n => n.serious ? (
-                <div key={n.label} className="text-[11px] px-3 py-2 rounded-lg border bg-red-50 text-red-900 border-red-200">
+                <div key={n.label} className="text-[11px] px-3 py-2 rounded-lg border bg-loss-soft text-loss border-loss-line">
                   <p className="flex items-start gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
                     <span><span className="font-bold">{n.label}:</span> <span className="font-medium">{n.text}</span></span>
@@ -368,12 +368,12 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                   {n.items && <p className="ml-5 mt-0.5 font-semibold opacity-80">{n.items.join('; ')}</p>}
                 </div>
               ) : (
-                <div key={n.label} className="text-[11px] text-stone-500 px-1">
+                <div key={n.label} className="text-[11px] text-ink-muted px-1">
                   <p className="flex items-start gap-1.5">
-                    <Info className="w-3.5 h-3.5 shrink-0 mt-px text-stone-400" />
+                    <Info className="w-3.5 h-3.5 shrink-0 mt-px text-ink-faint" />
                     <span><span className="font-bold">{n.label}:</span> <span className="font-medium">{n.text}</span></span>
                   </p>
-                  {n.items && <p className="ml-5 mt-0.5 text-stone-400">{n.items.join('; ')}</p>}
+                  {n.items && <p className="ml-5 mt-0.5 text-ink-faint">{n.items.join('; ')}</p>}
                 </div>
               ))}
             </div>
@@ -381,7 +381,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
 
           {parsedTrades.length > 0 && (
             <div>
-              <h4 className="text-sm font-bold text-stone-950 mb-3">
+              <h4 className="text-sm font-bold text-ink mb-3">
                 {logOnly
                   ? `Found ${countOf(parsedTrades.length, 'saved trade')} in the Notifications log: ${updateCount} to update`
                   : `Found ${parsedTrades.length} trades: ${newCount} new, ${updateCount} to update`}
@@ -389,7 +389,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
               {/* No scroll box of its own: the dialog body scrolls, so the header can stick to its top. */}
               <div className="w-max min-w-full border border-stone-100 rounded-xl">
                 <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="sticky top-0 z-10 bg-stone-50 text-stone-400 shadow-[inset_0_-1px_0_var(--color-stone-100)] [&_th:first-child]:rounded-tl-xl [&_th:last-child]:rounded-tr-xl">
+                  <thead className="sticky top-0 z-10 bg-surface text-ink-faint shadow-[inset_0_-1px_0_var(--color-stone-100)] [&_th:first-child]:rounded-tl-xl [&_th:last-child]:rounded-tr-xl">
                     <tr>
                       <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center"></th>
                       <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">Entry</th>
@@ -419,18 +419,18 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                       const onPlan = onPlanOf(row);
                       return (
                         <Fragment key={key}>
-                        <tr className="hover:bg-stone-50 transition duration-150 border-b border-stone-50">
+                        <tr className="hover:bg-surface transition duration-150 border-b border-stone-50">
                           <td className="px-2 py-4">
                             <span className={`px-2 py-0.5 border rounded-md text-[9px] font-black uppercase ${actionLabel[action].className}`}>{actionLabel[action].text}</span>
                           </td>
-                          <td className="px-2 py-4 text-stone-500 font-semibold leading-tight">
+                          <td className="px-2 py-4 text-ink-muted font-semibold leading-tight">
                             <span className="inline-flex items-center gap-1.5">
                               {entry.clock}
                               {result.timesFromLog && <SourceMark kind="log" kept={keptLogTimes} />}
                             </span>
                             <br/><span className="text-[9px] opacity-70">{entry.date}</span>
                           </td>
-                          <td className="px-2 py-4 text-stone-500 font-semibold leading-tight">
+                          <td className="px-2 py-4 text-ink-muted font-semibold leading-tight">
                             {isEditing ? (
                               <input
                                 type="datetime-local"
@@ -448,14 +448,14 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     setEditingKey(null);
                                   }
                                 }}
-                                className={`bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none ${invalidExit ? 'border-red-900' : 'border-orange-400'}`}
+                                className={`bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none ${invalidExit ? 'border-loss' : 'border-accent'}`}
                               />
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => setEditingKey(key)}
                                 title="Click to set the exit time"
-                                className="group text-left hover:text-orange-400 transition"
+                                className="group text-left hover:text-accent transition"
                               >
                                 <span className="inline-flex items-center gap-1.5">
                                   {exit.clock}
@@ -464,19 +464,19 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     : result.exitTimeConfidence === 'uncertain'
                                       ? <SourceMark kind="check" />
                                       : result.exitTimeConfidence === 'estimated' && <SourceMark kind="est" />}
-                                  <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
+                                  <Pencil className="w-3 h-3 text-ink-disabled group-hover:text-accent" />
                                 </span>
                                 <br/><span className="text-[9px] opacity-70">{exit.date}</span>
                               </button>
                             )}
-                            {invalidExit && <p className="text-[9px] font-bold text-red-900 mt-1">Before entry</p>}
+                            {invalidExit && <p className="text-[9px] font-bold text-loss mt-1">Before entry</p>}
                             {previousExitTime && !isEditing && (
-                              <p className="text-[9px] text-stone-300 line-through mt-0.5" title="Exit time currently saved">
+                              <p className="text-[9px] text-ink-disabled line-through mt-0.5" title="Exit time currently saved">
                                 {previous.clock} {previous.date}
                               </p>
                             )}
                           </td>
-                          <td className="px-2 py-4 font-extrabold text-stone-950">{t.symbol}</td>
+                          <td className="px-2 py-4 font-extrabold text-ink">{t.symbol}</td>
                           <td className="px-2 py-4">
                             <select
                               value={tf}
@@ -484,7 +484,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                 const value = e.target.value;
                                 setTfEdits(prev => ({ ...prev, [key]: value }));
                               }}
-                              className="bg-white border border-stone-200 hover:border-orange-400 focus:border-orange-400 rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none cursor-pointer"
+                              className="bg-white border border-line hover:border-accent focus:border-accent rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none cursor-pointer"
                             >
                               {!TIMEFRAMES.includes(tf) && <option value={tf}>{tf === 'none' ? '-' : tf}</option>}
                               {TIMEFRAMES.map(item => <option key={item} value={item}>{item}</option>)}
@@ -495,19 +495,19 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                               type="button"
                               onClick={() => setOnPlanEdits(prev => ({ ...prev, [key]: !onPlan }))}
                               title={onPlan ? "On Plan. Click to mark off plan." : "Off plan. Click to mark On Plan."}
-                              className="p-1 rounded hover:bg-stone-100 transition"
+                              className="p-1 rounded hover:bg-surface-2 transition"
                             >
-                              <ClipboardCheck className={`w-4 h-4 ${onPlan ? 'text-orange-400' : 'text-stone-300'}`} />
+                              <ClipboardCheck className={`w-4 h-4 ${onPlan ? 'text-accent' : 'text-ink-disabled'}`} />
                             </button>
                           </td>
                           <td className="px-2 py-4 text-center">
-                            <span className="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase bg-stone-100 text-stone-600 border-stone-200">
+                            <span className="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase bg-surface-2 text-stone-600 border-line">
                               {t.side}
                             </span>
                           </td>
-                          <td className={`px-2 py-4 font-bold text-stone-500 ${t.entryPrice ? "text-right" : "text-center"}`}>{t.entryPrice?.toFixed(2) || '-'}</td>
-                          <td className={`px-2 py-4 font-bold text-stone-500 ${t.tpPrice ? "text-right" : "text-center"}`}>{t.tpPrice?.toFixed(2) || '-'}</td>
-                          <td className="px-2 py-4 text-right font-bold text-stone-500">
+                          <td className={`px-2 py-4 font-bold text-ink-muted ${t.entryPrice ? "text-right" : "text-center"}`}>{t.entryPrice?.toFixed(2) || '-'}</td>
+                          <td className={`px-2 py-4 font-bold text-ink-muted ${t.tpPrice ? "text-right" : "text-center"}`}>{t.tpPrice?.toFixed(2) || '-'}</td>
+                          <td className="px-2 py-4 text-right font-bold text-ink-muted">
                             {editingStopKey === key ? (
                               <input
                                 type="number"
@@ -527,14 +527,14 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     setEditingStopKey(null);
                                   }
                                 }}
-                                className={`w-24 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none text-right ${invalidInitialSl ? 'border-red-900' : 'border-orange-400'}`}
+                                className={`w-24 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none text-right ${invalidInitialSl ? 'border-loss' : 'border-accent'}`}
                               />
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => setEditingStopKey(key)}
                                 title="Where the stop was first placed. Click to enter it."
-                                className="group inline-flex items-center gap-1.5 hover:text-orange-400 transition"
+                                className="group inline-flex items-center gap-1.5 hover:text-accent transition"
                               >
                                 {result.initialSlPrice
                                   ? <>
@@ -542,13 +542,13 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                       {result.initialSlSource === 'manual' && <SourceMark kind={stopFromRisk ? 'risk' : 'yours'} />}
                                       {result.initialSlSource === 'log' && <SourceMark kind="log" />}
                                     </>
-                                  : <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-400"><AlertTriangle className="w-3 h-3" /> moved</span>}
-                                <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
+                                  : <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-accent"><AlertTriangle className="w-3 h-3" /> moved</span>}
+                                <Pencil className="w-3 h-3 text-ink-disabled group-hover:text-accent" />
                               </button>
                             )}
-                            {invalidInitialSl && <p className="text-[9px] font-bold text-red-900 mt-1">Wrong side of entry</p>}
+                            {invalidInitialSl && <p className="text-[9px] font-bold text-loss mt-1">Wrong side of entry</p>}
                           </td>
-                          <td className="px-2 py-4 text-right font-bold text-stone-500 leading-tight">
+                          <td className="px-2 py-4 text-right font-bold text-ink-muted leading-tight">
                             {editingRiskKey === key ? (
                               <input
                                 type="number"
@@ -569,31 +569,31 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     setEditingRiskKey(null);
                                   }
                                 }}
-                                className={`w-20 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-stone-950 outline-none text-right ${invalidRisk ? 'border-red-900' : 'border-orange-400'}`}
+                                className={`w-20 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none text-right ${invalidRisk ? 'border-loss' : 'border-accent'}`}
                               />
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => setEditingRiskKey(key)}
                                 title={result.riskIsEstimate ? "Default 1R: the first stop is unknown. Click to enter the risk you used; the 1st SL is worked out from it." : "Distance to the first stop. Click to enter the risk you used instead."}
-                                className="group inline-flex items-center gap-1.5 hover:text-orange-400 transition"
+                                className="group inline-flex items-center gap-1.5 hover:text-accent transition"
                               >
                                 {result.riskIsEstimate ? '≈' : ''}${(result.risk || 0).toFixed(2)}
-                                <Pencil className="w-3 h-3 text-stone-300 group-hover:text-orange-400" />
+                                <Pencil className="w-3 h-3 text-ink-disabled group-hover:text-accent" />
                               </button>
                             )}
-                            {invalidRisk && <p className="text-[9px] font-bold text-red-900 mt-1">Can&apos;t place the stop</p>}
+                            {invalidRisk && <p className="text-[9px] font-bold text-loss mt-1">Can&apos;t place the stop</p>}
                             {previousRisk !== undefined && (
-                              <p className="text-[9px] text-stone-300 line-through" title="1R currently saved">${Number(previousRisk).toFixed(2)}</p>
+                              <p className="text-[9px] text-ink-disabled line-through" title="1R currently saved">${Number(previousRisk).toFixed(2)}</p>
                             )}
                           </td>
-                          <td className={`px-2 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-orange-400' : (t.profit! < 0 ? 'text-red-900' : 'text-stone-400')}`}>
+                          <td className={`px-2 py-4 text-right font-extrabold ${t.profit! > 0 ? 'text-accent' : (t.profit! < 0 ? 'text-loss' : 'text-ink-faint')}`}>
                             {t.profit! < 0 ? '-' : (t.profit! > 0 ? '+' : '')}${Math.abs(t.profit || 0).toFixed(2)}
                             {previousProfit !== undefined && (
-                              <p className="text-[9px] text-stone-300 line-through" title="P&L currently saved">{formatSigned(previousProfit)}</p>
+                              <p className="text-[9px] text-ink-disabled line-through" title="P&L currently saved">{formatSigned(previousProfit)}</p>
                             )}
                           </td>
-                          <td className="px-2 py-4 text-right font-bold text-stone-500">
+                          <td className="px-2 py-4 text-right font-bold text-ink-muted">
                             {result.riskIsEstimate ? '≈' : ''}{(result.rr || 0).toFixed(2)}R
                           </td>
                         </tr>
@@ -617,9 +617,9 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
 
         <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
           <button onClick={handleImport} disabled={isSubmitting || hasInvalidEdit || plan.some(isMissingReason) || newCount + updateCount === 0}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-orange-400 text-white hover:bg-orange-500 shadow-md shadow-orange-200 transition disabled:opacity-50">
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-strong shadow-md shadow-orange-200 transition disabled:opacity-50">
             {isSubmitting ? "Importing..." : logOnly ? `Update ${updateCount}` : `Import ${newCount} new, update ${updateCount}`}
           </button>
         </div>

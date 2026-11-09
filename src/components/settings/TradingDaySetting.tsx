@@ -47,7 +47,7 @@ export default function TradingDaySetting() {
       {/* Same grid as two-field cards, so a single field is one column wide */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-stone-950">Day starts at <span className="font-medium text-stone-400">(default {String(DEFAULT_DAY_START_HOUR).padStart(2, "0")}:00)</span></label>
+          <label className="block text-sm font-bold text-ink">Day starts at <span className="font-medium text-ink-faint">(default {String(DEFAULT_DAY_START_HOUR).padStart(2, "0")}:00)</span></label>
           <select value={shown} onChange={(e) => setValue(Number(e.target.value))} className={SETTINGS_INPUT}>
             {HOURS.map(h => <option key={h} value={h}>{String(h).padStart(2, "0")}:00{h === 0 ? " (midnight)" : ""}</option>)}
           </select>

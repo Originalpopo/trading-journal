@@ -19,7 +19,7 @@ export function useBackupAge() {
 export function BackupDueDot() {
   const age = useBackupAge();
   if (!age?.isDue) return null;
-  return <span title={`${age.label}: download a backup`} className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-900 ring-2 ring-white" />;
+  return <span title={`${age.label}: download a backup`} className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-loss ring-2 ring-white" />;
 }
 
 // One line saying how old the latest backup is. Turns red when the backup is overdue.
@@ -28,7 +28,7 @@ export default function BackupReminder() {
   if (!age) return null;
   const Icon = age.isDue ? ShieldAlert : ShieldCheck;
   return (
-    <span className={`flex items-center gap-1 text-[10px] font-bold ${age.isDue ? 'text-red-900' : 'text-stone-400'}`}>
+    <span className={`flex items-center gap-1 text-[10px] font-bold ${age.isDue ? 'text-loss' : 'text-ink-faint'}`}>
       <Icon className="w-3 h-3" /> {age.label}
     </span>
   );

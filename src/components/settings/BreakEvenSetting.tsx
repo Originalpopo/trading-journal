@@ -48,7 +48,7 @@ export default function BreakEvenSetting() {
       {/* Same grid as two-field cards, so a single field is one column wide */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-stone-950">BE range ±R <span className="font-medium text-stone-400">(default {BE_RR_THRESHOLD})</span></label>
+          <label className="block text-sm font-bold text-ink">BE range ±R <span className="font-medium text-ink-faint">(default {BE_RR_THRESHOLD})</span></label>
           <input type="number" step="0.05" min="0" max="1" value={shown} onChange={(e) => setValue(e.target.value)} className={SETTINGS_INPUT} />
         </div>
       </div>

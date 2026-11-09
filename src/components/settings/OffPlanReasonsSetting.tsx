@@ -64,7 +64,7 @@ export default function OffPlanReasonsSetting() {
       description="สาเหตุที่เทรดผิดแผน เลือกได้ตอนเพิ่ม แก้ไข หรือ Import เทรด ทุกเทรดที่ Off Plan ต้องมีอย่างน้อย 1 ข้อ ลบข้อที่มีเทรดใช้อยู่ เทรดเก่ายังเก็บข้อนั้นไว้ จนกว่าจะเอาออกเองใน Edit ของเทรดนั้น"
     >
       <div className="space-y-2">
-        {inUse.length === 0 && <p className="text-sm font-medium text-stone-400">No reasons yet. Add your own below, or pick a suggestion.</p>}
+        {inUse.length === 0 && <p className="text-sm font-medium text-ink-faint">No reasons yet. Add your own below, or pick a suggestion.</p>}
         {inUse.map(reason => {
           const used = usage.get(reason.id) ?? 0;
           return (
@@ -72,7 +72,7 @@ export default function OffPlanReasonsSetting() {
               <div className="relative flex-1 min-w-0">
                 <input type="text" value={reason.name} onChange={(e) => rename(reason.id, e.target.value)} aria-label="Reason" className={`${SETTINGS_INPUT} ${used > 0 ? "pr-24" : ""}`} />
                 {used > 0 && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-stone-400 whitespace-nowrap pointer-events-none">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-ink-faint whitespace-nowrap pointer-events-none">
                     {used} {used === 1 ? "trade" : "trades"}
                   </span>
                 )}
@@ -80,7 +80,7 @@ export default function OffPlanReasonsSetting() {
               <button type="button" onClick={() => remove(reason.id)}
                 title={used > 0 ? `Remove: no longer offered; the ${used} ${used === 1 ? "trade" : "trades"} naming it keep it` : "Remove this reason"}
                 aria-label={`Remove ${reason.name}`}
-                className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-stone-100 hover:bg-red-50 text-stone-500 hover:text-red-900 transition">
+                className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-surface-2 hover:bg-loss-soft text-ink-muted hover:text-loss transition">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -89,7 +89,7 @@ export default function OffPlanReasonsSetting() {
         <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); add(draft); }}>
           <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="e.g. ปิด TP ก่อนแผน" className={SETTINGS_INPUT} />
           <button type="submit" disabled={!draft.trim()} title="Add this reason" aria-label="Add this reason"
-            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-white border border-orange-400 text-orange-400 hover:bg-orange-50 disabled:opacity-40 transition">
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-white border border-accent text-accent hover:bg-accent-soft disabled:opacity-40 transition">
             <Plus className="w-4 h-4" />
           </button>
         </form>
@@ -98,16 +98,16 @@ export default function OffPlanReasonsSetting() {
       {/* Removed, but still on old trades: shown so they can be put back. */}
       {removed.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Removed, kept on old trades</p>
+          <p className="text-xs font-bold text-ink-faint uppercase tracking-widest mb-2">Removed, kept on old trades</p>
           <div className="flex flex-wrap gap-2">
             {removed.map(r => {
               const used = usage.get(r.id) ?? 0;
               return (
                 <button key={r.id} type="button" onClick={() => setEdits(restored(r.id))} title="Put this reason back"
-                  className="h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-bold bg-stone-50 border border-stone-200 text-stone-400 hover:text-orange-400 hover:border-orange-200 transition">
+                  className="h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-bold bg-surface border border-line text-ink-faint hover:text-accent hover:border-accent-line transition">
                   <Undo2 className="w-3.5 h-3.5" />
                   <span className="line-through">{r.name}</span>
-                  <span className="text-stone-300">{used} {used === 1 ? "trade" : "trades"}</span>
+                  <span className="text-ink-disabled">{used} {used === 1 ? "trade" : "trades"}</span>
                 </button>
               );
             })}
@@ -117,11 +117,11 @@ export default function OffPlanReasonsSetting() {
 
       {suggestions.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Suggestions</p>
+          <p className="text-xs font-bold text-ink-faint uppercase tracking-widest mb-2">Suggestions</p>
           <div className="flex flex-wrap gap-2">
             {suggestions.map(name => (
               <button key={name} type="button" onClick={() => add(name)}
-                className="h-8 px-3 rounded-full flex items-center gap-1 text-xs font-bold bg-stone-50 border border-stone-200 text-stone-500 hover:text-orange-400 hover:border-orange-200 transition">
+                className="h-8 px-3 rounded-full flex items-center gap-1 text-xs font-bold bg-surface border border-line text-ink-muted hover:text-accent hover:border-accent-line transition">
                 <Plus className="w-3.5 h-3.5" />
                 {name}
               </button>

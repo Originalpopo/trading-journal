@@ -85,7 +85,7 @@ export function HistoryColumnsButton({ isOpen, onToggle }: { isOpen: boolean; on
       aria-label="Columns"
       title="Choose which columns to show"
       className={`flex items-center justify-center h-8 w-8 border rounded-lg transition ${
-        isOpen ? "bg-orange-50 text-orange-400 border-orange-200" : "bg-white text-stone-500 border-stone-200 hover:text-stone-950"
+        isOpen ? "bg-accent-soft text-accent border-accent-line" : "bg-white text-ink-muted border-line hover:text-ink"
       }`}
     >
       <Columns3 className="w-3.5 h-3.5" />
@@ -106,7 +106,7 @@ export function HistoryColumnsPanel({ columns }: { columns: Columns }) {
             onClick={() => columns.toggle(key)}
             aria-pressed={isOn}
             className={`px-2.5 py-2 md:py-1 border rounded-md text-[10px] font-black uppercase transition ${
-              isOn ? "bg-orange-50 text-orange-400 border-orange-200" : "bg-white text-stone-300 border-stone-200 hover:text-stone-500"
+              isOn ? "bg-accent-soft text-accent border-accent-line" : "bg-white text-ink-disabled border-line hover:text-ink-muted"
             }`}
           >
             {label}
@@ -117,7 +117,7 @@ export function HistoryColumnsPanel({ columns }: { columns: Columns }) {
         <button
           type="button"
           onClick={columns.reset}
-          className="flex items-center gap-1 px-1.5 text-[11px] font-bold text-orange-400 hover:text-orange-500 transition"
+          className="flex items-center gap-1 px-1.5 text-[11px] font-bold text-accent hover:text-accent-strong transition"
         >
           <RotateCcw className="w-3 h-3" /> Default
         </button>

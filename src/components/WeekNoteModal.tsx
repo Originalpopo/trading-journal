@@ -17,7 +17,7 @@ interface WeekNoteModalProps {
 }
 
 const weekdayOf = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-const toneOf = (n: number) => (n > 0 ? 'text-orange-400' : n < 0 ? 'text-red-900' : 'text-stone-400');
+const toneOf = (n: number) => (n > 0 ? 'text-accent' : n < 0 ? 'text-loss' : 'text-ink-faint');
 
 // The note of one week beside that week's result, day by day. Weekends show only when something
 // happened on them. Mount it with a `key` of the week so each week starts from its own saved note.
@@ -55,13 +55,13 @@ export default function WeekNoteModal({ week, startEditing, bahtRate, onClose, o
               type="button"
               title={dayNote ? "Open this day's note" : "Open this day"}
               onClick={() => onOpenDay(d.date)}
-              className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-stone-50 hover:bg-stone-100 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
+              className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-surface hover:bg-surface-2 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
             >
-              <span className="text-stone-950 w-[92px] shrink-0">{weekdayOf(d.date)}</span>
+              <span className="text-ink w-[92px] shrink-0">{weekdayOf(d.date)}</span>
               <span className="w-5 shrink-0">
                 {dayNote && <MoodIcon mood={dayNote.mood} className={`w-4 h-4 ${moodTone(dayNote.mood).text}`} />}
               </span>
-              <span className="text-stone-400 flex-1 min-w-0 truncate">
+              <span className="text-ink-faint flex-1 min-w-0 truncate">
                 {d.count === 0 ? 'No trades' : `${d.count} ${d.count > 1 ? 'trades' : 'trade'}`}
               </span>
               {d.count > 0 && !isPrivacyMode && (
