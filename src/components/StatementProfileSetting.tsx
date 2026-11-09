@@ -6,7 +6,7 @@ import SaveRow from "@/components/SaveRow";
 import SettingsCard from "@/components/settings/SettingsCard";
 import { useJournalStore } from "@/store/useJournalStore";
 
-const INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium";
+const INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition placeholder:font-medium";
 
 // Who the account belongs to, printed at the top of the monthly statement.
 export default function StatementProfileSetting() {

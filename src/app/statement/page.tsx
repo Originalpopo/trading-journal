@@ -16,9 +16,9 @@ const TH = "px-3 py-3 font-bold uppercase text-[10px] tracking-widest text-right
 const TH_LEFT = "px-3 py-3 font-bold uppercase text-[10px] tracking-widest text-left";
 // A cell takes exactly one text colour (two would leave the winner to CSS order).
 const TD_BASE = "px-3 py-2.5 text-right font-semibold";
-const TD = `${TD_BASE} text-stone-600`;
+const TD = `${TD_BASE} text-ink-muted`;
 const TD_LEFT_BASE = "px-3 py-2.5 text-left font-semibold";
-const TD_LEFT = `${TD_LEFT_BASE} text-stone-600`;
+const TD_LEFT = `${TD_LEFT_BASE} text-ink-muted`;
 
 const signed = (value: number) => `${value < 0 ? '-' : ''}${formatNumber(Math.abs(value))}`;
 const clock = (time?: string) => (time ? time.replace('T', ' ') : '');
@@ -76,9 +76,9 @@ function StatementDocument({ statement, profile, confirmed, periodPicker }: { st
       {statement.rows.length === 0 ? (
         <p className="text-xs text-ink-faint font-medium">No transactions in this period.</p>
       ) : (
-        <div className="overflow-x-auto print:overflow-visible border border-stone-100 rounded-xl print:rounded-none">
+        <div className="overflow-x-auto print:overflow-visible border border-line-soft rounded-xl print:rounded-none">
           <table className="w-full text-left whitespace-nowrap">
-            <thead className="bg-surface text-ink-faint border-b border-stone-100">
+            <thead className="bg-surface text-ink-faint border-b border-line-soft">
               <tr>
                 <th className={TH_LEFT}>No.</th>
                 <th className={TH_LEFT}>Close time</th>
@@ -93,13 +93,13 @@ function StatementDocument({ statement, profile, confirmed, periodPicker }: { st
                 <th className={TH}>Balance</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] divide-y divide-stone-50">
+            <tbody className="text-[11px] divide-y divide-line-soft">
               {statement.rows.map((r, i) => (
                 <tr key={`${r.time}-${i}`} className={`break-inside-avoid ${r.kind === 'trade' ? '' : 'bg-surface print:bg-transparent'}`}>
                   <td className={TD_LEFT}>{i + 1}</td>
                   <td className={TD_LEFT}>{clock(r.time)}{r.timeIsEstimate && <span title="เวลาปิดเป็นค่าประมาณ: ข้อมูลจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอน"> *</span>}</td>
                   <td className={TD_LEFT}>{clock(r.openTime)}</td>
-                  <td className={`${TD_LEFT_BASE} ${r.kind === 'trade' ? 'text-stone-600' : 'font-extrabold text-ink'}`}>{r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind}</td>
+                  <td className={`${TD_LEFT_BASE} ${r.kind === 'trade' ? 'text-ink-muted' : 'font-extrabold text-ink'}`}>{r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind}</td>
                   <td className={TD_LEFT}>{r.reference?.split(':').pop() || ''}</td>
                   <td className={TD_LEFT}>{r.symbol || ''}</td>
                   <td className={TD}>{r.size ?? ''}</td>
@@ -222,7 +222,7 @@ export default function StatementPage() {
                   value={current ? `${current.year}-${current.month}` : ''}
                   onChange={(e) => setSelected(e.target.value)}
                   aria-label="Month"
-                  className="bg-white border border-line text-ink text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-stone-500 cursor-pointer"
+                  className="bg-white border border-line text-ink text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-accent cursor-pointer"
                 >
                   {months.map(m => (
                     <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>{MONTH_NAMES[m.month - 1]} {m.year}</option>
@@ -234,7 +234,7 @@ export default function StatementPage() {
       </div>
 
       {isPreviewOpen && statement && (
-        <div className="fixed inset-0 z-[100] bg-stone-300 overflow-auto print:static print:bg-white print:overflow-visible">
+        <div className="fixed inset-0 z-[100] bg-line overflow-auto print:static print:bg-white print:overflow-visible">
           {/* A4 landscape: the transactions table is too wide for a portrait page. */}
           <style>{`@page { size: A4 landscape; margin: 12mm; }`}</style>
           <div className="sticky top-0 left-0 z-10 bg-white border-b border-line px-3 md:px-6 py-3 flex items-center justify-end md:justify-between gap-4 print:hidden">
@@ -245,16 +245,16 @@ export default function StatementPage() {
             <div className="flex items-center gap-2 shrink-0">
               <button type="button" onClick={handleSavePdf} disabled={isSavingPdf}
                 title="บันทึกเป็นไฟล์ PDF ลงเครื่องทันที ไม่ผ่านหน้าต่างพิมพ์"
-                className="px-3 md:px-5 py-2.5 bg-accent hover:bg-accent-strong disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2 text-xs">
+                className="px-3 md:px-5 py-2.5 bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white font-bold rounded-xl transition shadow-lg shadow-accent-line flex items-center gap-2 text-xs">
                 <FileDown className="w-4 h-4" /> {isSavingPdf ? "Saving..." : "Save as PDF"}
               </button>
               <button type="button" onClick={() => window.print()}
                 title="เปิดหน้าต่างพิมพ์ของเบราว์เซอร์เพื่อพิมพ์ลงกระดาษ"
-                className="px-4 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center gap-2 text-xs">
+                className="px-4 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center gap-2 text-xs">
                 <Printer className="w-4 h-4" /> Print
               </button>
               <button type="button" onClick={() => setIsPreviewOpen(false)}
-                className="px-4 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center gap-2 text-xs">
+                className="px-4 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center gap-2 text-xs">
                 <X className="w-4 h-4" /> Close
               </button>
             </div>
