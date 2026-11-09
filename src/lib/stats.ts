@@ -115,14 +115,20 @@ export interface Drawdown {
   previousMaxPercent: number;
   tradesBelowPeak: number; // trades taken since the latest peak
   peakTime?: number; // when the latest peak was reached
+  maxPercentAmount: number; // the drop, in the series' own unit, of the deepest-% drawdown: the same drop as `maxPercent`
+  // The longest stretch below a peak that has ended (back to the peak again): most trades, then most time.
+  // 0 trades when no stretch has ended yet. The one still under way is not in it (its length is open).
+  longestTrades: number;
+  longestMs: number; // from its peak to the event that got back to it; 0 when the times are unknown
 }
 
 // Tracks the drop from the running peak of a series. `base` is what the percentage is
 // measured against, captured whenever the series is at its peak.
 function createDrawdownTracker() {
   let peak = 0, peakBase = 0, peakTime: number | undefined, last = 0;
-  let max = 0, maxPercent = 0, activeMax = 0, tradesBelowPeak = 0;
+  let max = 0, maxPercent = 0, maxPercentAmount = 0, activeMax = 0, tradesBelowPeak = 0;
   let previousMax = 0, previousMaxPercent = 0;
+  let longestTrades = 0, longestMs = 0;
   const dropTo = (value: number) => Math.round((peak - value) * 100) / 100;
   const percentOf = (dd: number) => (peakBase > 0 ? (dd / peakBase) * 100 : 0);
   return {
@@ -130,19 +136,26 @@ function createDrawdownTracker() {
       last = value;
       if (value >= peak) {
         if (activeMax > 0) { previousMax = activeMax; previousMaxPercent = percentOf(activeMax); }
+        if (tradesBelowPeak > 0) {
+          const ms = time !== undefined && peakTime !== undefined ? Math.max(0, time - peakTime) : 0;
+          if (tradesBelowPeak > longestTrades || (tradesBelowPeak === longestTrades && ms > longestMs)) {
+            longestTrades = tradesBelowPeak; longestMs = ms;
+          }
+        }
         peak = value; peakBase = base; peakTime = time; tradesBelowPeak = 0; activeMax = 0;
       }
       else if (isTrade) tradesBelowPeak++;
       const dd = dropTo(value);
       max = Math.max(max, dd);
       activeMax = Math.max(activeMax, dd);
-      maxPercent = Math.max(maxPercent, percentOf(dd));
+      if (percentOf(dd) > maxPercent) { maxPercent = percentOf(dd); maxPercentAmount = dd; }
     },
     result(): Drawdown {
       const active = dropTo(last);
       return {
         max, maxPercent, active, activePercent: percentOf(active),
         activeMax, activeMaxPercent: percentOf(activeMax), previousMax, previousMaxPercent, tradesBelowPeak, peakTime,
+        maxPercentAmount, longestTrades, longestMs,
       };
     },
   };

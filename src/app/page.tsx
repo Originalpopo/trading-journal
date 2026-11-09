@@ -24,6 +24,7 @@ import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import HealthWeather from "@/components/HealthWeather";
 import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth, calcTimeWeightedReturn } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
+import { equitySeries, CHART_RANGES, DEFAULT_CHART_RANGE, type ChartRange } from "@/lib/equitySeries";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
@@ -293,69 +294,15 @@ export default function Dashboard() {
     timelineEvents.sort((a, b) => a.timeObj - b.timeObj);
 
     let runningBalance = 0;
-    let cumulativePnL = 0;
-    // Taken from every trade, so a peak inside a day still counts when the chart shows one point per day.
-    let peakPnL = 0;
-    // Where on the chart the peak is: its point, or with one point per day, that day's point.
-    let peakIndex = 0;
-    let peakDateKey = '';
-
-    const equityData = [0];
-    const balanceData = [0];
-    const chartLabels = ['Start'];
-    const dailyPoints = new Map<string, { balance: number, pnl: number, timestamp: number }>();
-    const shouldAggregate = timelineEvents.length > 500;
-
     timelineEvents.forEach(evt => {
-      if (evt.type === 'funding') {
-        runningBalance = subMoney(addMoney(runningBalance, evt.data.deposit), evt.data.withdraw);
-
-        if (shouldAggregate) {
-          const d = new Date(evt.timeObj);
-          const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-          dailyPoints.set(dateKey, { balance: runningBalance, pnl: cumulativePnL, timestamp: evt.timeObj });
-        } else {
-          equityData.push(cumulativePnL);
-          balanceData.push(runningBalance);
-          const d = new Date(evt.timeObj);
-          chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
-        }
-      } else if (evt.type === 'trade') {
-        const t = evt.data;
-        runningBalance = addMoney(runningBalance, t.profit);
-        cumulativePnL = addMoney(cumulativePnL, t.profit);
-        const isNewPeak = cumulativePnL > peakPnL;
-        if (isNewPeak) peakPnL = cumulativePnL;
-
-        if (shouldAggregate) {
-          const d = new Date(evt.timeObj);
-          const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-          dailyPoints.set(dateKey, { balance: runningBalance, pnl: cumulativePnL, timestamp: evt.timeObj });
-          if (isNewPeak) peakDateKey = dateKey;
-        } else {
-          if (isNewPeak) peakIndex = equityData.length;
-          equityData.push(cumulativePnL);
-          balanceData.push(runningBalance);
-          const d = new Date(evt.timeObj);
-          chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
-        }
-      }
+      runningBalance = evt.type === 'funding'
+        ? subMoney(addMoney(runningBalance, evt.data.deposit), evt.data.withdraw)
+        : addMoney(runningBalance, evt.data.profit);
     });
 
     const summary = summarizeTrades(timelineEvents.filter(evt => evt.type === 'trade').map(evt => evt.data));
     // `type` goes last: some old imported trades have their own `type` field (order type).
     const drawdowns = computePnlDrawdown(timelineEvents.map(evt => ({ ...evt.data, type: evt.type, time: evt.timeObj })));
-
-    if (shouldAggregate) {
-      const sortedDaily = Array.from(dailyPoints.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
-      sortedDaily.forEach(([dateKey, day]) => {
-        if (dateKey === peakDateKey) peakIndex = equityData.length;
-        equityData.push(day.pnl);
-        balanceData.push(day.balance);
-        const d = new Date(day.timestamp);
-        chartLabels.push(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(-2)}`);
-      });
-    }
 
     return {
       totalFunded, totalDeposit, totalWithdraw, runningBalance,
@@ -375,10 +322,28 @@ export default function Dashboard() {
       avgSLRR: summary.avgSLRR, maxSLRR: summary.maxSLRR,
       maxStreakW: summary.maxConsWinCount, maxStreakL: summary.maxConsLossCount,
       drawdowns,
-      peakPnL, peakIndex, currentPnL: cumulativePnL,
-      equityData, balanceData, chartLabels
+      // For the chart, which shows one range of it at a time.
+      seriesEvents: timelineEvents.map(evt => ({ type: evt.type, time: evt.timeObj, profit: evt.data.profit, deposit: evt.data.deposit, withdraw: evt.data.withdraw })),
     };
   }, [trades, funding]);
+
+  // The chart's range, remembered in this browser (1M until one is picked).
+  const [chartRange, setChartRange] = useState<ChartRange>(() => {
+    try {
+      const saved = localStorage.getItem('dashboardChartRange');
+      return (CHART_RANGES as readonly string[]).includes(saved ?? '') ? (saved as ChartRange) : DEFAULT_CHART_RANGE;
+    } catch {
+      return DEFAULT_CHART_RANGE;
+    }
+  });
+  const pickChartRange = (range: ChartRange) => {
+    setChartRange(range);
+    try { localStorage.setItem('dashboardChartRange', range); } catch { /* not remembered */ }
+  };
+  const series = useMemo(() => equitySeries(data.seriesEvents, chartRange, now), [data.seriesEvents, chartRange, now]);
+  // The Peak line and the Active DD area show on every range: they only ever show the drawdown under way now, and a
+  // long one is seen whole only on a long range (on a short one it starts at the left edge).
+  const showPeak = trades.length > 0;
 
   // "Yes" records that the broker showed exactly the journal's balance at this moment.
   const confirmBrokerMatch = async () => {
@@ -394,11 +359,11 @@ export default function Dashboard() {
 
   const chartDataConfig = useMemo(() => {
     return {
-      labels: data.chartLabels,
+      labels: series.labels,
       datasets: [
         {
           label: 'Equity (PnL)',
-          data: data.equityData,
+          data: series.equity,
           borderColor: '#fb923c',
           borderWidth: 3,
           backgroundColor: 'rgba(251, 146, 60, 0.08)',
@@ -414,7 +379,7 @@ export default function Dashboard() {
         },
         {
           label: 'Balance',
-          data: data.balanceData,
+          data: series.balance,
           borderColor: 'transparent',
           borderWidth: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.03)',
@@ -426,7 +391,7 @@ export default function Dashboard() {
         }
       ]
     };
-  }, [data]);
+  }, [series]);
 
   // The top cards' big figures: 30px, or smaller when a long one would not fit its card.
   const growthText = `${formatNumber(data.accountGrowth)}%`;
@@ -456,15 +421,16 @@ export default function Dashboard() {
           },
         },
       },
-      peakEquityLine: { peak: trades.length > 0 ? data.peakPnL : null, peakIndex: data.peakIndex, current: data.currentPnL }
+      peakEquityLine: { peak: showPeak ? series.peak : null, peakIndex: series.peakIndex, current: series.current }
     },
     scales: {
       x: { display: false },
       y: {
         type: 'linear' as const,
         display: true,
-        // Keeps the peak line inside the chart even when the plotted daily points sit below it.
-        suggestedMax: data.peakPnL,
+        // Keeps the peak line inside the chart, also when the peak came before the range or the plotted daily
+        // points sit below it.
+        suggestedMax: showPeak ? series.peak : undefined,
         position: 'left' as const,
         // No line along the bottom: the Balance grey carries on below it (pageFillPlugin).
         grid: { color: (c: { index: number }) => (c.index === 0 ? 'transparent' : '#fafaf9'), drawOnChartArea: true },
@@ -491,9 +457,17 @@ export default function Dashboard() {
   const ddActive = isRMode ? displayDD.active : displayDD.activePercent;
   const ddUnit = isRMode ? ' R' : '%';
   const ddDays = displayDD.peakTime ? Math.max(0, Math.floor((now - displayDD.peakTime) / 86_400_000)) : 0;
-  const belowPeakText = displayDD.active > 0
-    ? `${displayDD.tradesBelowPeak} trade${displayDD.tradesBelowPeak === 1 ? '' : 's'}${ddDays > 0 ? ` · ${ddDays} day${ddDays === 1 ? '' : 's'}` : ''} below the peak`
-    : 'At the peak';
+  const stretchText = (trades: number, days: number) =>
+    `${trades} trade${trades === 1 ? '' : 's'}${days > 0 ? ` · ${days} day${days === 1 ? '' : 's'}` : ''}`;
+  const belowPeakText = displayDD.active > 0 ? `${stretchText(displayDD.tradesBelowPeak, ddDays)} below the peak` : 'At the peak';
+  // The longest stretch below a peak so far, to set this one against: by trades, with that stretch's own days.
+  // The one under way is the longest once it has more trades (or as many, for longer).
+  const currentMs = displayDD.peakTime ? Math.max(0, now - displayDD.peakTime) : 0;
+  const isLongestNow = displayDD.active > 0 && (displayDD.tradesBelowPeak > displayDD.longestTrades
+    || (displayDD.tradesBelowPeak === displayDD.longestTrades && currentMs > displayDD.longestMs));
+  const longestText = isLongestNow
+    ? 'Longest: this one'
+    : displayDD.longestTrades > 0 ? `Longest: ${stretchText(displayDD.longestTrades, Math.floor(displayDD.longestMs / 86_400_000))}` : null;
 
   // The gauge shows only the drawdown still under way: where it is now, and the deepest it has been.
   // Both clear at a new peak. A full gauge is the drawdown before this one, or this one once it is deeper.
@@ -630,10 +604,25 @@ export default function Dashboard() {
 
       <div className="px-6 pt-6 h-[350px] flex flex-col">
         {/* The title alone; the equity's figure is not shown (the Peak line's label gives how far below it is). */}
-        <div ref={chartTitleRef} className="flex items-center mb-4">
-          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Equity and Balance
+        <div ref={chartTitleRef} className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 bg-orange-400 rounded-full shrink-0"></span> {/* Shorter on a phone, so it shares the line with the range buttons */}
+            <span className="truncate"><span className="sm:hidden">Equity</span><span className="hidden sm:inline">Equity and Balance</span></span>
           </h3>
+          {/* Same look as the Drawdown card's R / $ switch. */}
+          <div className="flex items-center bg-stone-100 p-0.5 rounded-md border border-stone-200 shadow-sm shrink-0">
+            {CHART_RANGES.map(range => (
+              <button
+                key={range}
+                onClick={() => pickChartRange(range)}
+                className={`text-[10px] font-bold px-2.5 md:px-3 py-1.5 md:py-1 rounded transition-all ${
+                  chartRange === range ? 'bg-white text-stone-950 shadow-md' : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                {range === 'ALL' ? 'All' : range}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
           <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin, pageFillPlugin]} />
@@ -721,24 +710,32 @@ export default function Dashboard() {
           <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[200px] mb-8">
             <div className="flex flex-col justify-between z-10 flex-1 pr-2 py-1">
               <div>
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Max DD</p>
+                {/* In $ mode the dollars sit after the label, so no line moves when switching R and $. */}
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
+                  Max DD
+                  {!isRMode && (
+                    <span className="ml-1.5 normal-case tracking-normal font-bold text-stone-500" title="The same drop as the % below, in dollars.">
+                      {isPrivacyMode ? '***' : `$${formatNumber(displayDD.maxPercentAmount)}`}
+                    </span>
+                  )}
+                </p>
                 <p className="text-2xl font-extrabold text-red-950">{formatNumber(ddMax)}{ddUnit}</p>
-                {!isRMode && (
-                  <p className="text-[11px] font-bold text-stone-500" title="The largest drop in dollars. It can be a different drop from the deepest percentage.">
-                    {isPrivacyMode ? '***' : `$${formatNumber(displayDD.max)}`}
-                  </p>
-                )}
               </div>
 
               <div className="w-full border-t border-stone-200 my-auto"></div>
 
               <div>
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Active DD</p>
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
+                  Active DD
+                  {!isRMode && (
+                    <span className="ml-1.5 normal-case tracking-normal font-bold text-stone-500">
+                      {isPrivacyMode ? '***' : `$${formatNumber(displayDD.active)}`}
+                    </span>
+                  )}
+                </p>
                 <p className="text-2xl font-extrabold text-red-900">{formatNumber(ddActive)}{ddUnit}</p>
-                {!isRMode && (
-                  <p className="text-[11px] font-bold text-stone-500">{isPrivacyMode ? '***' : `$${formatNumber(displayDD.active)}`}</p>
-                )}
                 <p className="text-[10px] font-normal text-stone-400 mt-1">{belowPeakText}</p>
+                {longestText && <p className="text-[10px] font-normal text-stone-400">{longestText}</p>}
               </div>
             </div>
 
@@ -768,7 +765,8 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+          {/* Lined up with the figures on the left (the card's 24px padding). */}
+          <div className="absolute bottom-4 left-6 flex">
             <div className="flex items-center bg-stone-100 p-0.5 rounded-md border border-stone-200 shadow-sm">
               {([['r', 'R', 'Drawdown of your cumulative R'], ['usd', '$', 'Drawdown of your cumulative profit and loss in dollars']] as const).map(([mode, label, hint]) => (
                 <button

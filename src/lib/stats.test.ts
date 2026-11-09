@@ -178,6 +178,23 @@ test('computePnlDrawdown: the deepest % and the largest $ drop can be different 
   assert.equal(dd.usd.max, 200);
   close(dd.usd.maxPercent, 50);
   close(dd.usd.activePercent, 2);
+  // The $ shown with the deepest % is that drop's own, not the largest $ drop.
+  assert.equal(dd.usd.maxPercentAmount, 50);
+});
+
+test('computePnlDrawdown: the longest stretch below a peak, by trades, with its own time', () => {
+  const h = 3_600_000;
+  const t = (rr: number, at: number) => ({ type: 'trade' as const, profit: rr, rr, time: at * h });
+  const dd = computePnlDrawdown([
+    t(1, 0),
+    t(-1, 1), t(-1, 2), t(2, 30), // 2 trades below the peak at 0h, back above it at 30h
+    t(-1, 31), t(1, 32), // 1 trade, 1h
+    t(-1, 40), t(-1, 41), t(-1, 42), // still under way: not counted
+  ]).r;
+  assert.equal(dd.longestTrades, 2);
+  assert.equal(dd.longestMs, 30 * h);
+  assert.equal(dd.tradesBelowPeak, 3);
+  assert.equal(computePnlDrawdown([t(1, 0)]).r.longestTrades, 0);
 });
 
 test('computePnlDrawdown: R drawdown follows the R of each trade, not its dollars', () => {
