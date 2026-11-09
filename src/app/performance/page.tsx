@@ -163,6 +163,27 @@ function SplitBar({ value, maxPos, maxNeg }: { value: number; maxPos: number; ma
   );
 }
 
+// One bar split into separate pieces by share, with a small gap between them, as the Timeframe bars split at 0.
+// A piece with nothing in it is left out (the others fill the bar); a tiny one stays a round dot.
+function PieceBar({ pieces, heightClass, className = '' }: {
+  pieces: { key: string; share: number; color: string; label?: React.ReactNode }[];
+  heightClass: string;
+  className?: string;
+}) {
+  const shown = pieces.filter(x => x.share > 0);
+  return (
+    <div className={`w-full ${heightClass} flex gap-1 ${className}`}>
+      {shown.length === 0 && <div className="h-full w-full rounded-full bg-stone-100" />}
+      {shown.map(x => (
+        <div key={x.key} className={`h-full rounded-full flex items-center justify-center ${x.color} transition-all duration-500`}
+          style={{ flexGrow: x.share, flexBasis: 0, minWidth: 'var(--piece-min)' }}>
+          {x.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PerformancePage() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const formatCurrency = (val: number) => formatCurrencyHelper(val, isPrivacyMode);
@@ -586,11 +607,11 @@ export default function PerformancePage() {
               <span className="text-stone-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
               <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
             </div>
-            <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden flex mt-1">
-              <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${data.winPct}%` }}></div>
-              <div className="h-full bg-stone-200 transition-all duration-500" style={{ width: `${data.bePct}%` }}></div>
-              <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.lossPct}%` }}></div>
-            </div>
+            <PieceBar heightClass="h-2.5 [--piece-min:0.625rem]" className="mt-1" pieces={[
+              { key: 'win', share: data.winPct, color: 'bg-orange-400' },
+              { key: 'be', share: data.bePct, color: 'bg-stone-200' },
+              { key: 'loss', share: data.lossPct, color: 'bg-red-900' },
+            ]} />
             <div className="grid grid-cols-3 gap-2 pt-0.5">
               <div className="bg-orange-50/60 border border-orange-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
                 <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">TP</span>
@@ -644,10 +665,10 @@ export default function PerformancePage() {
               <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
               <span className="text-orange-400 flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
             </div>
-            <div className="w-full h-4 bg-stone-100 rounded-full overflow-hidden flex mt-1 mb-1">
-              <div className="h-full bg-red-900 transition-all duration-500" style={{ width: `${data.offPlanPct}%` }}></div>
-              <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${data.onPlanPct}%` }}></div>
-            </div>
+            <PieceBar heightClass="h-4 [--piece-min:1rem]" className="mt-1 mb-1" pieces={[
+              { key: 'off', share: data.offPlanPct, color: 'bg-red-900' },
+              { key: 'on', share: data.onPlanPct, color: 'bg-orange-400' },
+            ]} />
             <div className="flex justify-between text-[10px] font-bold mt-2">
               <div className="flex flex-col">
                 <span className="text-red-900">Off Plan</span>
@@ -753,25 +774,18 @@ export default function PerformancePage() {
                       <span>Win Streaks</span>
                       <span>Loss Streaks</span>
                     </div>
-                    <div className="w-full h-6 bg-stone-200 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
-                      <div className="h-full bg-orange-400 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${winPct}%` }}>
-                        {maxWin > 0 ? maxWin : ''}
-                      </div>
-                      <div className="h-full bg-red-900 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${lossPct}%` }}>
-                        {maxLoss > 0 ? maxLoss : ''}
-                      </div>
-                    </div>
+                    <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold text-white" pieces={[
+                      { key: 'win', share: winPct, color: 'bg-orange-400', label: maxWin },
+                      { key: 'loss', share: lossPct, color: 'bg-red-900', label: maxLoss },
+                    ]} />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <div className="w-full h-6 bg-stone-200 rounded-full overflow-hidden flex my-0.5 text-[11px] font-bold">
-                      <div className="h-full bg-stone-950 flex items-center justify-center text-white transition-all duration-500" style={{ width: `${avgWinPct}%` }}>
-                        {avgWin > 0 ? avgWin : ''}
-                      </div>
-                      <div className="h-full bg-stone-200 flex items-center justify-center text-stone-600 transition-all duration-500" style={{ width: `${avgLossPct}%` }}>
-                        {avgLoss > 0 ? avgLoss : ''}
-                      </div>
-                    </div>
+                    {/* Avg Loss a step darker than before, so it stands apart from the Results grey behind it. */}
+                    <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold" pieces={[
+                      { key: 'win', share: avgWinPct, color: 'bg-stone-950 text-white', label: avgWin },
+                      { key: 'loss', share: avgLossPct, color: 'bg-stone-300 text-stone-700', label: avgLoss },
+                    ]} />
                     <div className="flex justify-between text-[10px] font-bold text-stone-600">
                       <span>AVG Win</span>
                       <span>AVG Loss</span>
