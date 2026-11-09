@@ -47,7 +47,7 @@ const cellMoney = (pnl: number, rate?: number | null) => {
 // The target line along the bottom of a day or week cell: thin on a phone, a little thicker on a computer. Its
 // unfilled part is a darker grey than the Dashboard's, so a bar short of the target reads apart from a full line.
 const TARGET_LINE_HEIGHT = "h-[3px] md:h-1.5";
-const TARGET_LINE_TRACK = "bg-stone-200";
+const TARGET_LINE_TRACK = "bg-line";
 
 const phoneFit = (text: string, max: string) => fitFontSize(text, max, 180);
 
@@ -256,7 +256,7 @@ export default function CalendarPage() {
         <div className="hidden md:flex gap-4 items-center justify-end">
           {stats.map((stat, i) => (
             <div key={stat.label} className="flex items-center gap-4">
-              {i > 0 && <div className="w-[1px] bg-stone-200 h-8 shrink-0"></div>}
+              {i > 0 && <div className="w-[1px] bg-line h-8 shrink-0"></div>}
               <div className="flex flex-col justify-center items-center text-center shrink-0 px-2">
                 <span className="text-[9px] leading-none font-black text-ink-faint uppercase tracking-widest mb-1">{stat.label}</span>
                 <span title={stat.title} className={`text-lg leading-none font-black ${stat.tone}`}>{stat.value}</span>
@@ -306,7 +306,7 @@ export default function CalendarPage() {
                 <button
                   key={v}
                   onClick={() => changeView(v)}
-                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-stone-600'}`}
+                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
                 >
                   {v}
                 </button>
@@ -318,7 +318,7 @@ export default function CalendarPage() {
                   key={c}
                   onClick={() => changeCurrency(c)}
                   disabled={c === 'THB' && !bahtRate}
-                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-stone-600'}`}
+                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
                 >
                   {c === 'USD' ? '$' : '฿'}
                 </button>
@@ -345,7 +345,7 @@ export default function CalendarPage() {
             ))}
             {data.daysArray.map((cell: any) => {
               if (cell.type === 'empty') {
-                return <div key={cell.id} className="bg-stone-50/50 min-h-[68px] md:min-h-[110px]"></div>;
+                return <div key={cell.id} className="bg-surface-2 min-h-[68px] md:min-h-[110px]"></div>;
               }
 
               const { day, isToday, stats } = cell;
@@ -436,7 +436,7 @@ export default function CalendarPage() {
                           {formatNumber(stats.rr)} R
                         </div>
                       )}
-                      <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter mt-0.5">
+                      <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter mt-0.5">
                         Trades : {stats.count}
                       </div>
                     </>
@@ -449,12 +449,12 @@ export default function CalendarPage() {
             })}
           </div>
 
-          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-stone-200 gap-[1px] border border-line rounded-xl overflow-hidden">
+          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-line gap-[1px] border border-line rounded-xl overflow-hidden">
             <div className="bg-accent-soft p-3 text-center text-[10px] font-black text-accent uppercase tracking-widest shrink-0 flex items-center justify-center xl:min-h-[41px]">
               Summary
             </div>
             {data.weeklySummaries.map((cell: any, index: number) => {
-              let bgBorder = "bg-stone-50/50";
+              let bgBorder = "bg-surface-2";
               if (cell.pnl > 0) bgBorder = "bg-accent-soft";
               else if (cell.pnl < 0) bgBorder = "bg-loss-soft";
               const weekNote = notesByWeek.get(cell.week);
@@ -501,7 +501,7 @@ export default function CalendarPage() {
                           <div className={`${isPrivacyMode ? 'text-sm xl:text-base' : 'text-xs xl:text-[10px] xl:mt-1'} font-black xl:font-bold ${cell.rr > 0 ? 'text-accent' : cell.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight`}>
                             {formatNumber(cell.rr)} R
                           </div>
-                          <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter xl:mt-0.5">
+                          <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter xl:mt-0.5">
                             Trades : {cell.count}
                           </div>
                         </>
@@ -523,7 +523,7 @@ export default function CalendarPage() {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1">
               {/* The line along the bottom of a day or a week: a bar while short of the target, full once reached. */}
               <span className="flex items-center gap-1.5">
-                <span className="w-4 h-[3px] rounded-full bg-stone-200 overflow-hidden"><span className="block h-full w-1/2 rounded-full bg-accent" /></span>
+                <span className="w-4 h-[3px] rounded-full bg-line overflow-hidden"><span className="block h-full w-1/2 rounded-full bg-accent" /></span>
                 Progress to the target
               </span>
               <span className="flex items-center gap-1.5">
@@ -534,7 +534,7 @@ export default function CalendarPage() {
           )}
           {/* Why a month here can differ a little from the monthly statement, which keeps the real date. */}
           {hourNow > 0 && (
-            <p className="text-center md:text-left">
+            <p className="text-center md:text-left font-normal">
               Days start at {String(hourNow).padStart(2, '0')}:00 (Settings): a trade closed before then counts for the day before. The statement keeps the real date.
             </p>
           )}
@@ -575,7 +575,7 @@ interface YearGridProps {
 function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenWeekNote }: YearGridProps) {
   return (
     <div className="flex flex-col xl:flex-row gap-4">
-      <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-stone-200 border border-line rounded-xl overflow-hidden">
+      <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-line border border-line rounded-xl overflow-hidden">
         <div className="bg-surface h-10"></div>
         {[1, 2, 3, 4, 5, 6].map(n => (
           <div key={n} className="bg-surface h-10 flex items-center justify-center text-[10px] font-black text-ink-faint uppercase tracking-widest">W{n}</div>
@@ -600,7 +600,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
 
             {Array.from({ length: 6 }, (_, i) => {
               const w = m.weeks[i];
-              if (!w) return <div key={i} className="bg-stone-50/50"></div>;
+              if (!w) return <div key={i} className="bg-surface-2"></div>;
               const weekNote = notesByWeek.get(w.week);
               const noteControl = <NoteControl mood={weekNote?.mood} hasNote={!!weekNote} label="the week's note" onOpen={(edit) => onOpenWeekNote(w.week, edit)} />;
               return (
@@ -640,7 +640,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                         {!isPrivacyMode && (
                           <div className={`text-[10px] font-bold tracking-tight ${toneOf(w.rr)}`}>{formatNumber(w.rr)} R</div>
                         )}
-                        <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter mt-0.5">Trades : {w.count}</div>
+                        <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter mt-0.5">Trades : {w.count}</div>
                       </div>
                     </>
                   )}
@@ -653,7 +653,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
         ))}
       </div>
 
-      <div className="hidden xl:flex w-[140px] shrink-0 flex-col bg-stone-200 gap-[1px] border border-line rounded-xl overflow-hidden">
+      <div className="hidden xl:flex w-[140px] shrink-0 flex-col bg-line gap-[1px] border border-line rounded-xl overflow-hidden">
         <div className="bg-accent-soft h-10 shrink-0 flex items-center justify-center text-[10px] font-black text-accent uppercase tracking-widest">
           Month
         </div>
@@ -663,7 +663,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
               <>
                 {!isPrivacyMode && <div className={`text-base font-black ${toneOf(m.pnl)} mb-1`}>{formatPnl(m.pnl, rate)}</div>}
                 <div className={`${isPrivacyMode ? 'text-base mb-1' : 'text-xs'} font-black tracking-tight ${toneOf(m.rr)}`}>{formatNumber(m.rr)} R</div>
-                <div className="text-[9px] font-bold text-ink-faint uppercase tracking-tighter mt-1">Trades : {m.count}</div>
+                <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter mt-1">Trades : {m.count}</div>
               </>
             )}
           </div>
