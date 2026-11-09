@@ -71,7 +71,7 @@ export function FoldBar({ header, isOpen, onToggle, hasError = false, children }
         <ChevronDown className={`w-4 h-4 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {/* Open, a grey line keeps the summary apart from what it unfolds. */}
-      {isOpen && <div className="mx-3 pt-3 pb-3 border-t border-stone-300">{children}</div>}
+      {isOpen && <div className="mx-3 pt-3 pb-3 border-t border-line">{children}</div>}
     </div>
   );
 }

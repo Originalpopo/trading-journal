@@ -29,7 +29,7 @@ export default function PillTabs<T extends string>({ tabs, value, onChange, onWh
           ref={value === id ? (el) => el?.scrollIntoView({ block: "nearest", inline: "nearest" }) : undefined}
           className={`flex-1 md:flex-none shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition whitespace-nowrap ${
             value === id
-              ? "bg-accent text-white shadow-md shadow-orange-200"
+              ? "bg-accent text-white shadow-md shadow-accent-line"
               : onWhite
                 ? "bg-surface-2 text-ink-muted hover:text-accent"
                 : "bg-white text-ink-muted hover:text-accent shadow-sm"

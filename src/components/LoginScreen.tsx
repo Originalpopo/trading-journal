@@ -36,7 +36,7 @@ export function LoginScreen({ mode, email, uid, message, onSignIn, onSignOut }: 
       <div className="flex flex-col items-center max-w-sm w-full px-6 text-center">
         <div className="flex items-center gap-2 mb-12">
           <Flame className="w-12 h-12 text-accent" strokeWidth={1.5} />
-          <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold text-ink tracking-tight">
             Trade<span className="text-accent">Journal</span>
           </h1>
         </div>
@@ -46,7 +46,7 @@ export function LoginScreen({ mode, email, uid, message, onSignIn, onSignOut }: 
             <button
               onClick={handleSignIn}
               disabled={isBusy}
-              className="w-full px-6 py-3 bg-accent hover:bg-accent-strong disabled:opacity-50 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200"
+              className="w-full px-6 py-3 bg-accent hover:bg-accent-strong disabled:opacity-50 text-white font-bold rounded-xl transition shadow-lg shadow-accent-line"
             >
               {isBusy ? "Signing in..." : "Sign in with Google"}
             </button>
@@ -74,7 +74,7 @@ export function LoginScreen({ mode, email, uid, message, onSignIn, onSignOut }: 
               )}
               <button
                 onClick={onSignOut}
-                className="flex-1 px-6 py-3 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-3 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center justify-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
                 Sign out

@@ -81,7 +81,7 @@ export default function DefaultRiskSetting() {
             max="100"
             value={shownWindow}
             onChange={(e) => setWindowValue(e.target.value)}
-            className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition"
+            className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition"
           />
         </div>
         <div className="space-y-2">
@@ -92,7 +92,7 @@ export default function DefaultRiskSetting() {
             min="0"
             value={shown}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition"
+            className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition"
           />
           {!savedDefault && effectiveDefault > 0 && (
             <p className="text-xs text-ink-faint font-medium">Not saved yet: using ${effectiveDefault.toFixed(2)}, the risk most of your trades had.</p>

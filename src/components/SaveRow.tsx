@@ -1,7 +1,7 @@
 import { Save, type LucideIcon } from "lucide-react";
 
-export const CANCEL_BUTTON = "px-6 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition";
-export const SAVE_BUTTON = "px-6 py-2.5 bg-accent hover:bg-accent-strong disabled:bg-orange-200 text-white font-bold rounded-xl transition shadow-lg shadow-orange-200 flex items-center gap-2";
+export const CANCEL_BUTTON = "px-6 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition";
+export const SAVE_BUTTON = "px-6 py-2.5 bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white font-bold rounded-xl transition shadow-lg shadow-accent-line flex items-center gap-2";
 
 // The site's standard Save button for a card of fields on a page (see AGENTS.md), at its bottom right.
 // Hidden, with the card's bottom edge pulled up, until something in the card is changed; then the

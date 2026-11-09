@@ -12,8 +12,8 @@ import {
 
 type Status = "good" | "bad" | "wait";
 
-const STATUS_DOT: Record<Status, string> = { good: "bg-accent", bad: "bg-loss", wait: "bg-stone-300" };
-const STATUS_TEXT: Record<Status, string> = { good: "text-accent", bad: "text-loss", wait: "text-stone-700" };
+const STATUS_DOT: Record<Status, string> = { good: "bg-accent", bad: "bg-loss", wait: "bg-ink-disabled" };
+const STATUS_TEXT: Record<Status, string> = { good: "text-accent", bad: "text-loss", wait: "text-ink-muted" };
 
 const r = (v: number) => `${formatNumber(v)} R`;
 const tone = (v: number) => (v > 0 ? "text-accent" : v < 0 ? "text-loss" : "text-ink-faint");
@@ -193,7 +193,7 @@ export default function SystemReview() {
                 onClick={() => setPicked(p)}
                 title={p > count ? `เมื่อครบ ${p} เทรด` : `รายงานเทรดที่ 1–${p}`}
                 className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-[11px] font-bold rounded-md tabular-nums transition ${
-                  p === phase ? "bg-white text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-stone-600"
+                  p === phase ? "bg-white text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
                 }`}
               >
                 {p.toLocaleString("en-US")}
@@ -208,7 +208,7 @@ export default function SystemReview() {
           <ol className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             {itemsOf(report, isPrivacyMode).map((item, i) => (
               <li key={item.title} className="bg-white p-5 rounded-xl border border-line shadow-sm">
-                <div className="flex items-center gap-2 border-b border-stone-100 pb-1.5 mb-2.5">
+                <div className="flex items-center gap-2 border-b border-line-soft pb-1.5 mb-2.5">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
                   <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">{i + 1}. {item.title}</span>
                 </div>
@@ -228,23 +228,23 @@ export default function SystemReview() {
 
             {/* 8. The score out of 10, orange as the Win Rate card: the five checks that can be scored, each
                 with its points (how they are weighed is in systemScore). */}
-            <li className="bg-accent p-5 rounded-xl border border-orange-300 shadow-lg shadow-orange-400/20 text-white">
-              <div className="flex items-center gap-2 border-b border-white/30 pb-1.5 mb-2.5">
-                <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest">8. System Score</span>
+            <li className="bg-accent p-5 rounded-xl border border-accent shadow-lg shadow-accent/20 text-white">
+              <div className="flex items-center gap-2 border-b border-accent-line pb-1.5 mb-2.5">
+                <span className="text-[10px] font-bold text-white uppercase tracking-widest">8. System Score</span>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-3xl font-black tabular-nums">{formatNumber(score.total)}<span className="text-base font-bold text-white/80"> / 10</span></p>
+                <p className="text-3xl font-black tabular-nums">{formatNumber(score.total)}<span className="text-base font-bold text-white"> / 10</span></p>
                 <p className="text-xs font-bold text-right">{scoreVerdict(score.total)}</p>
               </div>
               <dl className="mt-3 space-y-1.5 text-[10px]">
                 {score.parts.map(p => (
                   <div key={p.key} className="flex justify-between gap-3">
-                    <dt className="text-white/90">{SCORE_NAMES[p.key]}</dt>
+                    <dt className="text-white">{SCORE_NAMES[p.key]}</dt>
                     <dd className="font-bold tabular-nums">{formatNumber(p.points)} / {formatNumber(p.weight)}</dd>
                   </div>
                 ))}
               </dl>
-              <p className="mt-3 text-[10px] text-white/80">ข้อ 4–6 ไม่นำมาคิดคะแนน เพราะเป็นแนวทางการเทรด ไม่ได้บอกคุณภาพของระบบ</p>
+              <p className="mt-3 text-[10px] text-white">ข้อ 4–6 ไม่นำมาคิดคะแนน เพราะเป็นแนวทางการเทรด ไม่ได้บอกคุณภาพของระบบ</p>
             </li>
           </ol>
         </>

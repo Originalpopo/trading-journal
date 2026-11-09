@@ -118,7 +118,7 @@ export default function Sidebar() {
         </button>
         {!isCollapsed && (
           <Link href="/" className="cursor-pointer hover:opacity-80 transition flex-shrink-0 overflow-hidden">
-            <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight whitespace-nowrap">
+            <h1 className="text-2xl font-extrabold text-ink tracking-tight whitespace-nowrap">
               Trade<span className="text-accent">Journal</span>
             </h1>
           </Link>
@@ -176,7 +176,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <div className={`pt-2 pb-4 border-t border-stone-100 ${isCollapsed ? "px-2" : "px-4"}`}>
+      <div className={`pt-2 pb-4 border-t border-line-soft ${isCollapsed ? "px-2" : "px-4"}`}>
         <Link
           href="/settings"
           title={isCollapsed ? "Settings" : undefined}
