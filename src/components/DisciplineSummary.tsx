@@ -50,7 +50,7 @@ export default function DisciplineSummary() {
         <div className="flex bg-surface-2 rounded-lg p-0.5">
           {([["month", "This month"], ["all", "All time"]] as const).map(([value, label]) => (
             <button key={value} type="button" onClick={() => setPeriod(value)}
-              className={`h-7 px-3 text-[11px] font-bold rounded-md transition ${period === value ? "bg-white text-accent shadow-sm" : "text-ink-faint hover:text-stone-600"}`}>
+              className={`h-7 px-3 text-[11px] font-bold rounded-md transition ${period === value ? "bg-white text-accent shadow-sm" : "text-ink-faint hover:text-ink"}`}>
               {label}
             </button>
           ))}
@@ -128,8 +128,8 @@ export default function DisciplineSummary() {
                     <span className="truncate">{rule.name}</span>
                     <span className="ml-auto tabular-nums shrink-0">{count}×</span>
                   </div>
-                  <div className="h-1 rounded-full bg-stone-200 mt-1">
-                    <div className="h-1 rounded-full bg-red-900/70" style={{ width: `${(count / mostBroken) * 100}%` }} />
+                  <div className="h-1 rounded-full bg-line mt-1">
+                    <div className="h-1 rounded-full bg-loss" style={{ width: `${(count / mostBroken) * 100}%` }} />
                   </div>
                 </li>
               ))}

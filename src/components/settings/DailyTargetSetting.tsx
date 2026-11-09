@@ -60,7 +60,7 @@ export default function DailyTargetSetting() {
       {changes.length > 0 && (
         <div className="mt-6 space-y-2">
           <span className="block text-sm font-bold text-ink">Changes</span>
-          <ul className="bg-surface rounded-xl divide-y divide-stone-100 text-sm">
+          <ul className="bg-surface rounded-xl divide-y divide-line-soft text-sm">
             {changes.map(c => (
               <li key={c.from} className="flex items-center justify-between px-4 py-2.5">
                 <span className="font-medium text-ink-muted">{c.from ? `From ${dateText(c.from)}` : "Before that"}</span>

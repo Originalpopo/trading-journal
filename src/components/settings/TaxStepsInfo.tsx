@@ -15,7 +15,7 @@ export default function TaxStepsInfo() {
       title="Tax Steps"
       description="อัตราภาษีเงินได้บุคคลธรรมดาแบบขั้นบันได ที่ Tax Report ใช้คำนวณช่อง Est. tax (ประมาณการเพื่อกันเงินไว้ ไม่ใช่ยอดยื่นจริง) ดูได้อย่างเดียว"
     >
-      <div className="overflow-hidden border border-stone-100 rounded-xl">
+      <div className="overflow-hidden border border-line-soft rounded-xl">
         <table className="w-full text-sm">
           <thead className="bg-surface text-ink-faint">
             <tr>
@@ -23,10 +23,10 @@ export default function TaxStepsInfo() {
               <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Rate</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-50">
+          <tbody className="divide-y divide-line-soft">
             {rows.map(({ from, upper, rate }) => (
               <tr key={upper}>
-                <td className="px-4 py-2.5 font-semibold text-stone-600 tabular-nums">
+                <td className="px-4 py-2.5 font-semibold text-ink-muted tabular-nums">
                   {upper === Infinity ? `over ${baht(from)}` : `${baht(from === 0 ? 0 : from + 1)} – ${baht(upper)}`}
                 </td>
                 <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${rate === 0 ? "text-accent" : "text-ink"}`}>

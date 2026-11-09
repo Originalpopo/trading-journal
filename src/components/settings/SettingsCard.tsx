@@ -21,7 +21,7 @@ export default function SettingsCard({ icon: Icon, title, description, children 
         onClick={() => setIsOpen(open => !open)}
         aria-expanded={isOpen}
         aria-controls={bodyId}
-        className="w-full flex items-center gap-3 p-5 md:px-8 text-left rounded-2xl hover:bg-stone-50/60 transition-colors"
+        className="w-full flex items-center gap-3 p-5 md:px-8 text-left rounded-2xl hover:bg-surface transition-colors"
       >
         <div className="w-10 h-10 shrink-0 rounded-xl bg-accent-soft flex items-center justify-center">
           <Icon className="w-5 h-5 text-accent" />
@@ -33,10 +33,10 @@ export default function SettingsCard({ icon: Icon, title, description, children 
         <ChevronDown className={`w-5 h-5 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       <div id={bodyId} hidden={!isOpen} className="px-5 pb-5 md:px-8 md:pb-8">
-        <div className="pt-6 border-t border-stone-100">{children}</div>
+        <div className="pt-6 border-t border-line-soft">{children}</div>
       </div>
     </div>
   );
 }
 
-export const SETTINGS_INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium";
+export const SETTINGS_INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition placeholder:font-medium";

@@ -70,7 +70,7 @@ export default function BackupSetting() {
       title="Backup"
       description="Journal นี้เป็นที่เก็บประวัติเทรดเพียงที่เดียว ดาวน์โหลดไฟล์ backup เก็บไว้เป็นระยะ ไฟล์รวมเทรด เงินเข้าออก โน้ต และค่าตั้งทั้งหมด"
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-stone-100">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-line-soft">
         <div className="min-w-0">
           <p className="text-xs font-bold text-ink-faint uppercase tracking-widest mb-1">Last backup</p>
           <p className={`font-bold ${age?.isDue ? "text-loss" : "text-ink"}`}>
@@ -79,7 +79,7 @@ export default function BackupSetting() {
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
-          <label className={`flex-1 md:flex-none cursor-pointer px-5 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 ${restoreStatus ? "opacity-50 pointer-events-none" : ""}`}>
+          <label className={`flex-1 md:flex-none cursor-pointer px-5 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center justify-center gap-2 ${restoreStatus ? "opacity-50 pointer-events-none" : ""}`}>
             <Upload className="w-4 h-4" />
             {restoreStatus ?? "Restore"}
             <input type="file" accept=".json" className="hidden" onChange={onRestore} />

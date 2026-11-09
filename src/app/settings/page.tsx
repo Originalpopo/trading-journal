@@ -172,7 +172,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => signOut(auth)}
-            className="px-6 py-2.5 bg-surface-2 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition flex items-center justify-center gap-2 shrink-0"
+            className="px-6 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center justify-center gap-2 shrink-0"
           >
             <LogOut className="w-4 h-4" />
             Sign out
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                 placeholder="4 digits"
-                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition placeholder:font-medium"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition placeholder:font-medium"
               />
               <p className="text-xs text-ink-faint font-medium">Numbers only. Exactly 4 digits.</p>
             </div>
@@ -208,7 +208,7 @@ export default function SettingsPage() {
                 value={hint}
                 onChange={(e) => setHint(e.target.value)}
                 placeholder="Something only you would recognize"
-                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition"
               />
               <p className="text-xs text-ink-faint font-medium">Visible to anyone who tries to log in.</p>
             </div>
