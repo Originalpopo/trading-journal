@@ -318,14 +318,14 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
 
   const actionLabel: Record<ImportAction, { text: string; className: string }> = {
     new: { text: 'New', className: 'bg-accent-soft text-accent border-accent-line' },
-    update: { text: 'Update', className: 'bg-surface-2 text-stone-600 border-line' },
-    same: { text: 'Same', className: 'bg-surface text-ink-disabled border-stone-100' },
+    update: { text: 'Update', className: 'bg-surface-2 text-ink-muted border-line' },
+    same: { text: 'Same', className: 'bg-surface text-ink-disabled border-line-soft' },
   };
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={() => onClose()}>
       <div className="bg-white border-0 rounded-3xl w-fit min-w-[min(100%,64rem)] max-w-full p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100 flex-wrap gap-4">
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-line-soft flex-wrap gap-4">
           <h3 className="text-2xl font-black text-ink tracking-tight">
             Import from TradingView
           </h3>
@@ -343,7 +343,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                 })}
               </div>
             )}
-            <button onClick={() => onClose()} className="text-ink-faint hover:text-stone-600 p-1 rounded-full hover:bg-surface-2 transition">
+            <button onClick={() => onClose()} className="text-ink-faint hover:text-ink p-1 rounded-full hover:bg-surface-2 transition">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -387,7 +387,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                   : `Found ${parsedTrades.length} trades: ${newCount} new, ${updateCount} to update`}
               </h4>
               {/* No scroll box of its own: the dialog body scrolls, so the header can stick to its top. */}
-              <div className="w-max min-w-full border border-stone-100 rounded-xl">
+              <div className="w-max min-w-full border border-line-soft rounded-xl">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="sticky top-0 z-10 bg-surface text-ink-faint shadow-[inset_0_-1px_0_var(--color-stone-100)] [&_th:first-child]:rounded-tl-xl [&_th:last-child]:rounded-tr-xl">
                     <tr>
@@ -406,7 +406,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                       <th className="px-2 py-4 font-bold uppercase text-[10px] tracking-widest text-center">R</th>
                     </tr>
                   </thead>
-                  <tbody className="text-[11px] divide-y divide-stone-50">
+                  <tbody className="text-[11px] divide-y divide-line-soft">
                     {plan.map((row) => {
                       const { key, parsed: t, result, keptManualTimes, keptLogTimes, previousExitTime, previousRisk, previousProfit, invalidExit, invalidInitialSl, stopFromRisk, invalidRisk } = row;
                       const action = actionOf(row);
@@ -419,7 +419,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                       const onPlan = onPlanOf(row);
                       return (
                         <Fragment key={key}>
-                        <tr className="hover:bg-surface transition duration-150 border-b border-stone-50">
+                        <tr className="hover:bg-surface transition duration-150 border-b border-line-soft">
                           <td className="px-2 py-4">
                             <span className={`px-2 py-0.5 border rounded-md text-[9px] font-black uppercase ${actionLabel[action].className}`}>{actionLabel[action].text}</span>
                           </td>
@@ -501,7 +501,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                             </button>
                           </td>
                           <td className="px-2 py-4 text-center">
-                            <span className="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase bg-surface-2 text-stone-600 border-line">
+                            <span className="px-2.5 py-1 border rounded-md text-[10px] font-black uppercase bg-surface-2 text-ink-muted border-line">
                               {t.side}
                             </span>
                           </td>
@@ -599,7 +599,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                         </tr>
                         {/* Marked off plan here: why, under the trade. */}
                         {isMarkedOffHere(row) && (
-                          <tr className="border-b border-stone-50">
+                          <tr className="border-b border-line-soft">
                             <td colSpan={13} className="px-2 pb-4">
                               <OffPlanReasonPicker reasons={offPlanReasons} value={reasonsOfRow(row)} saved={row.existing?.offPlanReasons} onChange={ids => setReasonEdits(prev => ({ ...prev, [key]: ids }))} />
                             </td>
@@ -615,11 +615,11 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
           )}
         </div>
 
-        <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-stone-100 shrink-0">
+        <div className="flex gap-3 justify-end pt-4 mt-6 border-t border-line-soft shrink-0">
           <button onClick={() => onClose()} disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-stone-600 hover:bg-stone-200 transition">Cancel</button>
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-ink-muted hover:bg-line transition">Cancel</button>
           <button onClick={handleImport} disabled={isSubmitting || hasInvalidEdit || plan.some(isMissingReason) || newCount + updateCount === 0}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-strong shadow-md shadow-orange-200 transition disabled:opacity-50">
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-strong shadow-md shadow-accent-line transition disabled:opacity-50">
             {isSubmitting ? "Importing..." : logOnly ? `Update ${updateCount}` : `Import ${newCount} new, update ${updateCount}`}
           </button>
         </div>
