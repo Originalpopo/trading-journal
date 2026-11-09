@@ -30,6 +30,7 @@ import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } fro
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 import PageHeader from "@/components/PageHeader";
+import SlidingSwitch from "@/components/SlidingSwitch";
 import { pageContentLeft } from "@/components/pageEdge";
 import "@/lib/chartTooltip";
 import { themeColor } from '@/lib/themeColors';
@@ -676,20 +677,14 @@ export default function Dashboard() {
             <span className="w-2 h-2 bg-accent rounded-full shrink-0"></span> {/* Shorter on a phone, so it shares the line with the range buttons */}
             <span className="truncate"><span className="sm:hidden">Equity</span><span className="hidden sm:inline">Equity and Balance</span></span>
           </h3>
-          {/* Same look as the Drawdown card's R / $ switch. */}
-          <div className="flex items-center bg-surface-2 p-0.5 rounded-md border border-line shadow-sm shrink-0">
-            {CHART_RANGES.map(range => (
-              <button
-                key={range}
-                onClick={() => pickChartRange(range)}
-                className={`text-[10px] font-bold px-2.5 md:px-3 py-1.5 md:py-1 rounded transition-all ${
-                  chartRange === range ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-ink'
-                }`}
-              >
-                {range === 'ALL' ? 'All' : range}
-              </button>
-            ))}
-          </div>
+          {/* Same as the Performance page's chart measure buttons (W/L, RR, ...); a little narrower on a phone. */}
+          <SlidingSwitch
+            label="Chart range"
+            value={chartRange}
+            onChange={pickChartRange}
+            buttonClass="min-w-8 md:min-w-10 px-2 md:px-2.5"
+            options={CHART_RANGES.map(range => ({ value: range, label: range === 'ALL' ? 'All' : range }))}
+          />
         </div>
         <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
           <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[peakEquityLinePlugin, dashboardLastPointsPlugin, pageFillPlugin]} />

@@ -24,6 +24,7 @@ import {
 import { Line, Bar } from 'react-chartjs-2';
 
 import PageHeader from "@/components/PageHeader";
+import SlidingSwitch from "@/components/SlidingSwitch";
 import { pageContentLeft } from "@/components/pageEdge";
 import SystemReview from "@/components/SystemReview";
 import "@/lib/chartTooltip";
@@ -806,28 +807,18 @@ export default function PerformancePage() {
 
       {/* What the three charts below measure, kept just above them. */}
       <div className="flex justify-end mt-4 mb-2">
-        <div className="flex bg-surface-2 p-0.5 rounded-lg" role="group" aria-label="Chart measure">
-          {([
+        <SlidingSwitch
+          label="Chart measure"
+          value={selectedMetric}
+          onChange={setSelectedMetric}
+          options={[
             { value: 'COUNT', label: 'W/L', title: 'Wins and losses' },
             { value: 'RR', label: 'RR', title: 'Risk/Reward (R), total' },
             { value: 'AVG_R', label: 'Avg R', title: 'Average R per trade' },
             { value: 'PNL', label: '$', title: 'Net P&L ($)' },
             { value: 'GAIN', label: '%', title: 'Gain (%)' },
-          ] as const).map(m => (
-            <button
-              key={m.value}
-              type="button"
-              onClick={() => setSelectedMetric(m.value)}
-              aria-pressed={selectedMetric === m.value}
-              title={m.title}
-              className={`h-7 min-w-10 px-2.5 text-[11px] font-bold rounded-md transition ${
-                selectedMetric === m.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-ink'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+          ]}
+        />
       </div>
 
       {/* On a computer Hour and Day share a row and Month takes the next one whole; on an iPad and a phone
