@@ -602,28 +602,29 @@ export default function PerformancePage() {
             <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Outcomes</span>
             </div>
+            {/* Bad on the left, good on the right, as in Discipline (Off Plan | On Plan) and Streaks. */}
             <div className="flex justify-between text-[10px] font-bold">
-              <span className="text-orange-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
-              <span className="text-stone-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
               <span className="text-red-900 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-900 shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
+              <span className="text-stone-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
+              <span className="text-orange-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
             </div>
             <PieceBar heightClass="h-2.5 [--piece-min:0.625rem]" className="mt-1" pieces={[
-              { key: 'win', share: data.winPct, color: 'bg-orange-400' },
-              { key: 'be', share: data.bePct, color: 'bg-stone-200' },
               { key: 'loss', share: data.lossPct, color: 'bg-red-900' },
+              { key: 'be', share: data.bePct, color: 'bg-stone-200' },
+              { key: 'win', share: data.winPct, color: 'bg-orange-400' },
             ]} />
             <div className="grid grid-cols-3 gap-2 pt-0.5">
-              <div className="bg-orange-50/60 border border-orange-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">TP</span>
-                <span className="text-xs font-black text-orange-500">{data.profitTradesCount}</span>
+              <div className="bg-red-50/60 border border-red-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                <span className="text-[9px] font-bold text-red-800 uppercase tracking-wider">SL</span>
+                <span className="text-xs font-black text-red-900">{data.lossTradesCount}</span>
               </div>
               <div className="bg-stone-50 border border-stone-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
                 <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">BE</span>
                 <span className="text-xs font-black text-stone-700">{data.beTradesCount}</span>
               </div>
-              <div className="bg-red-50/60 border border-red-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-red-800 uppercase tracking-wider">SL</span>
-                <span className="text-xs font-black text-red-900">{data.lossTradesCount}</span>
+              <div className="bg-orange-50/60 border border-orange-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">TP</span>
+                <span className="text-xs font-black text-orange-500">{data.profitTradesCount}</span>
               </div>
             </div>
           </div>
@@ -771,24 +772,24 @@ export default function PerformancePage() {
                 <>
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between text-[10px] font-bold text-stone-600">
-                      <span>Win Streaks</span>
                       <span>Loss Streaks</span>
+                      <span>Win Streaks</span>
                     </div>
                     <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold text-white" pieces={[
-                      { key: 'win', share: winPct, color: 'bg-orange-400', label: maxWin },
                       { key: 'loss', share: lossPct, color: 'bg-red-900', label: maxLoss },
+                      { key: 'win', share: winPct, color: 'bg-orange-400', label: maxWin },
                     ]} />
                   </div>
 
                   <div className="flex flex-col gap-1">
                     {/* Avg Loss a step darker than before, so it stands apart from the Results grey behind it. */}
                     <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold" pieces={[
-                      { key: 'win', share: avgWinPct, color: 'bg-stone-950 text-white', label: avgWin },
                       { key: 'loss', share: avgLossPct, color: 'bg-stone-300 text-stone-700', label: avgLoss },
+                      { key: 'win', share: avgWinPct, color: 'bg-stone-950 text-white', label: avgWin },
                     ]} />
                     <div className="flex justify-between text-[10px] font-bold text-stone-600">
-                      <span>AVG Win</span>
                       <span>AVG Loss</span>
+                      <span>AVG Win</span>
                     </div>
                   </div>
                 </>

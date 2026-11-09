@@ -639,18 +639,19 @@ export default function Dashboard() {
               <span className="text-xs font-bold text-stone-400">Total Trades</span>
               <span className="font-black text-stone-950 text-2xl">{data.totalTrades}</span>
             </div>
+            {/* Bad on the left, good on the right, as on the Performance page. */}
             <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
-                <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">TP</p>
-                <p className="text-sm font-black text-orange-400">{data.countTP}</p>
+              <div className="bg-red-50 p-3 rounded-lg text-center border border-red-200">
+                <p className="text-[9px] font-bold text-red-900 uppercase mb-1">SL</p>
+                <p className="text-sm font-black text-red-900">{data.countSL}</p>
               </div>
               <div className="bg-stone-50 p-3 rounded-lg text-center border border-stone-200">
                 <p className="text-[9px] font-bold text-stone-400 uppercase mb-1">BE</p>
                 <p className="text-sm font-black text-stone-400">{data.countBE}</p>
               </div>
-              <div className="bg-red-50 p-3 rounded-lg text-center border border-red-200">
-                <p className="text-[9px] font-bold text-red-900 uppercase mb-1">SL</p>
-                <p className="text-sm font-black text-red-900">{data.countSL}</p>
+              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
+                <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">TP</p>
+                <p className="text-sm font-black text-orange-400">{data.countTP}</p>
               </div>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-stone-200">
