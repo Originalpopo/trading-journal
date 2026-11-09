@@ -325,7 +325,7 @@ export default function SimulationPage() {
               ]}
             />
             {form.source === 'journal' ? (
-              <p className="text-[10px] font-medium text-ink-faint mt-2">
+              <p className="text-[10px] font-normal text-ink-faint mt-2">
                 {canUseJournal
                   ? `Drawn from your ${journalTrades} trades: ${defaultStats.winOutcomes.length} wins, ${defaultStats.otherOutcomes.length} losses and break-evens.`
                   : 'Needs at least one winning and one losing trade with a risk amount. Using averages instead.'}
@@ -418,7 +418,7 @@ export default function SimulationPage() {
             <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
               <span className="w-2 h-2 bg-accent rounded-full"></span> Outlook
             </h3>
-            <p className="text-[11px] text-ink-faint font-medium">
+            <p className="text-[11px] text-ink-faint font-normal">
               The same setup run {results.outlook.runs.toLocaleString('en-US')} times. The three lines above are just three of them.
             </p>
           </div>
@@ -461,7 +461,7 @@ export default function SimulationPage() {
               <div className={`text-2xl font-black ${netClass} mb-1`}>
                 ${formatNumber(report.endBalance)}
               </div>
-              <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider mb-4">
+              <div className="text-[10px] text-ink-faint font-normal uppercase tracking-wider mb-4">
                 Net: ${formatNumber(report.netProfit)}
               </div>
               {report.wipedOut && (
