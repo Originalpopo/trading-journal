@@ -72,7 +72,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
                 onChange={(e) => setPasteText(e.target.value)}
                 placeholder="Paste the History tab here..."
                 rows={4}
-                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition resize-y"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition resize-y"
               />
             </div>
             <div>
@@ -82,7 +82,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
                 onChange={(e) => setLogText(e.target.value)}
                 placeholder="Paste the Notifications log tab here..."
                 rows={4}
-                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-orange-400/20 transition resize-y"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition resize-y"
               />
             </div>
           </div>
@@ -111,7 +111,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
             }}
             title="Clear Database"
             aria-label="Clear Database"
-            className="shrink-0 flex items-center justify-center px-4 py-3 bg-surface-2 hover:bg-stone-200 text-stone-600 rounded-xl transition border border-line hover:border-stone-300 shadow-sm"
+            className="shrink-0 flex items-center justify-center px-4 py-3 bg-surface-2 hover:bg-line text-ink-muted rounded-xl transition border border-line hover:border-ink-disabled shadow-sm"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -136,7 +136,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
           {sectionHeader("restore", "Restore from backup (JSON)")}
           {openSection === "restore" && (
           <div className="px-4 pb-4">
-          <label className="cursor-pointer bg-surface border-2 border-dashed border-stone-300 hover:border-accent hover:bg-accent-soft text-stone-600 px-4 py-4 rounded-xl font-bold transition flex flex-col items-center justify-center gap-3">
+          <label className="cursor-pointer bg-surface border-2 border-dashed border-ink-disabled hover:border-accent hover:bg-accent-soft text-ink-muted px-4 py-4 rounded-xl font-bold transition flex flex-col items-center justify-center gap-3">
             <Upload className="w-8 h-8 text-ink-faint" />
             <span>Click to browse or drag and drop JSON backup</span>
             <input 
@@ -156,7 +156,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
         <div className="flex justify-end gap-3 pt-1">
           <button
             onClick={handleClose}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-stone-600 hover:bg-stone-200 transition"
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-ink-muted hover:bg-line transition"
           >
             Cancel
           </button>
