@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -35,6 +35,33 @@ export default function Sidebar() {
   const [tvLogText, setTvLogText] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  // The open page's orange pill: one shape behind the menu that slides between the eight pages of the list and
+  // follows the menu as it opens or closes. To or from Settings, at the bottom, it jumps instead of sliding the length
+  // of the sidebar. Placed in the sidebar's own coordinates.
+  const asideRef = useRef<HTMLElement>(null);
+  const [navPill, setNavPill] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [canSlide, setCanSlide] = useState(false);
+  const lastPathRef = useRef(pathname);
+  useLayoutEffect(() => {
+    const aside = asideRef.current;
+    if (!aside) return;
+    if (pathname !== lastPathRef.current && (pathname === "/settings" || lastPathRef.current === "/settings")) setCanSlide(false);
+    lastPathRef.current = pathname;
+    const place = () => {
+      const item = aside.querySelector<HTMLElement>(`[data-nav-href="${pathname}"]`);
+      if (!item) { setNavPill(null); return; }
+      const a = aside.getBoundingClientRect();
+      const r = item.getBoundingClientRect();
+      setNavPill({ top: r.top - a.top + aside.scrollTop, left: r.left - a.left, width: r.width, height: r.height });
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(aside);
+    aside.querySelectorAll('[data-nav-href]').forEach(el => observer.observe(el));
+    const frame = requestAnimationFrame(() => setCanSlide(true));
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+  }, [pathname, isCollapsed]);
 
   // How far the sidebar's right edge is from the window's left, for the page beside it (pageEdge.ts).
   useEffect(() => {
@@ -101,11 +128,38 @@ export default function Sidebar() {
   const mobileMore = navItems.filter(item => !MOBILE_PRIMARY.includes(item.href));
   const isMoreActive = isMoreOpen || mobileMore.some(item => item.href === pathname);
 
+  // The phone bar's orange pill slides between its five buttons the same way; the pages inside More don't have one
+  // of their own (More holds it for them).
+  const barRef = useRef<HTMLDivElement>(null);
+  const barKey = isMoreActive ? "more" : pathname;
+  const [barPill, setBarPill] = useState<{ left: number; width: number } | null>(null);
+  const [barCanSlide, setBarCanSlide] = useState(false);
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const place = () => {
+      const item = bar.querySelector<HTMLElement>(`[data-bar-key="${barKey}"]`);
+      setBarPill(item && item.offsetWidth ? { left: item.offsetLeft, width: item.offsetWidth } : null);
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(bar);
+    const frame = requestAnimationFrame(() => setBarCanSlide(true));
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+  }, [barKey]);
+
   return (
     <>
     {/* A card floating over the page's left side: away from the window's edges, rounded, with a soft shadow. The
         page runs on under it to the window's edge, so its grey bands reach there too. */}
-    <aside className={`print:hidden bg-white rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px_rgba(28,25,23,0.12)] hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <aside ref={asideRef} className={`print:hidden bg-white rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px_rgba(28,25,23,0.12)] hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+      {navPill && (
+        <span
+          aria-hidden
+          className={`absolute rounded-xl bg-accent-soft pointer-events-none ${canSlide ? "transition-all duration-300 ease-out motion-reduce:transition-none" : ""}`}
+          style={navPill}
+        />
+      )}
       <div className={`p-6 pb-8 flex items-center ${isCollapsed ? "justify-center px-4" : "gap-2"}`}>
         <button 
           onClick={(e) => {
@@ -133,11 +187,12 @@ export default function Sidebar() {
           return (
             <Link key={item.name} href={item.href} title={isCollapsed ? item.name : undefined}>
               <button
-                className={`flex items-center transition-all w-full text-left rounded-xl ${
+                data-nav-href={item.href}
+                className={`relative flex items-center transition-all w-full text-left rounded-xl ${
                   isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
                 } ${
                   isActive
-                    ? "bg-accent-soft text-accent font-bold"
+                    ? "text-accent font-bold"
                     : "text-ink-muted hover:text-ink hover:bg-surface font-semibold"
                 }`}
               >
@@ -179,12 +234,13 @@ export default function Sidebar() {
       <div className={`pt-2 pb-4 border-t border-line-soft ${isCollapsed ? "px-2" : "px-4"}`}>
         <Link
           href="/settings"
+          data-nav-href="/settings"
           title={isCollapsed ? "Settings" : undefined}
-          className={`flex items-center transition-all w-full rounded-xl ${
+          className={`relative flex items-center transition-all w-full rounded-xl ${
             isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
           } ${
             pathname === "/settings"
-              ? "bg-accent-soft text-accent font-bold"
+              ? "text-accent font-bold"
               : "text-ink-muted hover:text-ink hover:bg-surface font-semibold"
           }`}
         >
@@ -253,8 +309,15 @@ export default function Sidebar() {
     {/* Like the sidebar on a computer: a card floating above the page's bottom, away from the screen's edges,
         rounded, with a soft shadow. */}
     <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 bg-white rounded-3xl shadow-[0_10px_40px_-8px_rgba(28,25,23,0.18)]">
-      {/* The page being shown sits on an orange pill, as in the sidebar. */}
-      <div className="grid grid-cols-5 h-16 p-1.5 gap-1">
+      {/* The page being shown sits on an orange pill that slides, as in the sidebar. */}
+      <div ref={barRef} className="relative grid grid-cols-5 h-16 p-1.5 gap-1">
+        {barPill && (
+          <span
+            aria-hidden
+            className={`absolute top-1.5 bottom-1.5 rounded-2xl bg-accent-soft pointer-events-none ${barCanSlide ? "transition-all duration-300 ease-out motion-reduce:transition-none" : ""}`}
+            style={barPill}
+          />
+        )}
         {mobilePrimary.map((item) => {
           const isActive = !isMoreOpen && pathname === item.href;
           const Icon = item.icon;
@@ -263,8 +326,9 @@ export default function Sidebar() {
               key={item.name}
               href={item.href}
               onClick={() => setIsMoreOpen(false)}
-              className={`flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
-                isActive ? "bg-accent-soft text-accent font-bold" : "text-ink-faint font-semibold"
+              data-bar-key={item.href}
+              className={`relative flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
+                isActive ? "text-accent font-bold" : "text-ink-faint font-semibold"
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -274,8 +338,9 @@ export default function Sidebar() {
         })}
         <button
           onClick={() => setIsMoreOpen(!isMoreOpen)}
-          className={`flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
-            isMoreActive ? "bg-accent-soft text-accent font-bold" : "text-ink-faint font-semibold"
+          data-bar-key="more"
+          className={`relative flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
+            isMoreActive ? "text-accent font-bold" : "text-ink-faint font-semibold"
           }`}
         >
           <Ellipsis className="w-5 h-5" />
