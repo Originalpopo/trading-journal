@@ -55,12 +55,13 @@ export default function RiskPerTrade() {
   const pctSet = step.anchorBalance > 0 ? (step.riskNow / step.anchorBalance) * 100 : pct;
 
   return (
-    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-left border-line lg:border-l">
-      {/* No card: a line on its left parts it from today's target from lg up (none once it drops under it). The dollars on top,
-          the title with its % under them, both to the left like the ↑ row; what it was set from is in the tooltip. */}
+    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-center lg:text-left border-line border-b lg:border-b-0 lg:border-l">
+      {/* No card: a line on its left parts it from today's target from lg up. Below lg it drops under today's target,
+          centred, with a line under it parting it from the chart. The dollars on top, the title with its % under them,
+          then the ↑ row; what it was set from is in the tooltip. */}
       <p className="text-2xl font-black text-ink tabular-nums leading-none">{usd(step.riskNow)}</p>
       <h3
-        className="mt-auto text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap text-ink"
+        className="mt-auto text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center lg:justify-start gap-2 whitespace-nowrap text-ink"
         title={isSet ? `${pctText(pctSet)} of ${usd(step.anchorBalance)}, set ${dateText(prefs.riskAnchor!.at)}` : `${pctText(pct)} of the balance now (% in Settings)`}
       >
         Risk per Trade
@@ -77,7 +78,7 @@ export default function RiskPerTrade() {
 
       {/* The balances that call for the next step, or, once one is reached, why and the button for it. */}
       {isSet && !due && (
-        <div className="flex items-center gap-4 text-[11px] font-bold tabular-nums">
+        <div className="flex items-center justify-center lg:justify-start gap-4 text-[11px] font-bold tabular-nums">
           <span className="flex items-center gap-1 text-accent" title={`Step up once the balance is ${pctText(up)} above ${usd(step.anchorBalance)}`}>
             <ArrowUp className="w-3.5 h-3.5" />{usd(step.upAt)}
           </span>
