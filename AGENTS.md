@@ -30,8 +30,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
   | Cards | `card` | `white` |
 
   - No other shades (no `orange-100/300`, `red-400/800/950`, `stone-600/700/800/900`) and no other families (no `slate`, `gray`, green, blue...).
-  - No see-through versions of these (`/50`, `/60`...), except the dark backdrop behind a popup (`stone-900/50`), a loading veil over content (`bg-surface/50`), a coloured shadow (`shadow-accent/20`), and the small baht line under a dollar figure in a table: `font-normal text-ink-faint opacity-70` (not bold), the same for real baht and ≈ estimates.
-  - Charts draw on a canvas and can't use the utilities: they take the same colours, faded only to these levels: lines 45%, their labels 70%, hatching 35%, the Balance grey `rgba(0,0,0,0.03)`.
+  - No see-through versions of these (`/50`, `/60`...), except the dark backdrop behind a popup (`stone-900/50`), a loading veil over content (`bg-surface/50`), a coloured shadow or glow (`shadow-accent/20`, a soft glow around the Active DD gauge or the target flame), and the small baht line under a dollar figure in a table: `font-normal text-ink-faint opacity-70` (not bold), the same for real baht and ≈ estimates.
+  - Charts draw on a canvas and can't use the utilities: they get the colours from `themeColor(name, alpha?)` in `src/lib/themeColors.ts` (never a hex or rgba written in), so a theme changes them too. Faded only to these levels: lines 45%, their labels 70%, hatching 35%, the Balance grey `rgba(0,0,0,0.03)`.
 - **Checklists**: When rendering Checklists in the UI (e.g. popups, details), always use this styling convention:
   - Selected state: Orange theme (`bg-orange-50`, `text-orange-400`, `border-orange-200`) with a Check icon (e.g. `CheckCircle2`).
   - Unselected state: Light stone theme (`bg-stone-50`, `text-stone-400`, `border-stone-200`, `opacity-70`) with a Cross icon (e.g. `XCircle`).

@@ -32,6 +32,7 @@ import BalanceCheckModal from "@/components/BalanceCheckModal";
 import PageHeader from "@/components/PageHeader";
 import { pageContentLeft } from "@/components/pageEdge";
 import "@/lib/chartTooltip";
+import { themeColor } from '@/lib/themeColors';
 const LAST_DOT_RADIUS = 6;
 // A dot on the Equity line's last point (its number is on the chart's title line): orange, or red while the equity
 // is below the Low line.
@@ -45,7 +46,7 @@ const dashboardLastPointsPlugin: Plugin<'line', { isBelowLow: boolean }> = {
     ctx.save();
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, LAST_DOT_RADIUS, 0, 2 * Math.PI);
-    ctx.fillStyle = options.isBelowLow ? '#7f1d1d' : '#fb923c'; // red-900 / orange-400
+    ctx.fillStyle = options.isBelowLow ? themeColor('loss') : themeColor('accent'); // red-900 / orange-400
     ctx.fill();
     ctx.restore();
   }
@@ -125,7 +126,7 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     ctx.clip();
     ctx.beginPath();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(127, 29, 29, 0.35)'; // red-900
+    ctx.strokeStyle = themeColor('loss', 0.35); // red-900
     const height = bottom - top;
     for (let x = left - height; x < right; x += 6) {
       ctx.moveTo(x, bottom);
@@ -153,13 +154,13 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     ctx.beginPath();
     ctx.setLineDash([6, 6]);
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(251, 146, 60, 0.45)'; // orange-400, as faint as the Low line
+    ctx.strokeStyle = themeColor('accent', 0.45); // orange-400, as faint as the Low line
     ctx.moveTo(left, y);
     ctx.lineTo(right, y);
     ctx.stroke();
 
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(251, 146, 60, 0.7)'; // orange-400, as the Low label
+    ctx.fillStyle = themeColor('accent', 0.7); // orange-400, as the Low label
     ctx.font = '10px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
@@ -190,7 +191,7 @@ const drawLowLine = (chart: ChartJS<'line'>, low: number, lowIndex: number, curr
   ctx.beginPath();
   ctx.setLineDash([6, 6]);
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(127, 29, 29, 0.45)'; // red-900
+  ctx.strokeStyle = themeColor('loss', 0.45); // red-900
   ctx.moveTo(start.x, y);
   ctx.lineTo(end.x, y);
   ctx.stroke();
@@ -206,12 +207,12 @@ const drawLowLine = (chart: ChartJS<'line'>, low: number, lowIndex: number, curr
   ctx.lineWidth = 3;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#7f1d1d'; // red-900
+  ctx.strokeStyle = themeColor('loss'); // red-900
   ctx.stroke();
   ctx.restore();
 
   ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(127, 29, 29, 0.7)';
+  ctx.fillStyle = themeColor('loss', 0.7);
   ctx.font = '10px "Plus Jakarta Sans", sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -427,17 +428,16 @@ export default function Dashboard() {
         {
           label: 'Equity (PnL)',
           data: series.equity,
-          borderColor: '#fb923c',
+          borderColor: themeColor('accent'),
           borderWidth: 3,
-          backgroundColor: 'rgba(251, 146, 60, 0.08)',
           fill: false,
           tension: 0.4,
           pointRadius: 0,
           // A small orange dot, ringed in white, on the point being looked at.
           pointHoverRadius: 4,
           pointHoverBorderWidth: 2,
-          pointHoverBorderColor: '#ffffff',
-          pointHoverBackgroundColor: '#fb923c',
+          pointHoverBorderColor: themeColor('card'),
+          pointHoverBackgroundColor: themeColor('accent'),
           yAxisID: 'y'
         },
         {
@@ -497,7 +497,7 @@ export default function Dashboard() {
         suggestedMax: showPeak ? series.peak : undefined,
         position: 'left' as const,
         // No line along the bottom: the Balance grey carries on below it (pageFillPlugin).
-        grid: { color: (c: { index: number }) => (c.index === 0 ? 'transparent' : '#fafaf9'), drawOnChartArea: true },
+        grid: { color: (c: { index: number }) => (c.index === 0 ? 'transparent' : themeColor('surface')), drawOnChartArea: true },
         ticks: { display: false },
         border: { display: false }
       },
@@ -824,7 +824,7 @@ export default function Dashboard() {
                 className="w-full rounded-lg transition-all duration-700 ease-out relative z-10"
                 style={{
                   height: `${activeBarHeightPct}%`,
-                  backgroundImage: 'repeating-linear-gradient(-45deg, rgba(127, 29, 29, 0.35) 0 1px, transparent 1px 4.24px)',
+                  backgroundImage: `repeating-linear-gradient(-45deg, ${themeColor('loss', 0.35)} 0 1px, transparent 1px 4.24px)`,
                 }}
               />
             </div>

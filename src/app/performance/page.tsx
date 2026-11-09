@@ -27,6 +27,7 @@ import PageHeader from "@/components/PageHeader";
 import { pageContentLeft } from "@/components/pageEdge";
 import SystemReview from "@/components/SystemReview";
 import "@/lib/chartTooltip";
+import { themeColor } from '@/lib/themeColors';
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -286,7 +287,7 @@ export default function PerformancePage() {
 
   // The Hour, Day and Month charts draw their 0 line darker, and no axis line at the bottom, so a loss
   // hangs from the line its bar starts at rather than looking as if it floats.
-  const zeroLineColor = (c: { tick?: { value: number } }) => c.tick?.value === 0 ? '#d6d3d1' : '#fafaf9';
+  const zeroLineColor = (c: { tick?: { value: number } }) => c.tick?.value === 0 ? themeColor('ink-disabled') : themeColor('surface');
 
   const metricLabel = selectedMetric === 'RR' ? 'Net RR' : selectedMetric === 'AVG_R' ? 'Avg R per trade' : selectedMetric === 'GAIN' ? 'Gain (%)' : 'Net P&L ($)';
   // What a bar of the Hour, Day and Month charts shows when pointed at: its value with its unit, and under it
@@ -322,7 +323,7 @@ export default function PerformancePage() {
               chart.data.datasets.forEach(ds => { sum += (ds.data[index] as number || 0); });
               if (sum === 0) return;
               
-              ctx.fillStyle = '#78716c';
+              ctx.fillStyle = themeColor('ink-muted');
               ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
@@ -343,7 +344,7 @@ export default function PerformancePage() {
           meta.data.forEach((element, index) => {
             const val = dataset.data[index] as number | null;
             if (val == null) return; // a month with no trades has no bar to label
-            ctx.fillStyle = '#78716c';
+            ctx.fillStyle = themeColor('ink-muted');
             ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
             ctx.textBaseline = 'middle';
 
@@ -453,7 +454,7 @@ export default function PerformancePage() {
               scales: {
                 x: { display: false },
                 y: { display: false, grace: '10%' },
-                y1: { display: true, position: 'left', grid: { color: '#fafaf9', drawOnChartArea: true }, ticks: { display: false }, border: { display: false }, grace: '10%' }
+                y1: { display: true, position: 'left', grid: { color: themeColor('surface'), drawOnChartArea: true }, ticks: { display: false }, border: { display: false }, grace: '10%' }
               }
             }}
             plugins={[balanceFillPlugin]}
@@ -842,9 +843,9 @@ export default function PerformancePage() {
               data={{
                 labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
               datasets: selectedMetric === 'COUNT' ? [
-                  { label: 'Losses', data: data.hourlyLossesArr, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
-                  { label: 'BEs', data: data.hourlyBEsArr, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
-                  { label: 'Wins', data: data.hourlyWinsArr, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
+                  { label: 'Losses', data: data.hourlyLossesArr, backgroundColor: themeColor('loss'), borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'BEs', data: data.hourlyBEsArr, backgroundColor: themeColor('ink-disabled'), borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'Wins', data: data.hourlyWinsArr, backgroundColor: themeColor('accent'), borderRadius: 6, maxBarThickness: 48 }
                 ] : [{ label: metricLabel, data: data.hourlyDataArr, backgroundColor: data.hourlyColors, borderRadius: 6, maxBarThickness: 48 }]
               }}
               options={{
@@ -852,7 +853,7 @@ export default function PerformancePage() {
                 scales: { 
                   y: { border: { display: false }, grid: { color: zeroLineColor }, ticks: { display: false }, stacked: selectedMetric === 'COUNT' }, 
                   // Every hour labelled, standing upright so all 24 fit; an hour not traded in light grey.
-                  x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { autoSkip: false, minRotation: 90, maxRotation: 90, color: (c: { index: number }) => data.hourTraded[c.index] ? '#78716c' : '#d6d3d1' } }
+                  x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { autoSkip: false, minRotation: 90, maxRotation: 90, color: (c: { index: number }) => data.hourTraded[c.index] ? themeColor('ink-muted') : themeColor('ink-disabled') } }
                 },
                 plugins: { legend: { display: false }, tooltip: chartTooltip(data.hourCounts) }
               }}
@@ -869,9 +870,9 @@ export default function PerformancePage() {
               data={{
                 labels: data.activeDowNames,
                 datasets: selectedMetric === 'COUNT' ? [
-                  { label: 'Losses', data: data.activeDowLosses, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
-                  { label: 'BEs', data: data.activeDowBEs, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
-                  { label: 'Wins', data: data.activeDowWins, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
+                  { label: 'Losses', data: data.activeDowLosses, backgroundColor: themeColor('loss'), borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'BEs', data: data.activeDowBEs, backgroundColor: themeColor('ink-disabled'), borderRadius: 6, maxBarThickness: 48 },
+                  { label: 'Wins', data: data.activeDowWins, backgroundColor: themeColor('accent'), borderRadius: 6, maxBarThickness: 48 }
                 ] : [{ label: metricLabel, data: data.activeDowData, backgroundColor: data.dowColors, borderRadius: 6, maxBarThickness: 48 }]
               }}
               options={{
@@ -880,7 +881,7 @@ export default function PerformancePage() {
                 scales: {
                   y: { border: { display: false }, grid: { color: zeroLineColor }, ticks: { display: false }, grace: '20%', stacked: selectedMetric === 'COUNT' },
                   // A day not traded yet named in light grey.
-                  x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { color: (c: { index: number }) => data.dowTraded[c.index] ? '#78716c' : '#d6d3d1' } }
+                  x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: { color: (c: { index: number }) => data.dowTraded[c.index] ? themeColor('ink-muted') : themeColor('ink-disabled') } }
                 },
                 plugins: { legend: { display: false }, tooltip: chartTooltip(data.activeDowCounts) }
               }}
@@ -901,9 +902,9 @@ export default function PerformancePage() {
             data={{
               labels: data.activeMoyNames,
               datasets: selectedMetric === 'COUNT' ? [
-                { label: 'Losses', data: data.activeMoyLosses, backgroundColor: '#7f1d1d', borderRadius: 6, maxBarThickness: 48 },
-                { label: 'BEs', data: data.activeMoyBEs, backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 48 },
-                { label: 'Wins', data: data.activeMoyWins, backgroundColor: '#fb923c', borderRadius: 6, maxBarThickness: 48 }
+                { label: 'Losses', data: data.activeMoyLosses, backgroundColor: themeColor('loss'), borderRadius: 6, maxBarThickness: 48 },
+                { label: 'BEs', data: data.activeMoyBEs, backgroundColor: themeColor('ink-disabled'), borderRadius: 6, maxBarThickness: 48 },
+                { label: 'Wins', data: data.activeMoyWins, backgroundColor: themeColor('accent'), borderRadius: 6, maxBarThickness: 48 }
               ] : [
                 {
                   label: metricLabel,
@@ -923,7 +924,7 @@ export default function PerformancePage() {
                 // Every month named, level, a month not traded yet in light grey; a smaller font on a phone so all twelve fit.
                 x: { grid: { display: false }, border: { display: false }, stacked: selectedMetric === 'COUNT', ticks: {
                   autoSkip: false, maxRotation: 0,
-                  color: (c: { index: number }) => data.moyTraded[c.index] ? '#78716c' : '#d6d3d1',
+                  color: (c: { index: number }) => data.moyTraded[c.index] ? themeColor('ink-muted') : themeColor('ink-disabled'),
                   font: (c: { chart: { width: number } }) => ({ size: c.chart.width / 12 < 44 ? 10 : 12 }),
                 } }
               },

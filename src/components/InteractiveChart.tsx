@@ -6,6 +6,7 @@ import { tradeZones, medianPointValue } from "@/lib/tradeZones";
 import { Loader2, AlertCircle } from "lucide-react";
 import { type Candle, normalizeChartTf, legacyChartDataToMap, loadCachedCandles, saveCachedCandles } from "@/lib/chartCache";
 import { candleIndexAt, computePriceOffset, shiftCandles, type PriceAnchor } from "@/lib/chartAlign";
+import { themeColor } from '@/lib/themeColors';
 
 interface InteractiveChartProps {
   trade: Trade;
@@ -208,7 +209,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       }
       
       const chart = createChart(chartContainerRef.current, {
-        layout: { background: { color: 'transparent' }, textColor: '#78716c' },
+        layout: { background: { color: 'transparent' }, textColor: themeColor('ink-muted') },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         timeScale: { timeVisible: true, secondsVisible: false, borderVisible: false },
         rightPriceScale: { borderVisible: false },
@@ -260,12 +261,12 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
             autoscaleInfoProvider: () => null,
             baseValue: { type: 'price', price: trade.entryPrice },
             // The table's surface-2 fill and line border (a canvas can't use the class names).
-            topFillColor1: '#f5f5f4',
-            topFillColor2: '#f5f5f4',
-            topLineColor: '#e7e5e4',
-            bottomFillColor1: '#f5f5f4',
-            bottomFillColor2: '#f5f5f4',
-            bottomLineColor: '#e7e5e4',
+            topFillColor1: themeColor('surface-2'),
+            topFillColor2: themeColor('surface-2'),
+            topLineColor: themeColor('line'),
+            bottomFillColor1: themeColor('surface-2'),
+            bottomFillColor2: themeColor('surface-2'),
+            bottomLineColor: themeColor('line'),
             lineWidth: 1,
             crosshairMarkerVisible: false,
             priceLineVisible: false,
@@ -275,8 +276,8 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
           // Risk Box: entry to the first stop, in the table's loss-soft fill and loss-line border. Only outlined when
           // that stop is only estimated at 1R.
-          const riskFill = zones.slIsEstimate ? 'transparent' : '#fef2f2';
-          const riskLine = '#fecaca';
+          const riskFill = zones.slIsEstimate ? 'transparent' : themeColor('loss-soft');
+          const riskLine = themeColor('loss-line');
           const riskSeries = chart.addBaselineSeries({
             baseValue: { type: 'price', price: trade.entryPrice },
             topFillColor1: riskFill,
@@ -297,14 +298,14 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       // 2. Draw Candlesticks on top
       const series = chart.addCandlestickSeries({
         // Up candles in the table's line grey, down candles and every outline in ink.
-        upColor: '#e7e5e4',
-        downColor: '#0c0a09',
+        upColor: themeColor('line'),
+        downColor: themeColor('ink'),
         borderVisible: true,
-        borderColor: '#0c0a09',
-        wickUpColor: '#0c0a09',
-        wickDownColor: '#0c0a09',
-        borderUpColor: '#0c0a09',
-        borderDownColor: '#0c0a09',
+        borderColor: themeColor('ink'),
+        wickUpColor: themeColor('ink'),
+        wickDownColor: themeColor('ink'),
+        borderUpColor: themeColor('ink'),
+        borderDownColor: themeColor('ink'),
         priceLineVisible: false
       });
       seriesRef.current = series;
@@ -312,13 +313,13 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
       if (zones?.movedSl) {
         series.createPriceLine({
-          price: zones.movedSl, color: '#a8a29e', lineWidth: 1, lineStyle: LineStyle.Dashed,
+          price: zones.movedSl, color: themeColor('ink-faint'), lineWidth: 1, lineStyle: LineStyle.Dashed,
           axisLabelVisible: true, title: 'SL moved',
         });
       }
       if (zones?.slIsEstimate) {
         series.createPriceLine({
-          price: zones.sl, color: 'rgba(127, 29, 29, 0.45)', lineWidth: 1, lineStyle: LineStyle.Dotted,
+          price: zones.sl, color: themeColor('loss', 0.45), lineWidth: 1, lineStyle: LineStyle.Dotted,
           axisLabelVisible: true, title: '1R (first SL unknown)',
         });
       }
@@ -328,7 +329,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         markers.push({
           time: toLocalChartTime(entryCandleTime),
           position: isBuy ? 'belowBar' : 'aboveBar',
-          color: '#0c0a09',
+          color: themeColor('ink'),
           shape: isBuy ? 'arrowUp' : 'arrowDown',
           text: 'Entry',
         });
@@ -339,7 +340,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         markers.push({
           time: toLocalChartTime(exitCandleTime),
           position: isBuy ? 'aboveBar' : 'belowBar',
-          color: isWin ? '#fb923c' : '#7f1d1d',
+          color: isWin ? themeColor('accent') : themeColor('loss'),
           shape: isBuy ? 'arrowDown' : 'arrowUp',
           text: 'Exit',
         });

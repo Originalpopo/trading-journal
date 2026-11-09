@@ -3,12 +3,13 @@
 // value on the right. Imported once by every page with a chart; it sets Chart.js's defaults, so each chart
 // keeps only its own wording (its tooltip callbacks).
 import { Chart as ChartJS, Tooltip, type Chart, type ChartType, type TooltipItem, type TooltipModel } from 'chart.js';
+import { themeColor } from './themeColors';
 
 // Its defaults only exist once the Tooltip plugin is registered (the pages register it too; twice is harmless).
 ChartJS.register(Tooltip);
 
 // The circle of a line or area too faint to see (the Balance grey) is drawn in stone-300.
-const FAINT_COLOUR = '#d6d3d1';
+const faintColour = () => themeColor('ink-disabled');
 
 function solidColour(colour: unknown, index: number): string | null {
   const value = Array.isArray(colour) ? colour[index] : colour;
@@ -26,7 +27,7 @@ function circleColour(item: TooltipItem<ChartType>): string {
   const dataset = item.dataset as { borderColor?: unknown; backgroundColor?: unknown };
   return solidColour(dataset.borderColor, item.dataIndex)
     ?? solidColour(dataset.backgroundColor, item.dataIndex)
-    ?? FAINT_COLOUR;
+    ?? faintColour();
 }
 
 function tooltipElement(chart: Chart): HTMLDivElement | null {
@@ -66,7 +67,7 @@ function externalTooltip({ chart, tooltip }: { chart: Chart; tooltip: TooltipMod
       const cut = line.lastIndexOf(': ');
       const row = div('chart-tooltip-row');
       const dot = div('chart-tooltip-dot');
-      dot.style.backgroundColor = String(tooltip.labelColors[i]?.backgroundColor ?? FAINT_COLOUR);
+      dot.style.backgroundColor = String(tooltip.labelColors[i]?.backgroundColor ?? faintColour());
       row.appendChild(dot);
       row.appendChild(div('chart-tooltip-name', (cut === -1 ? line : line.slice(0, cut)).trim()));
       if (cut !== -1) row.appendChild(div('chart-tooltip-value', line.slice(cut + 2)));

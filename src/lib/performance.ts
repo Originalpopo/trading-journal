@@ -3,6 +3,7 @@
 import { classifyTrade, summarizeTrades, computePnlDrawdown, isOnPlan, type StatTrade } from './stats.ts';
 import { addMoney, subMoney } from './money.ts';
 import { formatDurationDetailed, calculateDurationInSeconds } from './utils.ts';
+import { themeColor } from './themeColors.ts';
 
 export interface PerfTrade extends StatTrade {
   time: string;
@@ -337,7 +338,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
       } else {
         perfBalanceData.push(runningBalance);
         perfPnlData.push(pnl);
-        perfPnlColors.push(isBE ? '#d6d3d1' : (pnl >= 0 ? '#fb923c' : '#7f1d1d'));
+        perfPnlColors.push(isBE ? themeColor('ink-disabled') : (pnl >= 0 ? themeColor('accent') : themeColor('loss')));
 
         tradeCount++;
         let dateStr = "Trade " + tradeCount;
@@ -357,11 +358,11 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
       if (day.isFundingOnly && day.pnl === 0) {
         perfPnlColors.push('transparent');
       } else if (day.pnl === 0) {
-        perfPnlColors.push('#d6d3d1');
+        perfPnlColors.push(themeColor('ink-disabled'));
       } else if (day.pnl > 0) {
-        perfPnlColors.push('#fb923c');
+        perfPnlColors.push(themeColor('accent'));
       } else {
-        perfPnlColors.push('#7f1d1d');
+        perfPnlColors.push(themeColor('loss'));
       }
       const d = new Date(day.timestamp);
       perfBalanceLabels.push(`${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear().toString().slice(-2)}`);
@@ -419,7 +420,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const hourCounts = hours.map(h => hourWins[h] + hourLosses[h] + hourBEs[h]);
   const avgR = (sum: number, count: number) => (count > 0 ? sum / count : 0);
   const hourlyDataArr = hours.map(h => selectedMetric === 'RR' ? hourStats[h] : selectedMetric === 'AVG_R' ? avgR(hourStats[h], hourCounts[h]) : selectedMetric === 'GAIN' ? (hourStatsPnL[h] / initialDeposit) * 100 : hourStatsPnL[h]);
-  const hourlyColors = hourlyDataArr.map(v => v >= 0 ? '#fb923c' : '#7f1d1d');
+  const hourlyColors = hourlyDataArr.map(v => v >= 0 ? themeColor('accent') : themeColor('loss'));
   const hourlyWinsArr = hours.map(h => hourWins[h]);
   const hourlyLossesArr = hours.map(h => hourLosses[h]);
   const hourlyBEsArr = hours.map(h => hourBEs[h]);
@@ -433,7 +434,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const dowTraded = activeDowKeys.map(isDayTraded);
   const activeDowCounts = activeDowKeys.map(k => dowWins[k] + dowLosses[k] + dowBEs[k]);
   const activeDowData = activeDowKeys.map((k, i): number | null => !isDayTraded(k) ? null : selectedMetric === 'RR' ? dowStats[k] : selectedMetric === 'AVG_R' ? avgR(dowStats[k], activeDowCounts[i]) : selectedMetric === 'GAIN' ? (dowStatsPnL[k] / initialDeposit) * 100 : dowStatsPnL[k]);
-  const dowColors = activeDowData.map(v => (v ?? 0) >= 0 ? '#fb923c' : '#7f1d1d');
+  const dowColors = activeDowData.map(v => (v ?? 0) >= 0 ? themeColor('accent') : themeColor('loss'));
   const activeDowWins = activeDowKeys.map(k => dowWins[k]);
   const activeDowLosses = activeDowKeys.map(k => dowLosses[k]);
   const activeDowBEs = activeDowKeys.map(k => dowBEs[k]);
@@ -454,7 +455,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
     }
     return moyStatsPnL[k];
   });
-  const moyRRColors = moyRRData.map(v => (v ?? 0) >= 0 ? '#fb923c' : '#7f1d1d');
+  const moyRRColors = moyRRData.map(v => (v ?? 0) >= 0 ? themeColor('accent') : themeColor('loss'));
   const activeMoyWins = activeMoyKeys.map(k => moyWins[k]);
   const activeMoyLosses = activeMoyKeys.map(k => moyLosses[k]);
   const activeMoyBEs = activeMoyKeys.map(k => moyBEs[k]);

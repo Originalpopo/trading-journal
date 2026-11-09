@@ -23,9 +23,10 @@ import {
   simulatePath, simulateOutlook, binaryOutcomes, cautiousWinRate,
   type SimParams, type SimPath, type SimOutlook,
 } from "@/lib/simulation";
+import { themeColor } from '@/lib/themeColors';
 
 // The table's accent, ink and ink-muted (a canvas can't use the class names).
-const PATH_COLORS = ['#fb923c', '#0c0a09', '#78716c'];
+const pathColors = () => [themeColor('accent'), themeColor('ink'), themeColor('ink-muted')];
 
 // Below this many trades the measured win rate says little about the true one.
 const SMALL_SAMPLE = 100;
@@ -66,7 +67,8 @@ function buildResults(params: SimParams, sampleSize: number): SimulationResults 
   const labels = ['Start'];
   for (let i = 1; i <= params.trades; i++) labels.push('T' + i);
 
-  const paths = PATH_COLORS.map(() => simulatePath(params));
+  const colors = pathColors();
+  const paths = colors.map(() => simulatePath(params));
   const lowWinRate = sampleSize > 0 ? cautiousWinRate(params.winRate, sampleSize) : null;
   return {
     runId: ++runCounter,
@@ -74,8 +76,8 @@ function buildResults(params: SimParams, sampleSize: number): SimulationResults 
     datasets: paths.map((path, i) => ({
       label: `Sim ${i + 1}`,
       data: path.balances,
-      borderColor: PATH_COLORS[i],
-      backgroundColor: PATH_COLORS[i],
+      borderColor: colors[i],
+      backgroundColor: colors[i],
       pointBorderColor: 'transparent',
       borderWidth: 2,
       tension: 0.3,
@@ -85,7 +87,7 @@ function buildResults(params: SimParams, sampleSize: number): SimulationResults 
     reports: paths.map((path, i) => {
       const stats: Omit<SimPath, 'balances'> & { balances?: number[] } = { ...path };
       delete stats.balances;
-      return { ...stats, id: `sim-${i}`, index: i, color: PATH_COLORS[i] };
+      return { ...stats, id: `sim-${i}`, index: i, color: colors[i] };
     }),
     winRate: params.winRate,
     outlook: simulateOutlook(params),
@@ -400,7 +402,7 @@ export default function SimulationPage() {
                     x: { display: false },
                     y: {
                       position: 'right',
-                      grid: { color: '#fafaf9' }
+                      grid: { color: themeColor('surface') }
                     }
                   }
                 }}
