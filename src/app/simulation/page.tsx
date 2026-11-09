@@ -24,7 +24,8 @@ import {
   type SimParams, type SimPath, type SimOutlook,
 } from "@/lib/simulation";
 
-const PATH_COLORS = ['#fb923c', '#1c1917', '#78716c'];
+// The table's accent, ink and ink-muted (a canvas can't use the class names).
+const PATH_COLORS = ['#fb923c', '#0c0a09', '#78716c'];
 
 // Below this many trades the measured win rate says little about the true one.
 const SMALL_SAMPLE = 100;
@@ -93,7 +94,7 @@ function buildResults(params: SimParams, sampleSize: number): SimulationResults 
   };
 }
 
-const INPUT = "w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition";
+const INPUT = "w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition";
 const LABEL = "block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1";
 
 function Toggle<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string; title: string }[]; onChange: (value: T) => void }) {
@@ -106,7 +107,7 @@ function Toggle<T extends string>({ value, options, onChange }: { value: T; opti
           title={option.title}
           onClick={() => onChange(option.value)}
           className={`flex-1 text-xs md:text-[10px] font-bold px-2 py-2 md:py-1 rounded transition whitespace-nowrap ${
-            value === option.value ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-stone-600'
+            value === option.value ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-ink'
           }`}
         >
           {option.label}
@@ -347,10 +348,10 @@ export default function SimulationPage() {
           </div>
 
           <div className="pt-4 mt-auto flex gap-3">
-            <button onClick={() => { setForm(defaultForm); run(defaultForm); }} title="Back to the values from your journal" className="bg-surface-2 hover:bg-stone-200 text-ink-muted font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center shrink-0">
+            <button onClick={() => { setForm(defaultForm); run(defaultForm); }} title="Back to the values from your journal" className="bg-surface-2 hover:bg-line text-ink-muted font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center shrink-0">
               <RotateCcw className="w-4 h-4" strokeWidth={2.5} />
             </button>
-            <button onClick={() => run(form)} className="flex-1 bg-accent hover:bg-accent-strong text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-stone-200">
+            <button onClick={() => run(form)} className="flex-1 bg-accent hover:bg-accent-strong text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-line">
               Start
             </button>
           </div>
@@ -433,7 +434,7 @@ export default function SimulationPage() {
             outlook={results.outlook}
           />
           {results.cautious && (
-            <div className="pt-5 border-t border-stone-100">
+            <div className="pt-5 border-t border-line-soft">
               <OutlookRow
                 title="Cautious"
                 note={`win rate ${formatNumber(results.cautious.winRate * 100)}%, the lowest that ${results.sampleSize} trades still fit; everything else the same`}
@@ -467,7 +468,7 @@ export default function SimulationPage() {
                 </div>
               )}
               <div className="w-full mt-auto flex flex-col">
-                <div className="grid grid-cols-3 gap-y-3 gap-x-2 w-full border-t border-stone-100 pt-4 text-center pb-4">
+                <div className="grid grid-cols-3 gap-y-3 gap-x-2 w-full border-t border-line-soft pt-4 text-center pb-4">
                   <div>
                     <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Growth</div>
                     <div className={`text-sm font-bold ${growthClass}`}>{formatNumber(report.growth)}%</div>
@@ -494,7 +495,7 @@ export default function SimulationPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 w-full border-t border-stone-100 pt-4 text-center">
+                <div className="grid grid-cols-2 gap-2 w-full border-t border-line-soft pt-4 text-center">
                   <div>
                     <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Max Cons Win</div>
                     <div className="text-sm font-bold text-accent">{report.maxConsWins}</div>
