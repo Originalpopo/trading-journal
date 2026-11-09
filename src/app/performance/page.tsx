@@ -24,6 +24,7 @@ import {
 import { Line, Bar } from 'react-chartjs-2';
 
 import PageHeader from "@/components/PageHeader";
+import { pageContentLeft } from "@/components/pageEdge";
 import SystemReview from "@/components/SystemReview";
 import "@/lib/chartTooltip";
 ChartJS.register(
@@ -224,7 +225,7 @@ export default function PerformancePage() {
   // past the title row on each side, measured whenever the page changes width.
   const chartTitleRef = useRef<HTMLDivElement>(null);
   const chartBoxRef = useRef<HTMLDivElement>(null);
-  const [bleed, setBleed] = useState({ left: 0, right: 0 });
+  const [bleed, setBleed] = useState({ left: 0, right: 0, rail: 0 });
   useEffect(() => {
     const main = document.querySelector('main');
     if (!main) return;
@@ -234,8 +235,11 @@ export default function PerformancePage() {
         const box = main.getBoundingClientRect();
         const row = title.getBoundingClientRect();
         const left = Math.max(0, Math.floor(row.left - box.left - main.clientLeft));
+        // The chart's box runs under the floating sidebar to the window's edge (its grey with it), while its
+        // points start at the sidebar's right edge: this much padding on the chart's left.
+        const rail = Math.max(0, Math.floor(pageContentLeft(main) - box.left - main.clientLeft));
         const right = Math.max(0, Math.floor(box.left + main.clientLeft + main.clientWidth - row.right));
-        setBleed(b => (b.left === left && b.right === right ? b : { left, right }));
+        setBleed(b => (b.left === left && b.right === right && b.rail === rail ? b : { left, right, rail }));
       }
     });
     observer.observe(main);
@@ -426,7 +430,7 @@ export default function PerformancePage() {
             options={{
               responsive: true, maintainAspectRatio: false,
               // No dot or figure on the last Balance point; the last bar ends 16px short of the page's right edge.
-              layout: { padding: { top: 20, right: 16 } },
+              layout: { padding: { top: 20, right: 16, left: bleed.rail } },
               plugins: {
                 legend: { display: false },
                 tooltip: {

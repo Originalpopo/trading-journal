@@ -30,6 +30,7 @@ import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } fro
 import BalanceCheckModal from "@/components/BalanceCheckModal";
 
 import PageHeader from "@/components/PageHeader";
+import { pageContentLeft } from "@/components/pageEdge";
 import "@/lib/chartTooltip";
 const LAST_DOT_RADIUS = 6;
 // A dot on the Equity line's last point (its number is on the chart's title line): orange, or red while the equity
@@ -232,11 +233,15 @@ const pageFillPlugin: Plugin<'line'> = {
     const points = chart.getDatasetMeta(1).data;
     const last = points[points.length - 1];
     if (!last) return;
+    const first = points[0];
     const x = Math.round(last.x);
+    const x0 = Math.round(first.x);
     const ctx = chart.ctx;
     ctx.save();
     ctx.fillStyle = BALANCE_FILL;
     ctx.fillRect(x, last.y, chart.width - x, chart.chartArea.bottom - last.y);
+    // Left of the first point too, under the floating sidebar to the window's edge.
+    ctx.fillRect(0, first.y, x0, chart.chartArea.bottom - first.y);
     ctx.restore();
   },
   afterDraw: (chart) => {
@@ -296,7 +301,7 @@ export default function Dashboard() {
   // column: `bleed` is how far the page reaches past the title row on each side, measured whenever the page
   // changes width. The chart's grey below it (pageFillPlugin) is measured again then too.
   const chartTitleRef = useRef<HTMLDivElement>(null);
-  const [bleed, setBleed] = useState({ left: 0, right: 0 });
+  const [bleed, setBleed] = useState({ left: 0, right: 0, rail: 0 });
   useEffect(() => {
     const main = document.querySelector('main');
     if (!main) return;
@@ -306,8 +311,11 @@ export default function Dashboard() {
         const box = main.getBoundingClientRect();
         const row = title.getBoundingClientRect();
         const left = Math.max(0, Math.floor(row.left - box.left - main.clientLeft));
+        // The chart's box runs under the floating sidebar to the window's edge (its grey with it), while its
+        // points start at the sidebar's right edge: this much padding on the chart's left.
+        const rail = Math.max(0, Math.floor(pageContentLeft(main) - box.left - main.clientLeft));
         const right = Math.max(0, Math.floor(box.left + main.clientLeft + main.clientWidth - row.right));
-        setBleed(b => (b.left === left && b.right === right ? b : { left, right }));
+        setBleed(b => (b.left === left && b.right === right && b.rail === rail ? b : { left, right, rail }));
       }
       const canvas = main.querySelector('canvas');
       if (canvas) ChartJS.getChart(canvas)?.draw();
@@ -460,7 +468,7 @@ export default function Dashboard() {
     responsive: true,
     maintainAspectRatio: false,
     layout: {
-      padding: { right: chartRightPadding, top: 35, bottom: 20 }
+      padding: { left: bleed.rail, right: chartRightPadding, top: 35, bottom: 20 }
     },
     plugins: {
       legend: { display: false },

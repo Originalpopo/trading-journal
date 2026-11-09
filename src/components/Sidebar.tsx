@@ -24,6 +24,7 @@ import { clearDatabase, downloadDatabase, restoreDatabase } from "@/lib/dbAction
 import { UploadModal } from "./UploadModal";
 import { BackupDueDot } from "./BackupReminder";
 import BulkImportModal from "./BulkImportModal";
+import { RAIL_COLLAPSED_PX, RAIL_EXPANDED_PX } from "./pageEdge";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -34,6 +35,11 @@ export default function Sidebar() {
   const [tvLogText, setTvLogText] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  // How far the sidebar's right edge is from the window's left, for the page beside it (pageEdge.ts).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--rail', `${isCollapsed ? RAIL_COLLAPSED_PX : RAIL_EXPANDED_PX}px`);
+  }, [isCollapsed]);
 
   useEffect(() => {
     const unsubscribe = initializeListeners();
@@ -97,7 +103,9 @@ export default function Sidebar() {
 
   return (
     <>
-    <aside className={`print:hidden bg-white border-r border-stone-200 hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    {/* A card floating over the page's left side: away from the window's edges, rounded, with a soft shadow. The
+        page runs on under it to the window's edge, so its grey bands reach there too. */}
+    <aside className={`print:hidden bg-white rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px_rgba(28,25,23,0.12)] hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       <div className={`p-6 pb-8 flex items-center ${isCollapsed ? "justify-center px-4" : "gap-2"}`}>
         <button 
           onClick={(e) => {
@@ -175,7 +183,7 @@ export default function Sidebar() {
     {isMoreOpen && (
       <div className="md:hidden print:hidden fixed inset-0 z-40 bg-stone-900/50" onClick={() => setIsMoreOpen(false)}>
         <div
-          className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] shadow-2xl"
+          className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-3 gap-2">
@@ -218,8 +226,11 @@ export default function Sidebar() {
       </div>
     )}
 
-    <nav className="md:hidden print:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-stone-200 pb-[env(safe-area-inset-bottom)]">
-      <div className="grid grid-cols-5 h-16">
+    {/* Like the sidebar on a computer: a card floating above the page's bottom, away from the screen's edges,
+        rounded, with a soft shadow. */}
+    <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 bg-white rounded-3xl shadow-[0_10px_40px_-8px_rgba(28,25,23,0.18)]">
+      {/* The page being shown sits on an orange pill, as in the sidebar. */}
+      <div className="grid grid-cols-5 h-16 p-1.5 gap-1">
         {mobilePrimary.map((item) => {
           const isActive = !isMoreOpen && pathname === item.href;
           const Icon = item.icon;
@@ -228,8 +239,8 @@ export default function Sidebar() {
               key={item.name}
               href={item.href}
               onClick={() => setIsMoreOpen(false)}
-              className={`flex flex-col items-center justify-center gap-1 text-[10px] transition ${
-                isActive ? "text-orange-400 font-bold" : "text-stone-400 font-semibold"
+              className={`flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
+                isActive ? "bg-orange-50 text-orange-400 font-bold" : "text-stone-400 font-semibold"
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -239,8 +250,8 @@ export default function Sidebar() {
         })}
         <button
           onClick={() => setIsMoreOpen(!isMoreOpen)}
-          className={`flex flex-col items-center justify-center gap-1 text-[10px] transition ${
-            isMoreActive ? "text-orange-400 font-bold" : "text-stone-400 font-semibold"
+          className={`flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
+            isMoreActive ? "bg-orange-50 text-orange-400 font-bold" : "text-stone-400 font-semibold"
           }`}
         >
           <Ellipsis className="w-5 h-5" />
