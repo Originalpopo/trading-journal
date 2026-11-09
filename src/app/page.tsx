@@ -52,19 +52,19 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
 // The Peak line and the Active DD area wait for the chart's own animation to end, then fade in over this long.
 const PEAK_FADE_MS = 300;
 // When each chart's Peak line started fading in; null while the chart is animating (or has not finished yet).
-const peakShownAt = new WeakMap<ChartJS, number | null>();
-const peakAlpha = (chart: ChartJS) => {
+const peakShownAt = new WeakMap<ChartJS<'line'>, number | null>();
+const peakAlpha = (chart: ChartJS<'line'>) => {
   const shownAt = peakShownAt.get(chart);
   return shownAt == null ? 0 : Math.min(1, (performance.now() - shownAt) / PEAK_FADE_MS);
 };
 // Whether the chart's lines are still moving into place. Only their points count: the tooltip animates on the same
 // chart, and pointing at the chart must not hide the Peak line.
 type Animating = { $animations?: Record<string, { active: () => boolean }> };
-const linesAnimating = (chart: ChartJS) => chart.data.datasets.some((_, i) => {
+const linesAnimating = (chart: ChartJS<'line'>) => chart.data.datasets.some((_, i) => {
   const meta = chart.getDatasetMeta(i);
   return [meta.dataset, ...meta.data].some(el => Object.values((el as Animating | undefined)?.$animations ?? {}).some(a => a.active()));
 });
-const startPeakFade = (chart: ChartJS) => {
+const startPeakFade = (chart: ChartJS<'line'>) => {
   peakShownAt.set(chart, performance.now());
   const step = () => {
     if (!chart.ctx) return; // destroyed
@@ -740,16 +740,6 @@ export default function Dashboard() {
             </div>
 
             <div title={gaugeNote} className="w-16 h-full bg-stone-50 rounded-xl p-1.5 border border-stone-200 flex flex-col justify-end items-center relative z-10 shadow-inner">
-              <div className="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none opacity-10">
-                <div className="w-full border-b border-stone-950"></div>
-                <div className="w-full border-b border-stone-950"></div>
-                <div className="w-full border-b border-stone-950"></div>
-                <div className="w-full border-b border-stone-950"></div>
-                <div className="w-full border-b border-stone-950"></div>
-                <div className="w-full border-b border-stone-950"></div>
-                <div className="w-full border-b border-stone-950"></div>
-              </div>
-
               {/* Deepest point of the drawdown still under way */}
               {isInDrawdown && <div 
                 className="absolute left-1.5 right-1.5 h-1.5 bg-red-900 rounded-full shadow-[0_0_8px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out z-20"
@@ -757,10 +747,14 @@ export default function Dashboard() {
                 title={`Deepest point of this drawdown: ${formatNumber(ddActiveMax)}${ddUnit}`}
               />}
 
-              {/* Active DD Bar */}
-              <div 
-                className="w-full bg-stone-300/50 rounded-lg transition-all duration-700 ease-out relative z-10"
-                style={{ height: `${activeBarHeightPct}%` }}
+              {/* Active DD Bar: hatched like the Active DD area on the chart (thin red-900 diagonals, 6px apart
+                  across, the same slant). */}
+              <div
+                className="w-full rounded-lg transition-all duration-700 ease-out relative z-10"
+                style={{
+                  height: `${activeBarHeightPct}%`,
+                  backgroundImage: 'repeating-linear-gradient(-45deg, rgba(127, 29, 29, 0.35) 0 1px, transparent 1px 4.24px)',
+                }}
               />
             </div>
           </div>
