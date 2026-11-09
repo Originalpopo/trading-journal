@@ -40,7 +40,7 @@ export default function ReportPage() {
   // A rough baht value for money still at the broker, at the rate of the latest real transfer.
   const approx = (value: number, rate: { rate: number } | null) =>
     rate === null ? null : (
-      <><br /><span className="text-[9px] font-medium text-ink-faint opacity-70">{isPrivacyMode ? '***' : `≈${value < 0 ? '-' : ''}฿${formatNumber(Math.abs(value) * rate.rate)}`}</span></>
+      <><br /><span className="text-[9px] font-normal text-ink-faint opacity-70">{isPrivacyMode ? '***' : `≈${value < 0 ? '-' : ''}฿${formatNumber(Math.abs(value) * rate.rate)}`}</span></>
     );
   const setAsides = useMemo(() => withdrawalSetAsides(report.withdrawals), [report]);
   const latestRate = report.years.length > 0 ? report.years[report.years.length - 1].approxRate : null;
@@ -103,9 +103,9 @@ export default function ReportPage() {
         {report.years.length === 0 ? (
           <p className="text-sm text-ink-faint font-medium">No trades or funding yet.</p>
         ) : (
-          <div className="overflow-x-auto border border-stone-100 rounded-xl">
+          <div className="overflow-x-auto border border-line-soft rounded-xl">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-surface text-ink-faint border-b border-stone-100">
+              <thead className="bg-surface text-ink-faint border-b border-line-soft">
                 <tr>
                   <th rowSpan={2} className={TH_LEFT}>Year</th>
                   <th rowSpan={2} className={TH}>Start</th>
@@ -115,15 +115,15 @@ export default function ReportPage() {
                   <th rowSpan={2} className={TH}>Trades</th>
                   <th rowSpan={2} className={TH}>Comm.</th>
                   <th rowSpan={2} className={TH}>End</th>
-                  <th colSpan={2} className={`${TH_GROUP} border-l border-stone-100`}><Hint text={TIP_PROFIT_IN}>Taxable profit (฿)</Hint></th>
-                  <th rowSpan={2} className={`${TH} border-l border-stone-100`}><Hint text={TIP_TAX_ESTIMATE}>Est. tax (฿)</Hint></th>
+                  <th colSpan={2} className={`${TH_GROUP} border-l border-line-soft`}><Hint text={TIP_PROFIT_IN}>Taxable profit (฿)</Hint></th>
+                  <th rowSpan={2} className={`${TH} border-l border-line-soft`}><Hint text={TIP_TAX_ESTIMATE}>Est. tax (฿)</Hint></th>
                 </tr>
                 <tr>
-                  <th className={`${TH_SUB} border-l border-stone-100`}><Hint text={TIP_PRINCIPAL_FIRST}>Principal 1st</Hint></th>
+                  <th className={`${TH_SUB} border-l border-line-soft`}><Hint text={TIP_PRINCIPAL_FIRST}>Principal 1st</Hint></th>
                   <th className={`${TH_SUB} text-ink-disabled`}><Hint text={TIP_PRO_RATA}>Pro rata</Hint></th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] divide-y divide-stone-50">
+              <tbody className="text-[11px] divide-y divide-line-soft">
                 {report.years.map(y => (
                   <tr key={y.year} className="hover:bg-surface transition">
                     <td className="px-4 py-4 font-extrabold text-ink">
@@ -135,17 +135,17 @@ export default function ReportPage() {
                       )}
                     </td>
                     <td className={TD}>{usd(y.startBalanceUsd)}</td>
-                    <td className={TD}>{usd(y.depositUsd)}<br /><span className="text-[9px] opacity-70">{thb(y.depositThb)}</span></td>
-                    <td className={TD}>{usd(y.withdrawUsd)}<br /><span className="text-[9px] opacity-70">{thb(y.withdrawThb)}</span></td>
+                    <td className={TD}>{usd(y.depositUsd)}<br /><span className="text-[9px] font-normal text-ink-faint opacity-70">{thb(y.depositThb)}</span></td>
+                    <td className={TD}>{usd(y.withdrawUsd)}<br /><span className="text-[9px] font-normal text-ink-faint opacity-70">{thb(y.withdrawThb)}</span></td>
                     <td className={`px-4 py-4 text-right font-extrabold ${y.tradingPnlUsd > 0 ? 'text-accent' : y.tradingPnlUsd < 0 ? 'text-loss' : 'text-ink-faint'}`}>
                       {usd(y.tradingPnlUsd)}{approx(y.tradingPnlUsd, y.approxRate)}
                     </td>
                     <td className={TD}>{y.tradeCount}</td>
                     <td className={TD}>{usd(y.commissionUsd)}{approx(y.commissionUsd, y.approxRate)}</td>
                     <td className={`${TD_BASE} text-ink`}>{usd(y.endBalanceUsd)}{approx(y.endBalanceUsd, y.approxRate)}</td>
-                    <td className={`${TD_BASE} text-ink font-extrabold border-l border-stone-100`}>{thb(y.profitBroughtInThb.principalFirst)}</td>
-                    <td className={`${TD} text-ink-disabled`}>{thb(y.profitBroughtInThb.proRata)}</td>
-                    <td className={`${TD} border-l border-stone-100 font-medium text-ink-faint`}>
+                    <td className={`${TD_BASE} text-ink font-extrabold border-l border-line-soft`}>{thb(y.profitBroughtInThb.principalFirst)}</td>
+                    <td className={`${TD_BASE} text-ink-disabled`}>{thb(y.profitBroughtInThb.proRata)}</td>
+                    <td className={`${TD_BASE} border-l border-line-soft font-medium text-ink-faint`}>
                       {isPrivacyMode ? '***' : `≈฿${formatNumber(estimateIncomeTax(y.profitBroughtInThb.principalFirst))}`}
                     </td>
                   </tr>
@@ -174,9 +174,9 @@ export default function ReportPage() {
         {report.withdrawals.length === 0 ? (
           <p className="text-sm text-ink-faint font-medium">No withdrawals yet, so no profit has been brought into Thailand.</p>
         ) : (
-          <div className="overflow-x-auto border border-stone-100 rounded-xl">
+          <div className="overflow-x-auto border border-line-soft rounded-xl">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-surface text-ink-faint border-b border-stone-100">
+              <thead className="bg-surface text-ink-faint border-b border-line-soft">
                 <tr>
                   <th className={TH_LEFT}>Bank date</th>
                   <th className={TH}>Tax year</th>
@@ -185,10 +185,10 @@ export default function ReportPage() {
                   <th className={TH}>Rate</th>
                   <th className={TH}><Hint text={TIP_PRINCIPAL_FIRST + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"}>Principal 1st</Hint></th>
                   <th className={`${TH} text-ink-disabled`}><Hint text={TIP_PRO_RATA + " (ตัวเลขแสดงเป็น เงินต้น / กำไร)"}>Pro rata</Hint></th>
-                  <th className={`${TH} border-l border-stone-100`}><Hint text={TIP_SET_ASIDE}>Set aside (฿)</Hint></th>
+                  <th className={`${TH} border-l border-line-soft`}><Hint text={TIP_SET_ASIDE}>Set aside (฿)</Hint></th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] divide-y divide-stone-50">
+              <tbody className="text-[11px] divide-y divide-line-soft">
                 {report.withdrawals.map((w, i) => (
                   <tr key={`${w.time}-${i}`} className="hover:bg-surface transition">
                     <td className="px-4 py-4 font-semibold text-ink-muted leading-tight">
@@ -204,7 +204,7 @@ export default function ReportPage() {
                     <td className={TD}>
                       {w.proRata ? <span className="text-ink-disabled">{thb(w.proRata.principal)} / {thb(w.proRata.profit)}</span> : '-'}
                     </td>
-                    <td className={`${TD} border-l border-stone-100 font-medium text-ink-faint`}>
+                    <td className={`${TD_BASE} border-l border-line-soft font-medium text-ink-faint`}>
                       {setAsides[i] === null ? '-' : isPrivacyMode ? '***' : `≈฿${formatNumber(setAsides[i]!)}`}
                     </td>
                   </tr>
