@@ -1,7 +1,48 @@
 @import "tailwindcss";
 
+/* The app's colours, named by what they do (see "Colours" in AGENTS.md). Each name points at a CSS variable on :root,
+   so a future theme only has to give these variables other values, e.g. under [data-theme="..."].
+   Not used by the pages yet: they still name Tailwind's colours directly and move over one page at a time. */
+:root {
+  /* The main colour: the good side (profit, TP, on plan), the main button, the page that is open. */
+  --accent: var(--color-orange-400);
+  --accent-strong: var(--color-orange-500); /* only a main-colour button being pointed at */
+  --accent-soft: var(--color-orange-50); /* a light background: the chosen item, a highlighted box */
+  --accent-line: var(--color-orange-200); /* the border of such a box */
+  /* The bad side: loss, SL, drawdown. */
+  --loss: var(--color-red-900);
+  --loss-soft: var(--color-red-50);
+  --loss-line: var(--color-red-200);
+  /* Text, from most to least important. */
+  --ink: var(--color-stone-950); /* main text, figures, titles */
+  --ink-muted: var(--color-stone-500); /* secondary text, descriptions */
+  --ink-faint: var(--color-stone-400); /* small labels, icons not chosen */
+  --ink-disabled: var(--color-stone-300); /* turned off or empty */
+  /* Surfaces and lines. */
+  --line: var(--color-stone-200); /* card borders, dividers */
+  --surface-2: var(--color-stone-100); /* a well inside a card, e.g. the empty part of a bar */
+  --surface: var(--color-stone-50); /* the page, a grey box */
+  --card: var(--color-white);
+}
+
 @theme inline {
   --font-sans: var(--font-plus-jakarta);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-loss: var(--loss);
+  --color-loss-soft: var(--loss-soft);
+  --color-loss-line: var(--loss-line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-disabled: var(--ink-disabled);
+  --color-line: var(--line);
+  --color-surface-2: var(--surface-2);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
 }
 
 body {

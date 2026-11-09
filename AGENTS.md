@@ -9,6 +9,28 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Color Palette**:
   - Main Orange: Always use `orange-400` (e.g. สีส้มหลัก)
   - Main Red: Always use `red-900` (e.g. สีแดงหลัก)
+- **Colours (every page, including new ones)**: three colour families (orange, red, stone grey) plus white, and only the shades below, each for one job. They are named by job in `src/app/globals.css` (`:root` variables, Tailwind utilities like `text-accent`), so a theme can later change them in one place. New code uses the job names; existing pages are being moved over one page at a time, each checked before/after on a computer and at 390px.
+
+  | Job | Name (utility) | Today |
+  |---|---|---|
+  | Main colour: good side (profit, TP, on plan), main button, the open page | `accent` | `orange-400` |
+  | A main-colour button being pointed at (only this) | `accent-strong` | `orange-500` |
+  | Light background: the chosen item, a highlighted box | `accent-soft` | `orange-50` |
+  | That box's border | `accent-line` | `orange-200` |
+  | Bad side: loss, SL, drawdown | `loss` | `red-900` |
+  | Its light background / border | `loss-soft` / `loss-line` | `red-50` / `red-200` |
+  | Main text, figures, titles | `ink` | `stone-950` |
+  | Secondary text, descriptions | `ink-muted` | `stone-500` |
+  | Small labels, icons not chosen | `ink-faint` | `stone-400` |
+  | Turned off or empty | `ink-disabled` | `stone-300` |
+  | Card borders, dividers | `line` | `stone-200` |
+  | A well inside a card (the empty part of a bar) | `surface-2` | `stone-100` |
+  | The page, a grey box | `surface` | `stone-50` |
+  | Cards | `card` | `white` |
+
+  - No other shades (no `orange-100/300`, `red-400/800/950`, `stone-600/700/800/900`) and no other families (no `slate`, `gray`, green, blue...).
+  - No see-through versions of these (`/50`, `/60`...), except the dark backdrop behind a popup (`stone-900/50`).
+  - Charts draw on a canvas and can't use the utilities: they take the same colours, faded only to these levels: lines 45%, their labels 70%, hatching 35%, the Balance grey `rgba(0,0,0,0.03)`.
 - **Checklists**: When rendering Checklists in the UI (e.g. popups, details), always use this styling convention:
   - Selected state: Orange theme (`bg-orange-50`, `text-orange-400`, `border-orange-200`) with a Check icon (e.g. `CheckCircle2`).
   - Unselected state: Light stone theme (`bg-stone-50`, `text-stone-400`, `border-stone-200`, `opacity-70`) with a Cross icon (e.g. `XCircle`).
