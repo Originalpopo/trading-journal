@@ -70,7 +70,7 @@ function OffPlanChips({ items }: { items: { id: string; name: string; count: num
   return (
     <div className="flex flex-wrap gap-2">
       {items.map(r => (
-        <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-surface text-stone-600 border border-line">
+        <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-surface text-ink-muted border border-line">
           <ClipboardX className="w-3.5 h-3.5 text-loss" />
           {r.name}
           {r.count > 1 && <span className="text-ink-faint">×{r.count}</span>}
@@ -177,7 +177,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-ink-faint hover:text-stone-600 p-1 rounded-full hover:bg-surface-2 transition shrink-0 ml-4">
+          <button onClick={onClose} className="text-ink-faint hover:text-ink p-1 rounded-full hover:bg-surface-2 transition shrink-0 ml-4">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -243,7 +243,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
                       return (
                         <button key={rule.id} type="button" onClick={() => toggleRule(rule.id)} aria-pressed={isBroken}
                           className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition ${
-                            isBroken ? 'bg-loss-soft text-loss border-loss-line' : 'bg-surface text-ink-faint border-line hover:text-stone-600'
+                            isBroken ? 'bg-loss-soft text-loss border-loss-line' : 'bg-surface text-ink-faint border-line hover:text-ink'
                           }`}>
                           {isBroken && <XCircle className="w-3.5 h-3.5" />}
                           {rule.name}
@@ -294,17 +294,17 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
             <div className="text-ink text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-[100px] pr-2">
               {note?.content}
             </div>
-            <div className="flex items-center justify-between pt-4 mt-5 border-t border-stone-100 shrink-0">
+            <div className="flex items-center justify-between pt-4 mt-5 border-t border-line-soft shrink-0">
               <div className="flex items-center gap-3">
-                <button onClick={handleDelete} className="p-2.5 bg-surface-2 hover:bg-loss-soft text-stone-600 hover:text-loss rounded-xl transition" title="Delete">
+                <button onClick={handleDelete} className="p-2.5 bg-surface-2 hover:bg-loss-soft text-ink-muted hover:text-loss rounded-xl transition" title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-surface-2 hover:bg-stone-200 px-5 py-2.5 rounded-xl transition">
+                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 text-xs font-bold text-ink bg-surface-2 hover:bg-line px-5 py-2.5 rounded-xl transition">
                   <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
               </div>
-              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-stone-600 hover:bg-stone-200 transition">
+              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-surface-2 text-ink-muted hover:bg-line transition">
                 Close
               </button>
             </div>
