@@ -10,6 +10,7 @@ import { formatNumber } from "@/lib/utils";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
 import PageHeader, { HeaderButton } from "@/components/PageHeader";
+import Pagination from "@/components/Pagination";
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const TH = "px-3 py-3 font-bold uppercase text-[10px] tracking-widest text-right";
@@ -34,9 +35,20 @@ const confirmationText = (confirmed: Confirmation | null) =>
       ? `Covered by a later check: the running balance equalled the broker's (${formatNumber(confirmed.check.balance)}) on ${clock(confirmed.check.time)}, which includes every transaction of this period`
       : `Balance confirmed equal to the broker's: ${formatNumber(confirmed.check.balance)} on ${clock(confirmed.check.time)}`;
 
+// Rows of the transactions table per page on screen. The preview, the paper and the PDF always show every row.
+const ROWS_PER_PAGE = 100;
+
 // The statement itself, the same on screen, in the preview and on paper.
-// `periodPicker` sits under the title on the page only; the preview and the paper leave it out.
-function StatementDocument({ statement, profile, confirmed, periodPicker }: { statement: Statement; profile: StatementProfile; confirmed: Confirmation | null; periodPicker?: React.ReactNode }) {
+// `periodPicker` sits under the title on the page only; the preview and the paper leave it out. `paging` (the page
+// only) splits the transactions table into pages of ROWS_PER_PAGE.
+function StatementDocument({ statement, profile, confirmed, periodPicker, paging }: {
+  statement: Statement; profile: StatementProfile; confirmed: Confirmation | null; periodPicker?: React.ReactNode;
+  paging?: { page: number; onChange: (page: number) => void };
+}) {
+  const pageCount = paging ? Math.ceil(statement.rows.length / ROWS_PER_PAGE) : 1;
+  const page = paging ? Math.min(Math.max(1, paging.page), Math.max(1, pageCount)) : 1;
+  const firstRow = paging ? (page - 1) * ROWS_PER_PAGE : 0;
+  const rows = paging ? statement.rows.slice(firstRow, firstRow + ROWS_PER_PAGE) : statement.rows;
   return (
     // Laid out by its own width, not the screen's: the A4 preview keeps its columns on a phone.
     <div className="@container">
@@ -94,9 +106,9 @@ function StatementDocument({ statement, profile, confirmed, periodPicker }: { st
               </tr>
             </thead>
             <tbody className="text-[11px] divide-y divide-line-soft">
-              {statement.rows.map((r, i) => (
-                <tr key={`${r.time}-${i}`} className={`break-inside-avoid ${r.kind === 'trade' ? '' : 'bg-surface print:bg-transparent'}`}>
-                  <td className={TD_LEFT}>{i + 1}</td>
+              {rows.map((r, i) => (
+                <tr key={`${r.time}-${firstRow + i}`} className={`break-inside-avoid ${r.kind === 'trade' ? '' : 'bg-surface print:bg-transparent'}`}>
+                  <td className={TD_LEFT}>{firstRow + i + 1}</td>
                   <td className={TD_LEFT}>{clock(r.time)}{r.timeIsEstimate && <span title="เวลาปิดเป็นค่าประมาณ: ข้อมูลจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอน"> *</span>}</td>
                   <td className={TD_LEFT}>{clock(r.openTime)}</td>
                   <td className={`${TD_LEFT_BASE} ${r.kind === 'trade' ? 'text-ink-muted' : 'font-extrabold text-ink'}`}>{r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind}</td>
@@ -111,6 +123,11 @@ function StatementDocument({ statement, profile, confirmed, periodPicker }: { st
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {paging && pageCount > 1 && (
+        <div className="pt-4 print:hidden">
+          <Pagination page={page} pageCount={pageCount} onChange={paging.onChange} />
         </div>
       )}
       {statement.rows.some(r => r.timeIsEstimate) && (
@@ -128,6 +145,7 @@ export default function StatementPage() {
   const [selected, setSelected] = useState<string | null>(null); // "YYYY-M"; null = latest month
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [tablePage, setTablePage] = useState(1);
   useEscapeToClose(isPreviewOpen, () => setIsPreviewOpen(false));
 
   const current = useMemo(() => {
@@ -217,10 +235,11 @@ export default function StatementPage() {
 
         <div className="glass-card p-4 md:p-8">
           {statement
-            ? <StatementDocument statement={statement} profile={profile} confirmed={confirmed} periodPicker={
+            ? <StatementDocument statement={statement} profile={profile} confirmed={confirmed}
+                paging={{ page: tablePage, onChange: setTablePage }} periodPicker={
                 <select
                   value={current ? `${current.year}-${current.month}` : ''}
-                  onChange={(e) => setSelected(e.target.value)}
+                  onChange={(e) => { setSelected(e.target.value); setTablePage(1); }}
                   aria-label="Month"
                   className="bg-white border border-line text-ink text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-accent cursor-pointer"
                 >
