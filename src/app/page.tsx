@@ -153,13 +153,13 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     ctx.beginPath();
     ctx.setLineDash([6, 6]);
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(251, 146, 60, 0.2)'; // orange-400, 80% transparent
+    ctx.strokeStyle = 'rgba(251, 146, 60, 0.45)'; // orange-400, as faint as the Low line
     ctx.moveTo(left, y);
     ctx.lineTo(right, y);
     ctx.stroke();
 
     ctx.setLineDash([]);
-    ctx.fillStyle = '#a8a29e';
+    ctx.fillStyle = 'rgba(251, 146, 60, 0.7)'; // orange-400, as the Low label
     ctx.font = '10px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
@@ -174,8 +174,9 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
   }
 };
 
-// The Low line: red and dashed like the Peak line, from the low's point to the latest one, its label under it. The
-// stretch of the Equity line under it is drawn again in red.
+// The Low line, shown only while the equity is below it: red and dashed like the Peak line, from the low's point to
+// the latest one, its label under it with how far below it the equity is. The stretch of the Equity line under it is
+// drawn again in red.
 const drawLowLine = (chart: ChartJS<'line'>, low: number, lowIndex: number, current: number, alpha: number) => {
   const meta = chart.getDatasetMeta(0);
   const yScale = chart.scales.y;
