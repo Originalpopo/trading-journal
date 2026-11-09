@@ -37,7 +37,7 @@ function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick, broken
       {/* The preview keeps to its own column, two lines at most; the whole note opens on click. */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 min-w-0">
-          <h4 className="text-sm font-bold text-stone-900 truncate">{title}</h4>
+          <h4 className="text-sm font-bold text-ink truncate">{title}</h4>
           {brokenCount > 0 && (
             <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-loss bg-loss-soft rounded-full px-2 py-0.5">
               <XCircle className="w-3 h-3" />
@@ -104,7 +104,7 @@ export default function NotesPage() {
           />
         </div>
 
-        <div className="flex flex-col divide-y divide-stone-100">
+        <div className="flex flex-col divide-y divide-line-soft">
           {found.length === 0 ? (
             <div className="py-8 text-center text-ink-faint font-semibold">
               {dayNotes.length === 0 && weekNotes.length === 0
@@ -144,7 +144,7 @@ export default function NotesPage() {
                   )}
 
                   {group.dayNotes.length > 0 && (
-                    <div className="ml-5 md:ml-7 pl-2 md:pl-3 border-l-2 border-stone-100 mt-1">
+                    <div className="ml-5 md:ml-7 pl-2 md:pl-3 border-l-2 border-line-soft mt-1">
                       {group.dayNotes.map(note => (
                         <NoteRow
                           key={note.date}
@@ -166,12 +166,12 @@ export default function NotesPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="pt-4 flex justify-center items-center gap-3 border-t border-stone-100 mt-2">
+          <div className="pt-4 flex justify-center items-center gap-3 border-t border-line-soft mt-2">
             <button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 1}
-              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">Prev</button>
+              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">Prev</button>
             <span className="text-[11px] font-bold text-ink-faint">{currentPage} / {totalPages}</span>
             <button onClick={() => setPage(currentPage + 1)} disabled={currentPage === totalPages}
-              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">Next</button>
+              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">Next</button>
           </div>
         )}
       </div>

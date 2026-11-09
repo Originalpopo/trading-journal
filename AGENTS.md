@@ -24,6 +24,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   | Small labels, icons not chosen | `ink-faint` | `stone-400` |
   | Turned off or empty | `ink-disabled` | `stone-300` |
   | Card borders, dividers | `line` | `stone-200` |
+  | Light dividers inside a card (rows of a list) | `line-soft` | `stone-100` (same shade as `surface-2`) |
   | A well inside a card (the empty part of a bar) | `surface-2` | `stone-100` |
   | The page, a grey box | `surface` | `stone-50` |
   | Cards | `card` | `white` |
