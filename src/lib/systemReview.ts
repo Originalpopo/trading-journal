@@ -3,7 +3,7 @@
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { classifyTrade, summarizeTrades, isOnPlan, type StatTrade } from './stats.ts';
 import { addMoney } from './money.ts';
-import { dayKeyOfTime } from './dayNotes.ts';
+import { dayKeyOfTime, type DayStart } from './dayNotes.ts';
 import type { DayTarget } from './dailyTarget.ts';
 
 export const REVIEW_PHASES = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] as const;
@@ -85,7 +85,7 @@ export const inReviewOrder = <T extends ReviewTrade>(trades: T[]): T[] =>
 
 // The report on the first `n` trades of `ordered` (see inReviewOrder), or null while there are fewer.
 // `targetDays` and `startHour` place each trade on its trading day for the after-target figures.
-export function systemReview(ordered: ReviewTrade[], n: number, targetDays: Map<string, DayTarget> | null, startHour: number): SystemReport | null {
+export function systemReview(ordered: ReviewTrade[], n: number, targetDays: Map<string, DayTarget> | null, startHour: DayStart): SystemReport | null {
   if (n <= 0 || ordered.length < n) return null;
   const trades = ordered.slice(0, n);
   const s = summarizeTrades(trades);

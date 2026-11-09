@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Equal } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { BE_RR_THRESHOLD } from "@/lib/stats";
+import { withChange } from "@/lib/settingHistory";
+import { localTimestamp } from "@/lib/reconcile";
 import SettingsCard, { SETTINGS_INPUT } from "./SettingsCard";
 import SaveRow from "@/components/SaveRow";
 
@@ -11,6 +13,7 @@ import SaveRow from "@/components/SaveRow";
 export default function BreakEvenSetting() {
   const updatePreferences = useJournalStore(state => state.updatePreferences);
   const saved = useJournalStore(state => state.preferences.beThreshold) ?? BE_RR_THRESHOLD;
+  const history = useJournalStore(state => state.preferences.beThresholdHistory);
   const [value, setValue] = useState<string | null>(null); // null = not edited yet
   const [isSaving, setIsSaving] = useState(false);
 
@@ -22,7 +25,8 @@ export default function BreakEvenSetting() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updatePreferences({ beThreshold: parsed });
+      // Trades already closed keep the range they were judged by; the new one applies from now on.
+      await updatePreferences({ beThreshold: parsed, beThresholdHistory: withChange(history, saved, parsed, localTimestamp()) });
       setValue(null);
     } catch {
       alert("Failed to save the break-even range.");
@@ -38,7 +42,7 @@ export default function BreakEvenSetting() {
       description={<>
         เทรดที่ปิดเองหรือไม่รู้ว่าปิดด้วยอะไร ถ้าได้หรือเสียไม่เกิน ±{saved}R นับเป็น BE
         และเทรดที่ SL ถูกเลื่อนตามกำไรแล้วโดน ถ้าได้เกิน {saved}R นับเป็น TP
-        ถ้าเปลี่ยนค่านี้ ป้าย TP/SL/BE และ Win rate ของเทรดเก่าทุกตัวจะเปลี่ยนตาม (ตัวเงินไม่เปลี่ยน)
+        ค่าใหม่ใช้กับเทรดที่ปิดหลังจากกด Save เท่านั้น เทรดที่ปิดไปแล้วยังใช้ค่าเดิมตอนที่ปิด สถิติย้อนหลังจึงไม่เปลี่ยน
       </>}
     >
       {/* Same grid as two-field cards, so a single field is one column wide */}

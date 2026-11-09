@@ -58,7 +58,7 @@ export default function CalendarPage() {
   const [openWeekNote, setOpenWeekNote] = useState<{ week: string; edit: boolean } | null>(null);
   const notesByDay = useMemo(() => new Map(dayNotes.map(n => [n.date, n])), [dayNotes]);
   const notesByWeek = useMemo(() => new Map(weekNotes.map(n => [n.week, n])), [weekNotes]);
-  const { startHour, today } = useTradingDay();
+  const { startHour, hourNow, today } = useTradingDay();
   const [currentDate, setCurrentDate] = useState(() => new Date(`${today}T00:00:00`));
   const [statIndex, setStatIndex] = useState(1); // PnL
   const touchStartX = useRef<number | null>(null);
@@ -517,7 +517,7 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {((view === 'month' && targetPct > 0) || startHour > 0) && (
+      {((view === 'month' && targetPct > 0) || hourNow > 0) && (
         <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-[10px] font-bold text-stone-400">
           {view === 'month' && targetPct > 0 && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1">
@@ -533,9 +533,9 @@ export default function CalendarPage() {
             </div>
           )}
           {/* Why a month here can differ a little from the monthly statement, which keeps the real date. */}
-          {startHour > 0 && (
+          {hourNow > 0 && (
             <p className="text-center md:text-left">
-              Days start at {String(startHour).padStart(2, '0')}:00 (Settings): a trade closed before then counts for the day before. The statement keeps the real date.
+              Days start at {String(hourNow).padStart(2, '0')}:00 (Settings): a trade closed before then counts for the day before. The statement keeps the real date.
             </p>
           )}
         </div>

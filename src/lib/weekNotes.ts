@@ -4,7 +4,7 @@
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { classifyTrade, type StatTrade } from './stats.ts';
 import { toCents, fromCents } from './money.ts';
-import { dayKey, dayKeyOfTime, type DayNote, type DaySummary } from './dayNotes.ts';
+import { dayKey, dayKeyOfTime, type DayNote, type DaySummary, type DayStart } from './dayNotes.ts';
 
 export interface WeekNote {
   week: string; // "YYYY-MM-DD" of the week's Sunday, also the document ID: one note a week
@@ -48,7 +48,7 @@ export interface WeekSummary extends DaySummary {
 }
 
 // What was traded in one week, in total and day by day. A trade belongs to the trading day it closed in.
-export function summarizeWeek(trades: WeekTrade[], week: string, startHour: number): WeekSummary {
+export function summarizeWeek(trades: WeekTrade[], week: string, startHour: DayStart): WeekSummary {
   const days = daysOfWeek(week).map(date => ({ date, count: 0, pnlCents: 0, rr: 0, wins: 0, losses: 0, bes: 0 }));
   const byDate = new Map(days.map(d => [d.date, d]));
   for (const t of trades) {

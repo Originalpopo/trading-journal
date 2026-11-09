@@ -35,16 +35,24 @@ export const dayKey = (date: Date): string =>
 // tax report and History's date filter keep the real date and time.
 export const DEFAULT_DAY_START_HOUR = 5;
 
-// The trading day a moment falls in: the calendar day of the moment `startHour` hours earlier.
-export const tradingDayOf = (date: Date, startHour: number): string =>
-  dayKey(new Date(date.getTime() - startHour * 3_600_000));
+// The hour trading days start: one hour for every day, or the hour each day started at (see dayStartOn), so
+// changing it in Settings never moves a trade out of a day that has already passed.
+export type DayStart = number | ((day: string) => number);
+const hourOn = (startHour: DayStart, day: string) => (typeof startHour === 'number' ? startHour : startHour(day));
 
 // When a trading day ("YYYY-MM-DD") starts, in ms.
-export const tradingDayStartMs = (day: string, startHour: number): number =>
-  new Date(`${day}T00:00:00`).getTime() + startHour * 3_600_000;
+export const tradingDayStartMs = (day: string, startHour: DayStart): number =>
+  new Date(`${day}T00:00:00`).getTime() + hourOn(startHour, day) * 3_600_000;
+
+// The trading day a moment falls in: its calendar day once that day has started, else the day before.
+export function tradingDayOf(date: Date, startHour: DayStart): string {
+  const sameDay = dayKey(date);
+  if (date.getTime() >= tradingDayStartMs(sameDay, startHour)) return sameDay;
+  return dayKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1));
+}
 
 // The trading day a stored time falls in, or null when the time cannot be read.
-export function dayKeyOfTime(time: string | undefined, startHour: number): string | null {
+export function dayKeyOfTime(time: string | undefined, startHour: DayStart): string | null {
   if (!time) return null;
   const date = new Date(time.replace(' ', 'T'));
   return isNaN(date.getTime()) ? null : tradingDayOf(date, startHour);
@@ -62,7 +70,7 @@ export interface DaySummary {
 interface DayTrade extends StatTrade { time: string }
 
 // What was traded on one day. A trade belongs to the trading day it closed in, as on the Calendar page.
-export function summarizeDay(trades: DayTrade[], key: string, startHour: number): DaySummary {
+export function summarizeDay(trades: DayTrade[], key: string, startHour: DayStart): DaySummary {
   let count = 0, pnlCents = 0, rr = 0, wins = 0, losses = 0, bes = 0;
   for (const t of trades) {
     if (dayKeyOfTime(t.time, startHour) !== key) continue;
@@ -78,7 +86,7 @@ export function summarizeDay(trades: DayTrade[], key: string, startHour: number)
 }
 
 // The trades that closed in one trading day, earliest first.
-export function tradesOfDay<T extends { time: string }>(trades: T[], key: string, startHour: number): T[] {
+export function tradesOfDay<T extends { time: string }>(trades: T[], key: string, startHour: DayStart): T[] {
   return trades
     .filter(t => dayKeyOfTime(t.time, startHour) === key)
     .sort((a, b) => new Date(a.time.replace(' ', 'T')).getTime() - new Date(b.time.replace(' ', 'T')).getTime());

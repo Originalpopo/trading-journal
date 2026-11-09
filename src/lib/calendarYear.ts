@@ -1,7 +1,7 @@
 import { addMoney } from './money.ts';
 import { classifyTrade, type StatTrade } from './stats.ts';
 import { weekKeyOf } from './weekNotes.ts';
-import { dayKey, dayKeyOfTime, tradingDayOf } from './dayNotes.ts';
+import { dayKey, dayKeyOfTime, tradingDayOf, type DayStart } from './dayNotes.ts';
 
 // The Calendar's year view: every month as a row of weeks. A week runs Sunday to Saturday and is
 // cut at the month's edges, exactly like the Summary column of the month view, so the two always agree.
@@ -41,7 +41,7 @@ const add = (into: PeriodStats, t: YearTrade) => {
 
 // A trade counts in the trading day it closed in, which starts at `startHour` (dayNotes.ts): one closed at
 // 1am on 1 January can count in the year before.
-export function summarizeYear(trades: YearTrade[], year: number, startHour: number, now: Date = new Date()): YearSummary {
+export function summarizeYear(trades: YearTrade[], year: number, startHour: DayStart, now: Date = new Date()): YearSummary {
   const today = tradingDayOf(now, startHour);
 
   const months: YearMonth[] = Array.from({ length: 12 }, (_, month) => {

@@ -12,7 +12,8 @@ import type { TargetPctChange } from '@/lib/dailyTarget';
 import { riskHistoryOf, DEFAULT_RISK_PCT, type RiskAnchor, type RiskChange } from '@/lib/riskStep';
 import type { OffPlanReason } from '@/lib/offPlan';
 import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow, setRiskHistory } from '@/lib/risk';
-import { setBeThreshold } from '@/lib/stats';
+import { setBeThreshold, setBeThresholdHistory } from '@/lib/stats';
+import type { SettingChange } from '@/lib/settingHistory';
 
 let legacyChartMigrationStarted = false;
 
@@ -22,6 +23,7 @@ let storedTrades: Trade[] = [];
 // The rules from Settings are set first, so every page classifies trades the same way.
 const deriveTrades = (preferences: Preferences): Trade[] => {
   setBeThreshold(preferences.beThreshold);
+  setBeThresholdHistory(preferences.beThresholdHistory);
   setUsualRiskWindow(preferences.usualRiskWindow);
   setRiskHistory(riskHistoryOf(preferences.riskHistory, preferences.riskAnchor, preferences.riskPct ?? DEFAULT_RISK_PCT)
     .map(c => ({ at: Date.parse(c.from), risk: c.risk })));
@@ -111,6 +113,8 @@ export interface Preferences {
   backupDueDays?: number;
   // A trade that doesn't say how it was closed is break-even within ±this many R (default 0.4).
   beThreshold?: number;
+  // Every change of it (from: local time), so a trade keeps the range in force when it closed.
+  beThresholdHistory?: SettingChange[];
   // How many recent trades with a known first stop make up the usual 1R (default 10).
   usualRiskWindow?: number;
   // Why a trade can be off plan, picked on the trade (default DEFAULT_OFF_PLAN_REASONS).
@@ -123,6 +127,8 @@ export interface Preferences {
   dailyTargetHistory?: TargetPctChange[];
   // Hour (Bangkok time) a trading day starts; trades closed before it count for the day before (default 5).
   dayStartHour?: number;
+  // Every change of it (from: the first trading day it applies to), so past days keep their trades.
+  dayStartHistory?: SettingChange[];
   // Risk per trade in steps (see riskStep.ts): % of the balance (default 2; 0 turns it off), the % rise and fall
   // of the balance that call for a step up or down (defaults 20 and 10), and the balance it was last set from.
   riskPct?: number;

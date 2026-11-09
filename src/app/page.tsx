@@ -22,7 +22,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import HealthWeather from "@/components/HealthWeather";
-import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth } from "@/lib/stats";
+import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth, calcTimeWeightedReturn } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
@@ -281,7 +281,12 @@ export default function Dashboard() {
     return {
       totalFunded, totalDeposit, totalWithdraw, runningBalance,
       net: summary.netProfit, winRate: summary.winRate,
-      accountGrowth: calcAccountGrowth(summary.netProfit, totalDeposit),
+      // Growth from trading alone (time-weighted): a deposit or withdrawal never moves it.
+      accountGrowth: calcTimeWeightedReturn(timelineEvents.map(evt => (evt.type === 'trade'
+        ? { type: 'trade' as const, profit: evt.data.profit }
+        : { type: 'funding' as const, deposit: evt.data.deposit, withdraw: evt.data.withdraw }))),
+      // Net profit on everything deposited: what the money put in has earned, falls when more is deposited.
+      returnOnDeposits: calcAccountGrowth(summary.netProfit, totalDeposit),
       countTP: summary.wins, countBE: summary.bes, countSL: summary.losses, totalTrades: trades.length,
       netRR: summary.netRR, profitFactor: summary.profitFactor,
       // A stop moved to break-even and hit is about 0R whatever 1R was, so only the others matter.
@@ -448,8 +453,13 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-wider mb-1">Account Growth</p>
-            <p style={fitFontSize(growthText, '1.875rem')} className="leading-9 font-extrabold stat-value text-stone-950">
+            {/* Pointing at the figure (or tapping it on a phone) shows the return on deposits, which unlike
+                Account Growth falls when more money is deposited. */}
+            <p style={fitFontSize(growthText, '1.875rem')} tabIndex={0} className="group relative leading-9 font-extrabold stat-value text-stone-950 cursor-default outline-none">
               {growthText}
+              <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-0.5 whitespace-nowrap rounded-md bg-stone-950 px-2 py-1 text-[10px] font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100 z-10">
+                On deposits {formatNumber(data.returnOnDeposits)}%
+              </span>
             </p>
           </div>
           <div className="@container bg-orange-400 p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">

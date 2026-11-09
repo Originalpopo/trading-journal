@@ -2,7 +2,7 @@
 // reach it, trading stops for the day; a trade entered after that is "after target".
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { toCents, fromCents } from './money.ts';
-import { dayKeyOfTime, tradingDayStartMs } from './dayNotes.ts';
+import { dayKeyOfTime, tradingDayStartMs, type DayStart } from './dayNotes.ts';
 import { weekKeyOfDay, daysOfWeek } from './weekNotes.ts';
 
 export const DEFAULT_TARGET_PCT = 2.5;
@@ -62,7 +62,7 @@ const msOf = (time: string | undefined) => (time ? new Date(time.replace(' ', 'T
 // The target of every trading day that had a closed trade, plus `alsoDay` (today, before its first trade).
 // A day starts at `startHour` (see dayNotes.ts), and so does the balance its target is a share of.
 // `pct` is one % for every day, or the % each day was held to (see pctOnDay).
-export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pct: number | ((day: string) => number), startHour: number, alsoDay?: string): Map<string, DayTarget> {
+export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pct: number | ((day: string) => number), startHour: DayStart, alsoDay?: string): Map<string, DayTarget> {
   const byDay = new Map<string, TargetTrade[]>();
   for (const t of trades) {
     const day = dayKeyOfTime(t.time, startHour);

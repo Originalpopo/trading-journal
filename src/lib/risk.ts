@@ -1,5 +1,5 @@
 import { pointValueOf, medianPointValue, type ZoneTrade } from './tradeZones.ts';
-import { getBeThreshold, deriveResultType, parseRisk } from './stats.ts';
+import { beThresholdAt, deriveResultType, parseRisk } from './stats.ts';
 
 // A trade's risk, its result in R and its TP/SL/BE label are never trusted from storage: they are
 // worked out here, from the facts of the trade, every time trades are loaded or planned for import.
@@ -33,10 +33,17 @@ export interface TradeRisk {
   initialSlSource?: 'broker' | 'manual' | 'log';
 }
 
+// A value read from one trade's fills, at the time the trade closed (NaN when it has no time).
+interface Sample { at: number; value: number }
+
 export interface RiskContext {
   defaultRisk: number; // 1R when the initial stop is unknown and the trade carries no risk of its own
   fallbackPointValue: number | null; // $ per 1.00 move, for trades that tell nothing themselves
-  contractSizes: Record<string, number>; // $ per 1.00 move of one lot, by symbol
+  contractSizes: Record<string, number>; // $ per 1.00 move of one lot, by symbol, read from every trade
+  // The same two, read from each trade's fills (buildRiskContext). When present, a trade only uses the trades
+  // that closed up to it, so a trade added later never changes the 1R of an earlier one.
+  contractSamples?: Record<string, Sample[]>;
+  pointValueSamples?: Sample[];
   knownRisks?: { at: number; risk: number }[]; // 1R of trades whose first stop (or typed risk) is known, by entry time
 }
 
@@ -86,17 +93,18 @@ const median = (values: number[]) => {
 // A symbol's contract size is the same for every trade, so it is read from all of them at once:
 // one trade's own fills can be thrown off by cent rounding when it closed a few points from entry.
 export function buildRiskContext(trades: RiskTrade[], defaultRisk: number): RiskContext {
-  const perLot = new Map<string, number[]>();
+  const contractSamples: Record<string, Sample[]> = {};
+  const pointValueSamples: Sample[] = [];
   for (const t of trades) {
     const pointValue = pointValueOf(t);
-    if (!pointValue || !t.size || !(t.size > 0)) continue;
-    const key = symbolKey(t);
-    if (!perLot.has(key)) perLot.set(key, []);
-    perLot.get(key)!.push(pointValue / t.size);
+    if (!pointValue || !Number.isFinite(pointValue)) continue;
+    pointValueSamples.push({ at: closeTimeOf(t), value: pointValue });
+    if (!t.size || !(t.size > 0)) continue;
+    (contractSamples[symbolKey(t)] ??= []).push({ at: closeTimeOf(t), value: pointValue / t.size });
   }
   const contractSizes: Record<string, number> = {};
-  for (const [key, values] of perLot) contractSizes[key] = median(values);
-  const base: RiskContext = { defaultRisk, fallbackPointValue: medianPointValue(trades), contractSizes };
+  for (const [key, samples] of Object.entries(contractSamples)) contractSizes[key] = median(samples.map(x => x.value));
+  const base: RiskContext = { defaultRisk, fallbackPointValue: medianPointValue(trades), contractSizes, contractSamples, pointValueSamples };
   // A known 1R never depends on the default, so these can be read with the base context.
   const knownRisks = trades
     .map(t => ({ at: timeOf(t), derived: deriveTradeRisk(t, base) }))
@@ -110,6 +118,19 @@ const timeOf = (t: { entryTime?: string; time?: string }) => {
   const value = t.entryTime || t.time;
   return value ? new Date(value.replace(' ', 'T')).getTime() : NaN;
 };
+const closeTimeOf = (t: { time?: string }) => (t.time ? new Date(t.time.replace(' ', 'T')).getTime() : NaN);
+
+// The median of the samples taken up to `at` (the trade's own included); with none that early, the earliest
+// sample, so the first trades read the same however many come after. Every sample for a trade without a time.
+function sampledAt(samples: Sample[] | undefined, at: number): number | null {
+  if (!samples?.length) return null;
+  if (Number.isNaN(at)) return median(samples.map(x => x.value));
+  const upTo = samples.filter(x => !Number.isNaN(x.at) && x.at <= at);
+  if (upTo.length > 0) return median(upTo.map(x => x.value));
+  const timed = samples.filter(x => !Number.isNaN(x.at));
+  if (timed.length === 0) return median(samples.map(x => x.value));
+  return timed.reduce((first, x) => (x.at < first.at ? x : first)).value;
+}
 
 // The usual 1R when a trade was opened: the median of the last 10 (Settings) known 1Rs before it, so it grows
 // with the account yet never changes for an old trade. Without any, the Risk per Trade set at the time, and
@@ -124,10 +145,12 @@ export function defaultRiskAt(ctx: RiskContext, t: { entryTime?: string; time?: 
 }
 
 // $ of P&L per 1.00 move in price for this trade.
+// Read from the trades closed up to this one, so trades added later never change it.
 export function pointValueFor(t: RiskTrade, ctx: RiskContext): number | null {
-  const contractSize = ctx.contractSizes[symbolKey(t)];
+  const at = closeTimeOf(t);
+  const contractSize = ctx.contractSamples ? sampledAt(ctx.contractSamples[symbolKey(t)], at) : ctx.contractSizes[symbolKey(t)];
   if (contractSize && t.size && t.size > 0) return t.size * contractSize;
-  return pointValueOf(t) ?? ctx.fallbackPointValue;
+  return pointValueOf(t) ?? (ctx.pointValueSamples ? sampledAt(ctx.pointValueSamples, at) : ctx.fallbackPointValue);
 }
 
 // The stop the trade was opened with, when known.
@@ -143,16 +166,18 @@ export function initialStopOf(t: RiskTrade): { price: number; source: 'broker' |
 // fall back to the ±0.4R rule.
 function resultTypeOf(t: RiskTrade, profit: number, risk: number, stop: ReturnType<typeof initialStopOf>, draggedToEntry: boolean): 'TP' | 'SL' | 'BE' {
   const exitType = (t.exitType || '').toLowerCase();
+  // The BE range in force when the trade closed, so a later change in Settings never relabels it.
+  const beThreshold = beThresholdAt(t.time ? new Date(t.time.replace(' ', 'T')).getTime() : NaN);
   if (exitType === 'take profit') return 'TP';
   if (exitType === 'stop loss' && t.entryPrice && t.slPrice) {
     const onLosingSide = !draggedToEntry && directionOf(t) * (t.entryPrice - t.slPrice) > 0;
     const moved = stop ? Math.abs(t.slPrice - stop.price) > 1e-9 : true;
     if (onLosingSide || !moved) return 'SL';
     // A stop trailed far into profit is a win, not a break-even.
-    return risk > 0 && profit / risk > getBeThreshold() ? 'TP' : 'BE';
+    return risk > 0 && profit / risk > beThreshold ? 'TP' : 'BE';
   }
   if (exitType && exitType !== 'stop loss') return profit > 0 ? 'TP' : profit < 0 ? 'SL' : 'BE';
-  return deriveResultType(profit, risk);
+  return deriveResultType(profit, risk, beThreshold);
 }
 
 // The first stop that makes 1R come out at `risk` dollars: on the tick prices are quoted in when one

@@ -2,6 +2,7 @@
 // so a rule change (e.g. the BE threshold) only has to be made once.
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { addMoney, subMoney } from './money.ts';
+import { valueAt, type SettingChange } from './settingHistory.ts';
 
 export type TradeOutcome = 'win' | 'loss' | 'be';
 
@@ -21,10 +22,17 @@ export const setBeThreshold = (value: number | undefined) => {
   beThreshold = value !== undefined && value >= 0 ? value : BE_RR_THRESHOLD;
 };
 
+// Every change of the threshold (Settings), so a trade is judged by the one in force when it closed and
+// changing it never relabels an older trade. The store sets it before trades are derived.
+let beHistory: SettingChange[] = [];
+export const setBeThresholdHistory = (history: SettingChange[] | undefined) => { beHistory = history ?? []; };
+// The threshold in force at a moment (ms); the current one with no history or for an unreadable time.
+export const beThresholdAt = (at: number) => valueAt(beHistory, at, beThreshold);
+
 export const parseRisk = (risk: number | string | undefined): number => parseFloat(String(risk || 0)) || 0;
 
-function classifyBySize(pnl: number, risk: number): TradeOutcome {
-  if (risk > 0 ? Math.abs(pnl / risk) <= beThreshold : pnl === 0) return 'be';
+function classifyBySize(pnl: number, risk: number, threshold = beThreshold): TradeOutcome {
+  if (risk > 0 ? Math.abs(pnl / risk) <= threshold : pnl === 0) return 'be';
   return pnl > 0 ? 'win' : 'loss';
 }
 
@@ -41,7 +49,8 @@ const OUTCOME_LABELS: Record<TradeOutcome, 'TP' | 'SL' | 'BE'> = { win: 'TP', lo
 export const outcomeLabel = (outcome: TradeOutcome) => OUTCOME_LABELS[outcome];
 
 // TP/SL/BE by the size of the result alone, for a trade that doesn't say how it was closed.
-export const deriveResultType = (profit: number, risk: number) => outcomeLabel(classifyBySize(profit, risk));
+// `threshold`: the BE range in force when it closed (beThresholdAt), else the current one.
+export const deriveResultType = (profit: number, risk: number, threshold = beThreshold) => outcomeLabel(classifyBySize(profit, risk, threshold));
 
 // Whether a trade followed the plan. Older trades mark it only through isOnPlan, and a trade
 // that says nothing counts as on plan.
@@ -71,6 +80,25 @@ export function healthTierFromProfitFactor(profitFactor: number, totalTrades: nu
 // so taking profit out of the account does not inflate (or zero) the growth figure.
 export const calcAccountGrowth = (netProfit: number, totalDeposit: number) =>
   totalDeposit > 0 ? (netProfit / totalDeposit) * 100 : 0;
+
+// Time-weighted return, in %: the account's growth from trading alone. The timeline is cut at every deposit
+// and withdrawal, each stretch's growth is measured on the balance it started with, and the stretches are
+// chained. Money moved in or out is neither profit nor loss, so it never changes the figure, past or present.
+// Events must be in chronological order.
+export function calcTimeWeightedReturn(events: TimelineEvent[]): number {
+  let balance = 0, stretchStart = 0, growth = 1;
+  for (const evt of events) {
+    if (evt.type === 'funding') {
+      if (stretchStart > 0) growth *= balance / stretchStart;
+      balance = subMoney(addMoney(balance, evt.deposit), evt.withdraw);
+      stretchStart = balance;
+    } else {
+      balance = addMoney(balance, evt.profit);
+    }
+  }
+  if (stretchStart > 0) growth *= balance / stretchStart;
+  return (growth - 1) * 100;
+}
 
 export type TimelineEvent =
   | { type: 'trade'; profit?: number; rr?: number; time?: number }

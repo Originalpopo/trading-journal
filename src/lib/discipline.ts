@@ -2,7 +2,7 @@
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { isOnPlan } from './stats.ts';
 import { toCents, fromCents } from './money.ts';
-import { dayKeyOfTime } from './dayNotes.ts';
+import { dayKeyOfTime, type DayStart } from './dayNotes.ts';
 
 // One of the user's own trading rules. The id never changes, so renaming a rule keeps its history.
 export interface DisciplineRule {
@@ -40,7 +40,7 @@ export interface PlanSide {
 
 // What trading on plan and off plan each came to, from `from` (a "YYYY-MM-DD" trading day, inclusive) on.
 // `startHour`: when a trading day starts (dayNotes.ts).
-export function planCost(trades: PlanTrade[], startHour: number, from?: string): { onPlan: PlanSide; offPlan: PlanSide } {
+export function planCost(trades: PlanTrade[], startHour: DayStart, from?: string): { onPlan: PlanSide; offPlan: PlanSide } {
   const sides = { onPlan: { count: 0, cents: 0, rr: 0 }, offPlan: { count: 0, cents: 0, rr: 0 } };
   for (const t of trades) {
     const day = dayKeyOfTime(t.time, startHour);
@@ -73,7 +73,7 @@ export type DayDiscipline = 'clean' | 'broken';
 // A day is broken when it had an off-plan trade, its note ticks a broken rule, or it is in
 // `alsoBroken` (a trade entered after the daily target, see dailyTarget.ts); clean when it had trades
 // that were all on plan. Days with neither are left out: a day off is not a lapse.
-export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], startHour: number, alsoBroken?: Set<string>): Map<string, DayDiscipline> {
+export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], startHour: DayStart, alsoBroken?: Set<string>): Map<string, DayDiscipline> {
   const days = new Map<string, DayDiscipline>();
   for (const t of trades) {
     const day = dayKeyOfTime(t.time, startHour);
@@ -87,7 +87,7 @@ export function disciplineByDay(trades: PlanTrade[], notes: RuleNote[], startHou
 }
 
 // Clean trading days in a row: `current` counts back from the latest day, `best` is the longest run.
-export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[], startHour: number, alsoBroken?: Set<string>): { current: number; best: number } {
+export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[], startHour: DayStart, alsoBroken?: Set<string>): { current: number; best: number } {
   const ordered = [...disciplineByDay(trades, notes, startHour, alsoBroken).entries()].sort(([a], [b]) => a.localeCompare(b));
   let run = 0, best = 0;
   for (const [, state] of ordered) {
