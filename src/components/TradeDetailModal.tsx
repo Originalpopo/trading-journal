@@ -120,7 +120,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
       {/* Modal Container */}
       <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl shadow-[0_32px_64px_rgba(0,0,0,0.15)] relative flex flex-col max-h-[90vh] overflow-hidden" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         {/* Header - Hero Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between p-6 md:p-8 border-b border-stone-200/60 bg-gradient-to-r from-surface to-stone-100/50 relative">
+        <div className="flex flex-col md:flex-row md:items-end justify-between p-6 md:p-8 border-b border-line bg-gradient-to-r from-surface to-surface-2 relative">
           <div className="flex flex-col gap-2">
             <h3 className="text-2xl font-black text-ink tracking-tight leading-none">{symbol}</h3>
             {!isFunding && (
@@ -147,7 +147,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 </div>
                 {t.rr !== undefined && t.rr !== 0 && (
                   <>
-                    <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
+                    <span className="w-[2px] h-3.5 bg-ink-disabled rounded-full"></span>
                     <span className={`text-xs font-black tracking-widest ${isBE ? 'text-ink-faint' : (profit > 0 ? 'text-accent' : 'text-loss')}`}>
                       {format2Decimals(t.rr)} R
                     </span>
@@ -155,7 +155,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 )}
                 {t.side && (
                   <>
-                    <span className="w-[2px] h-3.5 bg-stone-300 rounded-full"></span>
+                    <span className="w-[2px] h-3.5 bg-ink-disabled rounded-full"></span>
                     <span className="text-xs font-black text-ink-faint uppercase tracking-widest">
                       {t.side}
                     </span>
@@ -224,7 +224,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               header={<span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Trade details</span>}
             >
             <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-              <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4">
+              <div className="flex-1 bg-surface border border-line-soft rounded-2xl p-5 flex flex-col justify-start gap-4">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Time Entry</span>
                   <span className="text-xs font-extrabold text-ink">{entryShortTime}</span>
@@ -252,7 +252,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
               {/* Middle Column: Order Details */}
               {t.positionId && (
-                 <div className="flex-1 bg-stone-50/50 border border-stone-100 rounded-2xl p-5 flex flex-col justify-start gap-4 relative">
+                 <div className="flex-1 bg-surface border border-line-soft rounded-2xl p-5 flex flex-col justify-start gap-4 relative">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Size</span>
                       <span className="text-xs font-extrabold text-ink">{t.size ?? DEFAULT_LOT_SIZE} lot</span>
@@ -261,7 +261,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Entry</span>
                         {t.entryType && (
-                          <span className="text-[8px] font-bold text-ink-faint bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.entryType}</span>
+                          <span className="text-[8px] font-bold text-ink-faint bg-line px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.entryType}</span>
                         )}
                       </div>
                       <span className="text-xs font-extrabold text-ink">{t.entryPrice?.toFixed(2) || '-'}</span>
@@ -270,7 +270,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Exit</span>
                         {t.exitType && (
-                          <span className="text-[8px] font-bold text-ink-faint bg-stone-200/60 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.exitType}</span>
+                          <span className="text-[8px] font-bold text-ink-faint bg-line px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{t.exitType}</span>
                         )}
                       </div>
                       <span className="text-xs font-extrabold text-ink">{t.exitPrice?.toFixed(2) || '-'}</span>
@@ -293,7 +293,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
           {/* Notes / Strategy Section */}
           <div>
-            <div className={`bg-stone-50/70 border border-stone-100 rounded-2xl text-ink text-xs leading-relaxed font-medium whitespace-pre-wrap ${notes ? 'p-5 min-h-[100px]' : 'px-5 py-4'}`}>
+            <div className={`bg-surface border border-line-soft rounded-2xl text-ink text-xs leading-relaxed font-medium whitespace-pre-wrap ${notes ? 'p-5 min-h-[100px]' : 'px-5 py-4'}`}>
               {notes || <span className="text-ink-faint italic">No notes provided for this entry.</span>}
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-2">Off plan</p>
               <div className="flex flex-wrap gap-2">
                 {offPlanReasons.map(r => (
-                  <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-surface text-stone-600 border border-line">
+                  <span key={r.id} className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold bg-surface text-ink-muted border border-line">
                     <ClipboardX className="w-3.5 h-3.5 text-loss" />
                     {r.name}
                   </span>
@@ -323,13 +323,13 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
               <button
                 onClick={() => onDelete(trade.id, !!isFunding)}
                 title="Delete Trade"
-                className="p-2.5 bg-surface-2 hover:bg-loss-soft text-stone-600 hover:text-loss rounded-xl transition">
+                className="p-2.5 bg-surface-2 hover:bg-loss-soft text-ink-muted hover:text-loss rounded-xl transition">
                 <Trash2 className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => onEdit({ ...trade })}
                 title="Edit"
-                className="flex items-center gap-1.5 text-xs font-bold text-stone-700 bg-surface-2 hover:bg-stone-200 px-2.5 md:px-5 py-2.5 rounded-xl transition">
+                className="flex items-center gap-1.5 text-xs font-bold text-ink bg-surface-2 hover:bg-line px-2.5 md:px-5 py-2.5 rounded-xl transition">
                 <Edit2 className="w-4 h-4" />
                 <span className="hidden md:inline">Edit</span>
               </button>
@@ -339,7 +339,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 <button
                   onClick={onPrev}
                   disabled={!hasPrev}
-                  className="p-2 bg-surface-2 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
+                  className="p-2 bg-surface-2 text-ink-muted hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 {currentIndex !== undefined && totalItems !== undefined && (
@@ -350,14 +350,14 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
                 <button 
                   onClick={onNext}
                   disabled={!hasNext}
-                  className="p-2 bg-surface-2 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
+                  className="p-2 bg-surface-2 text-ink-muted hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm">
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             )}
             <button 
               onClick={onClose}
-              className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-4 md:px-6 py-2.5 rounded-xl transition shadow-md shadow-stone-900/20">
+              className="text-xs font-bold text-white bg-ink hover:opacity-90 px-4 md:px-6 py-2.5 rounded-xl transition shadow-md shadow-ink/20">
               Close
             </button>
           </div>
