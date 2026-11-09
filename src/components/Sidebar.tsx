@@ -53,7 +53,8 @@ export default function Sidebar() {
       if (!item) { setNavPill(null); return; }
       const a = aside.getBoundingClientRect();
       const r = item.getBoundingClientRect();
-      setNavPill({ top: r.top - a.top + aside.scrollTop, left: r.left - a.left, width: r.width, height: r.height });
+      // Measured from inside the sidebar's border, where an absolutely placed child starts.
+      setNavPill({ top: r.top - a.top - aside.clientTop + aside.scrollTop, left: r.left - a.left - aside.clientLeft, width: r.width, height: r.height });
     };
     place();
     const observer = new ResizeObserver(place);
@@ -152,7 +153,7 @@ export default function Sidebar() {
     <>
     {/* A card floating over the page's left side: away from the window's edges, rounded, with a soft shadow. The
         page runs on under it to the window's edge, so its grey bands reach there too. */}
-    <aside ref={asideRef} className={`print:hidden bg-white rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px_rgba(28,25,23,0.12)] hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <aside ref={asideRef} className={`print:hidden bg-white border border-line rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px_rgba(28,25,23,0.12)] hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       {navPill && (
         <span
           aria-hidden
@@ -308,9 +309,9 @@ export default function Sidebar() {
 
     {/* Like the sidebar on a computer: a card floating above the page's bottom, away from the screen's edges,
         rounded, with a soft shadow. */}
-    <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 bg-white rounded-3xl shadow-[0_10px_40px_-8px_rgba(28,25,23,0.18)]">
+    <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 bg-white border border-line rounded-3xl shadow-[0_10px_40px_-8px_rgba(28,25,23,0.18)]">
       {/* The page being shown sits on an orange pill that slides, as in the sidebar. */}
-      <div ref={barRef} className="relative grid grid-cols-5 h-16 p-1.5 gap-1">
+      <div ref={barRef} className="relative grid grid-cols-5 h-14 p-1.5 gap-1">
         {barPill && (
           <span
             aria-hidden
@@ -327,24 +328,27 @@ export default function Sidebar() {
               href={item.href}
               onClick={() => setIsMoreOpen(false)}
               data-bar-key={item.href}
-              className={`relative flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
-                isActive ? "text-accent font-bold" : "text-ink-faint font-semibold"
+              aria-label={item.name}
+              title={item.name}
+              className={`relative flex items-center justify-center rounded-2xl transition ${
+                isActive ? "text-accent" : "text-ink-faint"
               }`}
             >
+              {/* Icons only: the bar is a single row of five, names would crowd it. */}
               <Icon className="w-5 h-5" />
-              {item.name}
             </Link>
           );
         })}
         <button
           onClick={() => setIsMoreOpen(!isMoreOpen)}
           data-bar-key="more"
-          className={`relative flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition ${
-            isMoreActive ? "text-accent font-bold" : "text-ink-faint font-semibold"
+          aria-label="More"
+          title="More"
+          className={`relative flex items-center justify-center rounded-2xl transition ${
+            isMoreActive ? "text-accent" : "text-ink-faint"
           }`}
         >
           <Ellipsis className="w-5 h-5" />
-          More
         </button>
       </div>
     </nav>
