@@ -23,7 +23,7 @@ const usd =(n: number) => `${n < 0 ? "-" : ""}$${formatNumber(Math.abs(n))}`;
 // a small gap between. The left one holds the deepest point and fills red, leftwards from 0, by the loss now;
 // the right one is the way to the target. The marks go on every 20% of the target on both sides.
 // The Calendar's week cells use it plain and thin: `isPlain` leaves out the marks and the flame.
-export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heightClass = "h-4", trackClass = "bg-surface-2" }: {
+export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heightClass = "h-4", trackClass = "bg-line" }: {
   share: number; depth: number; isShown: boolean; isHit: boolean; isPlain?: boolean; heightClass?: string; trackClass?: string;
 }) {
   const loss = Math.max(0, -share);
@@ -66,7 +66,7 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
             <path className="fill-accent stroke-accent" strokeWidth={1.5} d={FLAME_PATH} />
           </g>
           <path
-            className="flame-inner fill-orange-50"
+            className="flame-inner fill-accent-soft"
             d="M12 20.5a3.2 3.2 0 0 1-3.2-3.2c0-1.8 1.3-2.9 2.1-4.4.3 1 1.1 1.8 2 2.4 1.3.8 2.3 1.6 2.3 3a3.2 3.2 0 0 1-3.2 2.2z"
           />
         </svg>
@@ -102,7 +102,7 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
     hit: "bg-accent text-white",
     today: "border-2 border-accent bg-white",
     missed: "border-2 border-accent bg-white text-accent",
-    noTrades: "border-2 border-dashed border-stone-300 bg-surface",
+    noTrades: "border-2 border-dashed border-ink-disabled bg-surface",
     upcoming: "border-2 border-line",
   };
   return (
@@ -112,7 +112,7 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
         return (
         <div key={date} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
           {/* The line into a day is orange once that day has come. */}
-          {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-stone-200" : "bg-accent"}`} />}
+          {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-line" : "bg-accent"}`} />}
           <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-loss bg-white text-loss" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
             {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
             {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
@@ -222,7 +222,7 @@ export default function DailyTargetBar() {
               disabled={!isEnabled}
               onClick={() => setIsLastWeek(go)}
               className={`${side} md:absolute md:top-0 h-6 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors ${
-                isEnabled ? "text-ink-faint hover:text-ink hover:bg-surface-2" : "text-stone-200 cursor-default"
+                isEnabled ? "text-ink-faint hover:text-ink hover:bg-surface-2" : "text-ink-disabled cursor-default"
               }`}
             >
               <Icon className="w-4 h-4" strokeWidth={2.5} />

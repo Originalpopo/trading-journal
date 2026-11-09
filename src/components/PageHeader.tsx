@@ -23,13 +23,13 @@ export default function PageHeader({ title, shortTitle, children }: {
 
 const VARIANTS = {
   // The page's main action.
-  primary: 'bg-accent hover:bg-accent-strong disabled:bg-orange-200 text-white border border-transparent shadow-sm',
+  primary: 'bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white border border-transparent shadow-sm',
   // A second action beside a primary one.
-  secondary: 'bg-surface-2 hover:bg-stone-200 disabled:opacity-50 text-stone-600 border border-transparent',
+  secondary: 'bg-surface-2 hover:bg-line disabled:opacity-50 text-ink-muted border border-transparent',
   // A lighter action in the orange family.
   outline: 'bg-white hover:bg-accent-soft disabled:opacity-50 text-accent border border-accent-line shadow-sm',
   // A small extra action, such as "+".
-  plain: 'bg-white border border-line hover:border-orange-300 hover:text-accent disabled:opacity-50 text-ink-muted shadow-sm',
+  plain: 'bg-white border border-line hover:border-accent-line hover:text-accent disabled:opacity-50 text-ink-muted shadow-sm',
 };
 
 // A title-line button: icon and label on a computer, the icon alone (36px square) on a phone.

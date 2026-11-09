@@ -1,11 +1,11 @@
 import { CloudRainWind, CloudLightning, Cloud, CloudSun, SunMedium } from "lucide-react";
 
-// Profit factor as weather, worst to best; `tier` (1-5) comes from healthTierFromProfitFactor.
+// Profit factor as weather, worst to best (the icon tells the five apart; the colour says bad, neutral or good); `tier` (1-5) comes from healthTierFromProfitFactor.
 const WEATHER = [
-  { Icon: CloudRainWind, title: "PF < 0.5", tone: "text-stone-900" },
-  { Icon: CloudLightning, title: "PF 0.5 - 0.79", tone: "text-stone-700" },
+  { Icon: CloudRainWind, title: "PF < 0.5", tone: "text-ink" },
+  { Icon: CloudLightning, title: "PF 0.5 - 0.79", tone: "text-ink" },
   { Icon: Cloud, title: "PF 0.8 - 1.19", tone: "text-ink-muted" },
-  { Icon: CloudSun, title: "PF 1.2 - 1.99", tone: "text-orange-300" },
+  { Icon: CloudSun, title: "PF 1.2 - 1.99", tone: "text-accent" },
   { Icon: SunMedium, title: "PF >= 2.0", tone: "text-accent" },
 ];
 

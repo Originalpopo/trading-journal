@@ -577,13 +577,13 @@ export default function Dashboard() {
                 Account Growth falls when more money is deposited. */}
             <p style={fitFontSize(growthText, '1.875rem')} tabIndex={0} className="group relative leading-9 font-extrabold stat-value text-ink cursor-default outline-none">
               {growthText}
-              <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-0.5 whitespace-nowrap rounded-md bg-stone-950 px-2 py-1 text-[10px] font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100 z-10">
+              <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-0.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[10px] font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100 z-10">
                 On deposits {formatNumber(data.returnOnDeposits)}%
               </span>
             </p>
           </div>
-          <div className="@container bg-accent p-6 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
+          <div className="@container bg-accent p-6 rounded-[1.25rem] border border-accent shadow-lg shadow-accent/20 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">Win Rate</span>
             <span style={fitFontSize(winRateText, '1.875rem')} className="leading-9 font-extrabold stat-value text-white">
               {winRateText}
             </span>
@@ -594,7 +594,7 @@ export default function Dashboard() {
               {netText}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
+              <p className="text-[10px] font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
             )}
           </div>
           <div className="@container glass-card p-6 h-full flex flex-col justify-center items-center text-center">
@@ -632,7 +632,7 @@ export default function Dashboard() {
                     onClick={confirmBrokerMatch}
                     title={isPrivacyMode ? "The broker's Balance is the same as this one" : `The broker's Balance is exactly $${formatNumber(data.runningBalance)} right now`}
                     aria-label="Same as broker"
-                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-accent-soft text-accent border-accent-line hover:bg-orange-100 transition disabled:opacity-50"
+                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-accent-soft text-accent border-accent-line hover:bg-accent-line transition disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" />
                   </button>
@@ -652,7 +652,7 @@ export default function Dashboard() {
               {balanceText}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-xs font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
+              <p className="text-[10px] font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
             )}
           </div>
         </div>
@@ -683,7 +683,7 @@ export default function Dashboard() {
                 key={range}
                 onClick={() => pickChartRange(range)}
                 className={`text-[10px] font-bold px-2.5 md:px-3 py-1.5 md:py-1 rounded transition-all ${
-                  chartRange === range ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-stone-600'
+                  chartRange === range ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-ink'
                 }`}
               >
                 {range === 'ALL' ? 'All' : range}
@@ -806,7 +806,7 @@ export default function Dashboard() {
                     </span>
                   )}
                 </p>
-                <p className="text-2xl font-extrabold text-red-950">{formatNumber(ddMax)}{ddUnit}</p>
+                <p className="text-2xl font-extrabold text-loss">{formatNumber(ddMax)}{ddUnit}</p>
               </div>
             </div>
 
@@ -841,7 +841,7 @@ export default function Dashboard() {
                   className={`text-[10px] font-bold px-5 py-1.5 md:py-1 rounded transition-all ${
                     ddMode === mode
                       ? 'bg-white text-ink shadow-md'
-                      : 'text-ink-faint hover:text-stone-600'
+                      : 'text-ink-faint hover:text-ink'
                   }`}
                 >
                   {label}

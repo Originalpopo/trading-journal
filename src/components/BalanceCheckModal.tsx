@@ -55,9 +55,9 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={onClose}>
       <div className="bg-white border-0 rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-line-soft">
           <h3 className="text-2xl font-black text-ink tracking-tight">Check against broker</h3>
-          <button onClick={onClose} className="text-ink-faint hover:text-stone-600 p-1 rounded-full hover:bg-surface-2 transition">
+          <button onClick={onClose} className="text-ink-faint hover:text-ink p-1 rounded-full hover:bg-surface-2 transition">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -71,12 +71,12 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
           <div>
             <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Broker balance ($)</label>
             <input type="number" step="0.01" autoFocus value={balance} onChange={(e) => setBalance(e.target.value)}
-              className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition" />
           </div>
           <div>
             <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">As of</label>
             <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
-              className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-stone-500 transition" />
+              className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition" />
           </div>
         </div>
 
@@ -120,7 +120,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
         {history && history.length > 0 && (
           <div className="mb-5">
             <p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">History ({history.length})</p>
-            <div className="max-h-32 overflow-y-auto border border-stone-100 rounded-lg divide-y divide-stone-50">
+            <div className="max-h-32 overflow-y-auto border border-line-soft rounded-lg divide-y divide-line-soft">
               {[...history].reverse().map((h, i) => (
                 <div key={`${h.time}-${i}`} className="flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-ink-muted">
                   <span>{h.time.replace('T', ' ')}</span>

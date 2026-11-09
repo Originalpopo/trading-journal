@@ -45,7 +45,7 @@ const cellMoney = (pnl: number, rate?: number | null) => {
 // Font size for a figure in a phone cell (an @container): `max`, or smaller when a long figure would not fit.
 // 180 keeps a figure within about 95% of the cell, measured at 375px wide (the smallest iPhone).
 // The target line along the bottom of a day or week cell: thin on a phone, a little thicker on a computer. Its
-// unfilled part is a darker grey than the Dashboard's, so a bar short of the target reads apart from a full line.
+// unfilled part is the same grey as the Dashboard's (line), so a bar short of the target reads apart from a full line.
 const TARGET_LINE_HEIGHT = "h-[3px] md:h-1.5";
 const TARGET_LINE_TRACK = "bg-line";
 

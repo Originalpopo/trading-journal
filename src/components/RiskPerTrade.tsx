@@ -55,7 +55,7 @@ export default function RiskPerTrade() {
   const pctSet = step.anchorBalance > 0 ? (step.riskNow / step.anchorBalance) * 100 : pct;
 
   return (
-    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-left border-stone-300 lg:border-l">
+    <div className="flex-1 px-5 py-4 md:px-6 flex flex-col gap-2 text-left border-line lg:border-l">
       {/* No card: a line on its left parts it from today's target from lg up (none once it drops under it). The dollars on top,
           the title with its % under them, both to the left like the ↑ row; what it was set from is in the tooltip. */}
       <p className="text-2xl font-black text-ink tabular-nums leading-none">{usd(step.riskNow)}</p>
