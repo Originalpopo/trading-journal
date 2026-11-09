@@ -68,3 +68,31 @@ test('range starts', () => {
   assert.equal(new Date(rangeStart('1M', NOW)!).getMonth(), 9);
   assert.equal(new Date(rangeStart('1Y', NOW)!).getFullYear(), 2025);
 });
+
+test('the Low line: the lowest point between the latest peak and the peak before it', () => {
+  // Climbs to 10 (two new highs in a row, one climb), dips to 4, climbs to 15, then falls to 3.
+  const s = equitySeries([trade(9, 6), trade(8, 4), trade(7, -3), trade(6, -3), trade(5, 2), trade(4, 9), trade(3, -12)], 'ALL', NOW);
+  assert.deepEqual(s.equity, [0, 6, 10, 7, 4, 6, 15, 3]);
+  assert.equal(s.peak, 15);
+  assert.equal(s.low, 4);
+  assert.equal(s.lowIndex, 4);
+});
+
+test('the Low line: none while the equity has only climbed to its peak', () => {
+  const s = equitySeries([trade(5, 6), trade(4, 4), trade(3, -2)], 'ALL', NOW);
+  assert.equal(s.low, null);
+});
+
+test('the Low line: new highs one after another are one climb, so the peak before is the one before the dip', () => {
+  // 10 (peak), dips to 2, climbs to 12 (new high), straight on to 14 (new high), falls back.
+  const s = equitySeries([trade(9, 10), trade(8, -8), trade(7, 10), trade(6, 2), trade(5, -5)], 'ALL', NOW);
+  assert.equal(s.peak, 14);
+  assert.equal(s.low, 2);
+});
+
+test('the Low line: when the low came before the range it starts at the left edge', () => {
+  const s = equitySeries([trade(30, 10), trade(29, -6), trade(3, 8), trade(1, -9)], '1W', NOW);
+  assert.equal(s.low, 4);
+  assert.equal(s.lowIndex, 0);
+  assert.equal(s.peakIndex, 1);
+});

@@ -32,10 +32,11 @@ import BalanceCheckModal from "@/components/BalanceCheckModal";
 import PageHeader from "@/components/PageHeader";
 import "@/lib/chartTooltip";
 const LAST_DOT_RADIUS = 6;
-// An orange dot on the Equity line's last point (its number is on the chart's title line).
-const dashboardLastPointsPlugin: Plugin<'line'> = {
+// A dot on the Equity line's last point (its number is on the chart's title line): orange, or red while the equity
+// is below the Low line.
+const dashboardLastPointsPlugin: Plugin<'line', { isBelowLow: boolean }> = {
   id: 'dashboardLastPointsPlugin',
-  afterDatasetsDraw: (chart) => {
+  afterDatasetsDraw: (chart, _args, options) => {
     const meta = chart.getDatasetMeta(0);
     if (meta.hidden || meta.data.length === 0) return;
     const pos = tooltipPositionOf(meta.data[meta.data.length - 1]);
@@ -43,7 +44,7 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
     ctx.save();
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, LAST_DOT_RADIUS, 0, 2 * Math.PI);
-    ctx.fillStyle = '#fb923c';
+    ctx.fillStyle = options.isBelowLow ? '#7f1d1d' : '#fb923c'; // red-900 / orange-400
     ctx.fill();
     ctx.restore();
   }
@@ -76,7 +77,9 @@ const startPeakFade = (chart: ChartJS<'line'>) => {
 
 // While the equity is below its highest point, a faint dashed line marks that peak (the Peak line): from the peak's
 // point on the orange line to its latest point, the stretch the equity has been under it.
-const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: number; current: number }> = {
+// Below it, a red dashed line (the Low line) marks the lowest the equity fell between the peak before and the latest
+// peak, shown only once the equity is under it too.
+const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: number; low: number | null; lowIndex: number; current: number }> = {
   id: 'peakEquityLine',
   // Hidden while the chart animates (first load, new data); once the animation is over it fades in. The last
   // animated frame still counts as animating, so the check runs again on the frame after it.
@@ -131,10 +134,11 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     ctx.restore();
   },
   afterDatasetsDraw: (chart, _args, options) => {
-    const { peak, peakIndex, current } = options;
+    const { peak, peakIndex, low, lowIndex, current } = options;
     const meta = chart.getDatasetMeta(0);
     const alpha = peakAlpha(chart);
     if (peak === null || current >= peak || meta.hidden || alpha === 0) return;
+    if (low !== null && current < low) drawLowLine(chart, low, lowIndex, current, alpha);
     const yScale = chart.scales.y;
     const start = meta.data[Math.min(peakIndex, meta.data.length - 1)];
     const end = meta.data[meta.data.length - 1];
@@ -167,6 +171,54 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     ctx.fillText(label, labelX, y - 4);
     ctx.restore();
   }
+};
+
+// The Low line: red and dashed like the Peak line, from the low's point to the latest one, its label under it. The
+// stretch of the Equity line under it is drawn again in red.
+const drawLowLine = (chart: ChartJS<'line'>, low: number, lowIndex: number, current: number, alpha: number) => {
+  const meta = chart.getDatasetMeta(0);
+  const yScale = chart.scales.y;
+  const start = meta.data[Math.min(lowIndex, meta.data.length - 1)];
+  const end = meta.data[meta.data.length - 1];
+  if (!yScale || !start || !end) return;
+  const y = yScale.getPixelForValue(low);
+  const ctx = chart.ctx;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.setLineDash([6, 6]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(127, 29, 29, 0.45)'; // red-900
+  ctx.moveTo(start.x, y);
+  ctx.lineTo(end.x, y);
+  ctx.stroke();
+
+  // The Equity line, as drawn (curve included), only where it is right of the low and below the line.
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.rect(start.x, y, chart.width - start.x, chart.height - y);
+  ctx.clip();
+  ctx.beginPath();
+  (meta.dataset as unknown as { path: (c: CanvasRenderingContext2D) => unknown }).path(ctx);
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#7f1d1d'; // red-900
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(127, 29, 29, 0.7)';
+  ctx.font = '10px "Plus Jakarta Sans", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
+  const gap = subMoney(current, low);
+  const label = isPrivacyMode ? 'Low' : `Low $${formatNumber(low)} (-$${formatNumber(Math.abs(gap))})`;
+  const labelX = Math.max(0, Math.min(start.x + 4, chart.width - ctx.measureText(label).width - 4));
+  ctx.fillText(label, labelX, y + 4);
+  ctx.restore();
 };
 
 // The Balance area's grey carried out past the chart, so the chart has no card around it: inside the
@@ -344,6 +396,8 @@ export default function Dashboard() {
   // The Peak line and the Active DD area show on every range: they only ever show the drawdown under way now, and a
   // long one is seen whole only on a long range (on a short one it starts at the left edge).
   const showPeak = trades.length > 0;
+  // Below the Low line: the line shows, and the Equity line under it and its end dot turn red.
+  const isBelowLow = showPeak && series.low !== null && series.current < series.low;
 
   // "Yes" records that the broker showed exactly the journal's balance at this moment.
   const confirmBrokerMatch = async () => {
@@ -421,7 +475,8 @@ export default function Dashboard() {
           },
         },
       },
-      peakEquityLine: { peak: showPeak ? series.peak : null, peakIndex: series.peakIndex, current: series.current }
+      peakEquityLine: { peak: showPeak ? series.peak : null, peakIndex: series.peakIndex, low: series.low, lowIndex: series.lowIndex, current: series.current },
+      dashboardLastPointsPlugin: { isBelowLow }
     },
     scales: {
       x: { display: false },
@@ -628,7 +683,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
-          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[dashboardLastPointsPlugin, peakEquityLinePlugin, pageFillPlugin]} />
+          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[peakEquityLinePlugin, dashboardLastPointsPlugin, pageFillPlugin]} />
         </div>
       </div>
 

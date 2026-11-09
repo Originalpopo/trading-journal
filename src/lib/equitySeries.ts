@@ -25,6 +25,10 @@ export interface EquitySeries {
   balance: number[];
   peak: number; // highest equity ever (0 before any profit)
   peakIndex: number; // where the peak is in this series; 0 (the left edge) when it came before the range
+  // The lowest the equity fell between the peak before the latest one and the latest one (the Low line), or
+  // null when the equity has not yet dipped and made a new high since.
+  low: number | null;
+  lowIndex: number; // where that low is in this series; 0 (the left edge) when it came before the range
   current: number; // equity now
 }
 
@@ -48,24 +52,39 @@ const dayOf = (ms: number) => {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 };
 
-interface Point { time: number; equity: number; balance: number; isPeak: boolean }
+interface Point { time: number; equity: number; balance: number; isPeak: boolean; isLow?: boolean }
+
+// The low between the latest peak and the peak before it: walking back from the latest peak, the first earlier new
+// high that the equity fell below before climbing to the latest peak is the peak before it, and the lowest point
+// in between is the low. A run of new highs one after another, with no dip between, is one climb, not several peaks.
+export function lowBeforePeak(points: { equity: number; isNewHigh: boolean }[], peakAt: number): number {
+  let lowAt = -1;
+  for (let i = peakAt - 1; i >= 0; i--) {
+    if (points[i].isNewHigh && lowAt >= 0 && points[lowAt].equity < points[i].equity) return lowAt;
+    if (lowAt < 0 || points[i].equity < points[lowAt].equity) lowAt = i;
+  }
+  return -1;
+}
 
 // Events must be in chronological order.
 export function equitySeries(events: SeriesEvent[], range: ChartRange, now: number): EquitySeries {
   // Every event as a point, all-time, and which one set the peak.
   const all: Point[] = [];
   let equity = 0, balance = 0, peak = 0, peakAt = -1;
+  const isNewHigh: boolean[] = [];
   for (const evt of events) {
     if (evt.type === 'funding') {
       balance = subMoney(addMoney(balance, evt.deposit), evt.withdraw);
     } else {
       balance = addMoney(balance, evt.profit);
       equity = addMoney(equity, evt.profit);
-      if (equity > peak) { peak = equity; peakAt = all.length; }
+      if (equity > peak) { peak = equity; peakAt = all.length; isNewHigh[all.length] = true; }
     }
     all.push({ time: evt.time, equity, balance, isPeak: false });
   }
   if (peakAt >= 0) all[peakAt].isPeak = true;
+  const lowAt = peakAt > 0 ? lowBeforePeak(all.map((p, i) => ({ equity: p.equity, isNewHigh: !!isNewHigh[i] })), peakAt) : -1;
+  if (lowAt >= 0) all[lowAt].isLow = true;
 
   const start = rangeStart(range, now);
   const firstIn = start === null ? 0 : all.findIndex(p => p.time >= start);
@@ -78,12 +97,13 @@ export function equitySeries(events: SeriesEvent[], range: ChartRange, now: numb
 
   let points = inRange;
   if (inRange.length > MAX_POINTS) {
-    // The last point of each day; the day the peak was set keeps the peak.
+    // The last point of each day; the day the peak (or the low) was set keeps it.
     const byDay = new Map<string, Point>();
     for (const p of inRange) {
       const key = dayOf(p.time);
       const isPeak = p.isPeak || !!byDay.get(key)?.isPeak;
-      byDay.set(key, { ...p, isPeak });
+      const isLow = p.isLow || !!byDay.get(key)?.isLow;
+      byDay.set(key, { ...p, isPeak, isLow });
     }
     points = [...byDay.values()];
   }
@@ -98,8 +118,11 @@ export function equitySeries(events: SeriesEvent[], range: ChartRange, now: numb
     balanceSeries.push(anchor.balance);
   }
   const peakInRange = points.findIndex(p => p.isPeak);
+  const lowInRange = points.findIndex(p => p.isLow);
   return {
     labels, equity: equitySeries, balance: balanceSeries,
-    peak, peakIndex: peakInRange >= 0 ? peakInRange + 1 : 0, current: equity,
+    peak, peakIndex: peakInRange >= 0 ? peakInRange + 1 : 0,
+    low: lowAt >= 0 ? all[lowAt].equity : null, lowIndex: lowInRange >= 0 ? lowInRange + 1 : 0,
+    current: equity,
   };
 }
