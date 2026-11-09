@@ -259,12 +259,13 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
           const rewardSeries = chart.addBaselineSeries({
             autoscaleInfoProvider: () => null,
             baseValue: { type: 'price', price: trade.entryPrice },
-            topFillColor1: 'rgba(226, 232, 240, 0.4)',
-            topFillColor2: 'rgba(226, 232, 240, 0.4)',
-            topLineColor: 'rgba(203, 213, 225, 0.5)',
-            bottomFillColor1: 'rgba(226, 232, 240, 0.4)',
-            bottomFillColor2: 'rgba(226, 232, 240, 0.4)',
-            bottomLineColor: 'rgba(203, 213, 225, 0.5)',
+            // The table's surface-2 fill and line border (a canvas can't use the class names).
+            topFillColor1: '#f5f5f4',
+            topFillColor2: '#f5f5f4',
+            topLineColor: '#e7e5e4',
+            bottomFillColor1: '#f5f5f4',
+            bottomFillColor2: '#f5f5f4',
+            bottomLineColor: '#e7e5e4',
             lineWidth: 1,
             crosshairMarkerVisible: false,
             priceLineVisible: false,
@@ -272,9 +273,10 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
           });
           rewardSeries.setData(areaData.map((c: any) => ({ time: toLocalChartTime(c.time), value: zones!.tp })));
 
-          // Risk Box: entry to the first stop. Fainter when that stop is only estimated at 1R.
-          const riskFill = zones.slIsEstimate ? 'rgba(254, 202, 202, 0.18)' : 'rgba(254, 202, 202, 0.3)';
-          const riskLine = zones.slIsEstimate ? 'rgba(252, 165, 165, 0.3)' : 'rgba(252, 165, 165, 0.5)';
+          // Risk Box: entry to the first stop, in the table's loss-soft fill and loss-line border. Only outlined when
+          // that stop is only estimated at 1R.
+          const riskFill = zones.slIsEstimate ? 'transparent' : '#fef2f2';
+          const riskLine = '#fecaca';
           const riskSeries = chart.addBaselineSeries({
             baseValue: { type: 'price', price: trade.entryPrice },
             topFillColor1: riskFill,
@@ -294,14 +296,15 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
 
       // 2. Draw Candlesticks on top
       const series = chart.addCandlestickSeries({
-        upColor: '#e2e8f0', 
-        downColor: '#1e293b', 
-        borderVisible: true, 
-        borderColor: '#1e293b',
-        wickUpColor: '#1e293b', 
-        wickDownColor: '#1e293b',
-        borderUpColor: '#1e293b',
-        borderDownColor: '#1e293b',
+        // Up candles in the table's line grey, down candles and every outline in ink.
+        upColor: '#e7e5e4',
+        downColor: '#0c0a09',
+        borderVisible: true,
+        borderColor: '#0c0a09',
+        wickUpColor: '#0c0a09',
+        wickDownColor: '#0c0a09',
+        borderUpColor: '#0c0a09',
+        borderDownColor: '#0c0a09',
         priceLineVisible: false
       });
       seriesRef.current = series;
@@ -315,7 +318,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       }
       if (zones?.slIsEstimate) {
         series.createPriceLine({
-          price: zones.sl, color: '#fca5a5', lineWidth: 1, lineStyle: LineStyle.Dotted,
+          price: zones.sl, color: 'rgba(127, 29, 29, 0.45)', lineWidth: 1, lineStyle: LineStyle.Dotted,
           axisLabelVisible: true, title: '1R (first SL unknown)',
         });
       }
@@ -325,7 +328,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
         markers.push({
           time: toLocalChartTime(entryCandleTime),
           position: isBuy ? 'belowBar' : 'aboveBar',
-          color: '#000000',
+          color: '#0c0a09',
           shape: isBuy ? 'arrowUp' : 'arrowDown',
           text: 'Entry',
         });
@@ -384,14 +387,14 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
          <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/50 p-1 rounded-lg z-10">
           <button 
             onClick={handleRefresh}
-            className="p-1.5 hover:bg-white rounded-md text-ink-faint hover:text-stone-700 transition"
+            className="p-1.5 hover:bg-white rounded-md text-ink-faint hover:text-ink transition"
             title="Refetch Chart Data"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           </button>
         </div>
-        <AlertCircle className="w-8 h-8 mb-2 text-red-400" />
-        <p className="text-sm font-bold text-stone-700">{error}</p>
+        <AlertCircle className="w-8 h-8 mb-2 text-loss" />
+        <p className="text-sm font-bold text-ink">{error}</p>
         <p className="text-xs mt-1">Please check your API key, symbol, and dates.</p>
       </div>
     );
@@ -403,13 +406,13 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
         <button 
           onClick={handleRefresh}
-          className="bg-stone-100/80 hover:bg-stone-200/80 backdrop-blur-sm p-1.5 rounded-lg border border-stone-200/50 text-ink-muted hover:text-stone-700 transition flex items-center justify-center"
+          className="bg-surface-2 hover:bg-line backdrop-blur-sm p-1.5 rounded-lg border border-line text-ink-muted hover:text-ink transition flex items-center justify-center"
           title="Refetch Chart Data"
         >
            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         </button>
 
-        <div className="flex items-center p-0.5 bg-stone-100/80 backdrop-blur-sm rounded-lg border border-stone-200/50">
+        <div className="flex items-center p-0.5 bg-surface-2 backdrop-blur-sm rounded-lg border border-line">
           {availableTfs.map(tf => (
             <button
               key={tf}
@@ -417,7 +420,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
               className={`px-3 py-1 text-[11px] font-black rounded-md transition ${
                 selectedTf === tf 
                   ? 'bg-accent text-white shadow-sm' 
-                  : 'text-ink-muted hover:text-stone-700 hover:bg-stone-200/50'
+                  : 'text-ink-muted hover:text-ink hover:bg-line'
               }`}
             >
               {tf}
@@ -435,8 +438,8 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
                 : "The chart feed quotes slightly differently from your broker, so the candles are shifted to match your fills. Click to see the feed's own prices."}
             className={`px-2.5 py-1 text-[10px] font-black rounded-lg border backdrop-blur-sm transition ${
               showRawPrices
-                ? 'bg-stone-100/80 text-ink-muted border-stone-200/50 hover:text-stone-700'
-                : 'bg-orange-50/90 text-accent border-accent-line hover:bg-orange-100'
+                ? 'bg-surface-2 text-ink-muted border-line hover:text-ink'
+                : 'bg-accent-soft text-accent border-accent-line hover:bg-accent-line'
             }`}
           >
             {showRawPrices
@@ -447,7 +450,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       </div>
 
       {loading && (
-        <div className="absolute inset-0 bg-stone-50/50 z-20 flex items-center justify-center backdrop-blur-[1px]">
+        <div className="absolute inset-0 bg-surface/50 z-20 flex items-center justify-center backdrop-blur-[1px]">
           <Loader2 className="w-8 h-8 animate-spin text-ink-faint" />
         </div>
       )}
