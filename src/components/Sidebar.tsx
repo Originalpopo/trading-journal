@@ -78,9 +78,10 @@ export default function Sidebar() {
 
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Performance", href: "/performance", icon: TrendingUp },
+    // Same order as the phone's bottom bar (MOBILE_PRIMARY): Dashboard, History, Calendar, Performance.
     { name: "History", href: "/history", icon: History },
     { name: "Calendar", href: "/calendar", icon: Calendar },
+    { name: "Performance", href: "/performance", icon: TrendingUp },
     { name: "Notes", href: "/notes", icon: StickyNote },
     { name: "Simulation", href: "/simulation", icon: FlaskConical },
     { name: "Tax Report", href: "/report", icon: Receipt },
