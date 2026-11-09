@@ -153,7 +153,7 @@ export default function Sidebar() {
     <>
     {/* A card floating over the page's left side: away from the window's edges, rounded, with a soft shadow. The
         page runs on under it to the window's edge, so its grey bands reach there too. */}
-    <aside ref={asideRef} className={`print:hidden bg-white border border-line rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px_rgba(28,25,23,0.12)] hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <aside ref={asideRef} className={`print:hidden bg-card border border-line rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px] shadow-ink/12 hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       {navPill && (
         <span
           aria-hidden
@@ -210,7 +210,7 @@ export default function Sidebar() {
         <button
           title="Import & Backup"
           onClick={() => setIsUploadModalOpen(true)}
-          className={`relative bg-white border border-line hover:border-accent-line hover:text-accent text-ink-muted rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
+          className={`relative bg-card border border-line hover:border-accent-line hover:text-accent text-ink-muted rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"
           }`}
         >
@@ -224,7 +224,7 @@ export default function Sidebar() {
           className={`flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition shadow-sm border ${
             isPrivacyMode
               ? 'bg-accent-soft text-accent border-accent-line'
-              : 'bg-white border-line text-ink-muted hover:border-accent-line hover:text-accent'
+              : 'bg-card border-line text-ink-muted hover:border-accent-line hover:text-accent'
           } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"}`}
         >
           {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
@@ -254,7 +254,7 @@ export default function Sidebar() {
     {isMoreOpen && (
       <div className="md:hidden print:hidden fixed inset-0 z-40 bg-stone-900/50" onClick={() => setIsMoreOpen(false)}>
         <div
-          className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] shadow-2xl"
+          className="absolute inset-x-0 bottom-0 bg-card rounded-t-3xl px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-3 gap-2">
@@ -309,7 +309,7 @@ export default function Sidebar() {
 
     {/* Like the sidebar on a computer: a card floating above the page's bottom, away from the screen's edges,
         rounded, with a soft shadow. */}
-    <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 bg-white border border-line rounded-3xl shadow-[0_10px_40px_-8px_rgba(28,25,23,0.18)]">
+    <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 bg-card border border-line rounded-3xl shadow-[0_10px_40px_-8px] shadow-ink/18">
       {/* The page being shown sits on an orange pill that slides, as in the sidebar. */}
       <div ref={barRef} className="relative grid grid-cols-5 h-14 p-1.5 gap-1">
         {barPill && (
