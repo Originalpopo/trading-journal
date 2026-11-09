@@ -222,7 +222,7 @@ export default function HistoryPage() {
     const pages = [];
     pages.push(
       <button key="prev" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
+        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">
         Prev
       </button>
     );
@@ -231,7 +231,7 @@ export default function HistoryPage() {
       if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
         pages.push(
           <button key={i} onClick={() => handlePageChange(i)}
-            className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-accent text-white border-accent' : 'text-stone-600 hover:bg-surface'}`}>
+            className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-accent text-white border-accent' : 'text-ink-muted hover:bg-surface'}`}>
             {i}
           </button>
         );
@@ -242,7 +242,7 @@ export default function HistoryPage() {
 
     pages.push(
       <button key="next" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-stone-600 disabled:opacity-50">
+        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">
         Next
       </button>
     );
@@ -302,7 +302,7 @@ export default function HistoryPage() {
         <div ref={containerRef} className="overflow-auto rounded-xl">
           <table className="w-full text-left text-sm whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
-              <tr className="text-ink-faint border-b border-stone-100 bg-surface">
+              <tr className="text-ink-faint border-b border-line-soft bg-surface">
                 {/* The whole cell toggles, so the box is easy to hit with a finger. */}
                 {isSelecting && (
                 <th className="py-4 pl-2 md:pl-4 pr-0 w-8 cursor-pointer" onClick={(e) => { if (e.target === e.currentTarget && filteredTradeIds.length > 0) toggleSelectAllFiltered(); }}>
@@ -328,7 +328,7 @@ export default function HistoryPage() {
                 <th className={`${col("actions")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] divide-y divide-stone-50">
+            <tbody className="text-[11px] divide-y divide-line-soft">
               {paginatedData.map((t, idx) => {
                 let shortTime = t.time;
                 let phoneTime = t.time;
@@ -345,7 +345,7 @@ export default function HistoryPage() {
                   const badge = t.profit > 0 ? 'bg-accent-soft text-accent border-accent-line' : 'bg-loss-soft text-loss border-loss-line';
                   const badgeText = t.profit > 0 ? 'DEPOSIT' : 'WITHDRAW';
                   return (
-                    <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-surface transition duration-150 border-b border-stone-50 cursor-pointer">
+                    <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-surface transition duration-150 border-b border-line-soft cursor-pointer">
                       {isSelecting && <td className="py-4 pl-2 md:pl-4 pr-0"></td>}
                       <td className={`py-4 px-1 md:px-4 text-ink-muted text-[11px] font-semibold leading-tight ${firstColClass}`}><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
                       <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-ink whitespace-nowrap`}>
@@ -383,7 +383,7 @@ export default function HistoryPage() {
                 const isSelected = selectedIds.has(t.id);
 
                 return (
-                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-stone-50 cursor-pointer ${isSelected ? 'bg-orange-50/60 hover:bg-accent-soft' : 'hover:bg-surface'}`}>
+                  <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className={`transition duration-150 border-b border-line-soft cursor-pointer ${isSelected ? 'bg-accent-soft' : 'hover:bg-surface'}`}>
                     {isSelecting && (
                     <td className="py-4 pl-2 md:pl-4 pr-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleSelected(t.id); }}>
                       <input

@@ -14,7 +14,7 @@ interface HistoryFilterBarProps {
 
 const RESULT_STYLES: Record<ResultLabel, string> = {
   TP: 'bg-accent-soft text-accent border-accent-line',
-  BE: 'bg-surface-2 text-ink-muted border-stone-300',
+  BE: 'bg-surface-2 text-ink-muted border-line',
   SL: 'bg-loss-soft text-loss border-loss-line',
 };
 
@@ -27,7 +27,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
           type="button"
           onClick={() => onChange(opt.value)}
           className={`text-[11px] font-bold px-3 py-2 md:py-1 rounded-md transition ${
-            value === opt.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-stone-600'
+            value === opt.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-ink'
           }`}
         >
           {opt.label}
@@ -81,7 +81,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
                 value={filters.from}
                 max={filters.to || undefined}
                 onChange={(e) => set({ from: e.target.value })}
-                className="flex-1 min-w-0 md:flex-none bg-surface border border-line rounded-lg h-8 px-2 py-0 text-stone-700 focus:outline-none focus:border-accent"
+                className="flex-1 min-w-0 md:flex-none bg-surface border border-line rounded-lg h-8 px-2 py-0 text-ink focus:outline-none focus:border-accent"
               />
               <span>To</span>
               <input
@@ -89,7 +89,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
                 value={filters.to}
                 min={filters.from || undefined}
                 onChange={(e) => set({ to: e.target.value })}
-                className="flex-1 min-w-0 md:flex-none bg-surface border border-line rounded-lg h-8 px-2 py-0 text-stone-700 focus:outline-none focus:border-accent"
+                className="flex-1 min-w-0 md:flex-none bg-surface border border-line rounded-lg h-8 px-2 py-0 text-ink focus:outline-none focus:border-accent"
               />
             </div>
           </>

@@ -78,9 +78,9 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={() => close(false)}>
       <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-line-soft">
           <h3 className="text-2xl font-black text-ink tracking-tight">Edit {trades.length} Trades</h3>
-          <button onClick={() => close(false)} className="text-ink-faint hover:text-stone-600 p-1 rounded-full hover:bg-surface-2 transition">
+          <button onClick={() => close(false)} className="text-ink-faint hover:text-ink p-1 rounded-full hover:bg-surface-2 transition">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -94,10 +94,10 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                 const change = changes[name] || 'keep';
                 return (
                   <div key={name} className={`flex items-center justify-between px-3 py-2 rounded-xl border transition ${
-                    change === 'add' ? 'bg-accent-soft border-accent-line' : change === 'remove' ? 'bg-surface border-line' : 'bg-white border-stone-100'
+                    change === 'add' ? 'bg-accent-soft border-accent-line' : change === 'remove' ? 'bg-surface border-line' : 'bg-white border-line-soft'
                   }`}>
                     <span className={`flex items-center gap-2 text-sm font-bold ${
-                      change === 'add' ? 'text-accent' : change === 'remove' ? 'text-ink-faint opacity-70' : 'text-stone-700'
+                      change === 'add' ? 'text-accent' : change === 'remove' ? 'text-ink-faint opacity-70' : 'text-ink'
                     }`}>
                       <Icon className="w-4 h-4" />
                       {name}
@@ -111,7 +111,7 @@ export default function BulkEditModal({ isOpen, trades, onClose }: BulkEditModal
                           type="button"
                           onClick={() => setChanges(prev => ({ ...prev, [name]: opt.value }))}
                           className={`text-[11px] font-bold px-3 py-2 md:py-1 rounded-md transition ${
-                            change === opt.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-stone-600'
+                            change === opt.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-ink'
                           }`}
                         >
                           {opt.label}
