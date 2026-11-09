@@ -125,8 +125,9 @@ export default function Sidebar() {
         )}
       </div>
 
+      {/* Settings is not in the list: it sits at the very bottom, in the list's own style. */}
       <nav className={`flex-1 space-y-2 ${isCollapsed ? "px-2" : "px-4"}`}>
-        {navItems.map((item) => {
+        {navItems.filter(item => item.href !== "/settings").map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           return (
@@ -148,22 +149,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className={`px-4 py-2 mt-auto flex justify-center`}>
-        <button
-          title={isPrivacyMode ? "Show Data" : "Privacy Mode"}
-          onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-          className={`w-full flex items-center justify-center gap-3 px-3 py-2 text-sm font-bold rounded-lg transition shadow-sm border ${
-            isPrivacyMode 
-              ? 'bg-orange-50 text-orange-400 border-orange-200' 
-              : 'bg-white border-stone-200 text-stone-500 hover:border-orange-200 hover:text-orange-400'
-          } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : ""}`}
-        >
-          {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
-          {!isCollapsed && <span>Privacy Mode</span>}
-        </button>
-      </div>
-
-      <div className={`p-4 pt-3 border-t border-stone-100 flex gap-2 ${isCollapsed ? "flex-col items-center" : "flex-col"}`}>
+      {/* Import above Privacy Mode, both in boxes. */}
+      <div className={`px-4 py-2 mt-auto flex flex-col gap-2 ${isCollapsed ? "items-center" : ""}`}>
         <button
           title="Import & Backup"
           onClick={() => setIsUploadModalOpen(true)}
@@ -175,8 +162,35 @@ export default function Sidebar() {
           {!isCollapsed && <span>Import</span>}
           <BackupDueDot />
         </button>
+        <button
+          title={isPrivacyMode ? "Show Data" : "Privacy Mode"}
+          onClick={() => setIsPrivacyMode(!isPrivacyMode)}
+          className={`flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition shadow-sm border ${
+            isPrivacyMode
+              ? 'bg-orange-50 text-orange-400 border-orange-200'
+              : 'bg-white border-stone-200 text-stone-500 hover:border-orange-200 hover:text-orange-400'
+          } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"}`}
+        >
+          {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
+          {!isCollapsed && <span>Privacy Mode</span>}
+        </button>
+      </div>
 
-
+      <div className={`pt-2 pb-4 border-t border-stone-100 ${isCollapsed ? "px-2" : "px-4"}`}>
+        <Link
+          href="/settings"
+          title={isCollapsed ? "Settings" : undefined}
+          className={`flex items-center transition-all w-full rounded-xl ${
+            isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
+          } ${
+            pathname === "/settings"
+              ? "bg-orange-50 text-orange-400 font-bold"
+              : "text-stone-500 hover:text-stone-950 hover:bg-stone-50 font-semibold"
+          }`}
+        >
+          <Settings className={`w-5 h-5 shrink-0 ${isCollapsed && pathname === "/settings" ? "scale-110" : ""}`} />
+          {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Settings</span>}
+        </Link>
       </div>
     </aside>
 
@@ -187,7 +201,7 @@ export default function Sidebar() {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-3 gap-2">
-            {mobileMore.map((item) => {
+            {mobileMore.filter(item => item.href !== "/settings").map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
               return (
@@ -205,6 +219,14 @@ export default function Sidebar() {
               );
             })}
             <button
+              onClick={() => { setIsMoreOpen(false); setIsUploadModalOpen(true); }}
+              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-stone-50 text-stone-500 font-semibold transition"
+            >
+              <Upload className="w-5 h-5" />
+              Import
+              <BackupDueDot />
+            </button>
+            <button
               onClick={() => setIsPrivacyMode(!isPrivacyMode)}
               className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
                 isPrivacyMode ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
@@ -213,14 +235,16 @@ export default function Sidebar() {
               {isPrivacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               Privacy
             </button>
-            <button
-              onClick={() => { setIsMoreOpen(false); setIsUploadModalOpen(true); }}
-              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-stone-50 text-stone-500 font-semibold transition"
+            <Link
+              href="/settings"
+              onClick={() => setIsMoreOpen(false)}
+              className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+                pathname === "/settings" ? "bg-orange-50 text-orange-400 font-bold" : "bg-stone-50 text-stone-500 font-semibold"
+              }`}
             >
-              <Upload className="w-5 h-5" />
-              Import
-              <BackupDueDot />
-            </button>
+              <Settings className="w-5 h-5" />
+              Settings
+            </Link>
           </div>
         </div>
       </div>
