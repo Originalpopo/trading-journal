@@ -78,19 +78,23 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
 const dayTitle = (date: string, target: number | undefined, pnl: number | undefined, isPrivacyMode: boolean) => {
   const when = new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   if (target === undefined) return when;
-  if (target <= 0) return `${when}
+  // The day's P&L comes before its target; privacy mode shows neither in dollars.
+  const pnlLine = isPrivacyMode ? "" : `
+PnL: ${usd(pnl ?? 0)}`;
+  if (target <= 0) return `${when}${pnlLine}
 No target`;
   return isPrivacyMode
     ? `${when}
 Target reached: ${Math.round(((pnl ?? 0) / target) * 100)}%`
-    : `${when}
+    : `${when}${pnlLine}
 Target: ${usd(target)}`;
 };
 
 const weekdayName = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { weekday: "short" });
 
 // One circle per trading day of the week (Monday to Friday, plus a weekend day that was traded): orange with a tick once the day reached its target, an empty orange ring for
-// today still going, an orange ring with a cross for a day traded that ended short, an empty grey dashed ring
+// today still going, an orange ring with a cross for a day traded that ended short (red when it also ended
+// below zero), an empty grey dashed ring
 // for a day with no trade at all, and an empty grey ring for days to come.
 // Pointing at a circle shows its date and, for a day with a target, that target (its % while in privacy mode).
 function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacyMode: boolean }) {
@@ -103,11 +107,13 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
   };
   return (
     <div className="flex items-center pb-4">
-      {steps.map(({ date, state, target, pnl }, i) => (
+      {steps.map(({ date, state, target, pnl }, i) => {
+        const isLoss = state === "missed" && (pnl ?? 0) < 0;
+        return (
         <div key={date} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
           {/* The line into a day is orange once that day has come. */}
           {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-stone-200" : "bg-orange-400"}`} />}
-          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
+          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-red-900 bg-white text-red-900" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
             {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
             {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
             <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-orange-400" : "text-stone-400"}`}>
@@ -115,7 +121,8 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
             </span>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
