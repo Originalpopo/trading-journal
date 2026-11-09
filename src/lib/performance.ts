@@ -23,7 +23,8 @@ export interface PerfFunding {
 }
 
 export interface PerformanceFilters {
-  selectedYear: string; // a year, or 'ALL'
+  selectedPeriod: string; // a year, 'ALL', or a recent stretch (RECENT_PERIODS)
+  now?: number; // ms, for the recent stretches (default: now)
   selectedTfs: string[]; // empty = every timeframe
   selectedPlan: string; // 'ALL' | 'On Plan' | 'Off Plan'
   selectedMetric: string; // 'COUNT' | 'RR' | 'AVG_R' (R per trade) | 'PNL' | 'GAIN'
@@ -43,8 +44,25 @@ const emptySideMatrix = (): SideMatrix => ({
 
 const byTotalPnl = (a: [string, SideMatrix], b: [string, SideMatrix]) => (b[1].BUY.pnl + b[1].SELL.pnl) - (a[1].BUY.pnl + a[1].SELL.pnl);
 
+// The stretches up to now the page can show, besides a year or everything: months back from today.
+export const RECENT_PERIODS = { LAST_1M: 1, LAST_3M: 3 } as const;
+export const isRecentPeriod = (period: string): period is keyof typeof RECENT_PERIODS => period in RECENT_PERIODS;
+
+// Where a period starts and ends (ms; null = open). A year runs from 1 January to the next.
+export function periodBounds(period: string, now: number): { start: number | null; end: number | null } {
+  if (period === 'ALL') return { start: null, end: null };
+  if (isRecentPeriod(period)) {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - RECENT_PERIODS[period]);
+    return { start: d.getTime(), end: null };
+  }
+  const year = parseInt(period);
+  return { start: new Date(year, 0, 1).getTime(), end: new Date(year + 1, 0, 1).getTime() };
+}
+
 export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], filters: PerformanceFilters) {
-  const { selectedYear, selectedTfs, selectedPlan, selectedMetric } = filters;
+  const { selectedPeriod, selectedTfs, selectedPlan, selectedMetric } = filters;
+  const { start: periodStart, end: periodEnd } = periodBounds(selectedPeriod, filters.now ?? Date.now());
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const hourStats: Record<number, number> = {}; const hourStatsPnL: Record<number, number> = {};
   const hourWins: Record<number, number> = {}; const hourLosses: Record<number, number> = {}; const hourBEs: Record<number, number> = {};
@@ -90,10 +108,11 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
         if (selectedPlan !== 'ALL' && isOnPlan(evt.data) !== (selectedPlan === 'On Plan')) return;
       }
 
-      const y = evt.timeObj.getFullYear();
-      if (selectedYear !== 'ALL' && y < parseInt(selectedYear)) {
+      // Before the period: only carried into the balance it starts with.
+      const at = evt.timeObj.getTime();
+      if (periodStart !== null && at < periodStart) {
         pastEvents.push(evt);
-      } else if (selectedYear === 'ALL' || y === parseInt(selectedYear)) {
+      } else if (periodEnd === null || at < periodEnd) {
         currentEvents.push(evt);
       }
     }

@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check, SlidersHorizontal } from
 import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import HealthWeather from "@/components/HealthWeather";
-import { computePerformance, type SideMatrix } from "@/lib/performance";
+import { computePerformance, isRecentPeriod, type SideMatrix } from "@/lib/performance";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import {
   Chart as ChartJS,
@@ -175,7 +175,8 @@ export default function PerformancePage() {
     return () => { isMounted = false; };
   }, []);
   const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  // A year (this one to start), 'ALL', or a recent stretch: LAST_1M / LAST_3M.
+  const [selectedPeriod, setSelectedPeriod] = useState(new Date().getFullYear().toString());
   const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
   const [isTfMenuOpen, setIsTfMenuOpen] = useState(false);
   const tfRef = useRef<HTMLDivElement>(null);
@@ -253,8 +254,8 @@ export default function PerformancePage() {
   }, [trades]);
 
   const data = useMemo(
-    () => computePerformance(trades, funding, { selectedYear, selectedTfs, selectedPlan, selectedMetric }),
-    [trades, funding, selectedYear, selectedTfs, selectedPlan, selectedMetric],
+    () => computePerformance(trades, funding, { selectedPeriod, selectedTfs, selectedPlan, selectedMetric }),
+    [trades, funding, selectedPeriod, selectedTfs, selectedPlan, selectedMetric],
   );
 
 
@@ -449,12 +450,17 @@ export default function PerformancePage() {
           {isFiltersOpen && (
           <div className="order-3 md:order-2 w-full md:w-auto grid grid-cols-3 gap-2 md:flex md:items-center md:gap-4">
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Year<span className="hidden md:inline">:</span></span>
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
+              <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
                 className="w-full md:w-auto h-9 md:h-auto bg-white border border-stone-200 text-stone-950 text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-orange-400 cursor-pointer">
+                {/* The last month or three up to today (across a year end), then each year, then everything. */}
+                <option value="LAST_1M">Last 1M</option>
+                <option value="LAST_3M">Last 3M</option>
+                <option disabled>──────</option>
                 {availableYears.map(y => (
                    <option key={y} value={y.toString()}>{y}</option>
                 ))}
+                <option value="ALL">All</option>
               </select>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0" ref={tfRef}>
@@ -536,7 +542,7 @@ export default function PerformancePage() {
             aria-label="Filter"
             title="Filter"
             className={`order-2 md:order-3 flex items-center justify-center h-8 w-8 border rounded-lg transition ${
-              isFiltersOpen || selectedYear !== new Date().getFullYear().toString() || selectedTfs.length > 0 || selectedPlan !== 'ALL'
+              isFiltersOpen || selectedPeriod !== new Date().getFullYear().toString() || selectedTfs.length > 0 || selectedPlan !== 'ALL'
                 ? 'bg-orange-50 text-orange-400 border-orange-200'
                 : 'bg-white text-stone-500 border-stone-200 hover:text-stone-950'
             }`}
@@ -864,6 +870,8 @@ export default function PerformancePage() {
           </div>
         </div>
 
+      {/* Months only mean something over a year or more: a recent stretch would show one or two bars. */}
+      {!isRecentPeriod(selectedPeriod) && (
       <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col w-full md:col-span-2">
         <h3 className="text-xs font-black text-stone-950 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-orange-400 rounded-full"></span> Month of Year
@@ -906,6 +914,7 @@ export default function PerformancePage() {
           />
         </div>
       </div>
+      )}
       </div>
 
       <SideMatrixTable title="Buy VS Sell Analysis" firstColumn="Symbol" rows={data.matrixSorted} formatCurrency={formatCurrency} />

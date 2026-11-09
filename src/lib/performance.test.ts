@@ -19,7 +19,7 @@ const trades: PerfTrade[] = [
 ];
 
 const filters = (over: Partial<PerformanceFilters> = {}): PerformanceFilters =>
-  ({ selectedYear: '2026', selectedTfs: [], selectedPlan: 'ALL', selectedMetric: 'PNL', ...over });
+  ({ selectedPeriod: '2026', selectedTfs: [], selectedPlan: 'ALL', selectedMetric: 'PNL', ...over });
 
 test('a year shows its own trades on top of the balance carried over', () => {
   const p = computePerformance(trades, funding, filters());
@@ -34,10 +34,23 @@ test('a year shows its own trades on top of the balance carried over', () => {
 });
 
 test('all years start from zero', () => {
-  const p = computePerformance(trades, funding, filters({ selectedYear: 'ALL' }));
+  const p = computePerformance(trades, funding, filters({ selectedPeriod: 'ALL' }));
   assert.equal(p.totalTrades, 4);
   assert.equal(p.netProfit, -0.4);
   assert.deepEqual(p.perfBalanceData.slice(0, 3), [0, 50, 48]);
+});
+
+test('the last month shows its own trades on top of the balance before it, across a year end too', () => {
+  const now = new Date('2026-02-04T12:00:00').getTime();
+  const p = computePerformance(trades, funding, filters({ selectedPeriod: 'LAST_1M', now }));
+  // From 4 January: the win, the off-plan loss and the break-even; everything before is the starting balance.
+  assert.equal(p.totalTrades, 3);
+  assert.equal(p.netProfit, 1.6);
+  assert.equal(p.perfBalanceData[0], 148);
+  const quarter = computePerformance(trades, funding, filters({ selectedPeriod: 'LAST_3M', now }));
+  // From 4 November 2025: the December deposit and the loss of 30 December as well.
+  assert.equal(quarter.totalTrades, 4);
+  assert.equal(quarter.perfBalanceData[0], 0);
 });
 
 test('drawdown is the drop of the trading result from its peak', () => {
@@ -132,7 +145,7 @@ test('a withdrawal is not a drawdown, and a deposit does not hide one', () => {
       { time: '2026-01-03 09:00:00', deposit: 0, withdraw: 50 }, // taking money out loses nothing
       { time: '2026-01-05 09:00:00', deposit: 500, withdraw: 0 }, // topping up recovers nothing
     ],
-    filters({ selectedYear: 'ALL' }),
+    filters({ selectedPeriod: 'ALL' }),
   );
   assert.equal(p.maxDrawdownAmt, 7);
   assert.equal(p.absoluteDD, 0);
@@ -143,7 +156,7 @@ test('absolute drawdown is how far the result fell below where the period starte
   const p = computePerformance(
     [t('2026-01-02 10:00:00', -2), t('2026-01-03 10:00:00', -1.5), t('2026-01-04 10:00:00', 9)],
     [{ time: '2026-01-01 09:00:00', deposit: 25, withdraw: 0 }],
-    filters({ selectedYear: 'ALL' }),
+    filters({ selectedPeriod: 'ALL' }),
   );
   assert.equal(p.absoluteDD, 3.5); // not the whole 25 deposited
 });
