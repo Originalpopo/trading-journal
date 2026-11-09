@@ -48,14 +48,92 @@ const dashboardLastPointsPlugin: Plugin<'line'> = {
   }
 };
 
-// While the equity is below its highest point, a faint dashed line marks that peak: from the peak's point on the
-// orange line to its latest point, the stretch the equity has been under it.
+// The Peak line and the Active DD area wait for the chart's own animation to end, then fade in over this long.
+const PEAK_FADE_MS = 300;
+// When each chart's Peak line started fading in; null while the chart is animating (or has not finished yet).
+const peakShownAt = new WeakMap<ChartJS, number | null>();
+const peakAlpha = (chart: ChartJS) => {
+  const shownAt = peakShownAt.get(chart);
+  return shownAt == null ? 0 : Math.min(1, (performance.now() - shownAt) / PEAK_FADE_MS);
+};
+// Whether the chart's lines are still moving into place. Only their points count: the tooltip animates on the same
+// chart, and pointing at the chart must not hide the Peak line.
+type Animating = { $animations?: Record<string, { active: () => boolean }> };
+const linesAnimating = (chart: ChartJS) => chart.data.datasets.some((_, i) => {
+  const meta = chart.getDatasetMeta(i);
+  return [meta.dataset, ...meta.data].some(el => Object.values((el as Animating | undefined)?.$animations ?? {}).some(a => a.active()));
+});
+const startPeakFade = (chart: ChartJS) => {
+  peakShownAt.set(chart, performance.now());
+  const step = () => {
+    if (!chart.ctx) return; // destroyed
+    chart.draw();
+    if (peakAlpha(chart) < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
+
+// While the equity is below its highest point, a faint dashed line marks that peak (the Peak line): from the peak's
+// point on the orange line to its latest point, the stretch the equity has been under it.
 const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: number; current: number }> = {
   id: 'peakEquityLine',
+  // Hidden while the chart animates (first load, new data); once the animation is over it fades in. The last
+  // animated frame still counts as animating, so the check runs again on the frame after it.
+  afterDraw: (chart) => {
+    if (linesAnimating(chart)) {
+      peakShownAt.set(chart, null);
+      requestAnimationFrame(() => {
+        if (chart.ctx && !linesAnimating(chart) && peakShownAt.get(chart) == null) startPeakFade(chart);
+      });
+    } else if (peakShownAt.get(chart) == null) {
+      startPeakFade(chart);
+    }
+  },
+  // The Active DD area: the gap between the Peak line and the equity below it, hatched in thin red diagonals —
+  // how far it has fallen. Drawn before the lines, so the orange Equity line stays on top of it.
+  beforeDatasetsDraw: (chart, _args, options) => {
+    const { peak, peakIndex, current } = options;
+    const meta = chart.getDatasetMeta(0);
+    const alpha = peakAlpha(chart);
+    if (peak === null || current >= peak || meta.hidden || !meta.dataset || alpha === 0) return;
+    const yScale = chart.scales.y;
+    const points = meta.data.slice(Math.min(peakIndex, meta.data.length - 1));
+    if (!yScale || points.length < 2) return;
+    const left = points[0].x;
+    const right = points[points.length - 1].x;
+    const top = yScale.getPixelForValue(peak);
+    const bottom = Math.max(...points.map(p => p.y));
+    if (!(bottom > top)) return;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // Only the stretch below the peak line...
+    ctx.beginPath();
+    ctx.rect(left, top, right - left, bottom - top);
+    ctx.clip();
+    // ...and above the Equity line, as drawn (curve included): its path closed along the top of the canvas.
+    ctx.beginPath();
+    (meta.dataset as unknown as { path: (c: CanvasRenderingContext2D) => unknown }).path(ctx);
+    ctx.lineTo(meta.data[meta.data.length - 1].x, -1);
+    ctx.lineTo(meta.data[0].x, -1);
+    ctx.closePath();
+    ctx.clip();
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(127, 29, 29, 0.35)'; // red-900
+    const height = bottom - top;
+    for (let x = left - height; x < right; x += 6) {
+      ctx.moveTo(x, bottom);
+      ctx.lineTo(x + height, top);
+    }
+    ctx.stroke();
+    ctx.restore();
+  },
   afterDatasetsDraw: (chart, _args, options) => {
     const { peak, peakIndex, current } = options;
     const meta = chart.getDatasetMeta(0);
-    if (peak === null || current >= peak || meta.hidden) return;
+    const alpha = peakAlpha(chart);
+    if (peak === null || current >= peak || meta.hidden || alpha === 0) return;
     const yScale = chart.scales.y;
     const start = meta.data[Math.min(peakIndex, meta.data.length - 1)];
     const end = meta.data[meta.data.length - 1];
@@ -65,6 +143,7 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     const y = yScale.getPixelForValue(peak);
     const ctx = chart.ctx;
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.beginPath();
     ctx.setLineDash([6, 6]);
     ctx.lineWidth = 1.5;

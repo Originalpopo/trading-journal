@@ -50,13 +50,15 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
           <span key={v} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-white" style={{ left: at(v) }} />
         ))}
       </div>
-      {/* The app's flame, lit at the end of the bar: a reward shown only while the bar is past its last mark
-          (over 80% of the target). Trading the profit back to 80% or below puts it out. */}
+      {/* The app's flame, lit at the tip of the orange fill: a reward shown only while the bar is past its last mark
+          (over 80% of the target). It lights once the fill has grown to it, then moves with the tip, and stays at
+          the end once the target is reached. Trading the profit back to 80% or below puts it out. */}
       {!isPlain && share > (SEGMENTS - 1) / SEGMENTS && (
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"
-          className="flame-light absolute top-1/2 left-full w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_rgba(251,146,60,0.45)]"
+          style={{ left: `${Math.min(share, 1) * 100}%` }}
+          className="flame-light absolute top-1/2 w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_rgba(251,146,60,0.45)] transition-[left] duration-1000 ease-out motion-reduce:transition-none"
         >
           {/* A white edge under the flame keeps it apart from the orange bar behind it. */}
           <g className="flame-outer" strokeLinejoin="round">

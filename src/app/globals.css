@@ -104,7 +104,7 @@ body {
     }
 }
 
-/* The flame lights up once the bar has filled to the end (the bar takes 1s). */
+/* The flame lights up once the bar has filled to its tip (the bar takes 1s). */
 @keyframes flame-light {
     from { scale: 0; opacity: 0; }
     to { scale: 1; opacity: 1; }
