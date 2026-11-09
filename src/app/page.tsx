@@ -459,7 +459,10 @@ export default function Dashboard() {
   const ddDays = displayDD.peakTime ? Math.max(0, Math.floor((now - displayDD.peakTime) / 86_400_000)) : 0;
   const stretchText = (trades: number, days: number) =>
     `${trades} trade${trades === 1 ? '' : 's'}${days > 0 ? ` · ${days} day${days === 1 ? '' : 's'}` : ''}`;
-  const belowPeakText = displayDD.active > 0 ? `${stretchText(displayDD.tradesBelowPeak, ddDays)} below the peak` : 'At the peak';
+  // Two lines while below the peak, so the card never wraps it mid-phrase: "13 trades", then "2 days below the peak".
+  const belowPeakLines = displayDD.active > 0
+    ? [stretchText(displayDD.tradesBelowPeak, 0), `${ddDays > 0 ? `${ddDays} day${ddDays === 1 ? '' : 's'} ` : ''}below the peak`]
+    : ['At the peak'];
   // The longest stretch below a peak so far, to set this one against: by trades, with that stretch's own days.
   // The one under way is the longest once it has more trades (or as many, for longer).
   const currentMs = displayDD.peakTime ? Math.max(0, now - displayDD.peakTime) : 0;
@@ -710,21 +713,8 @@ export default function Dashboard() {
 
           <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[200px] mb-8">
             <div className="flex flex-col justify-between z-10 flex-1 pr-2 py-1">
-              <div>
-                {/* In $ mode the dollars sit after the label, so no line moves when switching R and $. */}
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
-                  Max DD
-                  {!isRMode && (
-                    <span className="ml-1.5 normal-case tracking-normal font-bold text-stone-500" title="The same drop as the % below, in dollars.">
-                      {isPrivacyMode ? '***' : `$${formatNumber(displayDD.maxPercentAmount)}`}
-                    </span>
-                  )}
-                </p>
-                <p className="text-2xl font-extrabold text-red-950">{formatNumber(ddMax)}{ddUnit}</p>
-              </div>
-
-              <div className="w-full border-t border-stone-200 my-auto"></div>
-
+              {/* Active DD first: the drawdown under way now, then the deepest there has been. In $ mode the dollars
+                  sit after the label, so no line moves when switching R and $. */}
               <div>
                 <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
                   Active DD
@@ -735,8 +725,24 @@ export default function Dashboard() {
                   )}
                 </p>
                 <p className="text-2xl font-extrabold text-red-900">{formatNumber(ddActive)}{ddUnit}</p>
-                <p className="text-[10px] font-normal text-stone-400 mt-1">{belowPeakText}</p>
+                <p className="text-[10px] font-normal text-stone-400 mt-1">
+                  {belowPeakLines.map((line, i) => <span key={i} className="block">{line}</span>)}
+                </p>
                 {longestText && <p className="text-[10px] font-normal text-stone-400">{longestText}</p>}
+              </div>
+
+              <div className="w-full border-t border-stone-200 my-auto"></div>
+
+              <div>
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">
+                  Max DD
+                  {!isRMode && (
+                    <span className="ml-1.5 normal-case tracking-normal font-bold text-stone-500" title="The same drop as the % below, in dollars.">
+                      {isPrivacyMode ? '***' : `$${formatNumber(displayDD.maxPercentAmount)}`}
+                    </span>
+                  )}
+                </p>
+                <p className="text-2xl font-extrabold text-red-950">{formatNumber(ddMax)}{ddUnit}</p>
               </div>
             </div>
 
