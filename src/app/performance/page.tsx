@@ -393,7 +393,7 @@ export default function PerformancePage() {
             <span className="w-2 h-2 bg-accent rounded-full"></span> Profit and Balance
           </h3>
           {data.isAggregated && (
-            <span className="text-[10px] font-bold text-ink-muted bg-stone-100/90 border border-stone-200/70 px-2 py-0.5 rounded-md tracking-normal normal-case">
+            <span className="text-[10px] font-bold text-ink-muted bg-surface-2 border border-line px-2 py-0.5 rounded-md tracking-normal normal-case">
               Daily Aggregated ({data.perfBalanceData.length - 1} Days)
             </span>
           )}
@@ -507,7 +507,7 @@ export default function PerformancePage() {
                 
                 {isTfMenuOpen && (
                   <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-line rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                    <div className="p-2 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+                    <div className="p-2 border-b border-line-soft flex justify-between items-center bg-surface">
                       <span className="text-[10px] font-bold text-ink-faint uppercase">Select TFs</span>
                       {selectedTfs.length > 0 && (
                         <button 
@@ -532,7 +532,7 @@ export default function PerformancePage() {
                               }
                             }}
                             className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
-                              isSelected ? 'bg-accent-soft text-accent' : 'text-stone-600 hover:bg-surface hover:text-stone-900'
+                              isSelected ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-surface hover:text-ink'
                             }`}
                           >
                             <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
@@ -582,11 +582,11 @@ export default function PerformancePage() {
             {/* 20px, or smaller when a large profit would not fit the card. */}
             <span style={fitFontSize(formatCurrency(data.netProfit), '1.25rem')} className={`leading-7 font-black ${data.netProfit >= 0 ? 'text-accent' : 'text-loss'}`}>{formatCurrency(data.netProfit)}</span>
             {bahtRate && !isPrivacyMode && (
-              <span className="text-xs font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
+              <span className="text-[11px] font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
             )}
           </div>
-          <div className="bg-accent p-5 rounded-[1.25rem] border border-orange-300 shadow-lg shadow-orange-400/20 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest mb-1">Win Rate</span>
+          <div className="bg-accent p-5 rounded-[1.25rem] border border-accent shadow-lg shadow-accent/20 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">Win Rate</span>
             <span className="text-xl font-black text-white">{formatNumber(data.mainWinRate)}%</span>
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
@@ -603,38 +603,38 @@ export default function PerformancePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
           <div className="bg-white p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-2.5">
-            <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
+            <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Outcomes</span>
             </div>
             {/* Bad on the left, good on the right, as in Discipline (Off Plan | On Plan) and Streaks. */}
             <div className="flex justify-between text-[10px] font-bold">
               <span className="text-loss flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-loss shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
-              <span className="text-ink-faint flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
+              <span className="text-ink-faint flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-line shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
               <span className="text-accent flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
             </div>
             <PieceBar heightClass="h-2.5 [--piece-min:0.625rem]" className="mt-1" pieces={[
               { key: 'loss', share: data.lossPct, color: 'bg-loss' },
-              { key: 'be', share: data.bePct, color: 'bg-stone-200' },
+              { key: 'be', share: data.bePct, color: 'bg-line' },
               { key: 'win', share: data.winPct, color: 'bg-accent' },
             ]} />
             <div className="grid grid-cols-3 gap-2 pt-0.5">
-              <div className="bg-red-50/60 border border-loss-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-red-800 uppercase tracking-wider">SL</span>
+              <div className="bg-loss-soft border border-loss-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                <span className="text-[9px] font-bold text-loss uppercase tracking-wider">SL</span>
                 <span className="text-xs font-black text-loss">{data.lossTradesCount}</span>
               </div>
               <div className="bg-surface border border-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
                 <span className="text-[9px] font-bold text-ink-faint uppercase tracking-wider">BE</span>
-                <span className="text-xs font-black text-stone-700">{data.beTradesCount}</span>
+                <span className="text-xs font-black text-ink-faint">{data.beTradesCount}</span>
               </div>
-              <div className="bg-orange-50/60 border border-accent-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+              <div className="bg-accent-soft border border-accent-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
                 <span className="text-[9px] font-bold text-accent uppercase tracking-wider">TP</span>
-                <span className="text-xs font-black text-accent-strong">{data.profitTradesCount}</span>
+                <span className="text-xs font-black text-accent">{data.profitTradesCount}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-line shadow-sm space-y-4">
-            <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
+            <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Direction</span>
             </div>
             {/* Buy and Sell read as the Timeframe rows: P&L as a bar split at 0, then $ and R. Pointing at Buy or
@@ -663,7 +663,7 @@ export default function PerformancePage() {
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-1">
-            <div className="flex justify-between items-end border-b border-stone-100 pb-1.5 mb-2">
+            <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Discipline</span>
             </div>
             <div className="flex justify-between text-[10px] font-bold">
@@ -693,12 +693,12 @@ export default function PerformancePage() {
               
             return (
               <div className="bg-white p-5 rounded-xl border border-line shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-stone-100 pb-1.5 mb-2">
+                <div className="flex justify-between items-center border-b border-line-soft pb-1.5 mb-2">
                   <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Timeframe</span>
                   {validTfs.length > 4 && (
                     <div className="flex gap-1">
-                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-stone-600 transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-stone-600 transition"><ChevronRight className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-ink transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-ink transition"><ChevronRight className="w-3.5 h-3.5" /></button>
                     </div>
                   )}
                 </div>
@@ -738,23 +738,23 @@ export default function PerformancePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Averages & Time</div>
-            <div className="flex justify-between"><span className="text-stone-600">Avg Win</span><span className="font-bold text-accent">{formatCurrency(data.avgWin)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Avg Loss</span><span className="font-bold text-loss">{formatCurrency(-data.avgLoss)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Avg BE</span><span className="font-bold text-ink-muted">{formatCurrency(data.avgBE)}</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-600">Hold (Win)</span><span className="font-bold text-ink">{data.holdWin}</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Hold (Loss)</span><span className="font-bold text-ink">{data.holdLoss}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Avg Win</span><span className="font-bold text-accent">{formatCurrency(data.avgWin)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Avg Loss</span><span className="font-bold text-loss">{formatCurrency(-data.avgLoss)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Avg BE</span><span className="font-bold text-ink-muted">{formatCurrency(data.avgBE)}</span></div>
+            <div className="flex justify-between pt-1"><span className="text-ink-muted">Hold (Win)</span><span className="font-bold text-ink">{data.holdWin}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Hold (Loss)</span><span className="font-bold text-ink">{data.holdLoss}</span></div>
           </div>
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Extremes</div>
-            <div className="flex justify-between"><span className="text-stone-600">Largest Win</span><span className="font-bold text-accent">{formatCurrency(data.largestProfit)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Largest Loss</span><span className="font-bold text-loss">{formatCurrency(data.largestLoss)}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Largest Win</span><span className="font-bold text-accent">{formatCurrency(data.largestProfit)}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Largest Loss</span><span className="font-bold text-loss">{formatCurrency(data.largestLoss)}</span></div>
           </div>
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
             <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Risk & Drawdowns</div>
             {/* The deepest fall from a peak, in dollars and, separately, the largest in % (they can be different falls). */}
-            <div className="flex justify-between"><span className="text-stone-600">Max DD</span><span className="font-bold text-loss">{formatCurrency(data.maxDrawdownAmt)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-600">Max DD (%)</span><span className="font-bold text-loss">{formatNumber(data.maxDrawdownPct)}%</span></div>
-            <div className="flex justify-between pt-1"><span className="text-stone-600">Recovery</span><span className="font-bold text-ink">{formatNumber(data.recoveryFactor)}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Max DD</span><span className="font-bold text-loss">{formatCurrency(data.maxDrawdownAmt)}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Max DD (%)</span><span className="font-bold text-loss">{formatNumber(data.maxDrawdownPct)}%</span></div>
+            <div className="flex justify-between pt-1"><span className="text-ink-muted">Recovery</span><span className="font-bold text-ink">{formatNumber(data.recoveryFactor)}</span></div>
           </div>
           <div className="pt-1 px-[21px] space-y-4">
             <div className="text-[10px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Streaks</div>
@@ -775,7 +775,7 @@ export default function PerformancePage() {
               return (
                 <>
                   <div className="flex flex-col gap-1">
-                    <div className="flex justify-between text-[10px] font-bold text-stone-600">
+                    <div className="flex justify-between text-[10px] font-bold text-ink-muted">
                       <span>Loss Streaks</span>
                       <span>Win Streaks</span>
                     </div>
@@ -788,10 +788,10 @@ export default function PerformancePage() {
                   <div className="flex flex-col gap-1">
                     {/* Avg Loss a step darker than before, so it stands apart from the Results grey behind it. */}
                     <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold" pieces={[
-                      { key: 'loss', share: avgLossPct, color: 'bg-stone-300 text-stone-700', label: avgLoss },
-                      { key: 'win', share: avgWinPct, color: 'bg-stone-950 text-white', label: avgWin },
+                      { key: 'loss', share: avgLossPct, color: 'bg-ink-disabled text-ink', label: avgLoss },
+                      { key: 'win', share: avgWinPct, color: 'bg-ink text-white', label: avgWin },
                     ]} />
-                    <div className="flex justify-between text-[10px] font-bold text-stone-600">
+                    <div className="flex justify-between text-[10px] font-bold text-ink-muted">
                       <span>AVG Loss</span>
                       <span>AVG Win</span>
                     </div>
@@ -820,7 +820,7 @@ export default function PerformancePage() {
               aria-pressed={selectedMetric === m.value}
               title={m.title}
               className={`h-7 min-w-10 px-2.5 text-[11px] font-bold rounded-md transition ${
-                selectedMetric === m.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-stone-600'
+                selectedMetric === m.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-ink'
               }`}
             >
               {m.label}
