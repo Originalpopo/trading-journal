@@ -32,7 +32,7 @@ import BalanceCheckModal from "@/components/BalanceCheckModal";
 import PageHeader from "@/components/PageHeader";
 import SlidingSwitch from "@/components/SlidingSwitch";
 import { pageContentLeft } from "@/components/pageEdge";
-import "@/lib/chartTooltip";
+import { hoverDelayPlugin } from "@/lib/chartTooltip";
 import { themeColor } from '@/lib/themeColors';
 const LAST_DOT_RADIUS = 6;
 // A dot on the Equity line's last point (its number is on the chart's title line): orange, or red while the equity
@@ -687,7 +687,7 @@ export default function Dashboard() {
           />
         </div>
         <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>
-          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[peakEquityLinePlugin, dashboardLastPointsPlugin, pageFillPlugin]} />
+          <Line key={`dashboard-chart-${isPrivacyMode}`} data={chartDataConfig} options={chartOptions} plugins={[peakEquityLinePlugin, dashboardLastPointsPlugin, pageFillPlugin, hoverDelayPlugin]} />
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 // .chart-tooltip) instead of Chart.js's black box, with a circle in each line's colour, its name, and its
 // value on the right. Imported once by every page with a chart; it sets Chart.js's defaults, so each chart
 // keeps only its own wording (its tooltip callbacks).
-import { Chart as ChartJS, Tooltip, type Chart, type ChartType, type TooltipItem, type TooltipModel } from 'chart.js';
+import { Chart as ChartJS, Tooltip, type Chart, type ChartEvent, type ChartType, type Plugin, type TooltipItem, type TooltipModel } from 'chart.js';
 import { themeColor } from './themeColors';
 
 // Its defaults only exist once the Tooltip plugin is registered (the pages register it too; twice is harmless).
@@ -104,6 +104,101 @@ tooltipDefaults.callbacks.labelColor = (item: TooltipItem<ChartType>) => {
   const colour = circleColour(item);
   return { borderColor: colour, backgroundColor: colour };
 };
+
+// The balloon waits until the pointer rests: passing the mouse over a chart, or a finger scrolling the page across
+// it, shows nothing. Once it is showing it follows the pointer until the pointer leaves the chart. A tap or a click
+// shows it at once. Added per chart (plugins: [hoverDelayPlugin]).
+const HOVER_DELAY_MS = 350;
+const REST_PX = 4; // a hand's small shake still counts as resting
+type HoverDelayState = {
+  timer: ReturnType<typeof setTimeout> | null;
+  shown: boolean;
+  releasing: boolean;
+  touching: boolean;
+  anchor: { x: number; y: number } | null;
+  last: ChartEvent | null;
+  cancel: () => void;
+  press: () => void;
+  lift: () => void;
+};
+const hoverDelay = new WeakMap<Chart, HoverDelayState>();
+const hideBalloon = (chart: Chart) => {
+  if (!chart.getActiveElements().length && !chart.tooltip?.getActiveElements().length) return;
+  chart.setActiveElements([]);
+  chart.tooltip?.setActiveElements([], { x: 0, y: 0 });
+  chart.render();
+};
+const hoverDelay_: Plugin = {
+  id: 'hoverDelay',
+  afterInit(chart) {
+    const state: HoverDelayState = { timer: null, shown: false, releasing: false, touching: false, anchor: null, last: null, cancel: () => {}, press: () => {}, lift: () => {} };
+    // A finger lifted or the page scrolled before the wait was over: it was not a rest.
+    state.cancel = () => {
+      if (state.timer) clearTimeout(state.timer);
+      state.timer = null;
+      state.anchor = null;
+    };
+    // Chart.js handles events on the next frame, so a finger's last move can reach it after the finger is lifted:
+    // whether a finger is down is kept here, from the touches themselves.
+    state.press = () => { state.touching = true; };
+    state.lift = () => { state.touching = false; state.cancel(); };
+    chart.canvas.addEventListener('touchstart', state.press, { passive: true });
+    chart.canvas.addEventListener('touchend', state.lift, { passive: true });
+    chart.canvas.addEventListener('touchcancel', state.lift, { passive: true });
+    window.addEventListener('scroll', state.cancel, { passive: true, capture: true });
+    hoverDelay.set(chart, state);
+  },
+  beforeEvent(chart, args) {
+    const state = hoverDelay.get(chart);
+    if (!state || state.releasing) return;
+    const e = args.event;
+    // Chart.js going over the last pointer position again after an update: only while the balloon is showing.
+    if (args.replay) return state.shown ? undefined : false;
+    if (e.type === 'mouseout') { state.cancel(); state.shown = false; return; }
+    if (e.type === 'click') { state.cancel(); state.shown = true; return; }
+    // A touch that arrives after its finger was lifted.
+    if (e.native?.type.startsWith('touch') && !state.touching) return false;
+    // Each new touch starts over: the balloon from the last one goes, and this one waits for its own rest.
+    if (e.native?.type === 'touchstart') {
+      state.cancel();
+      state.shown = false;
+      hideBalloon(chart);
+    } else if (state.shown) {
+      return;
+    }
+    if (e.x == null || e.y == null) return false;
+    state.last = e;
+    const moved = !state.anchor || Math.hypot(e.x - state.anchor.x, e.y - state.anchor.y) > REST_PX;
+    if (moved) {
+      state.cancel();
+      state.anchor = { x: e.x, y: e.y };
+      state.timer = setTimeout(() => {
+        state.timer = null;
+        if (!chart.ctx || !state.last) return; // destroyed
+        state.shown = true;
+        state.releasing = true;
+        // Hands the resting position to Chart.js as if it had just arrived.
+        (chart as unknown as { _eventHandler: (e: ChartEvent) => void })._eventHandler(state.last);
+        state.releasing = false;
+      }, HOVER_DELAY_MS);
+    }
+    return false;
+  },
+  afterDestroy(chart) {
+    const state = hoverDelay.get(chart);
+    if (!state) return;
+    state.cancel();
+    chart.canvas?.removeEventListener('touchstart', state.press);
+    chart.canvas?.removeEventListener('touchend', state.lift);
+    chart.canvas?.removeEventListener('touchcancel', state.lift);
+    window.removeEventListener('scroll', state.cancel, { capture: true });
+    hoverDelay.delete(chart);
+  },
+};
+
+// Fits any kind of chart (lines, bars, both).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const hoverDelayPlugin = hoverDelay_ as Plugin<any>;
 
 // A chart drawn again (another measure, the privacy eye) takes its balloon with it.
 ChartJS.register({

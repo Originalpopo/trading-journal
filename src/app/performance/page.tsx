@@ -27,7 +27,7 @@ import PageHeader from "@/components/PageHeader";
 import SlidingSwitch from "@/components/SlidingSwitch";
 import { pageContentLeft } from "@/components/pageEdge";
 import SystemReview from "@/components/SystemReview";
-import "@/lib/chartTooltip";
+import { hoverDelayPlugin } from "@/lib/chartTooltip";
 import { themeColor } from '@/lib/themeColors';
 ChartJS.register(
   CategoryScale,
@@ -458,7 +458,7 @@ export default function PerformancePage() {
                 y1: { display: true, position: 'left', grid: { color: themeColor('surface'), drawOnChartArea: true }, ticks: { display: false }, border: { display: false }, grace: '10%' }
               }
             }}
-            plugins={[balanceFillPlugin]}
+            plugins={[balanceFillPlugin, hoverDelayPlugin]}
           />
         </div>
       </div>
@@ -848,6 +848,7 @@ export default function PerformancePage() {
                 },
                 plugins: { legend: { display: false }, tooltip: chartTooltip(data.hourCounts) }
               }}
+              plugins={[hoverDelayPlugin]}
             />
           </div>
         </div>
@@ -876,7 +877,7 @@ export default function PerformancePage() {
                 },
                 plugins: { legend: { display: false }, tooltip: chartTooltip(data.activeDowCounts) }
               }}
-              plugins={[barValueLabels]}
+              plugins={[barValueLabels, hoverDelayPlugin]}
             />
           </div>
         </div>
@@ -921,7 +922,7 @@ export default function PerformancePage() {
               },
               plugins: { legend: { display: false }, tooltip: chartTooltip(data.activeMoyCounts) }
             }}
-            plugins={[barValueLabels]}
+            plugins={[barValueLabels, hoverDelayPlugin]}
           />
         </div>
       </div>
