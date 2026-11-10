@@ -70,10 +70,9 @@ export default function NotesPage() {
 
   const { startHour, today } = useTradingDay();
   const thisWeek = weekKeyOfDay(today);
-  const hasToday = dayNotes.some(n => n.date === today);
-  const hasThisWeek = weekNotes.some(n => n.week === thisWeek);
-  const weekLabel = hasThisWeek ? "Add to this week's note" : "Write this week's note";
-  const todayLabel = hasToday ? "Add to today's note" : "Write today's note";
+  // The same words whether the note is written yet or not, so the two buttons always read alike.
+  const weekLabel = "This week's note";
+  const todayLabel = "Today's note";
 
   if (isLoading) {
     return (
