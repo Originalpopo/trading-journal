@@ -35,6 +35,17 @@ export default function Sidebar() {
   const [tvLogText, setTvLogText] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  // The names in the menu wait until the sidebar has finished opening, then appear; on closing they go at once.
+  const [showLabels, setShowLabels] = useState(false);
+  useEffect(() => {
+    if (isCollapsed) { setShowLabels(false); return; }
+    const aside = asideRef.current;
+    const show = () => setShowLabels(true);
+    const onEnd = (e: TransitionEvent) => { if (e.target === aside && e.propertyName === 'width') show(); };
+    aside?.addEventListener('transitionend', onEnd);
+    const fallback = setTimeout(show, 400); // in case the end of the opening is never reported
+    return () => { aside?.removeEventListener('transitionend', onEnd); clearTimeout(fallback); };
+  }, [isCollapsed]);
 
   // The open page's orange pill: one shape behind the menu that slides between the eight pages of the list and
   // follows the menu as it opens or closes. To or from Settings, at the bottom, it jumps instead of sliding the length
@@ -153,7 +164,7 @@ export default function Sidebar() {
     <>
     {/* A card floating over the page's left side: away from the window's edges, rounded, with a soft shadow. The
         page runs on under it to the window's edge, so its grey bands reach there too. */}
-    <aside ref={asideRef} className={`print:hidden bg-card border border-line rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px] shadow-ink/12 hidden md:flex flex-col shrink-0 overflow-y-auto z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <aside ref={asideRef} className={`print:hidden bg-card border border-line rounded-3xl fixed top-4 bottom-4 left-4 shadow-[0_10px_40px_-8px] shadow-ink/12 hidden md:flex flex-col shrink-0 overflow-y-auto overflow-x-hidden z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       {navPill && (
         <span
           aria-hidden
@@ -171,7 +182,7 @@ export default function Sidebar() {
         >
           <Flame className="w-9 h-9 text-accent" strokeWidth={1.5} />
         </button>
-        {!isCollapsed && (
+        {showLabels && (
           <Link href="/" className="cursor-pointer hover:opacity-80 transition flex-shrink-0 overflow-hidden">
             <h1 className="text-2xl font-extrabold text-ink tracking-tight whitespace-nowrap">
               Trade<span className="text-accent">Journal</span>
@@ -190,7 +201,7 @@ export default function Sidebar() {
               <button
                 data-nav-href={item.href}
                 className={`relative flex items-center transition-all w-full text-left rounded-xl ${
-                  isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
+                  isCollapsed ? "justify-center h-11 px-0" : "gap-3 px-4 h-11"
                 } ${
                   isActive
                     ? "text-accent font-bold"
@@ -198,7 +209,7 @@ export default function Sidebar() {
                 }`}
               >
                 <Icon className={`w-5 h-5 shrink-0 ${isCollapsed && isActive ? "scale-110" : ""}`} />
-                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
+                {showLabels && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
               </button>
             </Link>
           );
@@ -210,12 +221,12 @@ export default function Sidebar() {
         <button
           title="Import & Backup"
           onClick={() => setIsUploadModalOpen(true)}
-          className={`relative bg-card border border-line hover:border-accent-line hover:text-accent text-ink-muted rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
-            isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"
+          className={`relative bg-accent hover:bg-accent-strong text-white border border-transparent rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
+            isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full h-10 px-4"
           }`}
         >
           <Upload className="w-4 h-4 shrink-0" />
-          {!isCollapsed && <span>Import</span>}
+          {showLabels && <span>Import</span>}
           <BackupDueDot />
         </button>
         <button
@@ -225,10 +236,10 @@ export default function Sidebar() {
             isPrivacyMode
               ? 'bg-accent-soft text-accent border-accent-line'
               : 'bg-card border-line text-ink-muted hover:border-accent-line hover:text-accent'
-          } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full px-4 py-2"}`}
+          } ${isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full h-10 px-4"}`}
         >
           {isPrivacyMode ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0" />}
-          {!isCollapsed && <span>Privacy Mode</span>}
+          {showLabels && <span>Privacy Mode</span>}
         </button>
       </div>
 
@@ -238,7 +249,7 @@ export default function Sidebar() {
           data-nav-href="/settings"
           title={isCollapsed ? "Settings" : undefined}
           className={`relative flex items-center transition-all w-full rounded-xl ${
-            isCollapsed ? "justify-center py-3 px-0" : "gap-3 px-4 py-3"
+            isCollapsed ? "justify-center h-11 px-0" : "gap-3 px-4 h-11"
           } ${
             pathname === "/settings"
               ? "text-accent font-bold"
@@ -246,7 +257,7 @@ export default function Sidebar() {
           }`}
         >
           <Settings className={`w-5 h-5 shrink-0 ${isCollapsed && pathname === "/settings" ? "scale-110" : ""}`} />
-          {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Settings</span>}
+          {showLabels && <span className="whitespace-nowrap overflow-hidden">Settings</span>}
         </Link>
       </div>
     </aside>
