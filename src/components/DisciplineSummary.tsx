@@ -9,6 +9,7 @@ import { formatNumber } from "@/lib/utils";
 import { summarizeTargets } from "@/lib/dailyTarget";
 import { useDailyTargets } from "./useDailyTargets";
 import { useTradingDay } from "./useTradingDay";
+import SlidingSwitch from "./SlidingSwitch";
 
 type Period = "month" | "all";
 
@@ -47,14 +48,13 @@ export default function DisciplineSummary() {
     <div className="bg-white rounded-2xl shadow-sm p-4 md:p-5">
       <div className="flex items-center justify-between gap-2 mb-4">
         <h3 className="text-[10px] font-black text-accent uppercase tracking-widest">Discipline</h3>
-        <div className="flex bg-surface-2 rounded-lg p-0.5">
-          {([["month", "This month"], ["all", "All time"]] as const).map(([value, label]) => (
-            <button key={value} type="button" onClick={() => setPeriod(value)}
-              className={`h-7 px-3 text-[11px] font-bold rounded-md transition ${period === value ? "bg-white text-accent shadow-sm" : "text-ink-faint hover:text-ink"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <SlidingSwitch
+          label="Period"
+          value={period}
+          onChange={setPeriod}
+          buttonClass="px-3"
+          options={[{ value: "month", label: "This month" }, { value: "all", label: "All time" }]}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">

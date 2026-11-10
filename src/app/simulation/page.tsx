@@ -18,6 +18,7 @@ import { formatNumber } from "@/lib/utils";
 import { classifyTrade, parseRisk } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
 import PageHeader from "@/components/PageHeader";
+import SlidingSwitch from "@/components/SlidingSwitch";
 import "@/lib/chartTooltip";
 import {
   simulatePath, simulateOutlook, binaryOutcomes, cautiousWinRate,
@@ -98,26 +99,6 @@ function buildResults(params: SimParams, sampleSize: number): SimulationResults 
 
 const INPUT = "w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition";
 const LABEL = "block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1";
-
-function Toggle<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string; title: string }[]; onChange: (value: T) => void }) {
-  return (
-    <div className="flex items-center bg-surface-2 p-0.5 rounded-md border border-line">
-      {options.map(option => (
-        <button
-          key={option.value}
-          type="button"
-          title={option.title}
-          onClick={() => onChange(option.value)}
-          className={`flex-1 text-xs md:text-[10px] font-bold px-2 py-2 md:py-1 rounded transition whitespace-nowrap ${
-            value === option.value ? 'bg-white text-ink shadow-md' : 'text-ink-faint hover:text-ink'
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function OutlookRow({ title, note, outlook }: { title: string; note: string; outlook: SimOutlook }) {
   const stats: { label: string; tip: string; value: string; color: string }[] = [
@@ -299,7 +280,9 @@ export default function SimulationPage() {
 
           <div>
             <label className={LABEL}>Risk per Trade</label>
-            <Toggle
+            <SlidingSwitch
+              label="Risk per trade"
+              buttonClass="flex-1 px-2"
               value={form.riskMode}
               onChange={(value) => setField('riskMode', value)}
               options={[
@@ -316,7 +299,9 @@ export default function SimulationPage() {
 
           <div>
             <label className={LABEL}>Trade Results</label>
-            <Toggle
+            <SlidingSwitch
+              label="Trade results"
+              buttonClass="flex-1 px-2"
               value={form.source}
               onChange={(value) => setField('source', value)}
               options={[

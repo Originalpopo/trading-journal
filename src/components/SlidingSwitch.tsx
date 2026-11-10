@@ -3,7 +3,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 // A row of buttons where one is chosen, on a grey strip: a white pill sits behind the chosen one and slides over to
-// the one picked. Used for the Performance page's chart measure (W/L, RR...) and the Dashboard's chart range.
+// the one picked. Every such choice in the app uses it: the Performance chart measure (W/L, RR...), the Dashboard's
+// chart range, the Notes period, the Simulation setup.
 export default function SlidingSwitch<T extends string>({ options, value, onChange, label, buttonClass = "min-w-10 px-2.5" }: {
   options: readonly { value: T; label: string; title?: string }[];
   value: T;
