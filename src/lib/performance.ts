@@ -1,6 +1,6 @@
 // Everything the Performance page shows, computed from the trades and funding of the chosen
 // filters. Kept free of app imports so it can be unit-tested with `node --test`.
-import { classifyTrade, summarizeTrades, computePnlDrawdown, isOnPlan, type StatTrade } from './stats.ts';
+import { classifyTrade, summarizeTrades, computePnlDrawdown, calcTimeWeightedReturn, isOnPlan, type StatTrade } from './stats.ts';
 import { addMoney, subMoney } from './money.ts';
 import { formatDurationDetailed, calculateDurationInSeconds } from './utils.ts';
 import { themeColor } from './themeColors.ts';
@@ -389,6 +389,14 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
       ? { type: 'trade' as const, profit: evt.data.profit }
       : { type: 'funding' as const, deposit: evt.data.deposit, withdraw: evt.data.withdraw })),
   ]).usd;
+  // Account Growth of the period, time-weighted as on the Dashboard: a deposit or withdrawal never moves
+  // it. It starts from the balance carried into the period, so 'ALL' gives the Dashboard's figure.
+  const accountGrowth = calcTimeWeightedReturn([
+    { type: 'funding', deposit: carriedOverBalance },
+    ...currentEvents.map(evt => (evt.type === 'trade'
+      ? { type: 'trade' as const, profit: evt.data.profit }
+      : { type: 'funding' as const, deposit: evt.data.deposit, withdraw: evt.data.withdraw })),
+  ]);
   const maxDrawdownAmt = drawdown.max;
   const maxDrawdownPct = drawdown.maxPercent;
   // How far the result of the period ever stood below where it started.
@@ -465,7 +473,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
 
   return {
     tfStats, tfMatrixSorted,
-    netProfit, profitFactor, expectedPayoff, expectancyR, mainWinRate,
+    netProfit, accountGrowth, profitFactor, expectedPayoff, expectancyR, mainWinRate,
     totalTrades, winPct, lossPct, bePct, profitTradesCount, lossTradesCount, beTradesCount,
     longWinPct, shortWinPct, longTrades, shortTrades, longPnl, longRr, shortPnl, shortRr, avgWinR, avgLossR,
     onPlanPct, offPlanPct, onPlanPnL, offPlanPnL,

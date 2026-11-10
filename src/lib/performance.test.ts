@@ -195,3 +195,10 @@ test('Buy and Sell carry their P&L and R, and wins and losses their average R', 
   close(p.avgWinR, 2);
   close(p.avgLossR, -1);
 });
+
+test('account growth is time-weighted from the balance carried into the period; all years match the Dashboard', () => {
+  // 2026 starts from 48; the deposit of 100 does not move it; then 148 grows to 149.6.
+  close(computePerformance(trades, funding, filters()).accountGrowth, (149.6 / 148 - 1) * 100);
+  // All years: 50 falls to 48, then 148 grows to 149.6.
+  close(computePerformance(trades, funding, filters({ selectedPeriod: 'ALL' })).accountGrowth, (48 / 50 * 149.6 / 148 - 1) * 100);
+});

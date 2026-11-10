@@ -7,7 +7,6 @@ import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import HealthWeather from "@/components/HealthWeather";
 import { computePerformance, isRecentPeriod, type SideMatrix } from "@/lib/performance";
-import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -191,14 +190,6 @@ export default function PerformancePage() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const formatCurrency = (val: number) => formatCurrencyHelper(val, isPrivacyMode);
 
-  // Today's reference rate, for the rough baht figure under Net Profit.
-  const [bahtRate, setBahtRate] = useState<BahtRate | null>(null);
-  useEffect(() => {
-    let isMounted = true;
-    loadBahtRate().then(rate => { if (isMounted) setBahtRate(rate); });
-    return () => { isMounted = false; };
-  }, []);
-  const bahtRateNote = bahtRate ? `Rough estimate at 1 USD = ${bahtRate.rate.toFixed(2)} THB (reference rate of ${bahtRate.date}). A bank pays less.` : undefined;
   // A year (this one to start), 'ALL', or a recent stretch: LAST_1M / LAST_3M.
   const [selectedPeriod, setSelectedPeriod] = useState(new Date().getFullYear().toString());
   const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
@@ -579,17 +570,14 @@ export default function PerformancePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-          <div className="@container bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Net Profit</span>
-            {/* 20px, or smaller when a large profit would not fit the card. */}
-            <span style={fitFontSize(formatCurrency(data.netProfit), '1.25rem')} className={`leading-7 font-black ${data.netProfit >= 0 ? 'text-accent' : 'text-loss'}`}>{formatCurrency(data.netProfit)}</span>
-            {bahtRate && !isPrivacyMode && (
-              <span className="text-[11px] font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.netProfit, bahtRate.rate)}</span>
-            )}
+          <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Win Rate</span>
+            <span className="text-xl font-black text-ink">{formatNumber(data.mainWinRate)}%</span>
           </div>
-          <div className="bg-accent p-5 rounded-[1.25rem] border border-accent shadow-lg shadow-accent/20 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">Win Rate</span>
-            <span className="text-xl font-black text-white">{formatNumber(data.mainWinRate)}%</span>
+          <div className="@container bg-accent p-5 rounded-[1.25rem] border border-accent shadow-lg shadow-accent/20 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">Account Growth</span>
+            {/* 20px, or smaller when a large figure would not fit the card. */}
+            <span style={fitFontSize(`${formatNumber(data.accountGrowth)}%`, '1.25rem')} className="leading-7 font-black text-white">{formatNumber(data.accountGrowth)}%</span>
           </div>
           <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Profit Factor</span>
