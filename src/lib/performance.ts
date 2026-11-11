@@ -29,6 +29,8 @@ export interface PerformanceFilters {
   selectedTfs: string[]; // empty = every timeframe
   selectedPlan: string; // 'ALL' | 'On Plan' | 'Off Plan'
   selectedMetric: string; // 'COUNT' | 'RR' | 'AVG_R' (R per trade) | 'PNL' | 'GAIN'
+  // Whether a trade kept to the Risk per Trade set when it was entered (risk.ts riskKeptAt); counted when given.
+  riskKept?: (t: PerfTrade) => 'within' | 'over' | 'unchecked';
 }
 
 export interface SideStats { trades: number; win: number; loss: number; pnl: number; rr: number; rrCount: number }
@@ -372,6 +374,9 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   if (initialDeposit === 0) initialDeposit = carriedOverBalance > 0 ? carriedOverBalance : 1;
 
   const summary = summarizeTrades(currentEvents.flatMap(evt => (evt.type === 'trade' ? [evt.data] : [])));
+  // How many trades of the period kept to the risk set, went over it, or can't be told.
+  const riskKept = { within: 0, over: 0, unchecked: 0 };
+  if (filters.riskKept) for (const evt of currentEvents) if (evt.type === 'trade') riskKept[filters.riskKept(evt.data)]++;
   const {
     netProfit, profitFactor, expectedPayoff, expectancyR, sharpeRatio, totalTrades,
     avgWin, avgLoss, avgBE, largestProfit, largestLoss, grossProfit, grossLoss,
@@ -472,6 +477,7 @@ export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], 
   const tfMatrixSorted = Object.entries(tfMatrix).sort(byTotalPnl);
 
   return {
+    riskKept,
     tfStats, tfMatrixSorted,
     netProfit, accountGrowth, profitFactor, expectedPayoff, expectancyR, mainWinRate,
     totalTrades, winPct, lossPct, bePct, profitTradesCount, lossTradesCount, beTradesCount,

@@ -7,6 +7,7 @@ import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import HealthWeather from "@/components/HealthWeather";
 import { computePerformance, isRecentPeriod, type SideMatrix } from "@/lib/performance";
+import { riskKeptAt } from "@/lib/risk";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -272,7 +273,7 @@ export default function PerformancePage() {
   }, [trades]);
 
   const data = useMemo(
-    () => computePerformance(trades, funding, { selectedPeriod, selectedTfs, selectedPlan, selectedMetric }),
+    () => computePerformance(trades, funding, { selectedPeriod, selectedTfs, selectedPlan, selectedMetric, riskKept: riskKeptAt }),
     [trades, funding, selectedPeriod, selectedTfs, selectedPlan, selectedMetric],
   );
 
@@ -738,9 +739,17 @@ export default function PerformancePage() {
             <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Extremes</div>
             <div className="flex justify-between"><span className="text-ink-muted">Largest Win</span><span className="font-bold text-accent">{formatCurrency(data.largestProfit)}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Largest Loss</span><span className="font-bold text-loss">{formatCurrency(data.largestLoss)}</span></div>
+            {/* Its own heading under Extremes (short, so the four columns stand about level), apart from the drawdowns. */}
+            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2 !mt-5">Risk per Trade</div>
+            {/* Trades that kept to the Risk per Trade set when they were entered, went over it (Settings: Over risk
+                allowed), or can't be told: their first stop is unknown, or no risk was set yet. Only counts, so
+                nothing about a trade is changed. */}
+            <div className="flex justify-between"><span className="text-ink-muted">Within</span><span className="font-bold text-accent">{data.riskKept.within}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Over</span><span className="font-bold text-loss">{data.riskKept.over}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Unchecked</span><span className="font-bold text-ink-muted">{data.riskKept.unchecked}</span></div>
           </div>
           <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Risk & Drawdowns</div>
+            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Drawdowns</div>
             {/* The deepest fall from a peak, in dollars and, separately, the largest in % (they can be different falls). */}
             <div className="flex justify-between"><span className="text-ink-muted">Max DD</span><span className="font-bold text-loss">{formatCurrency(data.maxDrawdownAmt)}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Max DD (%)</span><span className="font-bold text-loss">{formatNumber(data.maxDrawdownPct)}%</span></div>

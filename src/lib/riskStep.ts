@@ -77,3 +77,17 @@ export function setRiskFrom(balance: number, pct: number, at: string, history: R
   const risk = share(balance, pct);
   return { riskAnchor: { balance, at, risk }, riskHistory: [...history, { from: at, risk }] };
 }
+
+// How far over the Risk per Trade set a trade's 1R may go and still count as kept, in %: lots come in steps of
+// 0.01, so the risk set can rarely be hit to the cent.
+export const DEFAULT_RISK_OVER_PCT = 10;
+
+export type RiskKept = 'within' | 'over' | 'unchecked';
+
+// Whether a trade kept to the Risk per Trade in force when it was entered. Only a trade whose 1R is known (its
+// first stop, or a risk the user typed) can be checked: a guessed 1R is the usual one and says nothing. Nor can a
+// trade from before any risk was set. Over means more than `overPct` % above the risk set, to the cent.
+export function riskKeptOf(risk: number, riskIsEstimate: boolean | undefined, riskSet: number | null, overPct: number): RiskKept {
+  if (riskIsEstimate !== false || !(risk > 0) || riskSet === null || !(riskSet > 0)) return 'unchecked';
+  return toCents(risk) > toCents(share(riskSet, 100 + overPct)) ? 'over' : 'within';
+}

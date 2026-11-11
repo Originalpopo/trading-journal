@@ -11,7 +11,7 @@ import type { WeekNote } from '@/lib/weekNotes';
 import type { TargetPctChange } from '@/lib/dailyTarget';
 import { riskHistoryOf, DEFAULT_RISK_PCT, type RiskAnchor, type RiskChange } from '@/lib/riskStep';
 import type { OffPlanReason } from '@/lib/offPlan';
-import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow, setRiskHistory } from '@/lib/risk';
+import { withDerivedRisk, resolveDefaultRisk, setUsualRiskWindow, setRiskHistory, setRiskOver } from '@/lib/risk';
 import { setBeThreshold, setBeThresholdHistory } from '@/lib/stats';
 import type { SettingChange } from '@/lib/settingHistory';
 
@@ -25,6 +25,7 @@ const deriveTrades = (preferences: Preferences): Trade[] => {
   setBeThreshold(preferences.beThreshold);
   setBeThresholdHistory(preferences.beThresholdHistory);
   setUsualRiskWindow(preferences.usualRiskWindow);
+  setRiskOver(preferences.riskOverPct, preferences.riskOverHistory);
   setRiskHistory(riskHistoryOf(preferences.riskHistory, preferences.riskAnchor, preferences.riskPct ?? DEFAULT_RISK_PCT)
     .map(c => ({ at: Date.parse(c.from), risk: c.risk })));
   return withDerivedRisk(storedTrades, resolveDefaultRisk(preferences.defaultRisk, storedTrades));
@@ -138,6 +139,10 @@ export interface Preferences {
   // Every Risk per Trade set, oldest first, in dollars: trades whose first stop is unknown (and with no known
   // 1R before them) use the one in force when they were entered.
   riskHistory?: RiskChange[];
+  // How far over the Risk per Trade a trade's known 1R may go and still count as kept, in % (default 10), with
+  // every change of it (settingHistory.ts), so a trade is judged by the % in force when it was entered.
+  riskOverPct?: number;
+  riskOverHistory?: SettingChange[];
 }
 
 interface JournalState {

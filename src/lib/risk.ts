@@ -1,5 +1,7 @@
 import { pointValueOf, medianPointValue, type ZoneTrade } from './tradeZones.ts';
 import { beThresholdAt, deriveResultType, parseRisk } from './stats.ts';
+import { riskKeptOf, DEFAULT_RISK_OVER_PCT, type RiskKept } from './riskStep.ts';
+import { valueAt, type SettingChange } from './settingHistory.ts';
 
 // A trade's risk, its result in R and its TP/SL/BE label are never trusted from storage: they are
 // worked out here, from the facts of the trade, every time trades are loaded or planned for import.
@@ -72,6 +74,20 @@ export function setRiskAt(at: number): number | null {
     risk = c.risk;
   }
   return risk;
+}
+
+// How far over the risk set a trade may go and still keep it (Settings), with every change of it, so changing it
+// never relabels a trade already taken: each trade is judged by the % in force when it was entered.
+let riskOverPct = DEFAULT_RISK_OVER_PCT;
+let riskOverHistory: SettingChange[] = [];
+export const setRiskOver = (value: number | undefined, history: SettingChange[] | undefined) => {
+  riskOverPct = value !== undefined && value >= 0 ? value : DEFAULT_RISK_OVER_PCT;
+  riskOverHistory = history ?? [];
+};
+// Whether a trade (with its 1R worked out) kept to the Risk per Trade in force when it was entered.
+export function riskKeptAt(t: { risk?: number | string; riskIsEstimate?: boolean; entryTime?: string; time?: string }): RiskKept {
+  const at = timeOf(t);
+  return riskKeptOf(parseRisk(t.risk), t.riskIsEstimate, setRiskAt(at), valueAt(riskOverHistory, at, riskOverPct));
 }
 
 // A stop the order history shows closer to the entry than this share of the entry price was dragged

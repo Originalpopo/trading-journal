@@ -60,3 +60,20 @@ test('the risk set is kept in dollars; a new % shows as a step to take', async (
   assert.deepEqual(next.riskAnchor, { balance: 110.5, at: '2026-12-01T02:00:00.000Z', risk: 2.21 });
   assert.deepEqual(next.riskHistory.map(c => c.risk), [1.84, 2.21]);
 });
+
+test('a trade keeps its risk up to the % over allowed, to the cent', async () => {
+  const { riskKeptOf } = await import('./riskStep.ts');
+  // $1.84 set, 10% over allowed: up to $2.02 (1.84 x 1.1 = 2.024 → 2.02).
+  assert.equal(riskKeptOf(2.02, false, 1.84, 10), 'within');
+  assert.equal(riskKeptOf(2.03, false, 1.84, 10), 'over');
+  assert.equal(riskKeptOf(1.2, false, 1.84, 10), 'within');
+  assert.equal(riskKeptOf(1.85, false, 1.84, 0), 'over');
+});
+
+test('a guessed 1R, or one before any risk was set, cannot be checked', async () => {
+  const { riskKeptOf } = await import('./riskStep.ts');
+  assert.equal(riskKeptOf(5, true, 1.84, 10), 'unchecked');
+  assert.equal(riskKeptOf(5, undefined, 1.84, 10), 'unchecked');
+  assert.equal(riskKeptOf(5, false, null, 10), 'unchecked');
+  assert.equal(riskKeptOf(0, false, 1.84, 10), 'unchecked');
+});
