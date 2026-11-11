@@ -64,3 +64,14 @@ test('with days starting at 5am, a 3am close belongs to the day before', () => {
   assert.equal(planCost(trades, 0, '2026-10-02').offPlan.count, 1);
   assert.deepEqual([...disciplineByDay(trades, [], 5).keys()], ['2026-10-01']);
 });
+
+test('onPlanTradeStreak counts on-plan trades back from the latest close', async () => {
+  const { onPlanTradeStreak } = await import('./discipline.ts');
+  const tr = (time: string, plan: object) => ({ time, profit: 1, ...plan });
+  // Given out of order: sorted by close time first.
+  const t = [tr('2026-10-02 10:00:00', on), tr('2026-10-01 09:00:00', on), tr('2026-10-01 10:00:00', on),
+    tr('2026-10-01 11:00:00', on), tr('2026-10-01 12:00:00', off), tr('2026-10-03 09:00:00', on)];
+  assert.deepEqual(onPlanTradeStreak(t), { current: 2, best: 3 });
+  assert.deepEqual(onPlanTradeStreak([...t, tr('2026-10-04 09:00:00', off)]), { current: 0, best: 3 });
+  assert.deepEqual(onPlanTradeStreak([]), { current: 0, best: 0 });
+});

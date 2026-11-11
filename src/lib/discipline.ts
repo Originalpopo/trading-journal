@@ -96,3 +96,15 @@ export function disciplineStreak(trades: PlanTrade[], notes: RuleNote[], startHo
   }
   return { current: run, best };
 }
+
+// On-plan trades in a row, in the order they closed: `current` counts back from the latest trade, `best` is the
+// longest run. Only the trade's own On Plan mark counts; a rule broken in a day note ends the day streak above.
+export function onPlanTradeStreak(trades: PlanTrade[]): { current: number; best: number } {
+  const ordered = [...trades].sort((a, b) => a.time.localeCompare(b.time));
+  let run = 0, best = 0;
+  for (const t of ordered) {
+    run = isOnPlan(t) ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  return { current: run, best };
+}

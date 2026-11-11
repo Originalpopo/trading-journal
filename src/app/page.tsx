@@ -2,8 +2,8 @@
 
 import { useJournalStore } from "@/store/useJournalStore";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, AlertTriangle, Check, X, Flame } from "lucide-react";
-import { disciplineStreak } from "@/lib/discipline";
+import { CheckCircle2, AlertTriangle, Check, X } from "lucide-react";
+import { disciplineStreak, onPlanTradeStreak } from "@/lib/discipline";
 import DailyTargetBar from "@/components/DailyTargetBar";
 import RiskPerTrade from "@/components/RiskPerTrade";
 import { useTradingDay } from "@/components/useTradingDay";
@@ -289,6 +289,8 @@ export default function Dashboard() {
   // Clean trading days in a row, over all trades: the same figure as on the Notes page.
   // Trading on after the daily target does not break the streak: whether it pays is being measured on the Notes page.
   const streak = useMemo(() => disciplineStreak(trades, dayNotes, startHour), [trades, dayNotes, startHour]);
+  // And on-plan trades in a row, by the trade's own mark only.
+  const tradeStreak = useMemo(() => onPlanTradeStreak(trades), [trades]);
   const [isBalanceCheckOpen, setIsBalanceCheckOpen] = useState(false);
   // Recomputed from the saved broker balance, so a trade added or removed later shows up here.
   const brokerCheck = useMemo(
@@ -879,15 +881,20 @@ export default function Dashboard() {
             </div>
             {/* One row, label over the best run, so the card stays the height of its neighbours. */}
             <div className="flex justify-between items-center gap-3 pt-4 border-t border-line"
-              title="Trading days in a row with every trade on plan, no rule broken in the day's note. Days without trades are skipped.">
+              title="Days: trading days in a row with every trade on plan, no rule broken in the day's note (days without trades are skipped). Trades: trades in a row marked On Plan.">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-ink-faint">On Plan in a Row</p>
-                <p className="text-[10px] font-semibold text-ink-faint">Best {streak.best} {streak.best === 1 ? 'day' : 'days'}</p>
+                <p className="text-[10px] font-semibold text-ink-faint">Best {streak.best} {streak.best === 1 ? 'day' : 'days'} · {tradeStreak.best} {tradeStreak.best === 1 ? 'trade' : 'trades'}</p>
               </div>
-              <span className="font-black text-ink flex items-center gap-1 shrink-0">
-                <Flame className={`w-4 h-4 ${streak.current > 0 ? 'text-accent' : 'text-ink-disabled'}`} />
-                {streak.current} <span className="text-[11px] font-bold text-ink-faint">{streak.current === 1 ? 'day' : 'days'}</span>
-              </span>
+              {/* Days on top, as before; the trades under it, in the line the best run takes on the left. */}
+              <div className="shrink-0 text-right">
+                <span className="font-black text-ink flex items-center justify-end gap-1">
+                  {streak.current} <span className="text-[11px] font-bold text-ink-faint">{streak.current === 1 ? 'day' : 'days'}</span>
+                </span>
+                <p className="text-[10px] font-semibold text-ink-faint">
+                  <span className="font-black text-ink">{tradeStreak.current}</span> {tradeStreak.current === 1 ? 'trade' : 'trades'}
+                </p>
+              </div>
             </div>
             {data.estimatedRCount > 0 && (
               <p className="text-[10px] font-semibold text-ink-faint text-right" title="Their first stop is unknown, so R uses the default 1R. Enter the first stop on the trade (marked ≈ in History) to make it exact.">
