@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDailyTargets } from "./useDailyTargets";
 import { useTradingDay } from "./useTradingDay";
@@ -152,6 +153,8 @@ function itemsOf(rep: SystemReport, isPrivacyMode: boolean): Item[] {
   ];
 }
 
+const FOLD_KEY = "systemReview.folded";
+
 // The last box of the Performance page: a report on trades 1–100, 1–200, … 1–1,000, over every trade
 // (the Results filters do not apply). Until 100 trades it is folded to its title and the count.
 export default function SystemReview() {
@@ -168,18 +171,39 @@ export default function SystemReview() {
   const report = useMemo(() => (phase ? systemReview(ordered, phase, days, startHour) : null), [ordered, phase, days, startHour]);
   const score = report ? systemScore(report) : null;
 
+  // Folds to its title with a click on it, as a Settings card. Remembered on this device only, so it stays folded
+  // on the next visit; read after the first paint, since the page is built ahead without it.
+  const [isOpen, setIsOpen] = useState(true);
+  useEffect(() => {
+    try { if (localStorage.getItem(FOLD_KEY) === "1") setIsOpen(false); } catch { /* storage blocked: stays open */ }
+  }, []);
+  const toggle = () => setIsOpen(open => {
+    try { localStorage.setItem(FOLD_KEY, open ? "1" : "0"); } catch { /* not remembered, still folds */ }
+    return !open;
+  });
+  const canFold = !!(report && score);
+
   return (
     <div className="glass-card p-4 md:p-6">
-      <div className="flex items-center justify-between gap-3">
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={!canFold}
+        aria-expanded={canFold ? isOpen : undefined}
+        className="w-full flex items-center justify-between gap-3 text-left -m-2 p-2 box-content rounded-xl enabled:hover:bg-surface transition-colors disabled:cursor-default"
+      >
         <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap">
           <span className="w-2 h-2 bg-accent rounded-full"></span> System Review
         </h3>
-        <span className="text-xs font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `รายงานถัดไปเมื่อครบ ${next} เทรด` : "ครบทั้ง 10 รายงานแล้ว"}>
-          <span className="text-ink">{count}</span>{next ? ` / ${next}` : ""} trades
+        <span className="flex items-center gap-2">
+          <span className="text-xs font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `รายงานถัดไปเมื่อครบ ${next} เทรด` : "ครบทั้ง 10 รายงานแล้ว"}>
+            <span className="text-ink">{count}</span>{next ? ` / ${next}` : ""} trades
+          </span>
+          {canFold && <ChevronDown className={`w-5 h-5 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />}
         </span>
-      </div>
+      </button>
 
-      {report && score && (
+      {report && score && isOpen && (
         <>
           {/* One tab per report; the ones not reached yet are shown faded. */}
           <div className="mt-4 flex bg-surface-2 p-0.5 rounded-lg overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Report">
