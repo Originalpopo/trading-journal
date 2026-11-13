@@ -1,156 +1,73 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDailyTargets } from "./useDailyTargets";
 import { useTradingDay } from "./useTradingDay";
 import { formatNumber } from "@/lib/utils";
-import {
-  REVIEW_PHASES, HOUR_MIN_TRADES, AFTER_TARGET_MIN_DAYS,
-  inReviewOrder, nextPhase, systemReview, systemScore, type SystemReport, type ScorePart,
-} from "@/lib/systemReview";
+import { REVIEW_PHASES, inReviewOrder, nextPhase, systemReview, systemScore, type ScorePart } from "@/lib/systemReview";
 
-type Status = "good" | "bad" | "wait";
-
-const STATUS_DOT: Record<Status, string> = { good: "bg-accent", bad: "bg-loss", wait: "bg-ink-disabled" };
-const STATUS_TEXT: Record<Status, string> = { good: "text-accent", bad: "text-loss", wait: "text-ink-muted" };
-
-const r = (v: number) => `${formatNumber(v)} R`;
-const tone = (v: number) => (v > 0 ? "text-accent" : v < 0 ? "text-loss" : "text-ink-faint");
-const hourName = (h: number) => `${String(h).padStart(2, "0")}:00`;
-// Thai month names, Western year: "2 พ.ย. 2026".
+// English, as the rest of the box: "2 Nov 2026".
 const dateOf = (time: string) =>
-  new Date(time.replace(" ", "T")).toLocaleDateString("th-TH-u-ca-gregory", { day: "numeric", month: "short", year: "numeric" });
-
-const BLOCK_NAMES: Record<string, string> = { Night: "กลางคืน", Morning: "เช้า", Afternoon: "บ่าย", Evening: "ค่ำ" };
+  new Date(time.replace(" ", "T")).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 const SCORE_NAMES: Record<ScorePart["key"], string> = {
   expectancy: "Expectancy",
   profitFactor: "Profit factor",
   consistency: "Consistency",
-  biggestWin: "Biggest Win",
-  discipline: "On Plan",
+  biggestWin: "Biggest win",
+  discipline: "On plan",
 };
 
-const scoreVerdict = (total: number) =>
-  total >= 8 ? "ระบบแข็งแรง"
-    : total >= 6 ? "ระบบดี แต่ยังมีจุดที่ต้องดู"
-      : total >= 4 ? "ยังไม่ชัดเจน ต้องเก็บข้อมูลเพิ่ม"
-        : "ระบบยังไม่ได้เปรียบ";
+// The radar: five spokes, one per scored part, Expectancy at the top and clockwise in systemScore's order.
+// Each point sits at the part's share of its full points, so a full pentagon is 10/10.
+const CX = 170, CY = 150, RADIUS = 110;
+const spoke = (i: number, share: number) => {
+  const angle = (-90 + i * 72) * Math.PI / 180;
+  return [CX + RADIUS * share * Math.cos(angle), CY + RADIUS * share * Math.sin(angle)] as const;
+};
+const ring = (shares: number[]) => shares.map((v, i) => spoke(i, v).map(n => n.toFixed(1)).join(",")).join(" ");
+// Where each name sits, just outside its spoke's tip.
+const LABEL_AT: [number, number][] = [[170, 16], [298, 102], [252, 258], [88, 258], [42, 102]];
 
-interface Item {
-  title: string;
-  status: Status;
-  verdict: string;
-  figures: { label: string; value: string; className?: string }[];
-}
-
-// The seven checks of one report, each with a verdict once there is enough behind it.
-function itemsOf(rep: SystemReport, isPrivacyMode: boolean): Item[] {
-  const half = Math.floor(rep.trades / 2);
-  const money = (v: number) => (isPrivacyMode ? "***" : `${v < 0 ? "-" : ""}$${formatNumber(Math.abs(v))}`);
-
-  // 5. Time of day: a verdict only on hours with enough trades.
-  const byHour = rep.hours.map((h, hour) => ({ ...h, hour }));
-  const ready = byHour.filter(h => h.count >= HOUR_MIN_TRADES);
-  const busiest = [...byHour].sort((a, b) => b.count - a.count)[0];
-  const worst = [...ready].sort((a, b) => a.avgR - b.avgR)[0];
-  const best = [...ready].sort((a, b) => b.avgR - a.avgR)[0];
-  const timeItem: Item = {
-    title: "Time of Day",
-    ...(!ready.length
-      ? { status: "wait" as const, verdict: `ยังไม่มีชั่วโมงไหนครบ ${HOUR_MIN_TRADES} เทรด (มากสุด ${busiest.count} เทรด ตอน ${hourName(busiest.hour)}) ดูแนวโน้มจาก 4 ช่วงของวันด้านล่างไปก่อน` }
-      : worst.avgR < 0
-        ? { status: "bad" as const, verdict: `ชั่วโมงที่แย่สุดคือ ${hourName(worst.hour)} ได้ ${r(worst.avgR)} ต่อเทรด จาก ${worst.count} เทรด ส่วนชั่วโมงที่ดีสุดคือ ${hourName(best.hour)} ได้ ${r(best.avgR)} ต่อเทรด` }
-        : { status: "good" as const, verdict: `ทุกชั่วโมงที่มี ${HOUR_MIN_TRADES} เทรดขึ้นไปเป็นบวก ดีสุดคือ ${hourName(best.hour)} ได้ ${r(best.avgR)} ต่อเทรด` }),
-    figures: rep.blocks.map(b => ({
-      label: `${BLOCK_NAMES[b.label] ?? b.label} ${hourName(b.from)}–${hourName(b.to % 24)}`,
-      value: b.count ? `${r(b.avgR)} · ${b.count} เทรด` : "–",
-      className: tone(b.avgR),
-    })),
-  };
-
-  // 6. After the daily target.
-  const at = rep.afterTarget;
-  const afterItem: Item = !at
-    ? { title: "After Daily Target", status: "wait", verdict: "ไม่ได้ตั้งเป้ารายวันในช่วงของเทรดเหล่านี้", figures: [] }
-    : {
-        title: "After Daily Target",
-        status: at.daysTradedOn < AFTER_TARGET_MIN_DAYS ? "wait" : at.netR >= 0 ? "good" : "bad",
-        verdict: at.daysTradedOn < AFTER_TARGET_MIN_DAYS
-          ? `มีวันที่เทรดต่อหลังถึงเป้า ${at.daysTradedOn} จาก ${AFTER_TARGET_MIN_DAYS} วัน ยังน้อยเกินไปที่จะสรุป`
-          : at.netR >= 0
-            ? `เทรดต่อหลังถึงเป้าได้ ${r(at.netR)} จาก ${at.trades} เทรด ถ้าหยุดที่เป้าจะเสียส่วนนี้ไป`
-            : `เทรดต่อหลังถึงเป้าเสีย ${r(-at.netR)} จาก ${at.trades} เทรด ถ้าหยุดที่เป้าจะประหยัดส่วนนี้ได้`,
-        figures: [
-          { label: "วันที่ถึงเป้า", value: String(at.daysReached) },
-          { label: "วันที่เทรดต่อ", value: String(at.daysTradedOn) },
-          { label: "เทรดหลังถึงเป้า", value: String(at.trades) },
-          { label: "ผลหลังถึงเป้า", value: `${money(at.pnl)} · ${r(at.netR)}`, className: tone(at.netR) },
-        ],
-      };
-
-  const planRow = (label: string, g: SystemReport["onPlan"]) =>
-    ({ label, value: `${r(g.avgR)} ต่อเทรด · ${g.count} เทรด`, className: tone(g.avgR) });
-
-  return [
-    {
-      title: "Result",
-      status: rep.expectancyR > 0 ? "good" : "bad",
-      verdict: rep.expectancyR > 0 ? `ระบบได้ ${r(rep.expectancyR)} ต่อเทรด` : `ระบบเสีย ${r(-rep.expectancyR)} ต่อเทรด`,
-      figures: [
-        { label: "Win rate", value: `${formatNumber(rep.winRate * 100)}%` },
-        { label: "Profit factor", value: formatNumber(rep.profitFactor) },
-        { label: "Avg win", value: r(rep.avgWinR), className: "text-accent" },
-        { label: "Avg loss", value: r(rep.avgLossR), className: "text-loss" },
-        { label: "Net", value: `${money(rep.netPnl)} · ${r(rep.netR)}`, className: tone(rep.netR) },
-        { label: "TP / BE / SL", value: `${rep.wins} / ${rep.bes} / ${rep.losses}` },
-      ],
-    },
-    {
-      title: "Consistency",
-      status: rep.firstHalfR > 0 && rep.secondHalfR > 0 ? "good" : rep.firstHalfR < 0 && rep.secondHalfR < 0 ? "bad" : "wait",
-      verdict: rep.firstHalfR > 0 && rep.secondHalfR > 0
-        ? "เป็นบวกทั้งครึ่งแรกและครึ่งหลัง ผลไม่ได้มาจากช่วงที่โชคดีช่วงเดียว"
-        : rep.firstHalfR < 0 && rep.secondHalfR < 0
-          ? "ติดลบทั้งครึ่งแรกและครึ่งหลัง"
-          : "ครึ่งหนึ่งเป็นบวก อีกครึ่งติดลบ ควรเก็บข้อมูลเพิ่มก่อนเชื่อผล",
-      figures: [
-        { label: `เทรดที่ 1–${half}`, value: `${r(rep.firstHalfR)} ต่อเทรด`, className: tone(rep.firstHalfR) },
-        { label: `เทรดที่ ${half + 1}–${rep.trades}`, value: `${r(rep.secondHalfR)} ต่อเทรด`, className: tone(rep.secondHalfR) },
-      ],
-    },
-    {
-      title: "Biggest Win",
-      status: rep.netRWithoutLargest > 0 ? "good" : "wait",
-      verdict: rep.netRWithoutLargest > 0
-        ? "ตัดไม้ที่ชนะมากที่สุดออกแล้ว ผลยังเป็นบวก"
-        : "ถ้าตัดไม้ที่ชนะมากที่สุดออก ผลจะไม่เป็นบวก ระบบพึ่งไม้ใหญ่ที่เกิดไม่บ่อย การพลาด setup ไม้เดียวจึงเสียมาก",
-      figures: [
-        { label: "ไม้ที่ชนะมากที่สุด", value: r(rep.largestWinR), className: "text-accent" },
-        { label: "รวมเมื่อตัดไม้นี้ออก", value: r(rep.netRWithoutLargest), className: tone(rep.netRWithoutLargest) },
-      ],
-    },
-    {
-      title: "Losing Streak",
-      status: "wait",
-      verdict: `แพ้ติดกันนานสุด ${rep.maxLossStreak} ไม้ ควรวาง risk ต่อเทรดให้ผ่านช่วงแบบนี้ได้`,
-      figures: [{ label: "แพ้ติดกันนานสุด", value: `${rep.maxLossStreak} ไม้`, className: "text-loss" }],
-    },
-    timeItem,
-    afterItem,
-    rep.offPlan.count === 0
-      ? { title: "On Plan / Off Plan", status: "good", verdict: "ทุกเทรดเป็น On Plan", figures: [planRow("On Plan", rep.onPlan)] }
-      : {
-          title: "On Plan / Off Plan",
-          status: rep.offPlan.avgR < rep.onPlan.avgR ? "bad" : "good",
-          verdict: rep.offPlan.avgR < rep.onPlan.avgR
-            ? `เทรด Off Plan ทำได้แย่กว่า On Plan รวม ${r(rep.offPlan.netR)}`
-            : "เทรด Off Plan ไม่ได้แย่กว่า On Plan",
-          figures: [planRow("On Plan", rep.onPlan), planRow("Off Plan", rep.offPlan)],
-        },
-  ];
+function ScoreRadar({ parts, earlier }: { parts: ScorePart[]; earlier: { trades: number; parts: ScorePart[] } | null }) {
+  const shares = parts.map(p => Math.min(1, Math.max(0, p.value)));
+  // The radar stretches with the card, and its text would stretch with it; the text size is set against the
+  // radar's width on screen instead, so the names stay 11px on any screen.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [labelSize, setLabelSize] = useState(11);
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const fit = () => { if (svg.clientWidth) setLabelSize(11 * 340 / svg.clientWidth); };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <svg ref={svgRef} viewBox="0 0 340 285" className="w-full max-w-[440px]" role="img" aria-label={parts.map(p => `${SCORE_NAMES[p.key]} ${formatNumber(p.points)} of ${formatNumber(p.weight)}`).join(", ")}>
+      {/* Only the full-score outline, white inside: no inner rings, no spokes. */}
+      <polygon points={ring([1, 1, 1, 1, 1])} className="stroke-line fill-card" />
+      <polygon points={ring(shares)} className="fill-accent-soft" />
+      {/* The report compared against, as a faded dashed outline, so a side that grew or shrank shows at a glance. */}
+      {earlier && (
+        <polygon points={ring(earlier.parts.map(p => Math.min(1, Math.max(0, p.value))))} className="fill-none stroke-ink-disabled" strokeWidth={1.5} strokeDasharray="4 3" strokeLinejoin="round" />
+      )}
+      <polygon points={ring(shares)} className="fill-none stroke-accent" strokeWidth={2} strokeLinejoin="round" />
+      {shares.map((v, i) => {
+        const [x, y] = spoke(i, v);
+        return <circle key={i} cx={x} cy={y} r={5} className="fill-card stroke-accent" strokeWidth={2.5} />;
+      })}
+      {parts.map((p, i) => (
+        <text key={p.key} x={LABEL_AT[i][0]} y={LABEL_AT[i][1]} textAnchor="middle" fontSize={labelSize}>
+          <tspan className="fill-ink-muted font-semibold">{SCORE_NAMES[p.key]}</tspan>
+          <tspan x={LABEL_AT[i][0]} dy="1.2em" className="fill-ink-faint tabular-nums">{formatNumber(p.points)} / {formatNumber(p.weight)}</tspan>
+        </text>
+      ))}
+    </svg>
+  );
 }
 
 const FOLD_KEY = "systemReview.folded";
@@ -158,7 +75,7 @@ const FOLD_KEY = "systemReview.folded";
 // The last box of the Performance page: a report on trades 1–100, 1–200, … 1–1,000, over every trade
 // (the Results filters do not apply). Until 100 trades it is folded to its title and the count.
 export default function SystemReview() {
-  const { trades, isPrivacyMode } = useJournalStore();
+  const { trades } = useJournalStore();
   const { days } = useDailyTargets();
   const { startHour } = useTradingDay();
   const ordered = useMemo(() => inReviewOrder(trades), [trades]);
@@ -170,6 +87,15 @@ export default function SystemReview() {
   const phase = picked && picked <= count ? picked : reached[reached.length - 1];
   const report = useMemo(() => (phase ? systemReview(ordered, phase, days, startHour) : null), [ordered, phase, days, startHour]);
   const score = report ? systemScore(report) : null;
+  // Once two reports exist, a second one is drawn faded beneath the chosen one to compare against: the latest
+  // report when an older one is chosen (picking 1–100 brings it to the top, 1–200 goes beneath), and the one
+  // before it when the latest is chosen.
+  const latest = reached[reached.length - 1];
+  const other = !phase || reached.length < 2 ? null : phase === latest ? reached[reached.length - 2] : latest;
+  const earlier = useMemo(() => {
+    const rep = other ? systemReview(ordered, other, days, startHour) : null;
+    return other && rep ? { trades: other, parts: systemScore(rep).parts } : null;
+  }, [ordered, other, days, startHour]);
 
   // Folds to its title with a click on it, as a Settings card. Remembered on this device only, so it stays folded
   // on the next visit; read after the first paint, since the page is built ahead without it.
@@ -196,7 +122,7 @@ export default function SystemReview() {
           <span className="w-2 h-2 bg-accent rounded-full"></span> System Review
         </h3>
         <span className="flex items-center gap-2">
-          <span className="text-xs font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `รายงานถัดไปเมื่อครบ ${next} เทรด` : "ครบทั้ง 10 รายงานแล้ว"}>
+          <span className="text-xs font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `Next report at ${next} trades` : "All 10 reports reached"}>
             <span className="text-ink">{count}</span>{next ? ` / ${next}` : ""} trades
           </span>
           {canFold && <ChevronDown className={`w-5 h-5 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />}
@@ -215,7 +141,7 @@ export default function SystemReview() {
                 aria-selected={p === phase}
                 disabled={p > count}
                 onClick={() => setPicked(p)}
-                title={p > count ? `เมื่อครบ ${p} เทรด` : `รายงานเทรดที่ 1–${p}`}
+                title={p > count ? `At ${p} trades` : `Report on trades 1–${p}`}
                 className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-[11px] font-bold rounded-md tabular-nums transition ${
                   p === phase ? "bg-card text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
                 }`}
@@ -225,52 +151,25 @@ export default function SystemReview() {
             ))}
           </div>
 
-          <p className="mt-3 text-[11px] font-semibold text-ink-faint">
-            เทรดที่ 1–{report.trades} · {dateOf(report.firstTime)} – {dateOf(report.lastTime)}
-          </p>
-
-          <ol className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {itemsOf(report, isPrivacyMode).map((item, i) => (
-              <li key={item.title} className="bg-card p-5 rounded-xl border border-line shadow-sm">
-                <div className="flex items-center gap-2 border-b border-line-soft pb-1.5 mb-2.5">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
-                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">{i + 1}. {item.title}</span>
-                </div>
-                <p className={`text-xs font-bold leading-relaxed ${STATUS_TEXT[item.status]}`}>{item.verdict}</p>
-                {item.figures.length > 0 && (
-                  <dl className="mt-3 space-y-1.5 text-[10px]">
-                    {item.figures.map(f => (
-                      <div key={f.label} className="flex justify-between gap-3">
-                        <dt className="text-ink-muted">{f.label}</dt>
-                        <dd className={`font-bold tabular-nums text-right ${f.className ?? "text-ink"}`}>{f.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
-              </li>
-            ))}
-
-            {/* 8. The score out of 10, orange as the Win Rate card: the five checks that can be scored, each
-                with its points (how they are weighed is in systemScore). */}
-            <li className="bg-accent p-5 rounded-xl border border-accent shadow-lg shadow-accent/20 text-white">
-              <div className="flex items-center gap-2 border-b border-accent-line pb-1.5 mb-2.5">
-                <span className="text-[10px] font-bold text-white uppercase tracking-widest">8. System Score</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="text-3xl font-black tabular-nums">{formatNumber(score.total)}<span className="text-base font-bold text-white"> / 10</span></p>
-                <p className="text-xs font-bold text-right">{scoreVerdict(score.total)}</p>
-              </div>
-              <dl className="mt-3 space-y-1.5 text-[10px]">
-                {score.parts.map(p => (
-                  <div key={p.key} className="flex justify-between gap-3">
-                    <dt className="text-white">{SCORE_NAMES[p.key]}</dt>
-                    <dd className="font-bold tabular-nums">{formatNumber(p.points)} / {formatNumber(p.weight)}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-3 text-[10px] text-white">ข้อ 4–6 ไม่นำมาคิดคะแนน เพราะเป็นแนวทางการเทรด ไม่ได้บอกคุณภาพของระบบ</p>
-            </li>
-          </ol>
+          {/* The score's five parts as a radar, the total beside it (below it on a phone). */}
+          <div className="mt-4 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-10">
+            <ScoreRadar parts={score.parts} earlier={earlier} />
+            <div className="text-center md:text-left">
+              <p className="text-[11px] font-bold text-ink uppercase tracking-widest">System Score</p>
+              <p className="text-4xl font-black tabular-nums text-accent">
+                {formatNumber(score.total)}<span className="text-base font-bold text-ink-faint"> / 10</span>
+              </p>
+              <p className="mt-2 text-[11px] font-semibold text-ink-faint">
+                Trades 1–{report.trades} · {dateOf(report.firstTime)} – {dateOf(report.lastTime)}
+              </p>
+              {earlier && (
+                <p className="mt-1 text-[11px] font-semibold text-ink-faint flex items-center gap-1.5 justify-center md:justify-start">
+                  <svg width="18" height="6" aria-hidden><line x1="0" y1="3" x2="18" y2="3" className="stroke-ink-disabled" strokeWidth={1.5} strokeDasharray="4 3" /></svg>
+                  Trades 1–{earlier.trades}
+                </p>
+              )}
+            </div>
+          </div>
         </>
       )}
     </div>
