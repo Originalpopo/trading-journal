@@ -42,6 +42,17 @@ export default function SettingsPage() {
     setTabState(next);
     try { localStorage.setItem(TAB_KEY, next); } catch { }
   };
+  // The sidebar's profile photo opens the Account tab, also when Settings is already open.
+  useEffect(() => {
+    const onPick = () => {
+      try {
+        const saved = localStorage.getItem(TAB_KEY);
+        if (TABS.some(t => t.id === saved)) setTabState(saved as TabId);
+      } catch { }
+    };
+    window.addEventListener("settings-tab", onPick);
+    return () => window.removeEventListener("settings-tab", onPick);
+  }, []);
   const currentUser = auth.currentUser;
   const [isUidCopied, setIsUidCopied] = useState(false);
   const [pin, setPin] = useState("");
