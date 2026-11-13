@@ -32,7 +32,7 @@ export default function PillTabs<T extends string>({ tabs, value, onChange, onWh
               ? "bg-accent text-white shadow-md shadow-accent-line"
               : onWhite
                 ? "bg-surface-2 text-ink-muted hover:text-accent"
-                : "bg-white text-ink-muted hover:text-accent shadow-sm"
+                : "bg-card text-ink-muted hover:text-accent shadow-sm"
           }`}
         >
           <Icon className="w-4 h-4" />

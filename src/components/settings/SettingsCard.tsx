@@ -15,7 +15,7 @@ export default function SettingsCard({ icon: Icon, title, description, children 
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
   return (
-    <div className="bg-white rounded-2xl shadow-sm">
+    <div className="bg-card rounded-2xl shadow-sm">
       <button
         type="button"
         onClick={() => setIsOpen(open => !open)}

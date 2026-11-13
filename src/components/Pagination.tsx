@@ -9,7 +9,7 @@ export default function Pagination({ page, pageCount, onChange }: { page: number
     if (i === 1 || i === pageCount || (i >= page - 1 && i <= page + 1)) {
       items.push(
         <button key={i} type="button" onClick={() => onChange(i)} aria-current={i === page ? "page" : undefined}
-          className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === page ? "bg-accent text-white border-accent" : "text-ink-muted hover:bg-surface"}`}>
+          className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === page ? "bg-accent text-white" : "text-ink-muted hover:bg-surface"}`}>
           {i}
         </button>
       );

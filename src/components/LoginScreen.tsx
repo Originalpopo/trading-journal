@@ -32,7 +32,7 @@ export function LoginScreen({ mode, email, uid, message, onSignIn, onSignOut }: 
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+    <div className="fixed inset-0 bg-card flex flex-col items-center justify-center z-50">
       <div className="flex flex-col items-center max-w-sm w-full px-6 text-center">
         <div className="flex items-center gap-2 mb-12">
           <Flame className="w-12 h-12 text-accent" strokeWidth={1.5} />

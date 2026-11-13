@@ -44,10 +44,10 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
             <div className={`absolute inset-y-0 right-0 rounded-full ${trackClass}`} style={{ left: `calc(${at(0)} + 2px)` }} />
           </>
         ) : (
-          <div className={`h-full rounded-full bg-accent transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_rgba(251,146,60,0.6)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
+          <div className={`h-full rounded-full bg-accent transition-[width] duration-1000 ease-out motion-reduce:transition-none ${isHit ? "shadow-[0_0_8px_color-mix(in_srgb,var(--accent)_60%,transparent)]" : ""}`} style={{ width: `${isShown ? share * 100 : 0}%` }} />
         )}
         {marks.map(v => (
-          <span key={v} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-white" style={{ left: at(v) }} />
+          <span key={v} aria-hidden="true" className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-card" style={{ left: at(v) }} />
         ))}
       </div>
       {/* The app's flame, lit at the tip of the orange fill: a reward shown only while the bar is past its last mark
@@ -58,7 +58,7 @@ export function SegmentBar({ share, depth, isShown, isHit, isPlain = false, heig
           viewBox="0 0 24 24"
           aria-hidden="true"
           style={{ left: `${Math.min(share, 1) * 100}%` }}
-          className="flame-light absolute top-1/2 w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_rgba(251,146,60,0.45)] transition-[left] duration-1000 ease-out motion-reduce:transition-none"
+          className="flame-light absolute top-1/2 w-7 h-7 -translate-x-1/2 -translate-y-[60%] overflow-visible pointer-events-none drop-shadow-[0_1px_2px_color-mix(in_srgb,var(--accent)_45%,transparent)] transition-[left] duration-1000 ease-out motion-reduce:transition-none"
         >
           {/* A white edge under the flame keeps it apart from the orange bar behind it. */}
           <g className="flame-outer" strokeLinejoin="round">
@@ -100,8 +100,8 @@ const weekdayName = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateS
 function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacyMode: boolean }) {
   const circle: Record<WeekdayState, string> = {
     hit: "bg-accent text-white",
-    today: "border-2 border-accent bg-white",
-    missed: "border-2 border-accent bg-white text-accent",
+    today: "border-2 border-accent bg-card",
+    missed: "border-2 border-accent bg-card text-accent",
     noTrades: "border-2 border-dashed border-ink-disabled bg-surface",
     upcoming: "border-2 border-line",
   };
@@ -113,7 +113,7 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
         <div key={date} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
           {/* The line into a day is orange once that day has come. */}
           {i > 0 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${state === "upcoming" ? "bg-line" : "bg-accent"}`} />}
-          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-loss bg-white text-loss" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
+          <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-loss bg-card text-loss" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
             {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
             {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
             <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-accent" : "text-ink-faint"}`}>

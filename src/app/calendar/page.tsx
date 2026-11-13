@@ -306,7 +306,7 @@ export default function CalendarPage() {
                 <button
                   key={v}
                   onClick={() => changeView(v)}
-                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
+                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-card text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
                 >
                   {v}
                 </button>
@@ -318,7 +318,7 @@ export default function CalendarPage() {
                   key={c}
                   onClick={() => changeCurrency(c)}
                   disabled={c === 'THB' && !bahtRate}
-                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-white text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
+                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-card text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
                 >
                   {c === 'USD' ? '$' : '฿'}
                 </button>
@@ -351,7 +351,7 @@ export default function CalendarPage() {
               const { day, isToday, stats } = cell;
               const date = dayKey(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
               const note = notesByDay.get(date);
-              let bgColor = "bg-white";
+              let bgColor = "bg-card";
               if (stats) {
                 bgColor = stats.pnl > 0 ? "bg-accent-soft" : (stats.pnl < 0 ? "bg-loss-soft" : "bg-surface");
               }
@@ -558,7 +558,7 @@ export default function CalendarPage() {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const toneOf = (n: number) => (n > 0 ? 'text-accent' : n < 0 ? 'text-loss' : 'text-ink-faint');
-const bgOf = (pnl: number, count: number) => (!count ? 'bg-white' : pnl > 0 ? 'bg-accent-soft' : pnl < 0 ? 'bg-loss-soft' : 'bg-surface');
+const bgOf = (pnl: number, count: number) => (!count ? 'bg-card' : pnl > 0 ? 'bg-accent-soft' : pnl < 0 ? 'bg-loss-soft' : 'bg-surface');
 
 // One row per month, one cell per week. No notes here: those live on days. The months' totals sit
 // in their own column beside the grid, like the Summary column of the month view; every row has the

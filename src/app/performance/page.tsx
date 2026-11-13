@@ -475,7 +475,7 @@ export default function PerformancePage() {
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
               <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
+                className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
                 {/* Today, the trading day before, last week (as the Dashboard's target counts them), the last
                     month or three up to today (across a year end), then each year, then everything. */}
                 <option value="TODAY">Today</option>
@@ -495,7 +495,7 @@ export default function PerformancePage() {
               <div className="relative">
                 <button
                   onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
-                  className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-accent focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
+                  className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-accent focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
                 >
                   <span className="truncate max-w-[100px]">
                     {selectedTfs.length === 0 
@@ -508,7 +508,7 @@ export default function PerformancePage() {
                 </button>
                 
                 {isTfMenuOpen && (
-                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-white border border-line rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-card border border-line rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                     <div className="p-2 border-b border-line-soft flex justify-between items-center bg-surface">
                       <span className="text-[10px] font-bold text-ink-faint uppercase">Select TFs</span>
                       {selectedTfs.length > 0 && (
@@ -554,7 +554,7 @@ export default function PerformancePage() {
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Plan<span className="hidden md:inline">:</span></span>
               <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
+                className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
                 <option value="ALL">ALL</option>
                 <option value="On Plan">On Plan</option>
                 <option value="Off Plan">Off Plan</option>
@@ -571,7 +571,7 @@ export default function PerformancePage() {
             className={`order-2 md:order-3 flex items-center justify-center h-8 w-8 border rounded-lg transition ${
               isFiltersOpen || selectedPeriod !== new Date().getFullYear().toString() || selectedTfs.length > 0 || selectedPlan !== 'ALL'
                 ? 'bg-accent-soft text-accent border-accent-line'
-                : 'bg-white text-ink-muted border-line hover:text-ink'
+                : 'bg-card text-ink-muted border-line hover:text-ink'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -579,7 +579,7 @@ export default function PerformancePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-          <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+          <div className="bg-card p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Win Rate</span>
             <span className="text-xl font-black text-ink">{formatNumber(data.mainWinRate)}%</span>
           </div>
@@ -588,11 +588,11 @@ export default function PerformancePage() {
             {/* 20px, or smaller when a large figure would not fit the card. */}
             <span style={fitFontSize(`${formatNumber(data.accountGrowth)}%`, '1.25rem')} className="leading-7 font-black text-white">{formatNumber(data.accountGrowth)}%</span>
           </div>
-          <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+          <div className="bg-card p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Profit Factor</span>
             <span className="text-xl font-black text-ink">{formatNumber(data.profitFactor)}</span>
           </div>
-          <div className="bg-white p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
+          <div className="bg-card p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Expectancy</span>
             <span className="text-xl font-black text-ink">{formatNumber(data.expectancyR)} R</span>
             {/* The same average trade in the dollars it really made. */}
@@ -601,7 +601,7 @@ export default function PerformancePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
-          <div className="bg-white p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-2.5">
+          <div className="bg-card p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-2.5">
             <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Outcomes</span>
             </div>
@@ -632,7 +632,7 @@ export default function PerformancePage() {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-line shadow-sm space-y-4">
+          <div className="bg-card p-5 rounded-xl border border-line shadow-sm space-y-4">
             <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Direction</span>
             </div>
@@ -661,7 +661,7 @@ export default function PerformancePage() {
             })()}
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-1">
+          <div className="bg-card p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-1">
             <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Discipline</span>
             </div>
@@ -691,7 +691,7 @@ export default function PerformancePage() {
               .sort((a, b) => data.tfStats[b].pnl - data.tfStats[a].pnl);
               
             return (
-              <div className="bg-white p-5 rounded-xl border border-line shadow-sm space-y-4">
+              <div className="bg-card p-5 rounded-xl border border-line shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-line-soft pb-1.5 mb-2">
                   <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Timeframe</span>
                   {validTfs.length > 4 && (

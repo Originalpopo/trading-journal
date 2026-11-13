@@ -385,10 +385,10 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   if (error) {
     return (
       <div className="h-[250px] bg-transparent flex flex-col items-center justify-center text-ink-muted p-4 text-center relative">
-         <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/50 p-1 rounded-lg z-10">
+         <div className="absolute top-4 left-4 flex items-center gap-1 bg-card/50 p-1 rounded-lg z-10">
           <button 
             onClick={handleRefresh}
-            className="p-1.5 hover:bg-white rounded-md text-ink-faint hover:text-ink transition"
+            className="p-1.5 hover:bg-card rounded-md text-ink-faint hover:text-ink transition"
             title="Refetch Chart Data"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>

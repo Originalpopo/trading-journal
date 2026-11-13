@@ -85,7 +85,7 @@ export function HistoryColumnsButton({ isOpen, onToggle }: { isOpen: boolean; on
       aria-label="Columns"
       title="Choose which columns to show"
       className={`flex items-center justify-center h-8 w-8 border rounded-lg transition ${
-        isOpen ? "bg-accent-soft text-accent border-accent-line" : "bg-white text-ink-muted border-line hover:text-ink"
+        isOpen ? "bg-accent-soft text-accent border-accent-line" : "bg-card text-ink-muted border-line hover:text-ink"
       }`}
     >
       <Columns3 className="w-3.5 h-3.5" />
@@ -106,7 +106,7 @@ export function HistoryColumnsPanel({ columns }: { columns: Columns }) {
             onClick={() => columns.toggle(key)}
             aria-pressed={isOn}
             className={`px-2.5 py-2 md:py-1 border rounded-md text-[10px] font-black uppercase transition ${
-              isOn ? "bg-accent-soft text-accent border-accent-line" : "bg-white text-ink-disabled border-line hover:text-ink-muted"
+              isOn ? "bg-accent-soft text-accent border-accent-line" : "bg-card text-ink-disabled border-line hover:text-ink-muted"
             }`}
           >
             {label}

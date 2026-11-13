@@ -87,7 +87,7 @@ export default function BackupSetting() {
           <button
             type="button"
             onClick={() => downloadDatabase(trades, funding, dayNotes, weekNotes, preferences)}
-            className="flex-1 md:flex-none px-5 py-2.5 bg-white hover:bg-accent-soft text-accent font-bold rounded-xl transition border border-accent flex items-center justify-center gap-2"
+            className="flex-1 md:flex-none px-5 py-2.5 bg-card hover:bg-accent-soft text-accent font-bold rounded-xl transition border border-accent flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span className="whitespace-nowrap">Download<span className="hidden md:inline"> Backup</span></span>

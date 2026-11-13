@@ -217,7 +217,7 @@ export default function SystemReview() {
                 onClick={() => setPicked(p)}
                 title={p > count ? `เมื่อครบ ${p} เทรด` : `รายงานเทรดที่ 1–${p}`}
                 className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-[11px] font-bold rounded-md tabular-nums transition ${
-                  p === phase ? "bg-white text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
+                  p === phase ? "bg-card text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
                 }`}
               >
                 {p.toLocaleString("en-US")}
@@ -231,7 +231,7 @@ export default function SystemReview() {
 
           <ol className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             {itemsOf(report, isPrivacyMode).map((item, i) => (
-              <li key={item.title} className="bg-white p-5 rounded-xl border border-line shadow-sm">
+              <li key={item.title} className="bg-card p-5 rounded-xl border border-line shadow-sm">
                 <div className="flex items-center gap-2 border-b border-line-soft pb-1.5 mb-2.5">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[item.status]}`} />
                   <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">{i + 1}. {item.title}</span>

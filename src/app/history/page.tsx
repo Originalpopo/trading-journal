@@ -231,7 +231,7 @@ export default function HistoryPage() {
       if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
         pages.push(
           <button key={i} onClick={() => handlePageChange(i)}
-            className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-accent text-white border-accent' : 'text-ink-muted hover:bg-surface'}`}>
+            className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface'}`}>
             {i}
           </button>
         );
@@ -274,7 +274,7 @@ export default function HistoryPage() {
               aria-label="Select trades"
               title={isSelecting ? "Stop selecting" : "Select trades to edit together"}
               className={`flex items-center justify-center h-8 w-8 border rounded-lg text-[11px] font-bold transition ${
-                isSelecting ? 'bg-accent-soft text-accent border-accent-line' : 'bg-white text-ink-muted border-line hover:text-ink'
+                isSelecting ? 'bg-accent-soft text-accent border-accent-line' : 'bg-card text-ink-muted border-line hover:text-ink'
               }`}
             >
               <SquareCheck className="w-3.5 h-3.5" />
@@ -290,7 +290,7 @@ export default function HistoryPage() {
             <span className="text-xs font-bold text-accent">{selectedIds.size} trade{selectedIds.size > 1 ? 's' : ''} selected</span>
             <div className="flex items-center gap-2">
               <button onClick={() => setSelectedIds(new Set())}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-ink-muted hover:bg-white transition">Clear</button>
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-ink-muted hover:bg-card transition">Clear</button>
               <button onClick={() => setIsBulkEditOpen(true)}
                 className="px-4 py-1.5 rounded-lg text-[11px] font-bold bg-accent text-white hover:bg-accent-strong shadow-sm transition flex items-center gap-1.5">
                 <Edit2 className="w-3.5 h-3.5" /> Edit On Plan / TF

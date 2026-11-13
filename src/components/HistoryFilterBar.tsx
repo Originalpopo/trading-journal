@@ -27,7 +27,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
           type="button"
           onClick={() => onChange(opt.value)}
           className={`text-[11px] font-bold px-3 py-2 md:py-1 rounded-md transition ${
-            value === opt.value ? 'bg-white text-ink shadow-sm' : 'text-ink-faint hover:text-ink'
+            value === opt.value ? 'bg-card text-ink shadow-sm' : 'text-ink-faint hover:text-ink'
           }`}
         >
           {opt.label}
@@ -56,7 +56,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
           aria-label="Filter"
           title="Filter"
           className={`flex items-center justify-center h-8 w-8 border rounded-lg transition ${
-            isOpen || active ? 'bg-accent-soft text-accent border-accent-line' : 'bg-white text-ink-muted border-line hover:text-ink'
+            isOpen || active ? 'bg-accent-soft text-accent border-accent-line' : 'bg-card text-ink-muted border-line hover:text-ink'
           }`}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -123,7 +123,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
               type="button"
               onClick={() => toggleResult(r)}
               className={`px-2.5 py-2 md:py-1 border rounded-md text-[10px] font-black uppercase transition ${
-                filters.results.includes(r) ? RESULT_STYLES[r] : 'bg-white text-ink-disabled border-line hover:text-ink-muted'
+                filters.results.includes(r) ? RESULT_STYLES[r] : 'bg-card text-ink-disabled border-line hover:text-ink-muted'
               }`}
             >
               {r}
@@ -142,7 +142,7 @@ export default function HistoryFilterBar({ filters, onChange, shownCount, totalC
           onClick={() => set({ needsCheck: !filters.needsCheck })}
           title="Trades whose exit time couldn't be read from the broker data"
           className={`flex items-center gap-1 px-2.5 py-2 md:py-1 border rounded-md text-[10px] font-black uppercase transition ${
-            filters.needsCheck ? 'bg-loss-soft text-loss border-loss-line' : 'bg-white text-ink-disabled border-line hover:text-ink-muted'
+            filters.needsCheck ? 'bg-loss-soft text-loss border-loss-line' : 'bg-card text-ink-disabled border-line hover:text-ink-muted'
           }`}
         >
           <AlertTriangle className="w-3 h-3" /> Check

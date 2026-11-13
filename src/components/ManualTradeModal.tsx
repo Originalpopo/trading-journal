@@ -540,7 +540,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               }}
               className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-md transition ${
                 isActive
-                  ? (onPlan ? 'bg-accent-soft text-accent border border-accent-line shadow-sm' : 'bg-white text-ink-muted border border-line shadow-sm')
+                  ? (onPlan ? 'bg-accent-soft text-accent border border-accent-line shadow-sm' : 'bg-card text-ink-muted border border-line shadow-sm')
                   : 'text-ink-faint border border-transparent hover:text-ink'
               }`}
             >
@@ -571,7 +571,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
             className={`px-3 py-1 text-xs font-bold rounded-md transition ${
               tf === item
                 ? 'bg-accent text-white shadow-sm'
-                : 'bg-white border border-line text-ink-muted hover:bg-surface-2'
+                : 'bg-card border border-line text-ink-muted hover:bg-surface-2'
             }`}
           >
             {item}
@@ -657,7 +657,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={() => onClose()}>
-      <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border-0 bg-clip-padding rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-2xl font-black text-ink tracking-tight">
             {tradeToEdit ? (tradeToEdit.isFunding ? "Edit Funding" : "Edit Trade") : "Add Entry"}

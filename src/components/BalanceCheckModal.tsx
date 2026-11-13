@@ -54,7 +54,7 @@ export default function BalanceCheckModal({ isOpen, onClose }: BalanceCheckModal
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={onClose}>
-      <div className="bg-white border-0 rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border-0 rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-line-soft">
           <h3 className="text-2xl font-black text-ink tracking-tight">Check against broker</h3>
           <button onClick={onClose} className="text-ink-faint hover:text-ink p-1 rounded-full hover:bg-surface-2 transition">

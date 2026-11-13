@@ -56,7 +56,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={close}>
-      <div className="bg-white border-0 bg-clip-padding rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border-0 bg-clip-padding rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <h3 className="text-xl font-extrabold text-ink mb-4 tracking-tight">Import & Backup</h3>
 
         {/* Paste Text Section */}
@@ -121,7 +121,7 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
               onDownloadDatabase();
               close();
             }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-accent-soft text-accent font-bold rounded-xl transition border border-accent hover:border-accent-strong shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-card hover:bg-accent-soft text-accent font-bold rounded-xl transition border border-accent hover:border-accent-strong shadow-sm"
           >
             <Download className="w-5 h-5" />
             <span className="whitespace-nowrap">Download Backup</span>

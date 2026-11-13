@@ -324,7 +324,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={() => onClose()}>
-      <div className="bg-white border-0 rounded-3xl w-fit min-w-[min(100%,64rem)] max-w-full p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border-0 rounded-3xl w-fit min-w-[min(100%,64rem)] max-w-full p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-line-soft flex-wrap gap-4">
           <h3 className="text-2xl font-black text-ink tracking-tight">
             Import from TradingView
@@ -448,7 +448,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     setEditingKey(null);
                                   }
                                 }}
-                                className={`bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none ${invalidExit ? 'border-loss' : 'border-accent'}`}
+                                className={`bg-card border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none ${invalidExit ? 'border-loss' : 'border-accent'}`}
                               />
                             ) : (
                               <button
@@ -484,7 +484,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                 const value = e.target.value;
                                 setTfEdits(prev => ({ ...prev, [key]: value }));
                               }}
-                              className="bg-white border border-line hover:border-accent focus:border-accent rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none cursor-pointer"
+                              className="bg-card border border-line hover:border-accent focus:border-accent rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none cursor-pointer"
                             >
                               {!TIMEFRAMES.includes(tf) && <option value={tf}>{tf === 'none' ? '-' : tf}</option>}
                               {TIMEFRAMES.map(item => <option key={item} value={item}>{item}</option>)}
@@ -527,7 +527,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     setEditingStopKey(null);
                                   }
                                 }}
-                                className={`w-24 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none text-right ${invalidInitialSl ? 'border-loss' : 'border-accent'}`}
+                                className={`w-24 bg-card border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none text-right ${invalidInitialSl ? 'border-loss' : 'border-accent'}`}
                               />
                             ) : (
                               <button
@@ -569,7 +569,7 @@ export default function BulkImportModal({ isOpen, onClose, initialRawText, initi
                                     setEditingRiskKey(null);
                                   }
                                 }}
-                                className={`w-20 bg-white border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none text-right ${invalidRisk ? 'border-loss' : 'border-accent'}`}
+                                className={`w-20 bg-card border rounded px-1.5 py-1 text-[11px] font-bold text-ink outline-none text-right ${invalidRisk ? 'border-loss' : 'border-accent'}`}
                               />
                             ) : (
                               <button

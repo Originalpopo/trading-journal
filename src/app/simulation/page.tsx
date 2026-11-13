@@ -438,7 +438,7 @@ export default function SimulationPage() {
           const growthClass = report.netProfit >= 0 ? 'text-accent' : 'text-loss';
 
           return (
-            <div key={report.id} className="bg-white p-5 rounded-xl shadow-sm flex flex-col justify-center items-center text-center">
+            <div key={report.id} className="bg-card p-5 rounded-xl shadow-sm flex flex-col justify-center items-center text-center">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: report.color }}></span>
                 <span className="text-xs font-bold text-ink-muted uppercase tracking-widest">Sim {report.index + 1}</span>

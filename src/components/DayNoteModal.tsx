@@ -163,7 +163,7 @@ export function NoteModal({ title, kind, note, startEditing, summary, onSave, on
   return (
     // m-0: a page's space-y gap would otherwise shorten this backdrop while a trade is open on top.
     <div className="fixed inset-0 m-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={requestClose}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`w-10 h-10 rounded-full ${moodTone(isEditing ? mood : note?.mood).badge} flex items-center justify-center shrink-0`}>

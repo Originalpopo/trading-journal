@@ -65,7 +65,7 @@ export default function DisciplineRulesSetting() {
         <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); add(draft); }}>
           <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="A rule you keep breaking, e.g. Revenge trade" className={SETTINGS_INPUT} />
           <button type="submit" disabled={!draft.trim()} title="Add this rule" aria-label="Add this rule"
-            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-white border border-accent text-accent hover:bg-accent-soft disabled:opacity-40 transition">
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-card border border-accent text-accent hover:bg-accent-soft disabled:opacity-40 transition">
             <Plus className="w-4 h-4" />
           </button>
         </form>

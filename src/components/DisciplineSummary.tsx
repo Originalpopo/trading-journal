@@ -45,7 +45,7 @@ export default function DisciplineSummary() {
   const mostBroken = broken[0]?.count ?? 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4 md:p-5">
+    <div className="bg-card rounded-2xl shadow-sm p-4 md:p-5">
       <div className="flex items-center justify-between gap-2 mb-4">
         <h3 className="text-[10px] font-black text-accent uppercase tracking-widest">Discipline</h3>
         <SlidingSwitch

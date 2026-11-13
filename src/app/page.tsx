@@ -815,7 +815,7 @@ export default function Dashboard() {
             <div title={gaugeNote} className="w-16 h-full bg-surface rounded-xl p-1.5 border border-line flex flex-col justify-end items-center relative z-10 shadow-inner">
               {/* Deepest point of the drawdown still under way */}
               {isInDrawdown && <div 
-                className="absolute left-1.5 right-1.5 h-1.5 bg-loss rounded-full shadow-[0_0_8px_rgba(127,29,29,0.4)] transition-all duration-700 ease-out z-20"
+                className="absolute left-1.5 right-1.5 h-1.5 bg-loss rounded-full shadow-[0_0_8px_color-mix(in_srgb,var(--loss)_40%,transparent)] transition-all duration-700 ease-out z-20"
                 style={{ bottom: `${maxCapBottomPct}%` }}
                 title={`Deepest point of this drawdown: ${formatNumber(ddActiveMax)}${ddUnit}`}
               />}
@@ -842,7 +842,7 @@ export default function Dashboard() {
                   title={`${hint}; deposits and withdrawals are not counted`}
                   className={`text-[10px] font-bold px-5 py-1.5 md:py-1 rounded transition-all ${
                     ddMode === mode
-                      ? 'bg-white text-ink shadow-md'
+                      ? 'bg-card text-ink shadow-md'
                       : 'text-ink-faint hover:text-ink'
                   }`}
                 >

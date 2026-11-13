@@ -241,7 +241,7 @@ export default function StatementPage() {
                   value={current ? `${current.year}-${current.month}` : ''}
                   onChange={(e) => { setSelected(e.target.value); setTablePage(1); }}
                   aria-label="Month"
-                  className="bg-white border border-line text-ink text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-accent cursor-pointer"
+                  className="bg-card border border-line text-ink text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-accent cursor-pointer"
                 >
                   {months.map(m => (
                     <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>{MONTH_NAMES[m.month - 1]} {m.year}</option>
@@ -256,7 +256,7 @@ export default function StatementPage() {
         <div className="fixed inset-0 z-[100] bg-line overflow-auto print:static print:bg-white print:overflow-visible">
           {/* A4 landscape: the transactions table is too wide for a portrait page. */}
           <style>{`@page { size: A4 landscape; margin: 12mm; }`}</style>
-          <div className="sticky top-0 left-0 z-10 bg-white border-b border-line px-3 md:px-6 py-3 flex items-center justify-end md:justify-between gap-4 print:hidden">
+          <div className="sticky top-0 left-0 z-10 bg-card border-b border-line px-3 md:px-6 py-3 flex items-center justify-end md:justify-between gap-4 print:hidden">
             <p className="hidden md:block text-xs font-bold text-ink">
               Preview · {MONTH_NAMES[statement.month - 1]} {statement.year}
               <span className="font-medium text-ink-faint ml-2">A4 landscape</span>
@@ -278,7 +278,7 @@ export default function StatementPage() {
               </button>
             </div>
           </div>
-          <div className="bg-white w-[297mm] min-h-[210mm] p-[12mm] mx-auto my-8 shadow-xl print:w-auto print:min-h-0 print:p-0 print:m-0 print:shadow-none">
+          <div className="bg-card w-[297mm] min-h-[210mm] p-[12mm] mx-auto my-8 shadow-xl print:w-auto print:min-h-0 print:p-0 print:m-0 print:shadow-none">
             <StatementDocument statement={statement} profile={profile} confirmed={confirmed} />
           </div>
         </div>

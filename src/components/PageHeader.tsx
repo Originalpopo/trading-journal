@@ -27,9 +27,9 @@ const VARIANTS = {
   // A second action beside a primary one.
   secondary: 'bg-surface-2 hover:bg-line disabled:opacity-50 text-ink-muted border border-transparent',
   // A lighter action in the orange family.
-  outline: 'bg-white hover:bg-accent-soft disabled:opacity-50 text-accent border border-accent-line shadow-sm',
+  outline: 'bg-card hover:bg-accent-soft disabled:opacity-50 text-accent border border-accent-line shadow-sm',
   // A small extra action, such as "+".
-  plain: 'bg-white border border-line hover:border-accent-line hover:text-accent disabled:opacity-50 text-ink-muted shadow-sm',
+  plain: 'bg-card border border-line hover:border-accent-line hover:text-accent disabled:opacity-50 text-ink-muted shadow-sm',
 };
 
 // A title-line button: icon and label on a computer, the icon alone (36px square) on a phone.

@@ -91,7 +91,7 @@ export default function NotesPage() {
 
       <DisciplineSummary />
 
-      <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col">
+      <div className="bg-card rounded-2xl shadow-sm p-4 flex flex-col">
         <div className="relative mb-2">
           <Search className="w-4 h-4 text-ink-disabled absolute left-3 top-1/2 -translate-y-1/2" />
           <input

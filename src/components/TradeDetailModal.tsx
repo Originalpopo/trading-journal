@@ -118,7 +118,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
 
 
       {/* Modal Container */}
-      <div className="bg-white border-0 bg-clip-padding rounded-3xl w-full max-w-4xl shadow-[0_32px_64px_rgba(0,0,0,0.15)] relative flex flex-col max-h-[90vh] overflow-hidden" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border-0 bg-clip-padding rounded-3xl w-full max-w-4xl shadow-[0_32px_64px_rgba(0,0,0,0.15)] relative flex flex-col max-h-[90vh] overflow-hidden" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         {/* Header - Hero Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between p-6 md:p-8 border-b border-line bg-gradient-to-r from-surface to-surface-2 relative">
           <div className="flex flex-col gap-2">
@@ -317,7 +317,7 @@ export default function TradeDetailModal({ isOpen, onClose, trade, onEdit, onDel
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 md:px-8 pb-6 bg-white shrink-0 border-0 border-transparent" style={{ outline: 'none' }}>
+        <div className="px-6 md:px-8 pb-6 bg-card shrink-0 border-0 border-transparent" style={{ outline: 'none' }}>
           <div className="flex items-center justify-between pt-4 border-t border-line">
             <div className="flex items-center gap-2 md:gap-3">
               <button

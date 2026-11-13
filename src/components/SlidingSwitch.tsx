@@ -36,7 +36,7 @@ export default function SlidingSwitch<T extends string>({ options, value, onChan
       {pill && (
         <span
           aria-hidden
-          className={`absolute top-0.5 bottom-0.5 rounded-md bg-white shadow-sm ${canSlide ? "transition-[left,width] duration-300 ease-out motion-reduce:transition-none" : ""}`}
+          className={`absolute top-0.5 bottom-0.5 rounded-md bg-card shadow-sm ${canSlide ? "transition-[left,width] duration-300 ease-out motion-reduce:transition-none" : ""}`}
           style={{ left: pill.left, width: pill.width }}
         />
       )}
