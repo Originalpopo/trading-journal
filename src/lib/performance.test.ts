@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computePerformance, type PerfTrade, type PerformanceFilters } from './performance.ts';
+import { computePerformance, periodBounds, type PerfTrade, type PerformanceFilters } from './performance.ts';
 
 const close = (actual: number, expected: number) =>
   assert.ok(Math.abs(actual - expected) < 1e-9, `expected ${expected}, got ${actual}`);
@@ -51,6 +51,37 @@ test('the last month shows its own trades on top of the balance before it, acros
   // From 4 November 2025: the December deposit and the loss of 30 December as well.
   assert.equal(quarter.totalTrades, 4);
   assert.equal(quarter.perfBalanceData[0], 0);
+});
+
+test('Today, Last day and Last week count trading days from the day-start hour, like the Dashboard target', () => {
+  const ms = (t: string) => new Date(t).getTime();
+  // Friday 13 Nov 2026 at 03:00: before 05:00 it is still Thursday's trading day.
+  const early = ms('2026-11-13T03:00:00');
+  assert.deepEqual(periodBounds('TODAY', early, 5), { start: ms('2026-11-12T05:00:00'), end: ms('2026-11-13T05:00:00') });
+  assert.deepEqual(periodBounds('LAST_DAY', early, 5), { start: ms('2026-11-11T05:00:00'), end: ms('2026-11-12T05:00:00') });
+  const noon = ms('2026-11-13T12:00:00');
+  assert.deepEqual(periodBounds('TODAY', noon, 5), { start: ms('2026-11-13T05:00:00'), end: ms('2026-11-14T05:00:00') });
+  // Last day is the day before, traded or not: on a Monday it is Sunday.
+  assert.deepEqual(periodBounds('LAST_DAY', ms('2026-11-16T12:00:00'), 5), { start: ms('2026-11-15T05:00:00'), end: ms('2026-11-16T05:00:00') });
+  // Last week: the Sunday-to-Saturday week before this one.
+  assert.deepEqual(periodBounds('LAST_WEEK', noon, 5), { start: ms('2026-11-01T05:00:00'), end: ms('2026-11-08T05:00:00') });
+  // On Sunday before 05:00 it is still Saturday, so this week has not turned over yet.
+  assert.deepEqual(periodBounds('LAST_WEEK', ms('2026-11-15T04:00:00'), 5), { start: ms('2026-11-01T05:00:00'), end: ms('2026-11-08T05:00:00') });
+  // The hour each day started at (a changed setting) is used for each edge.
+  const changed = (day: string) => (day >= '2026-11-13' ? 4 : 5);
+  assert.deepEqual(periodBounds('LAST_DAY', noon, changed), { start: ms('2026-11-12T05:00:00'), end: ms('2026-11-13T04:00:00') });
+});
+
+test('Last day shows only that trading day on top of the balance before it', () => {
+  const now = new Date('2026-01-06T12:00:00').getTime();
+  const p = computePerformance(trades, funding, filters({ selectedPeriod: 'LAST_DAY', now, dayStart: 5 }));
+  assert.equal(p.totalTrades, 1);
+  assert.equal(p.netProfit, 3);
+  assert.equal(p.perfBalanceData[0], 148);
+  const today = computePerformance(trades, funding, filters({ selectedPeriod: 'TODAY', now, dayStart: 5 }));
+  assert.equal(today.totalTrades, 1);
+  assert.equal(today.netProfit, -1.5);
+  assert.equal(today.perfBalanceData[0], 151);
 });
 
 test('drawdown is the drop of the trading result from its peak', () => {

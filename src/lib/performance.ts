@@ -4,6 +4,8 @@ import { classifyTrade, summarizeTrades, computePnlDrawdown, calcTimeWeightedRet
 import { addMoney, subMoney } from './money.ts';
 import { formatDurationDetailed, calculateDurationInSeconds } from './utils.ts';
 import { themeColor } from './themeColors.ts';
+import { dayKey, tradingDayOf, tradingDayStartMs, DEFAULT_DAY_START_HOUR, type DayStart } from './dayNotes.ts';
+import { weekKeyOfDay } from './weekNotes.ts';
 
 export interface PerfTrade extends StatTrade {
   time: string;
@@ -26,6 +28,7 @@ export interface PerfFunding {
 export interface PerformanceFilters {
   selectedPeriod: string; // a year, 'ALL', or a recent stretch (RECENT_PERIODS)
   now?: number; // ms, for the recent stretches (default: now)
+  dayStart?: DayStart; // when trading days start, for Today / Last day / Last week (default: DEFAULT_DAY_START_HOUR)
   selectedTfs: string[]; // empty = every timeframe
   selectedPlan: string; // 'ALL' | 'On Plan' | 'Off Plan'
   selectedMetric: string; // 'COUNT' | 'RR' | 'AVG_R' (R per trade) | 'PNL' | 'GAIN'
@@ -51,13 +54,34 @@ const byTotalPnl = (a: [string, SideMatrix], b: [string, SideMatrix]) => (b[1].B
 export const RECENT_PERIODS = { LAST_1M: 1, LAST_3M: 3 } as const;
 export const isRecentPeriod = (period: string): period is keyof typeof RECENT_PERIODS => period in RECENT_PERIODS;
 
+// Trading days and weeks, counted like the Dashboard's Today's Target: a day starts at the hour set in
+// Settings (dayNotes.ts), a week runs Sunday to Saturday (weekNotes.ts). Last day is the trading day before
+// today, traded or not; Last week is the whole week before this one.
+export const DAY_PERIODS = ['TODAY', 'LAST_DAY', 'LAST_WEEK'] as const;
+export const isDayPeriod = (period: string): period is typeof DAY_PERIODS[number] => (DAY_PERIODS as readonly string[]).includes(period);
+// Too short for a Month of Year chart to say anything.
+export const isShortPeriod = (period: string) => isRecentPeriod(period) || isDayPeriod(period);
+
+const daysBefore = (day: string, n: number) => {
+  const d = new Date(`${day}T00:00:00`);
+  return dayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - n));
+};
+
 // Where a period starts and ends (ms; null = open). A year runs from 1 January to the next.
-export function periodBounds(period: string, now: number): { start: number | null; end: number | null } {
+export function periodBounds(period: string, now: number, dayStart: DayStart = DEFAULT_DAY_START_HOUR): { start: number | null; end: number | null } {
   if (period === 'ALL') return { start: null, end: null };
   if (isRecentPeriod(period)) {
     const d = new Date(now);
     d.setMonth(d.getMonth() - RECENT_PERIODS[period]);
     return { start: d.getTime(), end: null };
+  }
+  if (isDayPeriod(period)) {
+    const today = tradingDayOf(new Date(now), dayStart);
+    const startOf = (day: string) => tradingDayStartMs(day, dayStart);
+    if (period === 'TODAY') return { start: startOf(today), end: startOf(daysBefore(today, -1)) };
+    if (period === 'LAST_DAY') return { start: startOf(daysBefore(today, 1)), end: startOf(today) };
+    const thisWeek = weekKeyOfDay(today);
+    return { start: startOf(daysBefore(thisWeek, 7)), end: startOf(thisWeek) };
   }
   const year = parseInt(period);
   return { start: new Date(year, 0, 1).getTime(), end: new Date(year + 1, 0, 1).getTime() };
@@ -65,7 +89,7 @@ export function periodBounds(period: string, now: number): { start: number | nul
 
 export function computePerformance(trades: PerfTrade[], funding: PerfFunding[], filters: PerformanceFilters) {
   const { selectedPeriod, selectedTfs, selectedPlan, selectedMetric } = filters;
-  const { start: periodStart, end: periodEnd } = periodBounds(selectedPeriod, filters.now ?? Date.now());
+  const { start: periodStart, end: periodEnd } = periodBounds(selectedPeriod, filters.now ?? Date.now(), filters.dayStart);
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const hourStats: Record<number, number> = {}; const hourStatsPnL: Record<number, number> = {};
   const hourWins: Record<number, number> = {}; const hourLosses: Record<number, number> = {}; const hourBEs: Record<number, number> = {};

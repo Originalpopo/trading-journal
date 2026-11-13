@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check, SlidersHorizontal } from
 import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import { healthTierFromProfitFactor } from "@/lib/stats";
 import HealthWeather from "@/components/HealthWeather";
-import { computePerformance, isRecentPeriod, type SideMatrix } from "@/lib/performance";
+import { computePerformance, isShortPeriod, type SideMatrix } from "@/lib/performance";
+import { useTradingDay } from "@/components/useTradingDay";
 import { riskKeptAt } from "@/lib/risk";
 import {
   Chart as ChartJS,
@@ -191,7 +192,8 @@ export default function PerformancePage() {
   const { trades, funding, isLoading, isPrivacyMode } = useJournalStore();
   const formatCurrency = (val: number) => formatCurrencyHelper(val, isPrivacyMode);
 
-  // A year (this one to start), 'ALL', or a recent stretch: LAST_1M / LAST_3M.
+  // A year (this one to start), 'ALL', a trading day or week (TODAY / LAST_DAY / LAST_WEEK) or a recent stretch: LAST_1M / LAST_3M.
+  const { startHour, today } = useTradingDay();
   const [selectedPeriod, setSelectedPeriod] = useState(new Date().getFullYear().toString());
   const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
   const [isTfMenuOpen, setIsTfMenuOpen] = useState(false);
@@ -273,8 +275,10 @@ export default function PerformancePage() {
   }, [trades]);
 
   const data = useMemo(
-    () => computePerformance(trades, funding, { selectedPeriod, selectedTfs, selectedPlan, selectedMetric, riskKept: riskKeptAt }),
-    [trades, funding, selectedPeriod, selectedTfs, selectedPlan, selectedMetric],
+    () => computePerformance(trades, funding, { selectedPeriod, selectedTfs, selectedPlan, selectedMetric, riskKept: riskKeptAt, dayStart: startHour }),
+    // `today` is in the list so Today / Last day / Last week move on when a new trading day starts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trades, funding, selectedPeriod, selectedTfs, selectedPlan, selectedMetric, startHour, today],
   );
 
 
@@ -464,15 +468,19 @@ export default function PerformancePage() {
           <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mr-auto flex items-center gap-2">
             <span className="w-2 h-2 bg-accent rounded-full"></span> Results
           </h3>
-          {/* On a phone the button stays beside the title and the filters open below it as three even
-              columns, each named above its box; from an iPad up they sit in a line left of the button. */}
+          {/* On a phone the button stays beside the title and the filters open below it as three
+              columns (Period a little wider, for "Last week"), each named above its box; from an iPad up they sit in a line left of the button. */}
           {isFiltersOpen && (
-          <div className="order-3 md:order-2 w-full md:w-auto grid grid-cols-3 gap-2 md:flex md:items-center md:gap-4">
+          <div className="order-3 md:order-2 w-full md:w-auto grid grid-cols-[1.25fr_1fr_1fr] gap-2 md:flex md:items-center md:gap-4">
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
               <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
               <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
                 className="w-full md:w-auto h-9 md:h-auto bg-white border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
-                {/* The last month or three up to today (across a year end), then each year, then everything. */}
+                {/* Today, the trading day before, last week (as the Dashboard's target counts them), the last
+                    month or three up to today (across a year end), then each year, then everything. */}
+                <option value="TODAY">Today</option>
+                <option value="LAST_DAY">Last day</option>
+                <option value="LAST_WEEK">Last week</option>
                 <option value="LAST_1M">Last 1M</option>
                 <option value="LAST_3M">Last 3M</option>
                 <option disabled>──────</option>
@@ -880,7 +888,7 @@ export default function PerformancePage() {
         </div>
 
       {/* Months only mean something over a year or more: a recent stretch would show one or two bars. */}
-      {!isRecentPeriod(selectedPeriod) && (
+      {!isShortPeriod(selectedPeriod) && (
       <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col w-full md:col-span-2">
         <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-accent rounded-full"></span> Month of Year
