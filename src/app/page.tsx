@@ -24,7 +24,7 @@ import { formatNumber, tooltipPositionOf, fitFontSize } from "@/lib/utils";
 import HealthWeather from "@/components/HealthWeather";
 import { summarizeTrades, healthTierFromProfitFactor, computePnlDrawdown, calcAccountGrowth, calcTimeWeightedReturn } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
-import { equitySeries, CHART_RANGES, DEFAULT_CHART_RANGE, type ChartRange } from "@/lib/equitySeries";
+import { equitySeries, CHART_RANGES, CHART_RANGE_LABELS, DEFAULT_CHART_RANGE, type ChartRange } from "@/lib/equitySeries";
 import { loadBahtRate, formatApproxBaht, type BahtRate } from "@/lib/bahtRate";
 import { reconcileBalance, hasActivityAfter, localTimestamp, toCheckRecord } from "@/lib/reconcile";
 import BalanceCheckModal from "@/components/BalanceCheckModal";
@@ -77,6 +77,9 @@ const startPeakFade = (chart: ChartJS<'line'>) => {
   };
   requestAnimationFrame(step);
 };
+
+// A dollar figure on the chart's lines; below zero on a short range (the P&L since the first trade), as -$37.20.
+const signedDollars = (v: number) => `${v < 0 ? '-' : ''}$${formatNumber(Math.abs(v))}`;
 
 // While the equity is below its highest point, a faint dashed line marks that peak (the Peak line): from the peak's
 // point on the orange line to its latest point, the stretch the equity has been under it.
@@ -168,7 +171,7 @@ const peakEquityLinePlugin: Plugin<'line', { peak: number | null; peakIndex: num
     const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
     // With how far the equity now is below it, e.g. "Peak $41.08 (-$13.30)".
     const gap = subMoney(current, peak);
-    const label = isPrivacyMode ? 'Peak' : `Peak $${formatNumber(peak)} (-$${formatNumber(Math.abs(gap))})`;
+    const label = isPrivacyMode ? 'Peak' : `Peak ${signedDollars(peak)} (-$${formatNumber(Math.abs(gap))})`;
     // Above the line's start; moved left when it would run past the page's right edge (a recent peak).
     const labelX = Math.max(0, Math.min(left + 4, chart.width - ctx.measureText(label).width - 4));
     ctx.fillText(label, labelX, y - 4);
@@ -219,7 +222,7 @@ const drawLowLine = (chart: ChartJS<'line'>, low: number, lowIndex: number, curr
   ctx.textBaseline = 'top';
   const isPrivacyMode = useJournalStore.getState().isPrivacyMode;
   const gap = subMoney(current, low);
-  const label = isPrivacyMode ? 'Low' : `Low $${formatNumber(low)} (-$${formatNumber(Math.abs(gap))})`;
+  const label = isPrivacyMode ? 'Low' : `Low ${signedDollars(low)} (-$${formatNumber(Math.abs(gap))})`;
   const labelX = Math.max(0, Math.min(start.x + 4, chart.width - ctx.measureText(label).width - 4));
   ctx.fillText(label, labelX, y + 4);
   ctx.restore();
@@ -405,9 +408,9 @@ export default function Dashboard() {
     setChartRange(range);
     try { localStorage.setItem('dashboardChartRange', range); } catch { /* not remembered */ }
   };
-  const series = useMemo(() => equitySeries(data.seriesEvents, chartRange, now), [data.seriesEvents, chartRange, now]);
-  // The Peak line and the Active DD area show on every range: they only ever show the drawdown under way now, and a
-  // long one is seen whole only on a long range (on a short one it starts at the left edge).
+  const series = useMemo(() => equitySeries(data.seriesEvents, chartRange, now, startHour), [data.seriesEvents, chartRange, now, startHour]);
+  // The Peak line and the Active DD area show on every range. On All they are the all-time drawdown under way; on a
+  // shorter range, the drop from that range's own top (equitySeries.ts). The Drawdown card stays all-time.
   const showPeak = trades.length > 0;
   // Below the Low line: the line shows, and the Equity line under it and its end dot turn red.
   const isBelowLow = showPeak && series.low !== null && series.current < series.low;
@@ -674,9 +677,11 @@ export default function Dashboard() {
 
       <div className="px-6 pt-6 h-[350px] flex flex-col">
         {/* The title alone; the equity's figure is not shown (the Peak line's label gives how far below it is). */}
-        <div ref={chartTitleRef} className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 bg-accent rounded-full shrink-0"></span> {/* Shorter on a phone, so it shares the line with the range buttons */}
+        {/* On a phone the range buttons (six of them) leave too little room for the title: they go on a line of their
+            own under it, at the right. */}
+        <div ref={chartTitleRef} className="flex flex-wrap sm:flex-nowrap items-center justify-end sm:justify-between gap-x-3 gap-y-3 mb-4">
+          <h3 className="basis-full sm:basis-auto text-xs font-black text-ink uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 bg-accent rounded-full shrink-0"></span> {/* Shorter on a phone */}
             <span className="truncate"><span className="sm:hidden">Equity</span><span className="hidden sm:inline">Equity and Balance</span></span>
           </h3>
           {/* Same as the Performance page's chart measure buttons (W/L, RR, ...); a little narrower on a phone. */}
@@ -685,7 +690,7 @@ export default function Dashboard() {
             value={chartRange}
             onChange={pickChartRange}
             buttonClass="min-w-8 md:min-w-10 px-2 md:px-2.5"
-            options={CHART_RANGES.map(range => ({ value: range, label: range === 'ALL' ? 'All' : range }))}
+            options={CHART_RANGES.map(range => ({ value: range, label: CHART_RANGE_LABELS[range] }))}
           />
         </div>
         <div className="flex-1 relative min-w-0" style={{ marginLeft: -bleed.left, marginRight: -bleed.right }}>

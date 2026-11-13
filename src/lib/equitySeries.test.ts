@@ -17,12 +17,12 @@ test('ALL starts at zero and keeps every point', () => {
   assert.equal(s.current, 6);
 });
 
-test('a short range starts where the account stood then, and the figures stay all-time', () => {
+test('a short range starts where the account stood then; the equity stays all-time', () => {
   const s = equitySeries([deposit(40, 100), trade(30, 10), trade(3, -4), trade(1, 1)], '1W', NOW);
   // The line starts at the range's start with the equity and balance of that moment.
   assert.deepEqual(s.equity, [10, 6, 7]);
   assert.deepEqual(s.balance, [110, 106, 107]);
-  // The peak came before the range: the Peak line starts at the left edge, at the all-time peak.
+  // The range's highest is where it started: the Peak line starts at the left edge.
   assert.equal(s.peak, 10);
   assert.equal(s.peakIndex, 0);
   assert.equal(s.current, 7);
@@ -90,9 +90,73 @@ test('the Low line: new highs one after another are one climb, so the peak befor
   assert.equal(s.low, 2);
 });
 
-test('the Low line: when the low came before the range it starts at the left edge', () => {
-  const s = equitySeries([trade(30, 10), trade(29, -6), trade(3, 8), trade(1, -9)], '1W', NOW);
-  assert.equal(s.low, 4);
+test('a short range has its own Peak and Low lines; All keeps the all-time ones', () => {
+  // All-time: up to 10, down to 4, up to 12 (the peak), down to 3. The last week: from 4, up to 12, down to 3.
+  const events = [trade(30, 10), trade(29, -6), trade(3, 8), trade(1, -9)];
+  const all = equitySeries(events, 'ALL', NOW);
+  assert.deepEqual([all.peak, all.low], [12, 4]);
+  const week = equitySeries(events, '1W', NOW);
+  assert.deepEqual(week.equity, [4, 12, 3]);
+  assert.equal(week.peak, 12);
+  assert.equal(week.peakIndex, 1);
+  // No peak before the week's top: the lowest point before it (its start, 4) is the Low line.
+  assert.equal(week.low, 4);
+  assert.equal(week.lowIndex, 0);
+});
+
+test('a short range: the Low line is the dip below its start before its top, never one before the range', () => {
+  // Before the week: up to 20 (all-time peak), down to 5. In the week: from 5 to 2, up to 9, down to 6.
+  const events = [trade(30, 20), trade(29, -15), trade(5, -3), trade(4, 7), trade(2, -3)];
+  const all = equitySeries(events, 'ALL', NOW);
+  assert.equal(all.peak, 20);
+  const week = equitySeries(events, '1W', NOW);
+  assert.deepEqual(week.equity, [5, 2, 9, 6]);
+  assert.equal(week.peak, 9);
+  assert.equal(week.peakIndex, 2);
+  assert.equal(week.low, 2);
+  assert.equal(week.lowIndex, 1);
+});
+
+test('a short range that only fell: its top is its start, and the Low line is the top itself', () => {
+  const s = equitySeries([trade(30, 10), trade(3, -2), trade(2, -3)], '1W', NOW);
+  assert.deepEqual(s.equity, [10, 8, 5]);
+  assert.equal(s.peak, 10);
+  assert.equal(s.peakIndex, 0);
+  assert.equal(s.low, 10);
   assert.equal(s.lowIndex, 0);
+});
+
+test('no peak before the top: the lowest point before it, even if not the start', () => {
+  // The week starts at 10, falls to 6, climbs to 14, then drops to 9.
+  const s = equitySeries([trade(30, 10), trade(5, -4), trade(4, 8), trade(2, -5)], '1W', NOW);
+  assert.deepEqual(s.equity, [10, 6, 14, 9]);
+  assert.equal(s.peak, 14);
+  // 6 is below the start (10), so lowBeforePeak finds it; same answer.
+  assert.equal(s.low, 6);
+  assert.equal(s.lowIndex, 1);
+});
+
+test('Today is the trading day, starting at the day-start hour', () => {
+  const at = (d: number, h: number, m = 0) => new Date(2026, 10, d, h, m).getTime();
+  // 9 Nov 2026 at 12:00 (NOW): today began at 05:00; at 03:00 it is still the 8th's trading day.
+  assert.equal(rangeStart('TODAY', NOW, 5), at(9, 5));
+  assert.equal(rangeStart('TODAY', at(9, 3), 5), at(8, 5));
+});
+
+test("Today shows today's trades from where the account stood, with times and the day's own peak", () => {
+  const at = (d: number, h: number, m = 0) => new Date(2026, 10, d, h, m).getTime();
+  const events: SeriesEvent[] = [
+    { type: 'funding', time: at(1, 9), deposit: 100 },
+    { type: 'trade', time: at(2, 10), profit: 20 },
+    { type: 'trade', time: at(9, 4), profit: -5 }, // still the 8th's trading day
+    { type: 'trade', time: at(9, 9, 30), profit: 3 },
+  ];
+  const s = equitySeries(events, 'TODAY', NOW, 5);
+  assert.deepEqual(s.equity, [15, 18]);
+  assert.deepEqual(s.labels, ['9/11/26 05:00', '9/11/26 09:30']);
+  // The day's top is its last trade, not the all-time 20; the Low line is the lowest before it, the day's start.
+  assert.equal(s.peak, 18);
   assert.equal(s.peakIndex, 1);
+  assert.equal(s.low, 15);
+  assert.equal(s.current, 18);
 });
