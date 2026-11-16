@@ -10,7 +10,7 @@ import SettingsCard, { SETTINGS_INPUT } from "./SettingsCard";
 import SaveRow from "@/components/SaveRow";
 
 // Download and restore the whole database, and how long before the backup reminder turns red.
-// Clearing the database stays in the Import & Backup popup only, away from everyday settings.
+// Clearing the database or the notes is in its own card (ClearDataSetting), at the bottom of this tab.
 export default function BackupSetting() {
   const { trades, funding, dayNotes, weekNotes, preferences, updatePreferences } = useJournalStore();
   const age = useBackupAge();

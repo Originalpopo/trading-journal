@@ -5,19 +5,19 @@ import type { Trade, Funding, Preferences } from '@/store/useJournalStore';
 import type { DayNote } from './dayNotes';
 import type { WeekNote } from './weekNotes';
 
+// Clears the trades and funding only. Day notes and week notes (the Calendar's notes) are kept on purpose, and so
+// are the settings: a fresh start of the figures should not throw away what was written about each day.
 export const clearDatabase = async (
   trades: Trade[],
   funding: Funding[],
-  dayNotes: DayNote[],
-  weekNotes: WeekNote[],
   onProgress?: (status: string) => void,
   onComplete?: () => void,
   onError?: (error: unknown) => void
 ) => {
-  if (!confirm("Are you SURE you want to clear the entire database?\nThis will delete all trades and funding data!")) {
+  if (!confirm("Are you SURE you want to clear the database?\nThis will delete all trades and funding data.\nDay and week notes and your settings are kept.")) {
     return;
   }
-  
+
   const answer = prompt("WARNING: This action is permanent and cannot be undone.\nType 'DELETE' to confirm:");
   if (answer !== "DELETE") {
     alert("Database reset cancelled.");
@@ -29,55 +29,12 @@ export const clearDatabase = async (
   try {
     let batch = writeBatch(db);
     let count = 0;
-    
-    // Delete trades
-    for (const t of trades) {
-      const docRef = doc(db, "trades", t.id);
-      batch.delete(docRef);
-      count++;
-      if (count === 500) {
-        await batch.commit();
-        batch = writeBatch(db);
-        count = 0;
-      }
-    }
-    if (count > 0) {
-      await batch.commit();
-      batch = writeBatch(db);
-      count = 0;
-    }
-
-    // Delete funding
-    for (const f of funding) {
-      const docRef = doc(db, "funding", f.id);
-      batch.delete(docRef);
-      count++;
-      if (count === 500) {
-        await batch.commit();
-        batch = writeBatch(db);
-        count = 0;
-      }
-    }
-    if (count > 0) {
-      await batch.commit();
-      batch = writeBatch(db);
-      count = 0;
-    }
-
-    // Delete day notes
-    for (const n of dayNotes) {
-      const docRef = doc(db, "dayNotes", n.date);
-      batch.delete(docRef);
-      count++;
-      if (count === 500) {
-        await batch.commit();
-        batch = writeBatch(db);
-        count = 0;
-      }
-    }
-    // Delete week notes
-    for (const n of weekNotes) {
-      batch.delete(doc(db, "weekNotes", n.week));
+    const refs = [
+      ...trades.map(t => doc(db, "trades", t.id)),
+      ...funding.map(f => doc(db, "funding", f.id)),
+    ];
+    for (const ref of refs) {
+      batch.delete(ref);
       count++;
       if (count === 500) {
         await batch.commit();
@@ -91,11 +48,52 @@ export const clearDatabase = async (
 
     await clearChartCache();
 
-    alert("Database successfully cleared.");
+    alert("Database cleared. Your notes were kept.");
     if (onComplete) onComplete();
   } catch (e) {
     console.error("Error clearing DB:", e);
     alert("An error occurred while clearing the database.");
+    if (onError) onError(e);
+  }
+};
+
+// Deletes every day note and week note (the Calendar's notes), and nothing else. Kept apart from clearDatabase so
+// the figures and the notes can each be started over on their own.
+export const clearNotes = async (
+  dayNotes: DayNote[],
+  weekNotes: WeekNote[],
+  onComplete?: () => void,
+  onError?: (error: unknown) => void
+) => {
+  const total = dayNotes.length + weekNotes.length;
+  if (total === 0) {
+    alert("There are no notes to delete.");
+    return;
+  }
+  if (!confirm(`Are you SURE you want to delete all notes?\nThis will delete ${dayNotes.length} day notes and ${weekNotes.length} week notes.\nTrades, funding and your settings are kept.`)) {
+    return;
+  }
+  const answer = prompt("WARNING: This action is permanent and cannot be undone.\nType 'DELETE' to confirm:");
+  if (answer !== "DELETE") {
+    alert("Deleting notes cancelled.");
+    return;
+  }
+
+  try {
+    const refs = [
+      ...dayNotes.map(n => doc(db, "dayNotes", n.date)),
+      ...weekNotes.map(n => doc(db, "weekNotes", n.week)),
+    ];
+    for (let i = 0; i < refs.length; i += 500) {
+      const batch = writeBatch(db);
+      refs.slice(i, i + 500).forEach(ref => batch.delete(ref));
+      await batch.commit();
+    }
+    alert(`Deleted ${dayNotes.length} day notes and ${weekNotes.length} week notes.`);
+    if (onComplete) onComplete();
+  } catch (e) {
+    console.error("Error deleting notes:", e);
+    alert("An error occurred while deleting the notes.");
     if (onError) onError(e);
   }
 };

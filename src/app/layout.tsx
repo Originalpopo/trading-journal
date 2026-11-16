@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anuphan, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
@@ -22,6 +22,12 @@ export const metadata: Metadata = {
   description: "A comprehensive trading journal and dashboard",
 };
 
+// "cover" lets the page run under the iPhone's home bar, so the phone's bottom menu can reach the screen's edge;
+// env(safe-area-inset-bottom) then keeps its buttons above the home bar.
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,7 +38,7 @@ export default function RootLayout({
       <body className={`font-sans text-ink h-[100dvh] flex overflow-hidden bg-surface print:h-auto print:block print:overflow-visible print:bg-white`}>
         <AuthProvider>
           <Sidebar />
-          <main className="flex-1 p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:p-8 md:pl-[calc(var(--rail,96px)+2rem)] print:pl-0 transition-[padding] duration-300 overflow-y-auto w-full print:overflow-visible print:p-0">
+          <main className="flex-1 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-8 md:pl-[calc(var(--rail,96px)+2rem)] print:pl-0 transition-[padding] duration-300 overflow-y-auto w-full print:overflow-visible print:p-0">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>

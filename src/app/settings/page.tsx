@@ -15,6 +15,7 @@ import RiskStepSetting from "@/components/settings/RiskStepSetting";
 import TradingDaySetting from "@/components/settings/TradingDaySetting";
 import TaxStepsInfo from "@/components/settings/TaxStepsInfo";
 import BackupSetting from "@/components/settings/BackupSetting";
+import ClearDataSetting from "@/components/settings/ClearDataSetting";
 import BalanceCheckHistory from "@/components/settings/BalanceCheckHistory";
 import SaveRow from "@/components/SaveRow";
 import SettingsCard from "@/components/settings/SettingsCard";
@@ -149,6 +150,7 @@ export default function SettingsPage() {
         <>
           <BackupSetting />
           <BalanceCheckHistory />
+          <ClearDataSetting />
         </>
       )}
 

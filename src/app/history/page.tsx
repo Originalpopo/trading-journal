@@ -8,7 +8,6 @@ import { CHECKLIST_ICONS } from "@/components/checklistIcons";
 import ManualTradeModal from "@/components/ManualTradeModal";
 import TradeDetailModal from "@/components/TradeDetailModal";
 import { UploadModal } from "@/components/UploadModal";
-import { BackupDueDot } from "@/components/BackupReminder";
 import BulkImportModal from "@/components/BulkImportModal";
 import ExitConfidenceBadge from "@/components/ExitConfidenceBadge";
 import BulkEditModal from "@/components/BulkEditModal";
@@ -37,7 +36,7 @@ function PnlText({ profit }: { profit: number }) {
 }
 
 export default function HistoryPage() {
-  const { trades, funding, dayNotes, weekNotes, preferences, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
+  const { trades, funding, isLoading, deleteTrade, isPrivacyMode } = useJournalStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,58 +92,11 @@ export default function HistoryPage() {
     }
   }, [trades, funding, selectedDetailTrade]);
 
-  const handleUploadStatus = (status: string) => {
-    console.log("Upload status:", status);
-  };
-
   const onPasteSubmit = async (text: string, logText: string) => {
     setIsUploadModalOpen(false);
     setTvRawText(text);
     setTvLogText(logText);
     setIsBulkImportOpen(true);
-  };
-
-  const onDBRestoreUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        const { restoreDatabase } = await import("@/lib/dbActions");
-        restoreDatabase(
-          text,
-          handleUploadStatus,
-          (result) => {
-            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, ${result.notes} day notes, ${result.weekNotes} week notes${result.preferences ? ', and your settings (balance checks, statement details)' : ''}.`);
-            setIsUploadModalOpen(false);
-          },
-          () => {
-            alert("Error restoring database");
-          }
-        );
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const onClearDatabase = async () => {
-    const { clearDatabase } = await import("@/lib/dbActions");
-    clearDatabase(
-      trades,
-      funding,
-      dayNotes,
-      weekNotes,
-      handleUploadStatus,
-      () => alert("Database cleared"),
-      () => alert("Error clearing database")
-    );
-  };
-
-  const onDownloadDatabase = async () => {
-    const { downloadDatabase } = await import("@/lib/dbActions");
-    downloadDatabase(trades, funding, dayNotes, weekNotes, preferences);
   };
 
   const handleEdit = (t: any) => {
@@ -253,9 +205,7 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="History">
-        <HeaderButton icon={Upload} label="Import" variant="primary" onClick={() => setIsUploadModalOpen(true)}>
-          <BackupDueDot />
-        </HeaderButton>
+        <HeaderButton icon={Upload} label="Import" variant="primary" onClick={() => setIsUploadModalOpen(true)} />
         <HeaderButton icon={Plus} label="Add entry" variant="plain" iconOnly onClick={() => { setTradeToEdit(null); setIsModalOpen(true); }} />
       </PageHeader>
 
@@ -499,9 +449,6 @@ export default function HistoryPage() {
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         onPasteSubmit={onPasteSubmit} 
-        onDBRestoreUpload={onDBRestoreUpload}
-        onClearDatabase={onClearDatabase}
-        onDownloadDatabase={onDownloadDatabase}
       />
 
       {isBulkImportOpen && (

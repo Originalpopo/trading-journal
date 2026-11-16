@@ -21,7 +21,6 @@ import {
   Ellipsis
 } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { clearDatabase, downloadDatabase, restoreDatabase } from "@/lib/dbActions";
 import { UploadModal } from "./UploadModal";
 import { BackupDueDot } from "./BackupReminder";
 import BulkImportModal from "./BulkImportModal";
@@ -49,7 +48,7 @@ export default function Sidebar() {
     setSelected("/settings");
     router.push("/settings");
   };
-  const { initializeListeners, trades, funding, dayNotes, weekNotes, preferences, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
+  const { initializeListeners, isPrivacyMode, setIsPrivacyMode } = useJournalStore();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [tvRawText, setTvRawText] = useState("");
@@ -121,36 +120,6 @@ export default function Sidebar() {
     setIsBulkImportOpen(true);
   };
 
-  // Restoring and clearing say when they finish or fail with their own alerts (dbActions).
-  const onDBRestoreUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        restoreDatabase(
-          text,
-          undefined,
-          (result) => {
-            alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, ${result.notes} day notes, ${result.weekNotes} week notes${result.preferences ? ', and your settings (balance checks, statement details)' : ''}.`);
-          }
-        );
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const onClearDatabase = () => {
-    clearDatabase(trades, funding, dayNotes, weekNotes);
-  };
-
-  const onDownloadDatabase = () => {
-    downloadDatabase(trades, funding, dayNotes, weekNotes, preferences);
-  };
-
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     // Same order as the phone's bottom bar (MOBILE_PRIMARY): Dashboard, History, Calendar, Performance.
@@ -173,15 +142,18 @@ export default function Sidebar() {
   // The phone bar's orange pill slides between its five buttons the same way; the pages inside More don't have one
   // of their own (More holds it for them).
   const barRef = useRef<HTMLDivElement>(null);
+  const barNavRef = useRef<HTMLElement>(null);
   const barKey = isMoreActive ? "more" : pathname;
   const [barItem, setBarItem] = useTween<{ left: number; width: number; top: number; height: number }>();
   const [barSize, setBarSize] = useState<{ w: number; h: number } | null>(null);
   const barReadyRef = useRef(false);
   useLayoutEffect(() => {
     const bar = barRef.current;
-    if (!bar) return;
+    const nav = barNavRef.current;
+    if (!bar || !nav) return;
     const place = (glide: boolean) => {
-      setBarSize(bar.offsetWidth ? { w: bar.offsetWidth, h: bar.offsetHeight } : null);
+      // The card covers the whole bar, the strip above the iPhone's home bar included.
+      setBarSize(nav.offsetWidth ? { w: nav.offsetWidth, h: nav.offsetHeight } : null);
       const item = bar.querySelector<HTMLElement>(`[data-bar-key="${barKey}"]`);
       setBarItem(item && item.offsetWidth ? { left: item.offsetLeft, width: item.offsetWidth, top: item.offsetTop, height: item.offsetHeight } : null, glide);
     };
@@ -189,11 +161,13 @@ export default function Sidebar() {
     barReadyRef.current = true;
     const observer = new ResizeObserver(() => place(false));
     observer.observe(bar);
+    observer.observe(nav);
     return () => observer.disconnect();
   }, [barKey, setBarItem]);
   const barNotch = barItem && { left: barItem.left, right: barItem.left + barItem.width, bottom: barItem.top + barItem.height };
-  const barPath = barSize ? topNotchPath(barSize.w, barSize.h, 24, barNotch) : null;
-  const barTab = barSize && barNotch ? topNotchFill(barSize.w, barSize.h, 24, barNotch) : null;
+  // Square corners (0): the bar runs edge to edge, so only the notch is rounded.
+  const barPath = barSize ? topNotchPath(barSize.w, barSize.h, 0, barNotch) : null;
+  const barTab = barSize && barNotch ? topNotchFill(barSize.w, barSize.h, 0, barNotch) : null;
 
   return (
     <>
@@ -250,6 +224,8 @@ export default function Sidebar() {
               >
                 <Icon className={`w-5 h-5 shrink-0 ${isCollapsed && isActive ? "scale-110" : ""}`} />
                 {showLabels && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
+                {/* Backup and restore live in Settings, so the overdue-backup dot sits on it. */}
+                {item.href === "/settings" && <BackupDueDot />}
               </button>
             </Link>
           );
@@ -259,7 +235,7 @@ export default function Sidebar() {
       {/* Import above Privacy Mode, both in boxes, at the bottom. */}
       <div className={`px-4 py-2 mt-auto flex flex-col gap-2 ${isCollapsed ? "items-center" : ""}`}>
         <button
-          title="Import & Backup"
+          title="Import"
           onClick={() => setIsUploadModalOpen(true)}
           className={`relative bg-accent hover:bg-accent-strong text-white border border-transparent rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full h-10 px-4"
@@ -267,7 +243,6 @@ export default function Sidebar() {
         >
           <Upload className="w-4 h-4 shrink-0" />
           {showLabels && <span>Import</span>}
-          <BackupDueDot />
         </button>
         <button
           title={isPrivacyMode ? "Show Data" : "Privacy Mode"}
@@ -319,7 +294,7 @@ export default function Sidebar() {
     {isMoreOpen && (
       <div className="md:hidden print:hidden fixed inset-0 z-40 bg-stone-900/50" onClick={() => setIsMoreOpen(false)}>
         <div
-          className="absolute inset-x-0 bottom-0 bg-card rounded-t-3xl px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] shadow-2xl"
+          className="absolute inset-x-0 bottom-0 bg-card rounded-t-3xl px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-3 gap-2">
@@ -346,7 +321,6 @@ export default function Sidebar() {
             >
               <Upload className="w-5 h-5" />
               Import
-              <BackupDueDot />
             </button>
             <button
               onClick={() => setIsPrivacyMode(!isPrivacyMode)}
@@ -360,35 +334,36 @@ export default function Sidebar() {
             <Link
               href="/settings"
               onClick={() => setIsMoreOpen(false)}
-              className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+              className={`relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
                 pathname === "/settings" ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
               }`}
             >
               <Settings className="w-5 h-5" />
               Settings
+              <BackupDueDot />
             </Link>
           </div>
         </div>
       </div>
     )}
 
-    {/* Like the sidebar on a computer: a card floating above the page's bottom, away from the screen's edges,
-        rounded, with a soft shadow. */}
-    <nav className="md:hidden print:hidden fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 rounded-3xl">
+    {/* The full width of the screen, square ends, sitting on the screen's bottom edge. On an iPhone the strip under it
+        (above the home bar) is part of the bar, so its buttons stay clear of the home bar. */}
+    <nav ref={barNavRef} className="md:hidden print:hidden fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)]">
       {barSize && barPath && (
         <svg
           aria-hidden
           className="absolute inset-0 pointer-events-none overflow-visible"
           width={barSize.w}
           height={barSize.h}
-          style={{ filter: "drop-shadow(0 10px 18px color-mix(in srgb, var(--ink) 14%, transparent))" }}
+          style={{ filter: "drop-shadow(0 -4px 14px color-mix(in srgb, var(--ink) 8%, transparent))" }}
         >
           <path d={barPath} className="fill-card stroke-line" strokeWidth={1} />
           {barTab && <path d={barTab} className="fill-accent-soft" />}
         </svg>
       )}
       {/* The page being shown sits in a light orange notch that slides, as in the sidebar. */}
-      {/* px-9 keeps the first and last buttons clear of the bar's rounded ends, so their notch has room. */}
+      {/* px-9 keeps the first and last buttons in from the screen's edges, so their notch has room. */}
       <div ref={barRef} className="relative grid grid-cols-5 h-14 py-1.5 px-9 gap-1">
         {mobilePrimary.map((item) => {
           const isActive = !isMoreOpen && pathname === item.href;
@@ -420,6 +395,8 @@ export default function Sidebar() {
           }`}
         >
           <Ellipsis className="w-5 h-5" />
+          {/* Settings (with backup) is behind More on a phone. */}
+          {!isMoreOpen && <BackupDueDot />}
         </button>
       </div>
     </nav>
@@ -429,9 +406,6 @@ export default function Sidebar() {
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         onPasteSubmit={onPasteSubmit} 
-        onDBRestoreUpload={onDBRestoreUpload}
-        onClearDatabase={onClearDatabase}
-        onDownloadDatabase={onDownloadDatabase}
       />
       {isBulkImportOpen && (
         <BulkImportModal 

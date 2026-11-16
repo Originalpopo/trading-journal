@@ -1,26 +1,18 @@
 import { useState } from "react";
-import { Upload, Trash2, Download, ChevronDown, Import } from "lucide-react";
+import { Import } from "lucide-react";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
-import BackupReminder from "./BackupReminder";
 import SaveRow from "./SaveRow";
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPasteSubmit: (historyText: string, logText: string) => void;
-  onDBRestoreUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearDatabase: () => void;
-  onDownloadDatabase: () => void;
 }
 
-export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload, onClearDatabase, onDownloadDatabase }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, onPasteSubmit }: UploadModalProps) {
   const [pasteText, setPasteText] = useState("");
   const [logText, setLogText] = useState("");
-  // Accordion: one section open at a time, the paste section by default.
-  const [openSection, setOpenSection] = useState<"paste" | "restore" | "actions">("paste");
-
   const close = () => {
-    setOpenSection("paste");
     onClose();
   };
   useEscapeToClose(isOpen, close);
@@ -40,29 +32,14 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
     close();
   };
 
-  // `extra` sits beside the chevron.
-  const sectionHeader = (section: "paste" | "restore" | "actions", title: string, extra?: React.ReactNode) => (
-    <button
-      type="button"
-      onClick={() => setOpenSection(section)}
-      aria-expanded={openSection === section}
-      className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-bold text-ink text-left"
-    >
-      <span>{title}</span>
-      <span className="ml-auto">{extra}</span>
-      <ChevronDown className={`w-4 h-4 shrink-0 text-ink-faint transition-transform ${openSection === section ? "rotate-180" : ""}`} />
-    </button>
-  );
-
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4" style={{ outline: 'none', border: 'none' }} onClick={close}>
       <div className="bg-card border-0 bg-clip-padding rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-xl font-extrabold text-ink mb-4 tracking-tight">Import & Backup</h3>
+        <h3 className="text-xl font-extrabold text-ink mb-4 tracking-tight">Import</h3>
 
-        {/* Paste Text Section */}
+        {/* Paste from TradingView. Backup, restore and clearing live in Settings > Data & Backup. */}
         <div className="mb-3 border border-line rounded-xl">
-          {sectionHeader("paste", "Paste from TradingView")}
-          {openSection === "paste" && (
+          <p className="px-4 py-3 text-sm font-bold text-ink">Paste from TradingView</p>
           <div className="px-4 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -93,64 +70,6 @@ export function UploadModal({ isOpen, onClose, onPasteSubmit, onDBRestoreUpload,
           ) : null}
           <SaveRow isDirty={!!pasteText.trim() || !!logText.trim()} isSaving={false} onSave={handleSubmit} label="Import" icon={Import} />
           </div>
-          )}
-        </div>
-
-        {/* Database Actions Section */}
-        <div className="mb-3 border border-line rounded-xl">
-          {sectionHeader("actions", "Database actions", <BackupReminder />)}
-          {openSection === "actions" && (
-          <div className="px-4 pb-4">
-        <div className="flex gap-4">
-          <button
-            onClick={() => {
-              if (window.confirm("Are you sure you want to clear the database?")) {
-                onClearDatabase();
-                close();
-              }
-            }}
-            title="Clear Database"
-            aria-label="Clear Database"
-            className="shrink-0 flex items-center justify-center px-4 py-3 bg-surface-2 hover:bg-line text-ink-muted rounded-xl transition border border-line hover:border-ink-disabled shadow-sm"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-          
-          <button
-            onClick={() => {
-              onDownloadDatabase();
-              close();
-            }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-card hover:bg-accent-soft text-accent font-bold rounded-xl transition border border-accent hover:border-accent-strong shadow-sm"
-          >
-            <Download className="w-5 h-5" />
-            <span className="whitespace-nowrap">Download Backup</span>
-          </button>
-        </div>
-          </div>
-          )}
-        </div>
-
-        {/* Restore DB Section */}
-        <div className="mb-3 border border-line rounded-xl">
-          {sectionHeader("restore", "Restore from backup (JSON)")}
-          {openSection === "restore" && (
-          <div className="px-4 pb-4">
-          <label className="cursor-pointer bg-surface border-2 border-dashed border-ink-disabled hover:border-accent hover:bg-accent-soft text-ink-muted px-4 py-4 rounded-xl font-bold transition flex flex-col items-center justify-center gap-3">
-            <Upload className="w-8 h-8 text-ink-faint" />
-            <span>Click to browse or drag and drop JSON backup</span>
-            <input 
-              type="file" 
-              accept=".json" 
-              className="hidden" 
-              onChange={(e) => {
-                onDBRestoreUpload(e);
-                close();
-              }} 
-            />
-          </label>
-          </div>
-          )}
         </div>
 
         <div className="flex justify-end gap-3 pt-1">
