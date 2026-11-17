@@ -185,7 +185,7 @@ export default function Sidebar() {
         {sidebarTab && <path d={sidebarTab} className="fill-accent-soft" />}
       </svg>
     )}
-    <aside ref={asideRef} className={`print:hidden rounded-3xl fixed top-4 bottom-4 left-4 hidden md:flex flex-col shrink-0 overflow-y-auto overflow-x-hidden z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
+    <aside ref={asideRef} className={`print:hidden rounded-popup fixed top-4 bottom-4 left-4 hidden md:flex flex-col shrink-0 overflow-y-auto overflow-x-hidden z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`}>
       <div className={`p-6 pb-8 flex items-center ${isCollapsed ? "justify-center px-4" : "gap-2"}`}>
         <button 
           onClick={(e) => {
@@ -198,7 +198,7 @@ export default function Sidebar() {
         </button>
         {showLabels && (
           <Link href="/" className="cursor-pointer hover:opacity-80 transition flex-shrink-0 overflow-hidden">
-            <h1 className="text-2xl font-extrabold text-ink tracking-tight whitespace-nowrap">
+            <h1 className="text-figure font-black text-ink tracking-tight whitespace-nowrap">
               Trade<span className="text-accent">Journal</span>
             </h1>
           </Link>
@@ -214,7 +214,7 @@ export default function Sidebar() {
             <Link key={item.name} href={item.href} onClick={() => setSelected(item.href)} title={isCollapsed ? item.name : undefined}>
               <button
                 data-nav-href={item.href}
-                className={`relative flex items-center transition-all w-full text-left rounded-xl ${
+                className={`relative flex items-center transition-all w-full text-left rounded-box ${
                   isCollapsed ? "justify-center h-11 px-0" : "gap-3 px-4 h-11"
                 } ${
                   isActive
@@ -237,7 +237,7 @@ export default function Sidebar() {
         <button
           title="Import"
           onClick={() => setIsUploadModalOpen(true)}
-          className={`relative bg-accent hover:bg-accent-strong text-white border border-transparent rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 ${
+          className={`relative bg-accent hover:bg-accent-strong text-white border border-transparent rounded-control text-body font-bold transition shadow-card flex items-center justify-center gap-2 ${
             isCollapsed ? "w-10 h-10 p-0 shrink-0" : "w-full h-10 px-4"
           }`}
         >
@@ -247,7 +247,7 @@ export default function Sidebar() {
         <button
           title={isPrivacyMode ? "Show Data" : "Privacy Mode"}
           onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-          className={`flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition shadow-sm border ${
+          className={`flex items-center justify-center gap-2 text-body font-bold rounded-control transition shadow-card border ${
             isPrivacyMode
               ? 'bg-accent-soft text-accent border-accent-line'
               : 'bg-card border-line text-ink-muted hover:border-accent-line hover:text-accent'
@@ -265,7 +265,7 @@ export default function Sidebar() {
           type="button"
           onClick={openAccount}
           title={shortName}
-          className={`flex items-center rounded-xl transition hover:bg-surface ${isCollapsed ? "p-1" : "w-full gap-3 px-2 py-1.5 text-left"}`}
+          className={`flex items-center rounded-box transition hover:bg-surface ${isCollapsed ? "p-1" : "w-full gap-3 px-2 py-1.5 text-left"}`}
         >
           {user?.photoURL && !photoFailed ? (
             // Google's photo server refuses some requests that carry the page's address, hence no-referrer.
@@ -284,7 +284,7 @@ export default function Sidebar() {
           )}
           {showLabels && (
             <span className="min-w-0">
-              <span className="block text-sm font-bold text-ink truncate">{shortName}</span>
+              <span className="block text-body font-bold text-ink truncate">{shortName}</span>
             </span>
           )}
         </button>
@@ -294,7 +294,7 @@ export default function Sidebar() {
     {isMoreOpen && (
       <div className="md:hidden print:hidden fixed inset-0 z-40 bg-stone-900/50" onClick={() => setIsMoreOpen(false)}>
         <div
-          className="absolute inset-x-0 bottom-0 bg-card rounded-t-3xl px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] shadow-2xl"
+          className="absolute inset-x-0 bottom-0 bg-card rounded-t-popup px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] shadow-raised"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-3 gap-2">
@@ -306,7 +306,7 @@ export default function Sidebar() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsMoreOpen(false)}
-                  className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+                  className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-box text-caption transition ${
                     isActive ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
                   }`}
                 >
@@ -317,14 +317,14 @@ export default function Sidebar() {
             })}
             <button
               onClick={() => { setIsMoreOpen(false); setIsUploadModalOpen(true); }}
-              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] bg-surface text-ink-muted font-semibold transition"
+              className="relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-box text-caption bg-surface text-ink-muted font-semibold transition"
             >
               <Upload className="w-5 h-5" />
               Import
             </button>
             <button
               onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-              className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+              className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-box text-caption transition ${
                 isPrivacyMode ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
               }`}
             >
@@ -334,7 +334,7 @@ export default function Sidebar() {
             <Link
               href="/settings"
               onClick={() => setIsMoreOpen(false)}
-              className={`relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-[11px] transition ${
+              className={`relative flex flex-col items-center justify-center gap-1.5 py-4 rounded-box text-caption transition ${
                 pathname === "/settings" ? "bg-accent-soft text-accent font-bold" : "bg-surface text-ink-muted font-semibold"
               }`}
             >

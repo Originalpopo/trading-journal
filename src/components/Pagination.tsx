@@ -9,7 +9,7 @@ export default function Pagination({ page, pageCount, onChange }: { page: number
     if (i === 1 || i === pageCount || (i >= page - 1 && i <= page + 1)) {
       items.push(
         <button key={i} type="button" onClick={() => onChange(i)} aria-current={i === page ? "page" : undefined}
-          className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === page ? "bg-accent text-white" : "text-ink-muted hover:bg-surface"}`}>
+          className={`px-3 py-1.5 border border-line rounded-control text-caption font-bold ${i === page ? "bg-accent text-white" : "text-ink-muted hover:bg-surface"}`}>
           {i}
         </button>
       );
@@ -20,10 +20,10 @@ export default function Pagination({ page, pageCount, onChange }: { page: number
   return (
     <div className="flex flex-wrap justify-center gap-1">
       <button type="button" onClick={() => onChange(page - 1)} disabled={page === 1}
-        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">Prev</button>
+        className="px-3 py-1.5 border border-line rounded-control text-caption font-bold text-ink-muted disabled:opacity-50">Prev</button>
       {items}
       <button type="button" onClick={() => onChange(page + 1)} disabled={page === pageCount}
-        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">Next</button>
+        className="px-3 py-1.5 border border-line rounded-control text-caption font-bold text-ink-muted disabled:opacity-50">Next</button>
     </div>
   );
 }

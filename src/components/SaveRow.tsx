@@ -1,13 +1,11 @@
 import { Save, type LucideIcon } from "lucide-react";
-
-export const CANCEL_BUTTON = "px-6 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition";
-export const SAVE_BUTTON = "px-6 py-2.5 bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white font-bold rounded-xl transition shadow-lg shadow-accent-line flex items-center gap-2";
+import Button from "@/components/Button";
 
 // The site's standard Save button for a card of fields on a page (see AGENTS.md), at its bottom right.
 // Hidden, with the card's bottom edge pulled up, until something in the card is changed; then the
 // edge slides down and the button appears.
 // `canSave` is false while a changed value isn't valid yet (e.g. a 3-digit PIN).
-export default function SaveRow({ isDirty, canSave = true, isSaving, onSave, onCancel, submit = false, label = "Save", busyLabel = "Saving...", icon: Icon = Save }: {
+export default function SaveRow({ isDirty, canSave = true, isSaving, onSave, onCancel, submit = false, label = "Save", busyLabel = "Saving...", icon = Save }: {
   isDirty: boolean;
   canSave?: boolean;
   isSaving: boolean;
@@ -24,19 +22,19 @@ export default function SaveRow({ isDirty, canSave = true, isSaving, onSave, onC
       <div className="overflow-hidden">
         <div className={`flex justify-end gap-3 pt-6 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`}>
           {onCancel && (
-            <button type="button" onClick={onCancel} disabled={isSaving} className={CANCEL_BUTTON}>
+            <Button variant="secondary" onClick={onCancel} disabled={isSaving}>
               Cancel
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="primary"
+            icon={icon}
             type={submit ? "submit" : "button"}
             onClick={submit ? undefined : onSave}
             disabled={isSaving || !canSave}
-            className={SAVE_BUTTON}
           >
-            <Icon className="w-4 h-4" />
             {isSaving ? busyLabel : label}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

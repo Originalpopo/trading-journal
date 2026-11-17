@@ -15,6 +15,8 @@ import SaveRow from "./SaveRow";
 import { TradeSummaryLine, FoldBar } from "./TradeSummary";
 import OffPlanReasonPicker from "./OffPlanReasonPicker";
 import { useOffPlanReasons } from "./useOffPlanReasons";
+import { IconButton } from "@/components/Button";
+import { fieldClass } from "@/components/Field";
 
 interface ManualTradeModalProps {
   isOpen: boolean;
@@ -405,9 +407,10 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   // The trade itself, from the broker on an imported trade: folded away while editing one, open on a new
   // entry, where it has to be filled in. Rows sized to what goes in them.
-  const label = "block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1";
-  // A field takes exactly one border, background and text colour (two would leave the winner to CSS order).
-  const fieldBase = "w-full min-w-0 border text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition";
+  const label = "block text-label font-bold text-ink-faint uppercase tracking-widest mb-1";
+  // The md field of components/Field.tsx without its colours, so each field here adds exactly one of each, and with
+  // px-3 instead of px-4 (px-2 for the narrow Side box) so XAUUSD and SELL fit in their boxes on a phone.
+  const fieldBase = "w-full min-w-0 border text-body font-bold rounded-box px-3 py-3 placeholder:font-semibold placeholder:text-ink-disabled focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition disabled:opacity-50";
   const field = `${fieldBase} bg-surface border-line text-ink`;
   const detailsHaveError = invalidAmount || invalidSize || (hasInitialSl && !validInitialSl);
   const detailFields = (
@@ -420,7 +423,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         </div>
         <div>
           <label className={label}>Side</label>
-          <select value={side} onChange={(e) => setSide(e.target.value)} className={`${field} px-2`}>
+          <select value={side} onChange={(e) => setSide(e.target.value)} className={field.replace(" px-3 ", " px-2 ")}>
             <option value="BUY">BUY</option>
             <option value="SELL">SELL</option>
           </select>
@@ -448,7 +451,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           <label className={label}>P&L ($)</label>
           <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
             className={`${fieldBase} bg-surface text-ink ${invalidAmount ? 'border-loss' : 'border-line'}`} />
-          {invalidAmount && <p className="text-[10px] font-bold text-loss mt-1">Max 2 decimals</p>}
+          {invalidAmount && <p className="text-label font-bold text-loss mt-1">Max 2 decimals</p>}
         </div>
         <div>
           <label className={label}>Risk ($)</label>
@@ -461,7 +464,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         </div>
         <div>
           <label className={label}>R</label>
-          <p className={`h-[38px] flex items-center px-3 rounded-lg bg-surface-2 text-sm font-bold ${liveRRStr ? liveRRClass : 'text-ink-faint'}`} title="P&L divided by Risk">
+          <p className={`h-[38px] flex items-center px-3 rounded-control bg-surface-2 text-body font-bold ${liveRRStr ? liveRRClass : 'text-ink-faint'}`} title="P&L divided by Risk">
             {liveRRStr || '-'}
           </p>
         </div>
@@ -470,11 +473,11 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={label}>Entry Price & Type</label>
-          <div className="flex bg-surface border border-line rounded-lg overflow-hidden focus-within:border-accent transition">
+          <div className="flex bg-surface border border-line rounded-control overflow-hidden focus-within:border-accent transition">
             <input type="number" step="0.01" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)}
-              className="w-full bg-transparent text-ink text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
+              className="w-full bg-transparent text-ink text-body font-bold px-3 py-2 focus:outline-none min-w-0" />
             <select value={orderEntryType} onChange={(e) => setOrderEntryType(e.target.value)}
-              className="bg-surface-2 text-ink-muted text-xs font-bold border-l border-line px-2 py-2 focus:outline-none cursor-pointer">
+              className="bg-surface-2 text-ink-muted text-small font-bold border-l border-line px-2 py-2 focus:outline-none cursor-pointer">
               <option value="Limit">Limit</option>
               <option value="Market">Market</option>
               <option value="Stop">Stop</option>
@@ -483,11 +486,11 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
         </div>
         <div>
           <label className={label}>Exit Price & Type</label>
-          <div className="flex bg-surface border border-line rounded-lg overflow-hidden focus-within:border-accent transition">
+          <div className="flex bg-surface border border-line rounded-control overflow-hidden focus-within:border-accent transition">
             <input type="number" step="0.01" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)}
-              className="w-full bg-transparent text-ink text-sm font-bold px-3 py-2 focus:outline-none min-w-0" />
+              className="w-full bg-transparent text-ink text-body font-bold px-3 py-2 focus:outline-none min-w-0" />
             <select value={orderExitType} onChange={(e) => setOrderExitType(e.target.value)}
-              className="bg-surface-2 text-ink-muted text-xs font-bold border-l border-line px-2 py-2 focus:outline-none cursor-pointer">
+              className="bg-surface-2 text-ink-muted text-small font-bold border-l border-line px-2 py-2 focus:outline-none cursor-pointer">
               <option value="Limit">Limit</option>
               <option value="Take Profit">Take Profit</option>
               <option value="Stop Loss">Stop Loss</option>
@@ -516,7 +519,7 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
           </div>
         </div>
         {hasInitialSl && !validInitialSl && (
-          <p className="text-[10px] font-bold text-loss mt-1">1st SL must be {side === 'SELL' ? 'above' : 'below'} entry</p>
+          <p className="text-label font-bold text-loss mt-1">1st SL must be {side === 'SELL' ? 'above' : 'below'} entry</p>
         )}
       </div>
     </div>
@@ -525,8 +528,8 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
   // The plan, the note and the timeframe: what is set by hand on an imported trade.
   const planField = (
     <div>
-      <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-2">Plan</label>
-      <div className="inline-flex items-center bg-surface-2 p-0.5 rounded-lg border border-line">
+      <label className="block text-label font-bold text-ink-faint uppercase tracking-widest mb-2">Plan</label>
+      <div className="inline-flex items-center bg-surface-2 p-0.5 rounded-control border border-line">
         {[{ onPlan: true, label: 'On Plan', Icon: CheckCircle2 }, { onPlan: false, label: 'Off Plan', Icon: XCircle }].map(({ onPlan, label, Icon }) => {
           const isActive = checklists.includes('On Plan') === onPlan;
           return (
@@ -538,9 +541,9 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
                 const others = checklists.filter(c => c !== 'On Plan');
                 setChecklists(onPlan ? ['On Plan', ...others] : others);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-md transition ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-small font-bold rounded-tag transition ${
                 isActive
-                  ? (onPlan ? 'bg-accent-soft text-accent border border-accent-line shadow-sm' : 'bg-card text-ink-muted border border-line shadow-sm')
+                  ? (onPlan ? 'bg-accent-soft text-accent border border-accent-line shadow-card' : 'bg-card text-ink-muted border border-line shadow-card')
                   : 'text-ink-faint border border-transparent hover:text-ink'
               }`}
             >
@@ -561,16 +564,16 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   const tfField = (
     <div>
-      <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-2">Timeframe (TF)</label>
+      <label className="block text-label font-bold text-ink-faint uppercase tracking-widest mb-2">Timeframe (TF)</label>
       <div className="flex gap-2 flex-wrap">
         {['1s', '5s', '15s', '1m', '5m', '15m', '1h'].map((item) => (
           <button
             type="button"
             key={item}
             onClick={() => setTf(item)}
-            className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+            className={`px-3 py-1 text-small font-bold rounded-tag transition ${
               tf === item
-                ? 'bg-accent text-white shadow-sm'
+                ? 'bg-accent text-white shadow-card'
                 : 'bg-card border border-line text-ink-muted hover:bg-surface-2'
             }`}
           >
@@ -583,9 +586,9 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
 
   const notesField = (rows: number) => (
     <div>
-      <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Notes</label>
+      <label className="block text-label font-bold text-ink-faint uppercase tracking-widest mb-1">Notes</label>
       <textarea value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="Add your notes here..." rows={rows}
-        className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition resize-y"></textarea>
+        className="w-full bg-surface border border-line text-ink text-body font-bold rounded-control px-3 py-2 focus:outline-none focus:border-accent transition resize-y"></textarea>
     </div>
   );
 
@@ -603,9 +606,9 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
               <TradeSummaryLine symbol={symbol} side={side} size={size} entryTime={entryTime} exitTime={time}
                 pnl={parsedAmount} rr={formRisk.risk > 0 && amount.trim() !== "" ? formRisk.rr : undefined} isPrivacyMode={isPrivacyMode} />
             ) : (
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Trade details</span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Trade details</span>
             )}
-            {detailsHaveError && !detailsOpen && <span className="text-[11px] font-bold text-loss">Check the details</span>}
+            {detailsHaveError && !detailsOpen && <span className="text-caption font-bold text-loss">Check the details</span>}
           </span>
         }
       >
@@ -621,50 +624,48 @@ export default function ManualTradeModal({ isOpen, onClose, tradeToEdit }: Manua
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Amount ($)</label>
+          <label className="block text-label font-bold text-ink-faint uppercase tracking-widest mb-1">Amount ($)</label>
           <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-            className={`w-full bg-surface border text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidAmount ? 'border-loss' : 'border-line focus:border-accent'}`} />
-          {invalidAmount && <p className="text-[10px] font-bold text-loss mt-1">Max 2 decimals</p>}
+            className={`w-full bg-surface border text-ink text-body font-bold rounded-control px-3 py-2 focus:outline-none transition ${invalidAmount ? 'border-loss' : 'border-line focus:border-accent'}`} />
+          {invalidAmount && <p className="text-label font-bold text-loss mt-1">Max 2 decimals</p>}
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Date & Time</label>
+          <label className="block text-label font-bold text-ink-faint uppercase tracking-widest mb-1">Date & Time</label>
           <input type="datetime-local" step="1" value={time} onChange={(e) => setTime(e.target.value)}
-            className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition" />
+            className={fieldClass("md")} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="flex justify-between items-end text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">
+          <label className="flex justify-between items-end text-label font-bold text-ink-faint uppercase tracking-widest mb-1">
             <span>{entryType === "DEPOSIT" ? "Baht paid (THB)" : "Baht received (THB)"}</span>
             {impliedRate !== null && <span className="text-ink normal-case tracking-normal">1 USD = {impliedRate.toFixed(4)} THB</span>}
           </label>
           <input type="number" step="0.01" min="0" value={thb} onChange={(e) => setThb(e.target.value)}
-            className={`w-full bg-surface border text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none transition ${invalidThb ? 'border-loss' : 'border-line focus:border-accent'}`} />
-          {invalidThb && <p className="text-[10px] font-bold text-loss mt-1">Positive, max 2 decimals</p>}
+            className={`w-full bg-surface border text-ink text-body font-bold rounded-control px-3 py-2 focus:outline-none transition ${invalidThb ? 'border-loss' : 'border-line focus:border-accent'}`} />
+          {invalidThb && <p className="text-label font-bold text-loss mt-1">Positive, max 2 decimals</p>}
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">
+          <label className="block text-label font-bold text-ink-faint uppercase tracking-widest mb-1">
             {entryType === "DEPOSIT" ? "Date it left the bank" : "Date it reached the bank"}
           </label>
           <input type="date" value={bankDate || time.slice(0, 10)} onChange={(e) => setBankDate(e.target.value)}
-            className="w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition" />
+            className={fieldClass("md")} />
         </div>
-        <p className="sm:col-span-2 text-[10px] font-medium text-ink-faint -mt-2">From the bank slip, needed for tax.</p>
+        <p className="sm:col-span-2 text-label font-semibold text-ink-faint -mt-2">From the bank slip, needed for tax.</p>
       </div>
     </>
   );
 
   return (
     <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-[100] p-4 animate-fadeIn" style={{ outline: 'none', border: 'none' }} onClick={() => onClose()}>
-      <div className="bg-card border-0 bg-clip-padding rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border-0 bg-clip-padding rounded-popup w-full max-w-2xl p-6 md:p-8 shadow-raised relative flex flex-col max-h-[90vh]" style={{ outline: 'none', border: 'none', backgroundClip: 'padding-box', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-2xl font-black text-ink tracking-tight">
+          <h3 className="text-figure font-black text-ink tracking-tight">
             {tradeToEdit ? (tradeToEdit.isFunding ? "Edit Funding" : "Edit Trade") : "Add Entry"}
           </h3>
-          <button onClick={() => onClose()} className="text-ink-faint hover:text-ink p-1 rounded-full hover:bg-surface-2 transition">
-            <X className="w-6 h-6" />
-          </button>
+          <IconButton icon={X} label="Close" size="lg" onClick={() => onClose()} />
         </div>
 
         {sections.length > 1 && (

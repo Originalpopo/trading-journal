@@ -116,7 +116,7 @@ function WeekSteps({ steps, isPrivacyMode }: { steps: WeekdayTarget[]; isPrivacy
           <div className={`relative w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${isLoss ? "border-2 border-loss bg-card text-loss" : circle[state]}`} title={dayTitle(date, target, pnl, isPrivacyMode)}>
             {state === "hit" && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
             {state === "missed" && <X className="w-3 h-3" strokeWidth={3} />}
-            <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${state === "today" ? "text-accent" : "text-ink-faint"}`}>
+            <span className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 text-label font-bold ${state === "today" ? "text-accent" : "text-ink-faint"}`}>
               {weekdayName(date)}
             </span>
           </div>
@@ -167,8 +167,8 @@ export default function DailyTargetBar() {
   const weekPercentText = weekSum.target > 0 ? `${Math.round((weekSum.pnl / weekSum.target) * 100)}%` : "0%";
 
   // Title, bar and figures share their widths between the two lines, so the two bars line up on a computer.
-  const titleClass = "order-1 md:w-44 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap";
-  const figuresClass = "order-2 md:order-3 ml-auto md:ml-0 md:min-w-28 text-right text-xs font-black tabular-nums whitespace-nowrap";
+  const titleClass = "order-1 md:w-44 text-small font-black uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap";
+  const figuresClass = "order-2 md:order-3 ml-auto md:ml-0 md:min-w-28 text-right text-small font-black tabular-nums whitespace-nowrap";
   const figures = (pnl: number, target: number, hit: boolean, percent: string) =>
     isPrivacyMode ? (
       <span className={hit ? "text-accent" : pnl < 0 ? "text-loss" : "text-ink"}>{percent}</span>
@@ -221,7 +221,7 @@ export default function DailyTargetBar() {
               aria-label={label}
               disabled={!isEnabled}
               onClick={() => setIsLastWeek(go)}
-              className={`${side} md:absolute md:top-0 h-6 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors ${
+              className={`${side} md:absolute md:top-0 h-6 w-5 shrink-0 flex items-center justify-center rounded-tag transition-colors ${
                 isEnabled ? "text-ink-faint hover:text-ink hover:bg-surface-2" : "text-ink-disabled cursor-default"
               }`}
             >

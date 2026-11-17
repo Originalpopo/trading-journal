@@ -55,7 +55,7 @@ export default function WeekNoteModal({ week, startEditing, bahtRate, onClose, o
               type="button"
               title={dayNote ? "Open this day's note" : "Open this day"}
               onClick={() => onOpenDay(d.date)}
-              className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-surface hover:bg-surface-2 rounded-xl px-3 py-2 text-[11px] font-bold text-left transition"
+              className="w-full shrink-0 flex items-center gap-2 md:gap-3 bg-surface hover:bg-surface-2 rounded-box px-3 py-2 text-caption font-bold text-left transition"
             >
               <span className="text-ink w-[92px] shrink-0">{weekdayOf(d.date)}</span>
               <span className="w-5 shrink-0">

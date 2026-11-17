@@ -5,8 +5,9 @@ import { FileText } from "lucide-react";
 import SaveRow from "@/components/SaveRow";
 import SettingsCard from "@/components/settings/SettingsCard";
 import { useJournalStore } from "@/store/useJournalStore";
+import { fieldClass } from "@/components/Field";
 
-const INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition placeholder:font-medium";
+const INPUT = fieldClass("md");
 
 // Who the account belongs to, printed at the top of the monthly statement.
 export default function StatementProfileSetting() {
@@ -41,15 +42,15 @@ export default function StatementProfileSetting() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-ink">Account holder</label>
+          <label className="block text-body font-bold text-ink">Account holder</label>
           <input type="text" value={name} onChange={(e) => setEdits(prev => ({ ...prev, name: e.target.value }))} placeholder="Name as on the broker account" className={INPUT} />
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-ink">Broker</label>
+          <label className="block text-body font-bold text-ink">Broker</label>
           <input type="text" value={broker} onChange={(e) => setEdits(prev => ({ ...prev, broker: e.target.value }))} placeholder="Broker name" className={INPUT} />
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-ink">Account number</label>
+          <label className="block text-body font-bold text-ink">Account number</label>
           <input type="text" value={accountNo} onChange={(e) => setEdits(prev => ({ ...prev, accountNo: e.target.value }))} placeholder="Trading account number" className={INPUT} />
         </div>
       </div>

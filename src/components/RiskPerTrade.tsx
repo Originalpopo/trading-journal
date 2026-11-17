@@ -59,9 +59,9 @@ export default function RiskPerTrade() {
       {/* No card: a line on its left parts it from today's target from lg up. Below lg it drops under today's target,
           centred, with a line under it parting it from the chart. The dollars on top, the title with its % under them,
           then the ↑ row; what it was set from is in the tooltip. */}
-      <p className="text-2xl font-black text-ink tabular-nums leading-none">{usd(step.riskNow)}</p>
+      <p className="text-figure font-black text-ink tabular-nums leading-none">{usd(step.riskNow)}</p>
       <h3
-        className="mt-auto text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center lg:justify-start gap-2 whitespace-nowrap text-ink"
+        className="mt-auto text-small font-black uppercase tracking-[0.2em] flex items-center justify-center lg:justify-start gap-2 whitespace-nowrap text-ink"
         title={isSet ? `${pctText(pctSet)} of ${usd(step.anchorBalance)}, set ${dateText(prefs.riskAnchor!.at)}` : `${pctText(pct)} of the balance now (% in Settings)`}
       >
         Risk per Trade
@@ -71,14 +71,14 @@ export default function RiskPerTrade() {
       </h3>
 
       {!isSet && (
-        <p className="text-[11px] font-semibold text-ink-faint">
+        <p className="text-caption font-semibold text-ink-faint">
           Not set yet · % in <Link href="/settings" className="font-bold text-accent hover:underline">Settings</Link>
         </p>
       )}
 
       {/* The balances that call for the next step, or, once one is reached, why and the button for it. */}
       {isSet && !due && (
-        <div className="flex items-center justify-center lg:justify-start gap-4 text-[11px] font-bold tabular-nums">
+        <div className="flex items-center justify-center lg:justify-start gap-4 text-caption font-bold tabular-nums">
           <span className="flex items-center gap-1 text-accent" title={`Step up once the balance is ${pctText(up)} above ${usd(step.anchorBalance)}`}>
             <ArrowUp className="w-3.5 h-3.5" />{usd(step.upAt)}
           </span>
@@ -90,7 +90,7 @@ export default function RiskPerTrade() {
         </div>
       )}
       {due && (
-        <p className={`text-[11px] font-bold ${isUp || isPct ? "text-accent" : "text-loss"}`}>
+        <p className={`text-caption font-bold ${isUp || isPct ? "text-accent" : "text-loss"}`}>
           {isPct
             ? `Risk changed to ${pctText(pct)} in Settings: set it to start using it.`
             : isUp ? `Balance ${usd(balance)} is ${pctText(up)}+ above` : `Balance ${usd(balance)} is ${pctText(down)}+ below`}
@@ -101,7 +101,7 @@ export default function RiskPerTrade() {
           type="button"
           onClick={setFromBalance}
           disabled={isSaving}
-          className={`mt-auto w-full h-8 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50 ${
+          className={`mt-auto w-full h-8 px-3 rounded-control text-small font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50 ${
             !isSet || isUp || isPct ? "bg-accent text-white hover:bg-accent-strong" : "bg-loss text-white hover:opacity-90"
           }`}
         >

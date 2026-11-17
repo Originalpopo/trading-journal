@@ -30,6 +30,7 @@ import { pageContentLeft } from "@/components/pageEdge";
 import SystemReview from "@/components/SystemReview";
 import { hoverDelayPlugin } from "@/lib/chartTooltip";
 import { themeColor } from '@/lib/themeColors';
+import { cardClass, CardTitle } from "@/components/Card";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -74,37 +75,35 @@ const formatCurrencyHelper =(val: number, isPrivacyMode?: boolean) => {
 // Buy / Sell / All figures of each symbol or timeframe.
 function SideMatrixTable({ title, firstColumn, shortFirstColumn, rows, formatCurrency }: { title: string; firstColumn: string; shortFirstColumn?: string; rows: [string, SideMatrix][]; formatCurrency: (val: number) => string }) {
   return (
-    <div className="glass-card p-4 md:p-6 overflow-hidden flex flex-col">
-      <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-        <span className="w-2 h-2 bg-accent rounded-full"></span> {title}
-      </h3>
+    <div className={cardClass("p-4 md:p-6 overflow-hidden flex flex-col", "none")}>
+      <CardTitle className="mb-4">{title}</CardTitle>
       {/* Below lg only the All group shows, so the table fits without scrolling sideways. */}
       <div className="overflow-x-auto">
-        <table className="w-full text-center text-sm whitespace-nowrap border-collapse">
+        <table className="w-full text-center text-body whitespace-nowrap border-collapse">
           <thead>
             <tr className="text-ink-faint bg-surface-2">
-              <th className="py-2 px-1.5 md:px-4 rounded-tl-xl"></th>
-              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-ink uppercase text-[10px] tracking-widest text-center border-l border-line">Buy</th>
-              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-ink uppercase text-[10px] tracking-widest text-center border-l border-line">Sell</th>
-              <th colSpan={4} className="py-2 px-1.5 md:px-4 font-black text-ink uppercase text-[10px] tracking-widest text-center border-l border-line rounded-tr-xl">All</th>
+              <th className="py-2 px-1.5 md:px-4 rounded-tl-box"></th>
+              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-ink uppercase text-label tracking-widest text-center border-l border-line">Buy</th>
+              <th colSpan={4} className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-black text-ink uppercase text-label tracking-widest text-center border-l border-line">Sell</th>
+              <th colSpan={4} className="py-2 px-1.5 md:px-4 font-black text-ink uppercase text-label tracking-widest text-center border-l border-line rounded-tr-box">All</th>
             </tr>
             <tr className="text-ink-faint bg-surface-2">
-              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center align-middle">{shortFirstColumn ? <><span className="md:hidden">{shortFirstColumn}</span><span className="hidden md:inline">{firstColumn}</span></> : firstColumn}</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-line">Trades</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-line">Trades</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
-              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">P&L</th>
-              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle border-l border-line">Trades</th>
-              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Win %</th>
-              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">RR</th>
-              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-[9px] text-center align-middle">Net P&L</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-label tracking-widest text-center align-middle">{shortFirstColumn ? <><span className="md:hidden">{shortFirstColumn}</span><span className="hidden md:inline">{firstColumn}</span></> : firstColumn}</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle border-l border-line">Trades</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">Win %</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">RR</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">P&L</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle border-l border-line">Trades</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">Win %</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">RR</th>
+              <th className="hidden lg:table-cell py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">P&L</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle border-l border-line">Trades</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">Win %</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">RR</th>
+              <th className="py-2 px-1.5 md:px-4 font-bold uppercase text-label text-center align-middle">Net P&L</th>
             </tr>
           </thead>
-          <tbody className="text-[12px]">
+          <tbody className="text-small">
             {rows.map(([sym, mData]) => {
               const b = mData.BUY, s = mData.SELL;
               const bWR = (b.win + b.loss) > 0 ? formatNumber(b.win / (b.win + b.loss) * 100) + '%' : '-';
@@ -120,7 +119,7 @@ function SideMatrixTable({ title, firstColumn, shortFirstColumn, rows, formatCur
               const total = b.pnl + s.pnl;
               return (
                 <tr key={sym} className="hover:bg-surface transition duration-150">
-                  <td className="py-3 px-1.5 md:px-4 font-extrabold text-ink text-[11px] text-center">{sym}</td>
+                  <td className="py-3 px-1.5 md:px-4 font-black text-ink text-caption text-center">{sym}</td>
                   <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-semibold text-ink-muted border-l border-line">{b.trades}</td>
                   <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{bWR}</td>
                   <td className="hidden lg:table-cell py-3 px-1.5 md:px-4 text-center font-bold text-ink-muted">{bRR}</td>
@@ -387,11 +386,9 @@ export default function PerformancePage() {
       {/* No card: the chart reaches the page's edges and its grey runs straight into the Results band below. */}
       <div className="!mb-0 pt-6 h-[350px] flex flex-col w-full">
         <div ref={chartTitleRef} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-4">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Profit and Balance
-          </h3>
+          <CardTitle>Profit and Balance</CardTitle>
           {data.isAggregated && (
-            <span className="text-[10px] font-bold text-ink-muted bg-surface-2 border border-line px-2 py-0.5 rounded-md tracking-normal normal-case">
+            <span className="text-label font-bold text-ink-muted bg-surface-2 border border-line px-2 py-0.5 rounded-tag tracking-normal normal-case">
               Daily Aggregated ({data.perfBalanceData.length - 1} Days)
             </span>
           )}
@@ -465,17 +462,15 @@ export default function PerformancePage() {
         {/* The filters sit in the corner of Results; folded behind the button, which turns orange while open,
             or while a filter is off its default even when folded. They filter the whole page, the charts too. */}
         <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 mb-4">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mr-auto flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Results
-          </h3>
+          <CardTitle className="mr-auto">Results</CardTitle>
           {/* On a phone the button stays beside the title and the filters open below it as three
               columns (Period a little wider, for "Last week"), each named above its box; from an iPad up they sit in a line left of the button. */}
           {isFiltersOpen && (
           <div className="order-3 md:order-2 w-full md:w-auto grid grid-cols-[1.25fr_1fr_1fr] gap-2 md:flex md:items-center md:gap-4">
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Period<span className="hidden md:inline">:</span></span>
               <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
+                className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-body md:text-label font-bold rounded-control px-2 md:px-3 py-1.5 shadow-card focus:outline-none focus:border-accent cursor-pointer">
                 {/* Today, the trading day before, last week (as the Dashboard's target counts them), the last
                     month or three up to today (across a year end), then each year, then everything. */}
                 <option value="TODAY">Today</option>
@@ -491,11 +486,11 @@ export default function PerformancePage() {
               </select>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0" ref={tfRef}>
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">TF<span className="hidden md:inline">:</span></span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">TF<span className="hidden md:inline">:</span></span>
               <div className="relative">
                 <button
                   onClick={() => setIsTfMenuOpen(!isTfMenuOpen)}
-                  className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm hover:border-accent focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
+                  className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-body md:text-label font-bold rounded-control px-2 md:px-3 py-1.5 shadow-card hover:border-accent focus:outline-none flex items-center gap-1.5 cursor-pointer md:min-w-[70px] justify-between transition-colors"
                 >
                   <span className="truncate max-w-[100px]">
                     {selectedTfs.length === 0 
@@ -508,13 +503,13 @@ export default function PerformancePage() {
                 </button>
                 
                 {isTfMenuOpen && (
-                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-card border border-line rounded-xl shadow-lg z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                  <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-40 bg-card border border-line rounded-box shadow-raised z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                     <div className="p-2 border-b border-line-soft flex justify-between items-center bg-surface">
-                      <span className="text-[10px] font-bold text-ink-faint uppercase">Select TFs</span>
+                      <span className="text-label font-bold text-ink-faint uppercase">Select TFs</span>
                       {selectedTfs.length > 0 && (
                         <button 
                           onClick={() => setSelectedTfs([])}
-                          className="text-[10px] font-bold text-accent hover:text-accent-strong transition-colors"
+                          className="text-label font-bold text-accent hover:text-accent-strong transition-colors"
                         >
                           Clear
                         </button>
@@ -533,11 +528,11 @@ export default function PerformancePage() {
                                 setSelectedTfs([...selectedTfs, tf]);
                               }
                             }}
-                            className={`flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
+                            className={`flex items-center gap-2.5 px-3 py-2 text-small font-bold rounded-control cursor-pointer transition-colors ${
                               isSelected ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-surface hover:text-ink'
                             }`}
                           >
-                            <div className={`w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
+                            <div className={`w-3.5 h-3.5 rounded-tag border flex items-center justify-center shrink-0 transition-colors ${
                               isSelected ? 'bg-accent border-accent' : 'border-line'
                             }`}>
                               {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
@@ -552,9 +547,9 @@ export default function PerformancePage() {
               </div>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 min-w-0">
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Plan<span className="hidden md:inline">:</span></span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Plan<span className="hidden md:inline">:</span></span>
               <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-base md:text-[10px] font-bold rounded-lg px-2 md:px-3 py-1.5 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
+                className="w-full md:w-auto h-9 md:h-auto bg-card border border-line text-ink text-body md:text-label font-bold rounded-control px-2 md:px-3 py-1.5 shadow-card focus:outline-none focus:border-accent cursor-pointer">
                 <option value="ALL">ALL</option>
                 <option value="On Plan">On Plan</option>
                 <option value="Off Plan">Off Plan</option>
@@ -568,7 +563,7 @@ export default function PerformancePage() {
             aria-expanded={isFiltersOpen}
             aria-label="Filter"
             title="Filter"
-            className={`order-2 md:order-3 flex items-center justify-center h-8 w-8 border rounded-lg transition ${
+            className={`order-2 md:order-3 flex items-center justify-center h-8 w-8 border rounded-control transition ${
               isFiltersOpen || selectedPeriod !== new Date().getFullYear().toString() || selectedTfs.length > 0 || selectedPlan !== 'ALL'
                 ? 'bg-accent-soft text-accent border-accent-line'
                 : 'bg-card text-ink-muted border-line hover:text-ink'
@@ -579,34 +574,34 @@ export default function PerformancePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-          <div className="bg-card p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Win Rate</span>
-            <span className="text-xl font-black text-ink">{formatNumber(data.mainWinRate)}%</span>
+          <div className={cardClass("flex flex-col justify-center items-center text-center", "compact")}>
+            <span className="text-label font-bold text-ink-faint uppercase tracking-widest mb-1">Win Rate</span>
+            <span className="text-title font-black text-ink">{formatNumber(data.mainWinRate)}%</span>
           </div>
-          <div className="@container bg-accent p-5 rounded-[1.25rem] border border-accent shadow-lg shadow-accent/20 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">Account Growth</span>
+          <div className="@container bg-accent p-5 rounded-card border border-accent shadow-raised shadow-accent/20 flex flex-col justify-center items-center text-center">
+            <span className="text-label font-bold text-white uppercase tracking-widest mb-1">Account Growth</span>
             {/* 20px, or smaller when a large figure would not fit the card. */}
             <span style={fitFontSize(`${formatNumber(data.accountGrowth)}%`, '1.25rem')} className="leading-7 font-black text-white">{formatNumber(data.accountGrowth)}%</span>
           </div>
-          <div className="bg-card p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Profit Factor</span>
-            <span className="text-xl font-black text-ink">{formatNumber(data.profitFactor)}</span>
+          <div className={cardClass("flex flex-col justify-center items-center text-center", "compact")}>
+            <span className="text-label font-bold text-ink-faint uppercase tracking-widest mb-1">Profit Factor</span>
+            <span className="text-title font-black text-ink">{formatNumber(data.profitFactor)}</span>
           </div>
-          <div className="bg-card p-5 rounded-[1.25rem] border border-line shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1">Expectancy</span>
-            <span className="text-xl font-black text-ink">{formatNumber(data.expectancyR)} R</span>
+          <div className={cardClass("flex flex-col justify-center items-center text-center", "compact")}>
+            <span className="text-label font-bold text-ink-faint uppercase tracking-widest mb-1">Expectancy</span>
+            <span className="text-title font-black text-ink">{formatNumber(data.expectancyR)} R</span>
             {/* The same average trade in the dollars it really made. */}
-            <span className="text-[11px] font-normal text-ink-faint mt-0.5" title="Average profit per trade in dollars">{formatCurrency(data.expectedPayoff)} per trade</span>
+            <span className="text-caption font-normal text-ink-faint mt-0.5" title="Average profit per trade in dollars">{formatCurrency(data.expectedPayoff)} per trade</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
-          <div className="bg-card p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-2.5">
+          <div className={cardClass("flex flex-col justify-between space-y-2.5")}>
             <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Outcomes</span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Outcomes</span>
             </div>
             {/* Bad on the left, good on the right, as in Discipline (Off Plan | On Plan) and Streaks. */}
-            <div className="flex justify-between text-[10px] font-bold">
+            <div className="flex justify-between text-label font-bold">
               <span className="text-loss flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-loss shrink-0"></span><span>{formatNumber(data.lossPct)}%</span></span>
               <span className="text-ink-faint flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-line shrink-0"></span><span>{formatNumber(data.bePct)}%</span></span>
               <span className="text-accent flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span><span>{formatNumber(data.winPct)}%</span></span>
@@ -617,24 +612,24 @@ export default function PerformancePage() {
               { key: 'win', share: data.winPct, color: 'bg-accent' },
             ]} />
             <div className="grid grid-cols-3 gap-2 pt-0.5">
-              <div className="bg-loss-soft border border-loss-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-loss uppercase tracking-wider">SL</span>
-                <span className="text-xs font-black text-loss">{data.lossTradesCount}</span>
+              <div className="bg-loss-soft border border-loss-line rounded-control p-1.5 text-center flex flex-col justify-center items-center shadow-card">
+                <span className="text-label font-bold text-loss uppercase tracking-wider">SL</span>
+                <span className="text-small font-black text-loss">{data.lossTradesCount}</span>
               </div>
-              <div className="bg-surface border border-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-ink-faint uppercase tracking-wider">BE</span>
-                <span className="text-xs font-black text-ink-faint">{data.beTradesCount}</span>
+              <div className="bg-surface border border-line rounded-control p-1.5 text-center flex flex-col justify-center items-center shadow-card">
+                <span className="text-label font-bold text-ink-faint uppercase tracking-wider">BE</span>
+                <span className="text-small font-black text-ink-faint">{data.beTradesCount}</span>
               </div>
-              <div className="bg-accent-soft border border-accent-line rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                <span className="text-[9px] font-bold text-accent uppercase tracking-wider">TP</span>
-                <span className="text-xs font-black text-accent">{data.profitTradesCount}</span>
+              <div className="bg-accent-soft border border-accent-line rounded-control p-1.5 text-center flex flex-col justify-center items-center shadow-card">
+                <span className="text-label font-bold text-accent uppercase tracking-wider">TP</span>
+                <span className="text-small font-black text-accent">{data.profitTradesCount}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-card p-5 rounded-xl border border-line shadow-sm space-y-4">
+          <div className={cardClass("space-y-4")}>
             <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Direction</span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Direction</span>
             </div>
             {/* Buy and Sell read as the Timeframe rows: P&L as a bar split at 0, then $ and R. Pointing at Buy or
                 Sell shows its trades and win rate. */}
@@ -649,9 +644,9 @@ export default function PerformancePage() {
                 <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
                   {sides.map(x => (
                     <div key={x.label} className="contents">
-                      <span className="w-7 text-[10px] font-bold text-ink" title={`${x.trades} ${x.trades === 1 ? 'trade' : 'trades'} · win rate ${formatNumber(x.winPct)}%`}>{x.label}</span>
+                      <span className="w-7 text-label font-bold text-ink" title={`${x.trades} ${x.trades === 1 ? 'trade' : 'trades'} · win rate ${formatNumber(x.winPct)}%`}>{x.label}</span>
                       {x.trades > 0 ? <SplitBar value={x.pnl} maxPos={maxPos} maxNeg={maxNeg} /> : <div className="h-2.5 bg-surface-2 rounded-full" />}
-                      <div className={`text-[10px] font-bold ${x.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>
+                      <div className={`text-label font-bold ${x.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>
                         {formatCurrency(x.pnl)} <span className="text-ink-disabled font-normal mx-0.5">|</span> <span className={x.rr >= 0 ? 'text-accent' : 'text-loss'}>{formatNumber(x.rr)} R</span>
                       </div>
                     </div>
@@ -661,11 +656,11 @@ export default function PerformancePage() {
             })()}
           </div>
 
-          <div className="bg-card p-5 rounded-xl border border-line shadow-sm flex flex-col justify-between space-y-1">
+          <div className={cardClass("flex flex-col justify-between space-y-1")}>
             <div className="flex justify-between items-end border-b border-line-soft pb-1.5 mb-2">
-              <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Discipline</span>
+              <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Discipline</span>
             </div>
-            <div className="flex justify-between text-[10px] font-bold">
+            <div className="flex justify-between text-label font-bold">
               <span className="text-loss flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-loss shrink-0"></span><span>{formatNumber(data.offPlanPct)}%</span></span>
               <span className="text-accent flex items-center gap-1 justify-end"><span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span><span>{formatNumber(data.onPlanPct)}%</span></span>
             </div>
@@ -673,7 +668,7 @@ export default function PerformancePage() {
               { key: 'off', share: data.offPlanPct, color: 'bg-loss' },
               { key: 'on', share: data.onPlanPct, color: 'bg-accent' },
             ]} />
-            <div className="flex justify-between text-[10px] font-bold mt-2">
+            <div className="flex justify-between text-label font-bold mt-2">
               <div className="flex flex-col">
                 <span className="text-loss">Off Plan</span>
                 <span className="text-loss">{formatCurrency(data.offPlanPnL)}</span>
@@ -691,13 +686,13 @@ export default function PerformancePage() {
               .sort((a, b) => data.tfStats[b].pnl - data.tfStats[a].pnl);
               
             return (
-              <div className="bg-card p-5 rounded-xl border border-line shadow-sm space-y-4">
+              <div className={cardClass("space-y-4")}>
                 <div className="flex justify-between items-center border-b border-line-soft pb-1.5 mb-2">
-                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Timeframe</span>
+                  <span className="text-label font-bold text-ink-faint uppercase tracking-widest">Timeframe</span>
                   {validTfs.length > 4 && (
                     <div className="flex gap-1">
-                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-ink transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-surface-2 rounded text-ink-faint hover:text-ink transition"><ChevronRight className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p - 1)} className="p-1 hover:bg-surface-2 rounded-tag text-ink-faint hover:text-ink transition"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setTfPage(p => p + 1)} className="p-1 hover:bg-surface-2 rounded-tag text-ink-faint hover:text-ink transition"><ChevronRight className="w-3.5 h-3.5" /></button>
                     </div>
                   )}
                 </div>
@@ -716,11 +711,11 @@ export default function PerformancePage() {
                   const stat = data.tfStats[tf];
                   return (
                     <div key={tf} className="contents">
-                      <div className="w-7 shrink-0 flex items-baseline text-[10px]">
+                      <div className="w-7 shrink-0 flex items-baseline text-label">
                         <span className="font-bold text-ink">{tf}</span>
                       </div>
                       <SplitBar value={stat.pnl} maxPos={maxPosPnl} maxNeg={maxNegPnl} />
-                      <div className={`w-auto shrink-0 text-left text-[10px] font-bold ${stat.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>
+                      <div className={`w-auto shrink-0 text-left text-label font-bold ${stat.pnl >= 0 ? 'text-accent' : 'text-loss'}`}>
                         {formatCurrency(stat.pnl)} <span className="text-ink-disabled font-normal mx-0.5">|</span> <span className={stat.rr >= 0 ? 'text-accent' : 'text-loss'}>{formatNumber(stat.rr)} R</span>
                       </div>
                     </div>
@@ -735,20 +730,20 @@ export default function PerformancePage() {
 
         {/* No cards here: the figures sit straight on the Results grey, in colours a step darker than in a white card so they stay clear. Same gaps and inset as the cards above (20px + their 1px border), so the text lines up with theirs. */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Averages & Time</div>
+          <div className="pt-1 px-[21px] text-label space-y-2">
+            <div className="text-label font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Averages & Time</div>
             <div className="flex justify-between"><span className="text-ink-muted">Avg Win</span><span className="font-bold text-accent">{formatCurrency(data.avgWin)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgWinR)} R</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Avg Loss</span><span className="font-bold text-loss">{formatCurrency(-data.avgLoss)} <span className="text-ink-faint font-normal mx-0.5">|</span> {formatNumber(data.avgLossR)} R</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Avg BE</span><span className="font-bold text-ink-muted">{formatCurrency(data.avgBE)}</span></div>
             <div className="flex justify-between pt-1"><span className="text-ink-muted">Hold (Win)</span><span className="font-bold text-ink">{data.holdWin}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Hold (Loss)</span><span className="font-bold text-ink">{data.holdLoss}</span></div>
           </div>
-          <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Extremes</div>
+          <div className="pt-1 px-[21px] text-label space-y-2">
+            <div className="text-label font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Extremes</div>
             <div className="flex justify-between"><span className="text-ink-muted">Largest Win</span><span className="font-bold text-accent">{formatCurrency(data.largestProfit)}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Largest Loss</span><span className="font-bold text-loss">{formatCurrency(data.largestLoss)}</span></div>
             {/* Its own heading under Extremes (short, so the four columns stand about level), apart from the drawdowns. */}
-            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2 !mt-5">Risk per Trade</div>
+            <div className="text-label font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2 !mt-5">Risk per Trade</div>
             {/* Trades that kept to the Risk per Trade set when they were entered, went over it (Settings: Over risk
                 allowed), or can't be told: their first stop is unknown, or no risk was set yet. Only counts, so
                 nothing about a trade is changed. */}
@@ -756,15 +751,15 @@ export default function PerformancePage() {
             <div className="flex justify-between"><span className="text-ink-muted">Over</span><span className="font-bold text-loss">{data.riskKept.over}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Unchecked</span><span className="font-bold text-ink-muted">{data.riskKept.unchecked}</span></div>
           </div>
-          <div className="pt-1 px-[21px] text-[10px] space-y-2">
-            <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Drawdowns</div>
+          <div className="pt-1 px-[21px] text-label space-y-2">
+            <div className="text-label font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Drawdowns</div>
             {/* The deepest fall from a peak, in dollars and, separately, the largest in % (they can be different falls). */}
             <div className="flex justify-between"><span className="text-ink-muted">Max DD</span><span className="font-bold text-loss">{formatCurrency(data.maxDrawdownAmt)}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Max DD (%)</span><span className="font-bold text-loss">{formatNumber(data.maxDrawdownPct)}%</span></div>
             <div className="flex justify-between pt-1"><span className="text-ink-muted">Recovery</span><span className="font-bold text-ink">{formatNumber(data.recoveryFactor)}</span></div>
           </div>
           <div className="pt-1 px-[21px] space-y-4">
-            <div className="text-[10px] font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Streaks</div>
+            <div className="text-label font-bold text-ink-muted uppercase tracking-widest border-b border-line pb-1.5 mb-2">Streaks</div>
             
             {(() => {
               const maxWin = data.countAtMaxWinAmt || 0;
@@ -782,11 +777,11 @@ export default function PerformancePage() {
               return (
                 <>
                   <div className="flex flex-col gap-1">
-                    <div className="flex justify-between text-[10px] font-bold text-ink-muted">
+                    <div className="flex justify-between text-label font-bold text-ink-muted">
                       <span>Loss Streaks</span>
                       <span>Win Streaks</span>
                     </div>
-                    <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold text-white" pieces={[
+                    <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-caption font-bold text-white" pieces={[
                       { key: 'loss', share: lossPct, color: 'bg-loss', label: maxLoss },
                       { key: 'win', share: winPct, color: 'bg-accent', label: maxWin },
                     ]} />
@@ -794,11 +789,11 @@ export default function PerformancePage() {
 
                   <div className="flex flex-col gap-1">
                     {/* Avg Loss a step darker than before, so it stands apart from the Results grey behind it. */}
-                    <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-[11px] font-bold" pieces={[
+                    <PieceBar heightClass="h-6 [--piece-min:1.5rem]" className="my-0.5 text-caption font-bold" pieces={[
                       { key: 'loss', share: avgLossPct, color: 'bg-ink-disabled text-ink', label: avgLoss },
                       { key: 'win', share: avgWinPct, color: 'bg-ink text-white', label: avgWin },
                     ]} />
-                    <div className="flex justify-between text-[10px] font-bold text-ink-muted">
+                    <div className="flex justify-between text-label font-bold text-ink-muted">
                       <span>AVG Loss</span>
                       <span>AVG Win</span>
                     </div>
@@ -829,10 +824,8 @@ export default function PerformancePage() {
       {/* On a computer Hour and Day share a row and Month takes the next one whole; on an iPad and a phone
           each takes a row whole (shorter on a phone), so the twelve months have room. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Hour of Day
-          </h3>
+        <div className={cardClass("h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1")}>
+          <CardTitle className="mb-4">Hour of Day</CardTitle>
           <div className="flex-1 min-h-0 relative w-full">
             <Bar
               key={`hour-${selectedMetric}-${isPrivacyMode}`}
@@ -857,10 +850,8 @@ export default function PerformancePage() {
             />
           </div>
         </div>
-        <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Day of Week
-          </h3>
+        <div className={cardClass("h-[280px] md:h-[400px] flex flex-col md:col-span-2 lg:col-span-1")}>
+          <CardTitle className="mb-4">Day of Week</CardTitle>
           <div className="flex-1 min-h-0 relative w-full">
             <Bar
               key={`dow-${selectedMetric}-${isPrivacyMode}`}
@@ -889,10 +880,8 @@ export default function PerformancePage() {
 
       {/* Months only mean something over a year or more: a recent stretch would show one or two bars. */}
       {!isShortPeriod(selectedPeriod) && (
-      <div className="glass-card p-6 h-[280px] md:h-[400px] flex flex-col w-full md:col-span-2">
-        <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-accent rounded-full"></span> Month of Year
-        </h3>
+      <div className={cardClass("h-[280px] md:h-[400px] flex flex-col w-full md:col-span-2")}>
+        <CardTitle className="mb-4">Month of Year</CardTitle>
         <div className="flex-1 min-h-0 relative w-full">
           <Bar
             key={`moy-${selectedMetric}-${isPrivacyMode}`}

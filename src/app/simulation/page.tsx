@@ -17,6 +17,7 @@ import { Line } from 'react-chartjs-2';
 import { formatNumber } from "@/lib/utils";
 import { classifyTrade, parseRisk } from "@/lib/stats";
 import { addMoney, subMoney } from "@/lib/money";
+import Button from "@/components/Button";
 import PageHeader from "@/components/PageHeader";
 import SlidingSwitch from "@/components/SlidingSwitch";
 import "@/lib/chartTooltip";
@@ -25,6 +26,8 @@ import {
   type SimParams, type SimPath, type SimOutlook,
 } from "@/lib/simulation";
 import { themeColor } from '@/lib/themeColors';
+import { cardClass, CardTitle } from "@/components/Card";
+import { fieldClass } from "@/components/Field";
 
 // The table's accent, ink and ink-muted (a canvas can't use the class names).
 const pathColors = () => [themeColor('accent'), themeColor('ink'), themeColor('ink-muted')];
@@ -97,8 +100,8 @@ function buildResults(params: SimParams, sampleSize: number): SimulationResults 
   };
 }
 
-const INPUT = "w-full bg-surface border border-line text-ink text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-accent transition";
-const LABEL = "block text-[10px] font-bold text-ink-faint uppercase tracking-widest mb-1";
+const INPUT = fieldClass("md");
+const LABEL = "block text-label font-bold text-ink-faint uppercase tracking-widest mb-1";
 
 function OutlookRow({ title, note, outlook }: { title: string; note: string; outlook: SimOutlook }) {
   const stats: { label: string; tip: string; value: string; color: string }[] = [
@@ -112,12 +115,12 @@ function OutlookRow({ title, note, outlook }: { title: string; note: string; out
   ];
   return (
     <div>
-      <p className="text-[11px] font-bold text-ink">{title} <span className="font-medium text-ink-faint">{note}</span></p>
+      <p className="text-caption font-bold text-ink">{title} <span className="font-semibold text-ink-faint">{note}</span></p>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center mt-2">
         {stats.map(stat => (
           <div key={stat.label} title={stat.tip}>
-            <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">{stat.label}</div>
-            <div className={`text-sm font-bold ${stat.color}`}>{stat.value}</div>
+            <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">{stat.label}</div>
+            <div className={`text-body font-bold ${stat.color}`}>{stat.value}</div>
           </div>
         ))}
       </div>
@@ -268,10 +271,8 @@ export default function SimulationPage() {
     <div className="space-y-6">
       <PageHeader title="Simulation" />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="glass-card p-6 flex flex-col space-y-4 lg:col-span-1">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Setup
-          </h3>
+        <div className={cardClass("flex flex-col space-y-4 lg:col-span-1")}>
+          <CardTitle className="mb-2">Setup</CardTitle>
 
           <div>
             <label className={LABEL}>Starting Balance ($)</label>
@@ -310,7 +311,7 @@ export default function SimulationPage() {
               ]}
             />
             {form.source === 'journal' ? (
-              <p className="text-[10px] font-normal text-ink-faint mt-2">
+              <p className="text-label font-normal text-ink-faint mt-2">
                 {canUseJournal
                   ? `Drawn from your ${journalTrades} trades: ${defaultStats.winOutcomes.length} wins, ${defaultStats.otherOutcomes.length} losses and break-evens.`
                   : 'Needs at least one winning and one losing trade with a risk amount. Using averages instead.'}
@@ -335,19 +336,17 @@ export default function SimulationPage() {
           </div>
 
           <div className="pt-4 mt-auto flex gap-3">
-            <button onClick={() => { setForm(defaultForm); run(defaultForm); }} title="Back to the values from your journal" className="bg-surface-2 hover:bg-line text-ink-muted font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center shrink-0">
+            <button onClick={() => { setForm(defaultForm); run(defaultForm); }} title="Back to the values from your journal" className="bg-surface-2 hover:bg-line text-ink-muted font-bold py-3 px-4 rounded-box transition shadow-card flex items-center justify-center shrink-0">
               <RotateCcw className="w-4 h-4" strokeWidth={2.5} />
             </button>
-            <button onClick={() => run(form)} className="flex-1 bg-accent hover:bg-accent-strong text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-line">
+            <Button variant="primary" onClick={() => run(form)} className="flex-1">
               Start
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col lg:col-span-3 min-h-[400px]">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Simulation
-          </h3>
+        <div className={cardClass("flex flex-col lg:col-span-3 min-h-[400px]")}>
+          <CardTitle className="mb-4">Simulation</CardTitle>
           <div className="flex-1 relative w-full h-full min-h-[300px]">
             {results && (
               <Line
@@ -398,18 +397,16 @@ export default function SimulationPage() {
       </div>
 
       {results && (
-        <div className="glass-card p-6 space-y-5">
+        <div className={cardClass("space-y-5")}>
           <div>
-            <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
-              <span className="w-2 h-2 bg-accent rounded-full"></span> Outlook
-            </h3>
-            <p className="text-[11px] text-ink-faint font-normal">
+            <CardTitle className="mb-1">Outlook</CardTitle>
+            <p className="text-caption text-ink-faint font-normal">
               The same setup run {results.outlook.runs.toLocaleString('en-US')} times. The three lines above are just three of them.
             </p>
           </div>
 
           {results.sampleSize > 0 && results.sampleSize < SMALL_SAMPLE && (
-            <p className="text-[11px] font-bold text-loss flex items-start gap-2">
+            <p className="text-caption font-bold text-loss flex items-start gap-2">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               {`The win rate comes from only ${results.sampleSize} trades, too few to know the true one. Read the first row as the hopeful case and the second as what could just as well be true.`}
             </p>
@@ -438,58 +435,58 @@ export default function SimulationPage() {
           const growthClass = report.netProfit >= 0 ? 'text-accent' : 'text-loss';
 
           return (
-            <div key={report.id} className="bg-card p-5 rounded-xl shadow-sm flex flex-col justify-center items-center text-center">
+            <div key={report.id} className={cardClass("flex flex-col justify-center items-center text-center", "compact")}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: report.color }}></span>
-                <span className="text-xs font-bold text-ink-muted uppercase tracking-widest">Sim {report.index + 1}</span>
+                <span className="text-small font-bold text-ink-muted uppercase tracking-widest">Sim {report.index + 1}</span>
               </div>
-              <div className={`text-2xl font-black ${netClass} mb-1`}>
+              <div className={`text-figure font-black ${netClass} mb-1`}>
                 ${formatNumber(report.endBalance)}
               </div>
-              <div className="text-[10px] text-ink-faint font-normal uppercase tracking-wider mb-4">
+              <div className="text-label text-ink-faint font-normal uppercase tracking-wider mb-4">
                 Net: ${formatNumber(report.netProfit)}
               </div>
               {report.wipedOut && (
-                <div className="text-[10px] font-bold text-loss uppercase tracking-wider -mt-2 mb-4">
+                <div className="text-label font-bold text-loss uppercase tracking-wider -mt-2 mb-4">
                   Wiped out after {report.tradesTaken} trades
                 </div>
               )}
               <div className="w-full mt-auto flex flex-col">
                 <div className="grid grid-cols-3 gap-y-3 gap-x-2 w-full border-t border-line-soft pt-4 text-center pb-4">
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Growth</div>
-                    <div className={`text-sm font-bold ${growthClass}`}>{formatNumber(report.growth)}%</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Growth</div>
+                    <div className={`text-body font-bold ${growthClass}`}>{formatNumber(report.growth)}%</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Win Rate</div>
-                    <div className="text-sm font-bold text-ink">{formatNumber(report.winRate)}%</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Win Rate</div>
+                    <div className="text-body font-bold text-ink">{formatNumber(report.winRate)}%</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Max DD (%)</div>
-                    <div className="text-sm font-bold text-loss">{formatNumber(report.maxDDPct)}%</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Max DD (%)</div>
+                    <div className="text-body font-bold text-loss">{formatNumber(report.maxDDPct)}%</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Recovery</div>
-                    <div className="text-sm font-bold text-ink">{formatNumber(report.recoveryFactor)}</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Recovery</div>
+                    <div className="text-body font-bold text-ink">{formatNumber(report.recoveryFactor)}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Lowest Bal</div>
-                    <div className="text-sm font-bold text-ink">${formatNumber(report.lowestBal)}</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Lowest Bal</div>
+                    <div className="text-body font-bold text-ink">${formatNumber(report.lowestBal)}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Max DD</div>
-                    <div className="text-sm font-bold text-loss">${formatNumber(report.maxDD)}</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Max DD</div>
+                    <div className="text-body font-bold text-loss">${formatNumber(report.maxDD)}</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 w-full border-t border-line-soft pt-4 text-center">
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Max Cons Win</div>
-                    <div className="text-sm font-bold text-accent">{report.maxConsWins}</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Max Cons Win</div>
+                    <div className="text-body font-bold text-accent">{report.maxConsWins}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-ink-faint uppercase tracking-widest mb-0.5">Max Cons Loss</div>
-                    <div className="text-sm font-bold text-loss">{report.maxConsLosses}</div>
+                    <div className="text-label text-ink-faint uppercase tracking-widest mb-0.5">Max Cons Loss</div>
+                    <div className="text-body font-bold text-loss">{report.maxConsLosses}</div>
                   </div>
                 </div>
               </div>

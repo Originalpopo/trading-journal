@@ -7,11 +7,12 @@ import { buildTaxReport, taxReportCsv, estimateIncomeTax, withdrawalSetAsides, t
 import { formatNumber } from "@/lib/utils";
 
 import PageHeader, { HeaderButton } from "@/components/PageHeader";
-const TH_BASE = "px-4 py-4 font-bold uppercase text-[10px] tracking-widest";
+import { cardClass, CardTitle } from "@/components/Card";
+const TH_BASE = "px-4 py-4 font-bold uppercase text-label tracking-widest";
 const TH = `${TH_BASE} text-right`;
 const TH_LEFT = `${TH_BASE} text-left`;
-const TH_GROUP = "px-4 pt-3 pb-1 font-bold uppercase text-[10px] tracking-widest text-center";
-const TH_SUB = "px-4 pt-1 pb-3 font-bold uppercase text-[10px] tracking-widest text-right";
+const TH_GROUP = "px-4 pt-3 pb-1 font-bold uppercase text-label tracking-widest text-center";
+const TH_SUB = "px-4 pt-1 pb-3 font-bold uppercase text-label tracking-widest text-right";
 // A cell takes exactly one text colour (two would leave the winner to CSS order).
 const TD_BASE = "px-4 py-4 text-right font-bold";
 const TD = `${TD_BASE} text-ink-muted`;
@@ -40,7 +41,7 @@ export default function ReportPage() {
   // A rough baht value for money still at the broker, at the rate of the latest real transfer.
   const approx = (value: number, rate: { rate: number } | null) =>
     rate === null ? null : (
-      <><br /><span className="text-[9px] font-normal text-ink-faint opacity-70">{isPrivacyMode ? '***' : `≈${value < 0 ? '-' : ''}฿${formatNumber(Math.abs(value) * rate.rate)}`}</span></>
+      <><br /><span className="text-label font-normal text-ink-faint opacity-70">{isPrivacyMode ? '***' : `≈${value < 0 ? '-' : ''}฿${formatNumber(Math.abs(value) * rate.rate)}`}</span></>
     );
   const setAsides = useMemo(() => withdrawalSetAsides(report.withdrawals), [report]);
   const latestRate = report.years.length > 0 ? report.years[report.years.length - 1].approxRate : null;
@@ -79,32 +80,30 @@ export default function ReportPage() {
           onClick={() => handleExport('proRata')} disabled={report.years.length === 0} />
       </PageHeader>
 
-      <div className="glass-card p-6">
+      <div className={cardClass()}>
         {/* Whether every deposit and withdrawal has its baht amount: the figures below are final only when it does. */}
         <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 ${report.isComplete ? 'mb-4' : 'mb-2'}`}>
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> By Year
-          </h3>
+          <CardTitle>By Year</CardTitle>
           {report.isComplete ? (
-            <span className="text-xs font-bold text-accent flex items-center gap-1.5">
+            <span className="text-small font-bold text-accent flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" /> Baht complete
             </span>
           ) : (
-            <span className="text-xs font-bold px-2.5 py-1 rounded-lg border bg-loss-soft text-loss border-loss-line flex items-center gap-1.5">
+            <span className="text-small font-bold px-2.5 py-1 rounded-control border bg-loss-soft text-loss border-loss-line flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Baht missing: {missingBaht}
             </span>
           )}
         </div>
         {!report.isComplete && (
-          <p className="text-[11px] font-semibold text-loss mb-4">
+          <p className="text-caption font-semibold text-loss mb-4">
             Not final: fill in the baht from the bank slip (History → edit).
           </p>
         )}
         {report.years.length === 0 ? (
-          <p className="text-sm text-ink-faint font-medium">No trades or funding yet.</p>
+          <p className="text-body text-ink-faint font-semibold">No trades or funding yet.</p>
         ) : (
-          <div className="overflow-x-auto border border-line-soft rounded-xl">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+          <div className="overflow-x-auto border border-line-soft rounded-box">
+            <table className="w-full text-left text-body whitespace-nowrap">
               <thead className="bg-surface text-ink-faint border-b border-line-soft">
                 <tr>
                   <th rowSpan={2} className={TH_LEFT}>Year</th>
@@ -123,29 +122,29 @@ export default function ReportPage() {
                   <th className={`${TH_SUB} text-ink-disabled`}><Hint text={TIP_PRO_RATA}>Pro rata</Hint></th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] divide-y divide-line-soft">
+              <tbody className="text-caption divide-y divide-line-soft">
                 {report.years.map(y => (
                   <tr key={y.year} className="hover:bg-surface transition">
-                    <td className="px-4 py-4 font-extrabold text-ink">
+                    <td className="px-4 py-4 font-black text-ink">
                       {y.year}
                       {y.missingThb > 0 && (
-                        <span className="ml-2 text-[9px] font-bold text-loss" title="Entries of this year without a baht amount">
+                        <span className="ml-2 text-label font-bold text-loss" title="Entries of this year without a baht amount">
                           {y.missingThb} missing ฿
                         </span>
                       )}
                     </td>
                     <td className={TD}>{usd(y.startBalanceUsd)}</td>
-                    <td className={TD}>{usd(y.depositUsd)}<br /><span className="text-[9px] font-normal text-ink-faint opacity-70">{thb(y.depositThb)}</span></td>
-                    <td className={TD}>{usd(y.withdrawUsd)}<br /><span className="text-[9px] font-normal text-ink-faint opacity-70">{thb(y.withdrawThb)}</span></td>
-                    <td className={`px-4 py-4 text-right font-extrabold ${y.tradingPnlUsd > 0 ? 'text-accent' : y.tradingPnlUsd < 0 ? 'text-loss' : 'text-ink-faint'}`}>
+                    <td className={TD}>{usd(y.depositUsd)}<br /><span className="text-label font-normal text-ink-faint opacity-70">{thb(y.depositThb)}</span></td>
+                    <td className={TD}>{usd(y.withdrawUsd)}<br /><span className="text-label font-normal text-ink-faint opacity-70">{thb(y.withdrawThb)}</span></td>
+                    <td className={`px-4 py-4 text-right font-black ${y.tradingPnlUsd > 0 ? 'text-accent' : y.tradingPnlUsd < 0 ? 'text-loss' : 'text-ink-faint'}`}>
                       {usd(y.tradingPnlUsd)}{approx(y.tradingPnlUsd, y.approxRate)}
                     </td>
                     <td className={TD}>{y.tradeCount}</td>
                     <td className={TD}>{usd(y.commissionUsd)}{approx(y.commissionUsd, y.approxRate)}</td>
                     <td className={`${TD_BASE} text-ink`}>{usd(y.endBalanceUsd)}{approx(y.endBalanceUsd, y.approxRate)}</td>
-                    <td className={`${TD_BASE} text-ink font-extrabold border-l border-line-soft`}>{thb(y.profitBroughtInThb.principalFirst)}</td>
+                    <td className="px-4 py-4 text-right font-black text-ink border-l border-line-soft">{thb(y.profitBroughtInThb.principalFirst)}</td>
                     <td className={`${TD_BASE} text-ink-disabled`}>{thb(y.profitBroughtInThb.proRata)}</td>
-                    <td className={`${TD_BASE} border-l border-line-soft font-medium text-ink-faint`}>
+                    <td className={`${TD_BASE} border-l border-line-soft font-semibold text-ink-faint`}>
                       {isPrivacyMode ? '***' : `≈฿${formatNumber(estimateIncomeTax(y.profitBroughtInThb.principalFirst))}`}
                     </td>
                   </tr>
@@ -154,7 +153,7 @@ export default function ReportPage() {
             </table>
           </div>
         )}
-        <p className="text-[11px] text-ink-faint font-medium mt-3">
+        <p className="text-caption text-ink-faint font-semibold mt-3">
           Baht principal still abroad: {thb(report.principalLeftThb.principalFirst)}. Principal 1st is the method this journal goes by;
           pro rata ({thb(report.principalLeftThb.proRata)} still abroad) is shown in grey for comparison only.
           {latestRate && (
@@ -167,15 +166,13 @@ export default function ReportPage() {
         </p>
       </div>
 
-      <div className="glass-card p-6">
-        <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-accent rounded-full"></span> Withdrawals
-        </h3>
+      <div className={cardClass()}>
+        <CardTitle className="mb-4">Withdrawals</CardTitle>
         {report.withdrawals.length === 0 ? (
-          <p className="text-sm text-ink-faint font-medium">No withdrawals yet, so no profit has been brought into Thailand.</p>
+          <p className="text-body text-ink-faint font-semibold">No withdrawals yet, so no profit has been brought into Thailand.</p>
         ) : (
-          <div className="overflow-x-auto border border-line-soft rounded-xl">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+          <div className="overflow-x-auto border border-line-soft rounded-box">
+            <table className="w-full text-left text-body whitespace-nowrap">
               <thead className="bg-surface text-ink-faint border-b border-line-soft">
                 <tr>
                   <th className={TH_LEFT}>Bank date</th>
@@ -188,11 +185,11 @@ export default function ReportPage() {
                   <th className={`${TH} border-l border-line-soft`}><Hint text={TIP_SET_ASIDE}>Set aside (฿)</Hint></th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] divide-y divide-line-soft">
+              <tbody className="text-caption divide-y divide-line-soft">
                 {report.withdrawals.map((w, i) => (
                   <tr key={`${w.time}-${i}`} className="hover:bg-surface transition">
                     <td className="px-4 py-4 font-semibold text-ink-muted leading-tight">
-                      {w.bankDate}<br /><span className="text-[9px] opacity-70">broker {w.time.replace('T', ' ')}</span>
+                      {w.bankDate}<br /><span className="text-label opacity-70">broker {w.time.replace('T', ' ')}</span>
                     </td>
                     <td className={`${TD_BASE} text-ink`}>{w.taxYear}</td>
                     <td className={TD}>{usd(w.usd)}</td>
@@ -204,7 +201,7 @@ export default function ReportPage() {
                     <td className={TD}>
                       {w.proRata ? <span className="text-ink-disabled">{thb(w.proRata.principal)} / {thb(w.proRata.profit)}</span> : '-'}
                     </td>
-                    <td className={`${TD_BASE} border-l border-line-soft font-medium text-ink-faint`}>
+                    <td className={`${TD_BASE} border-l border-line-soft font-semibold text-ink-faint`}>
                       {setAsides[i] === null ? '-' : isPrivacyMode ? '***' : `≈฿${formatNumber(setAsides[i]!)}`}
                     </td>
                   </tr>

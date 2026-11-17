@@ -2,6 +2,8 @@
 
 import { useId, useState } from "react";
 import { ChevronDown, type LucideIcon } from "lucide-react";
+import { cardClass } from "@/components/Card";
+import { fieldClass } from "@/components/Field";
 
 // The white card every Settings group sits in: icon, title and a line on what it is for. It starts folded to
 // its header (the line cut to one row) and opens with a click on the header; any number can be open at once.
@@ -15,20 +17,20 @@ export default function SettingsCard({ icon: Icon, title, description, children 
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
   return (
-    <div className="bg-card rounded-2xl shadow-sm">
+    <div className={cardClass("", "none")}>
       <button
         type="button"
         onClick={() => setIsOpen(open => !open)}
         aria-expanded={isOpen}
         aria-controls={bodyId}
-        className="w-full flex items-center gap-3 p-5 md:px-8 text-left rounded-2xl hover:bg-surface transition-colors"
+        className="w-full flex items-center gap-3 p-5 md:px-8 text-left rounded-card hover:bg-surface transition-colors"
       >
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-accent-soft flex items-center justify-center">
+        <div className="w-10 h-10 shrink-0 rounded-box bg-accent-soft flex items-center justify-center">
           <Icon className="w-5 h-5 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-ink">{title}</h3>
-          <p className={`text-sm text-ink-muted font-medium ${isOpen ? "" : "line-clamp-1"}`}>{description}</p>
+          <h3 className="text-title font-bold text-ink">{title}</h3>
+          <p className={`text-body text-ink-muted font-semibold ${isOpen ? "" : "line-clamp-1"}`}>{description}</p>
         </div>
         <ChevronDown className={`w-5 h-5 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
@@ -39,4 +41,4 @@ export default function SettingsCard({ icon: Icon, title, description, children 
   );
 }
 
-export const SETTINGS_INPUT = "w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition placeholder:font-medium";
+export const SETTINGS_INPUT = fieldClass("md");

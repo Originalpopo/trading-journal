@@ -34,6 +34,7 @@ import SlidingSwitch from "@/components/SlidingSwitch";
 import { pageContentLeft } from "@/components/pageEdge";
 import { hoverDelayPlugin } from "@/lib/chartTooltip";
 import { themeColor } from '@/lib/themeColors';
+import { cardClass, CardTitle } from "@/components/Card";
 const LAST_DOT_RADIUS = 6;
 // A dot on the Equity line's last point (its number is on the chart's title line): orange, or red while the equity
 // is below the Low line.
@@ -577,37 +578,37 @@ export default function Dashboard() {
           <HealthWeather tier={healthTierFromProfitFactor(data.profitFactor, data.totalTrades)} />
         </PageHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
-            <p className="text-ink-faint text-[10px] font-bold uppercase tracking-wider mb-1">Win Rate</p>
-            <p style={fitFontSize(winRateText, '1.875rem')} className="leading-9 font-extrabold stat-value text-ink">
+          <div className={cardClass("@container flex flex-col justify-center items-center text-center")}>
+            <p className="text-ink-faint text-label font-bold uppercase tracking-wider mb-1">Win Rate</p>
+            <p style={fitFontSize(winRateText, '1.875rem')} className="leading-9 font-black stat-value text-ink">
               {winRateText}
             </p>
           </div>
-          <div className="@container bg-accent p-6 rounded-[1.25rem] border border-accent shadow-lg shadow-accent/20 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">Account Growth</span>
+          <div className="@container bg-accent p-6 rounded-card border border-accent shadow-raised shadow-accent/20 flex flex-col justify-center items-center text-center">
+            <span className="text-label font-bold text-white uppercase tracking-widest mb-1">Account Growth</span>
             {/* Pointing at the figure (or tapping it on a phone) shows the return on deposits, which unlike
                 Account Growth falls when more money is deposited. */}
-            <span style={fitFontSize(growthText, '1.875rem')} tabIndex={0} className="group relative leading-9 font-extrabold stat-value text-white cursor-default outline-none">
+            <span style={fitFontSize(growthText, '1.875rem')} tabIndex={0} className="group relative leading-9 font-black stat-value text-white cursor-default outline-none">
               {growthText}
-              <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-0.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[10px] font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100 z-10">
+              <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-0.5 whitespace-nowrap rounded-tag bg-ink px-2 py-1 text-label font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100 z-10">
                 On deposits {formatNumber(data.returnOnDeposits)}%
               </span>
             </span>
           </div>
-          <div className="@container glass-card p-6 flex flex-col justify-center items-center text-center">
-            <p className="text-ink-faint text-[10px] font-bold uppercase tracking-wider mb-1">Net Profit</p>
-            <p style={fitFontSize(netText, '1.875rem')} className={`leading-9 font-extrabold stat-value ${data.net >= 0 ? 'text-accent' : 'text-loss'}`}>
+          <div className={cardClass("@container flex flex-col justify-center items-center text-center")}>
+            <p className="text-ink-faint text-label font-bold uppercase tracking-wider mb-1">Net Profit</p>
+            <p style={fitFontSize(netText, '1.875rem')} className={`leading-9 font-black stat-value ${data.net >= 0 ? 'text-accent' : 'text-loss'}`}>
               {netText}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-[10px] font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
+              <p className="text-label font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.net, bahtRate.rate)}</p>
             )}
           </div>
-          <div className="@container glass-card p-6 h-full flex flex-col justify-center items-center text-center">
+          <div className={cardClass("@container h-full flex flex-col justify-center items-center text-center")}>
             {/* The broker check sits as icons beside the label, so the card keeps the same three lines as Net Profit:
                 a mismatch first, else Yes / No when a check is due, else the tick of the last match. */}
             <div className="flex items-center gap-1.5 mb-1">
-              <p className="text-ink-faint text-[10px] font-bold uppercase tracking-wider">Balance</p>
+              <p className="text-ink-faint text-label font-bold uppercase tracking-wider">Balance</p>
               {brokerCheck && !brokerCheck.matches && (
                 <button
                   type="button"
@@ -638,7 +639,7 @@ export default function Dashboard() {
                     onClick={confirmBrokerMatch}
                     title={isPrivacyMode ? "The broker's Balance is the same as this one" : `The broker's Balance is exactly $${formatNumber(data.runningBalance)} right now`}
                     aria-label="Same as broker"
-                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-accent-soft text-accent border-accent-line hover:bg-accent-line transition disabled:opacity-50"
+                    className="w-6 h-6 flex items-center justify-center rounded-tag border bg-accent-soft text-accent border-accent-line hover:bg-accent-line transition disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" />
                   </button>
@@ -647,18 +648,18 @@ export default function Dashboard() {
                     onClick={() => setIsBalanceCheckOpen(true)}
                     title="The broker shows a different amount: enter it to see the difference"
                     aria-label="Differs from broker"
-                    className="w-6 h-6 flex items-center justify-center rounded-md border bg-surface text-ink-muted border-line hover:bg-surface-2 transition"
+                    className="w-6 h-6 flex items-center justify-center rounded-tag border bg-surface text-ink-muted border-line hover:bg-surface-2 transition"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </span>
               )}
             </div>
-            <p style={fitFontSize(balanceText, '1.875rem')} className="leading-9 font-extrabold stat-value text-ink">
+            <p style={fitFontSize(balanceText, '1.875rem')} className="leading-9 font-black stat-value text-ink">
               {balanceText}
             </p>
             {bahtRate && !isPrivacyMode && (
-              <p className="text-[10px] font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
+              <p className="text-label font-normal text-ink-faint" title={bahtRateNote}>{formatApproxBaht(data.runningBalance, bahtRate.rate)}</p>
             )}
           </div>
         </div>
@@ -680,7 +681,7 @@ export default function Dashboard() {
         {/* On a phone the range buttons (six of them) leave too little room for the title: they go on a line of their
             own under it, at the right. */}
         <div ref={chartTitleRef} className="flex flex-wrap sm:flex-nowrap items-center justify-end sm:justify-between gap-x-3 gap-y-3 mb-4">
-          <h3 className="basis-full sm:basis-auto text-xs font-black text-ink uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
+          <h3 className="basis-full sm:basis-auto text-small font-black text-ink uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 bg-accent rounded-full shrink-0"></span> {/* Shorter on a phone */}
             <span className="truncate"><span className="sm:hidden">Equity</span><span className="hidden sm:inline">Equity and Balance</span></span>
           </h3>
@@ -699,82 +700,76 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Statistics
-          </h3>
+        <div className={cardClass("space-y-5")}>
+          <CardTitle className="mb-4">Statistics</CardTitle>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-faint">Total Trades</span>
-              <span className="font-black text-ink text-2xl">{data.totalTrades}</span>
+              <span className="text-small font-bold text-ink-faint">Total Trades</span>
+              <span className="font-black text-ink text-figure">{data.totalTrades}</span>
             </div>
             {/* Bad on the left, good on the right, as on the Performance page. */}
             <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="bg-loss-soft p-3 rounded-lg text-center border border-loss-line">
-                <p className="text-[9px] font-bold text-loss uppercase mb-1">SL</p>
-                <p className="text-sm font-black text-loss">{data.countSL}</p>
+              <div className="bg-loss-soft p-3 rounded-control text-center border border-loss-line">
+                <p className="text-label font-bold text-loss uppercase mb-1">SL</p>
+                <p className="text-body font-black text-loss">{data.countSL}</p>
               </div>
-              <div className="bg-surface p-3 rounded-lg text-center border border-line">
-                <p className="text-[9px] font-bold text-ink-faint uppercase mb-1">BE</p>
-                <p className="text-sm font-black text-ink-faint">{data.countBE}</p>
+              <div className="bg-surface p-3 rounded-control text-center border border-line">
+                <p className="text-label font-bold text-ink-faint uppercase mb-1">BE</p>
+                <p className="text-body font-black text-ink-faint">{data.countBE}</p>
               </div>
-              <div className="bg-accent-soft p-3 rounded-lg text-center border border-accent-line">
-                <p className="text-[9px] font-bold text-accent uppercase mb-1">TP</p>
-                <p className="text-sm font-black text-accent">{data.countTP}</p>
+              <div className="bg-accent-soft p-3 rounded-control text-center border border-accent-line">
+                <p className="text-label font-bold text-accent uppercase mb-1">TP</p>
+                <p className="text-body font-black text-accent">{data.countTP}</p>
               </div>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-line">
-              <span className="text-xs font-bold text-ink-faint">Total Deposit</span>
-              <span className="font-black text-sm text-loss">{isPrivacyMode ? '***' : `$${formatNumber(data.totalDeposit)}`}</span>
+              <span className="text-small font-bold text-ink-faint">Total Deposit</span>
+              <span className="font-black text-body text-loss">{isPrivacyMode ? '***' : `$${formatNumber(data.totalDeposit)}`}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-faint">Total Withdraw</span>
-              <span className="font-black text-sm text-accent">{isPrivacyMode ? '***' : `$${formatNumber(data.totalWithdraw)}`}</span>
+              <span className="text-small font-bold text-ink-faint">Total Withdraw</span>
+              <span className="font-black text-body text-accent">{isPrivacyMode ? '***' : `$${formatNumber(data.totalWithdraw)}`}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-line">
-              <span className="text-xs font-bold text-ink-faint">Capital</span>
-              <span className="font-black text-sm text-ink">{isPrivacyMode ? '***' : `$${formatNumber(data.totalFunded)}`}</span>
+              <span className="text-small font-bold text-ink-faint">Capital</span>
+              <span className="font-black text-body text-ink">{isPrivacyMode ? '***' : `$${formatNumber(data.totalFunded)}`}</span>
             </div>
           </div>
         </div>
 
-        <div className="glass-card p-6 space-y-5">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Reward to Risk
-          </h3>
+        <div className={cardClass("space-y-5")}>
+          <CardTitle className="mb-4">Reward to Risk</CardTitle>
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-ink-faint">Avg TP RR</span>
-              <span className="text-[12px] font-black text-accent">{formatNumber(data.avgTPRR)} R</span>
+              <span className="text-caption font-bold text-ink-faint">Avg TP RR</span>
+              <span className="text-small font-black text-accent">{formatNumber(data.avgTPRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-ink-faint">Max TP RR</span>
-              <span className="text-[12px] font-black text-accent">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
+              <span className="text-caption font-bold text-ink-faint">Max TP RR</span>
+              <span className="text-small font-black text-accent">{data.maxTPRR > 0 ? formatNumber(data.maxTPRR) : '0.00'} R</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-line">
-              <span className="text-[11px] font-bold text-ink-faint">Avg SL RR</span>
-              <span className="text-[12px] font-black text-loss">{formatNumber(data.avgSLRR)} R</span>
+              <span className="text-caption font-bold text-ink-faint">Avg SL RR</span>
+              <span className="text-small font-black text-loss">{formatNumber(data.avgSLRR)} R</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-ink-faint">Max SL RR</span>
-              <span className="text-[12px] font-black text-loss">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
+              <span className="text-caption font-bold text-ink-faint">Max SL RR</span>
+              <span className="text-small font-black text-loss">{data.maxSLRR < 0 ? formatNumber(data.maxSLRR) : '0.00'} R</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-line">
-              <span className="text-[11px] font-bold text-ink-faint">Consecutive Loss (Max)</span>
-              <span className="text-[12px] font-black text-loss">{data.maxStreakL}</span>
+              <span className="text-caption font-bold text-ink-faint">Consecutive Loss (Max)</span>
+              <span className="text-small font-black text-loss">{data.maxStreakL}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-bold text-ink-faint">Consecutive Win (Max)</span>
-              <span className="text-[12px] font-black text-accent">{data.maxStreakW}</span>
+              <span className="text-caption font-bold text-ink-faint">Consecutive Win (Max)</span>
+              <span className="text-small font-black text-accent">{data.maxStreakW}</span>
             </div>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col h-full relative">
+        <div className={cardClass("flex flex-col h-full relative")}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-2 h-2 bg-accent rounded-full"></span> Drawdown
-            </h3>
+            <CardTitle>Drawdown</CardTitle>
           </div>
 
           <div className="flex items-stretch justify-between gap-4 pt-2 flex-1 min-h-[200px] mb-8">
@@ -782,7 +777,7 @@ export default function Dashboard() {
               {/* Active DD first: the drawdown under way now, then the deepest there has been. In $ mode the dollars
                   sit after the label, so no line moves when switching R and $. */}
               <div>
-                <p className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-1">
+                <p className="text-label font-black text-ink-faint uppercase tracking-widest mb-1">
                   Active DD
                   {!isRMode && (
                     <span className="ml-1.5 normal-case tracking-normal font-bold text-ink-muted">
@@ -790,17 +785,17 @@ export default function Dashboard() {
                     </span>
                   )}
                 </p>
-                <p className="text-2xl font-extrabold text-loss">{formatNumber(ddActive)}{ddUnit}</p>
-                <p className="text-[10px] font-normal text-ink-faint mt-1">
+                <p className="text-figure font-black text-loss">{formatNumber(ddActive)}{ddUnit}</p>
+                <p className="text-label font-normal text-ink-faint mt-1">
                   {belowPeakLines.map((line, i) => <span key={i} className="block">{line}</span>)}
                 </p>
-                {longestText && <p className="text-[10px] font-normal text-ink-faint">{longestText}</p>}
+                {longestText && <p className="text-label font-normal text-ink-faint">{longestText}</p>}
               </div>
 
               <div className="w-full border-t border-line my-auto"></div>
 
               <div>
-                <p className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-1">
+                <p className="text-label font-black text-ink-faint uppercase tracking-widest mb-1">
                   Max DD
                   {!isRMode && (
                     <span className="ml-1.5 normal-case tracking-normal font-bold text-ink-muted" title="The same drop as the % below, in dollars.">
@@ -808,11 +803,11 @@ export default function Dashboard() {
                     </span>
                   )}
                 </p>
-                <p className="text-2xl font-extrabold text-loss">{formatNumber(ddMax)}{ddUnit}</p>
+                <p className="text-figure font-black text-loss">{formatNumber(ddMax)}{ddUnit}</p>
               </div>
             </div>
 
-            <div title={gaugeNote} className="w-16 h-full bg-surface rounded-xl p-1.5 border border-line flex flex-col justify-end items-center relative z-10 shadow-inner">
+            <div title={gaugeNote} className="w-16 h-full bg-surface rounded-box p-1.5 border border-line flex flex-col justify-end items-center relative z-10 shadow-inner">
               {/* Deepest point of the drawdown still under way */}
               {isInDrawdown && <div 
                 className="absolute left-1.5 right-1.5 h-1.5 bg-loss rounded-full shadow-[0_0_8px_color-mix(in_srgb,var(--loss)_40%,transparent)] transition-all duration-700 ease-out z-20"
@@ -823,7 +818,7 @@ export default function Dashboard() {
               {/* Active DD Bar: hatched like the Active DD area on the chart (thin red-900 diagonals, 6px apart
                   across, the same slant). */}
               <div
-                className="w-full rounded-lg transition-all duration-700 ease-out relative z-10"
+                className="w-full rounded-control transition-all duration-700 ease-out relative z-10"
                 style={{
                   height: `${activeBarHeightPct}%`,
                   backgroundImage: `repeating-linear-gradient(-45deg, ${themeColor('loss', 0.35)} 0 1px, transparent 1px 4.24px)`,
@@ -834,15 +829,15 @@ export default function Dashboard() {
           
           {/* Lined up with the figures on the left (the card's 24px padding). */}
           <div className="absolute bottom-4 left-6 flex">
-            <div className="flex items-center bg-surface-2 p-0.5 rounded-md border border-line shadow-sm">
+            <div className="flex items-center bg-surface-2 p-0.5 rounded-tag border border-line shadow-card">
               {([['r', 'R', 'Drawdown of your cumulative R'], ['usd', '$', 'Drawdown of your cumulative profit and loss in dollars']] as const).map(([mode, label, hint]) => (
                 <button
                   key={mode}
                   onClick={() => setDdMode(mode)}
                   title={`${hint}; deposits and withdrawals are not counted`}
-                  className={`text-[10px] font-bold px-5 py-1.5 md:py-1 rounded transition-all ${
+                  className={`text-label font-bold px-5 py-1.5 md:py-1 rounded-tag transition-all ${
                     ddMode === mode
-                      ? 'bg-card text-ink shadow-md'
+                      ? 'bg-card text-ink shadow-raised'
                       : 'text-ink-faint hover:text-ink'
                   }`}
                 >
@@ -853,21 +848,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col space-y-5 h-full">
-          <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full"></span> Performance
-          </h3>
+        <div className={cardClass("flex flex-col space-y-5 h-full")}>
+          <CardTitle className="mb-4">Performance</CardTitle>
           <div className="space-y-4 pt-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-faint">Profit Factor</span>
+              <span className="text-small font-bold text-ink-faint">Profit Factor</span>
               <span className="font-black text-ink">{formatNumber(data.profitFactor)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-faint">Expectancy</span>
+              <span className="text-small font-bold text-ink-faint">Expectancy</span>
               {/* The average trade in the dollars it really made, and in R, as if every trade risked the same. */}
               <span className="font-black text-ink">
                 {!isPrivacyMode && (
-                  <span className="mr-1.5 text-[11px] font-bold text-ink-faint" title="Average profit per trade in dollars">
+                  <span className="mr-1.5 text-caption font-bold text-ink-faint" title="Average profit per trade in dollars">
                     {data.expectedPayoff < 0 ? '-' : ''}${formatNumber(Math.abs(data.expectedPayoff))}
                   </span>
                 )}
@@ -875,11 +868,11 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-faint">Sharpe Ratio</span>
+              <span className="text-small font-bold text-ink-faint">Sharpe Ratio</span>
               <span className="font-black text-ink">{formatNumber(data.sharpeRatio)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-faint">Net RR</span>
+              <span className="text-small font-bold text-ink-faint">Net RR</span>
               <span className="font-black text-ink">
                 {formatNumber(data.netRR)} R
               </span>
@@ -888,21 +881,21 @@ export default function Dashboard() {
             <div className="flex justify-between items-center gap-3 pt-4 border-t border-line"
               title="Days: trading days in a row with every trade on plan, no rule broken in the day's note (days without trades are skipped). Trades: trades in a row marked On Plan.">
               <div className="min-w-0">
-                <p className="text-xs font-bold text-ink-faint">On Plan in a Row</p>
-                <p className="text-[10px] font-semibold text-ink-faint">Best {streak.best} {streak.best === 1 ? 'day' : 'days'} · {tradeStreak.best} {tradeStreak.best === 1 ? 'trade' : 'trades'}</p>
+                <p className="text-small font-bold text-ink-faint">On Plan in a Row</p>
+                <p className="text-label font-semibold text-ink-faint">Best {streak.best} {streak.best === 1 ? 'day' : 'days'} · {tradeStreak.best} {tradeStreak.best === 1 ? 'trade' : 'trades'}</p>
               </div>
               {/* Days on top, as before; the trades under it, in the line the best run takes on the left. */}
               <div className="shrink-0 text-right">
                 <span className="font-black text-ink flex items-center justify-end gap-1">
-                  {streak.current} <span className="text-[11px] font-bold text-ink-faint">{streak.current === 1 ? 'day' : 'days'}</span>
+                  {streak.current} <span className="text-caption font-bold text-ink-faint">{streak.current === 1 ? 'day' : 'days'}</span>
                 </span>
-                <p className="text-[10px] font-semibold text-ink-faint">
+                <p className="text-label font-semibold text-ink-faint">
                   <span className="font-black text-ink">{tradeStreak.current}</span> {tradeStreak.current === 1 ? 'trade' : 'trades'}
                 </p>
               </div>
             </div>
             {data.estimatedRCount > 0 && (
-              <p className="text-[10px] font-semibold text-ink-faint text-right" title="Their first stop is unknown, so R uses the default 1R. Enter the first stop on the trade (marked ≈ in History) to make it exact.">
+              <p className="text-label font-semibold text-ink-faint text-right" title="Their first stop is unknown, so R uses the default 1R. Enter the first stop on the trade (marked ≈ in History) to make it exact.">
                 ≈ {data.estimatedRCount} {data.estimatedRCount > 1 ? 'trades' : 'trade'} on a default 1R
               </p>
             )}

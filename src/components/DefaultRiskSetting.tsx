@@ -7,6 +7,7 @@ import SettingsCard from "@/components/settings/SettingsCard";
 import { useJournalStore } from "@/store/useJournalStore";
 import { useDefaultRisk } from "@/lib/defaultRisk";
 import { buildRiskContext, defaultRiskAt, USUAL_RISK_WINDOW } from "@/lib/risk";
+import { fieldClass } from "@/components/Field";
 
 // 1R for trades whose first stop is unknown (the stop was moved before it was hit): the usual 1R of
 // the time, worked out from the trades before it. The value saved here is only the fallback.
@@ -59,21 +60,21 @@ export default function DefaultRiskSetting() {
             ช่อง Fallback ใช้เฉพาะเทรดก่อนเริ่มตั้ง Risk per Trade จึงไม่ต้องปรับตาม balance</>}
       >
 
-      <div className="mb-6 text-sm">
-        <p className="text-xs font-bold text-ink-faint uppercase tracking-widest mb-1">Usual 1R now</p>
+      <div className="mb-6 text-body">
+        <p className="text-small font-bold text-ink-faint uppercase tracking-widest mb-1">Usual 1R now</p>
         {usual.count > 0 ? (
           <p className="font-bold text-ink">
             ${usual.risk.toFixed(2)}
-            <span className="font-medium text-ink-faint ml-2">median of your last {usual.count} {usual.count > 1 ? 'trades' : 'trade'} with a known first stop</span>
+            <span className="font-semibold text-ink-faint ml-2">median of your last {usual.count} {usual.count > 1 ? 'trades' : 'trade'} with a known first stop</span>
           </p>
         ) : (
-          <p className="font-medium text-ink-faint">No trades with a known first stop yet, so the fallback below is used.</p>
+          <p className="font-semibold text-ink-faint">No trades with a known first stop yet, so the fallback below is used.</p>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-ink">Trades in usual 1R <span className="font-medium text-ink-faint">(default {USUAL_RISK_WINDOW})</span></label>
+          <label className="block text-body font-bold text-ink">Trades in usual 1R <span className="font-semibold text-ink-faint">(default {USUAL_RISK_WINDOW})</span></label>
           <input
             type="number"
             step="1"
@@ -81,21 +82,21 @@ export default function DefaultRiskSetting() {
             max="100"
             value={shownWindow}
             onChange={(e) => setWindowValue(e.target.value)}
-            className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition"
+            className={fieldClass("md")}
           />
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-bold text-ink">Fallback 1R ($)</label>
+          <label className="block text-body font-bold text-ink">Fallback 1R ($)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             value={shown}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition"
+            className={fieldClass("md")}
           />
           {!savedDefault && effectiveDefault > 0 && (
-            <p className="text-xs text-ink-faint font-medium">Not saved yet: using ${effectiveDefault.toFixed(2)}, the risk most of your trades had.</p>
+            <p className="text-small text-ink-faint font-semibold">Not saved yet: using ${effectiveDefault.toFixed(2)}, the risk most of your trades had.</p>
           )}
         </div>
       </div>

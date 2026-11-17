@@ -18,14 +18,14 @@ export default function BalanceCheckHistory() {
       description="ทุกครั้งที่บันทึกการเช็คยอดกับโบรกเกอร์ เป็นหลักฐานว่ายอดใน journal ตรงกับโบรกเกอร์ ดูได้อย่างเดียว"
     >
       {history && history.length > 0 ? (
-        <div className="max-h-80 overflow-auto border border-line-soft rounded-xl">
-          <table className="w-full text-xs md:text-sm">
+        <div className="max-h-80 overflow-auto border border-line-soft rounded-box">
+          <table className="w-full text-small md:text-body">
             <thead className="bg-surface text-ink-faint sticky top-0">
               <tr>
-                <th className="px-3 md:px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Checked at</th>
-                <th className="px-3 md:px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Broker</th>
-                <th className="hidden md:table-cell px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Journal</th>
-                <th className="px-3 md:px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Result</th>
+                <th className="px-3 md:px-4 py-3 text-left text-label font-bold uppercase tracking-widest">Checked at</th>
+                <th className="px-3 md:px-4 py-3 text-right text-label font-bold uppercase tracking-widest">Broker</th>
+                <th className="hidden md:table-cell px-4 py-3 text-right text-label font-bold uppercase tracking-widest">Journal</th>
+                <th className="px-3 md:px-4 py-3 text-right text-label font-bold uppercase tracking-widest">Result</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
@@ -43,7 +43,7 @@ export default function BalanceCheckHistory() {
           </table>
         </div>
       ) : (
-        <p className="text-sm font-medium text-ink-faint">No balance checks saved yet.</p>
+        <p className="text-body font-semibold text-ink-faint">No balance checks saved yet.</p>
       )}
     </SettingsCard>
   );

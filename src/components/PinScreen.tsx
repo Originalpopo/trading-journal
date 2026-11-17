@@ -43,7 +43,7 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
         {/* Logo */}
         <div className="flex items-center gap-2 mb-12">
           <Flame className="w-12 h-12 text-accent" strokeWidth={1.5} />
-          <h1 className="text-3xl font-extrabold text-ink tracking-tight">
+          <h1 className="text-display font-black text-ink tracking-tight">
             Trade<span className="text-accent">Journal</span>
           </h1>
         </div>
@@ -61,7 +61,7 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
         </div>
 
         {/* Hint */}
-        <p className={`text-ink-faint text-sm font-medium mb-12 text-center transition-opacity duration-500 ${hint && failedAttempts >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-ink-faint text-body font-semibold mb-12 text-center transition-opacity duration-500 ${hint && failedAttempts >= 3 ? 'opacity-100' : 'opacity-0'}`}>
           Hint: {hint}
         </p>
 
@@ -71,7 +71,7 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
             <button
               key={num}
               onClick={() => handleNumberClick(num)}
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-ink bg-surface hover:bg-surface-2 active:bg-line transition-colors mx-auto"
+              className="w-16 h-16 rounded-full flex items-center justify-center text-figure font-semibold text-ink bg-surface hover:bg-surface-2 active:bg-line transition-colors mx-auto"
             >
               {num}
             </button>
@@ -79,7 +79,7 @@ export function PinScreen({ hint, onUnlock }: PinScreenProps) {
           <div className="w-16 h-16"></div> {/* Empty space */}
           <button
             onClick={() => handleNumberClick(0)}
-            className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-ink bg-surface hover:bg-surface-2 active:bg-line transition-colors mx-auto"
+            className="w-16 h-16 rounded-full flex items-center justify-center text-figure font-semibold text-ink bg-surface hover:bg-surface-2 active:bg-line transition-colors mx-auto"
           >
             0
           </button>

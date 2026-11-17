@@ -32,11 +32,11 @@ export default function SlidingSwitch<T extends string>({ options, value, onChan
   }, [value]);
 
   return (
-    <div ref={stripRef} className="relative flex bg-surface-2 p-0.5 rounded-lg shrink-0" role="group" aria-label={label}>
+    <div ref={stripRef} className="relative flex bg-surface-2 p-0.5 rounded-control shrink-0" role="group" aria-label={label}>
       {pill && (
         <span
           aria-hidden
-          className={`absolute top-0.5 bottom-0.5 rounded-md bg-card shadow-sm ${canSlide ? "transition-[left,width] duration-300 ease-out motion-reduce:transition-none" : ""}`}
+          className={`absolute top-0.5 bottom-0.5 rounded-tag bg-card shadow-card ${canSlide ? "transition-[left,width] duration-300 ease-out motion-reduce:transition-none" : ""}`}
           style={{ left: pill.left, width: pill.width }}
         />
       )}
@@ -48,7 +48,7 @@ export default function SlidingSwitch<T extends string>({ options, value, onChan
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
           title={o.title}
-          className={`relative h-7 ${buttonClass} text-[11px] font-bold rounded-md transition-colors ${
+          className={`relative h-7 ${buttonClass} text-caption font-bold rounded-tag transition-colors ${
             value === o.value ? "text-ink" : "text-ink-faint hover:text-ink"
           }`}
         >

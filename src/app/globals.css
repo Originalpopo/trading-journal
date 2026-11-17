@@ -47,6 +47,39 @@
   --color-card: var(--card);
 }
 
+/* The app's text styles, named by what they do (see "Text" in AGENTS.md): `text-display`, `text-figure` ...
+   Each gives a size and its line height only; the weight (font-*) and letter spacing (tracking-*) are written beside
+   it, so moving a page over to these names never changes how bold or how spaced its text is.
+   Line heights are the same ratios as Tailwind's text-3xl ... text-xs, so the lines inside keep inheriting a ratio.
+   caption and label set none, like the 10/11px sizes they replace, so the line keeps the height it inherits. */
+@theme {
+  --text-display: 30px; /* page title, the most prominent figure */
+  --text-display--line-height: 1.2;
+  --text-figure: 24px; /* a big figure in a card */
+  --text-figure--line-height: calc(2 / 1.5);
+  --text-title: 18px; /* a card's or popup's title */
+  --text-title--line-height: calc(1.75 / 1.125);
+  --text-body: 14px; /* main text, buttons, tabs */
+  --text-body--line-height: calc(1.25 / 0.875);
+  --text-small: 12px; /* table text, secondary text */
+  --text-small--line-height: calc(1 / 0.75);
+  --text-caption: 11px; /* small notes, the label inside a small button */
+  --text-label: 10px; /* the small capitals above a figure, table heads */
+
+  /* Corners, named by what they round (see "Corners" in AGENTS.md): `rounded-tag`, `rounded-card` ... and Tailwind's
+     own `rounded-full` for circles and pills. The bigger the thing, the rounder. */
+  --radius-tag: 6px; /* small badges (SL/TP), small buttons in a strip, small fields in a table, check boxes */
+  --radius-control: 8px; /* title-line buttons, selects, page numbers, the sliding switch */
+  --radius-box: 12px; /* big buttons (Save), tabs, fields, a box inside a card, dropdown menus */
+  --radius-card: 20px; /* a card on the page, a panel inside a popup */
+  --radius-popup: 24px; /* popups, the side menu */
+
+  /* Shadows: two soft ones only (see "Shadows" in AGENTS.md). A colour class beside them (`shadow-accent/20`)
+     tints them, e.g. the orange glow under the orange figure cards. Orange buttons have no orange shadow. */
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.02), 0 2px 4px -1px rgb(0 0 0 / 0.02); /* resting on the page: cards, buttons, fields, the sliding switch's pill */
+  --shadow-raised: 0 4px 12px rgb(0 0 0 / 0.06); /* lifted above it: the main button, the chosen tab, menus, chart balloons, popups */
+}
+
 body {
     @apply bg-stone-50;
 }
@@ -76,19 +109,16 @@ body {
     }
 }
 
-.glass-card {
-    @apply bg-white border border-stone-200 rounded-[1.25rem] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-1px_rgba(0,0,0,0.02)];
-}
 
 /* The balloon of every chart (src/lib/chartTooltip.ts): white, a thin border, a circle per line. */
 .chart-tooltip {
-    @apply absolute z-20 pointer-events-none whitespace-nowrap min-w-[120px] bg-white border border-stone-200 rounded-xl px-3 py-2 shadow-[0_4px_12px_rgba(0,0,0,0.06)] opacity-0 transition-opacity duration-150;
+    @apply absolute z-20 pointer-events-none whitespace-nowrap min-w-[120px] bg-white border border-stone-200 rounded-box px-3 py-2 shadow-raised opacity-0 transition-opacity duration-150;
 }
 .chart-tooltip-title {
-    @apply text-[10px] font-semibold text-stone-400 mb-1;
+    @apply text-label font-semibold text-stone-400 mb-1;
 }
 .chart-tooltip-row {
-    @apply flex items-center gap-2 text-[11px] leading-5;
+    @apply flex items-center gap-2 text-caption leading-5;
 }
 .chart-tooltip-dot {
     @apply w-1.5 h-1.5 rounded-full shrink-0;
@@ -100,11 +130,11 @@ body {
     @apply ml-auto pl-4 font-bold text-stone-950 tabular-nums;
 }
 .chart-tooltip-footer {
-    @apply mt-1 pt-1 border-t border-stone-100 text-[10px] font-semibold text-stone-400;
+    @apply mt-1 pt-1 border-t border-stone-100 text-label font-semibold text-stone-400;
 }
 
 .page-btn.active {
-    @apply bg-orange-400 text-white border-orange-400 shadow-[0_4px_12px_rgba(251,146,60,0.2)];
+    @apply bg-orange-400 text-white border-orange-400;
 }
 
 .stat-value {
@@ -112,7 +142,7 @@ body {
 }
 
 .calendar-grid {
-    @apply grid grid-cols-7 gap-[1px] bg-line border border-line rounded-xl overflow-hidden;
+    @apply grid grid-cols-7 gap-[1px] bg-line border border-line rounded-box overflow-hidden;
 }
 
 /* The flame at the tip of the daily target bar: the outer flame sways, the inner one flickers out of step. */

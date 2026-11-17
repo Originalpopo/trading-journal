@@ -19,8 +19,10 @@ import ClearDataSetting from "@/components/settings/ClearDataSetting";
 import BalanceCheckHistory from "@/components/settings/BalanceCheckHistory";
 import SaveRow from "@/components/SaveRow";
 import SettingsCard from "@/components/settings/SettingsCard";
+import Button from "@/components/Button";
 import PageHeader from "@/components/PageHeader";
 import PillTabs from "@/components/PillTabs";
+import { fieldClass } from "@/components/Field";
 
 // Settings are grouped by what they are used for; the open tab is remembered on this device.
 const TABS = [
@@ -163,9 +165,9 @@ export default function SettingsPage() {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1 min-w-0">
-            <p className="text-sm font-bold text-ink">{currentUser?.email || "-"}</p>
+            <p className="text-body font-bold text-ink">{currentUser?.email || "-"}</p>
             <div className="flex items-center gap-2">
-              <p className="text-xs font-mono text-ink-muted break-all select-all">UID: {currentUser?.uid || "-"}</p>
+              <p className="text-small font-mono text-ink-muted break-all select-all">UID: {currentUser?.uid || "-"}</p>
               {currentUser && (
                 <button
                   type="button"
@@ -182,14 +184,9 @@ export default function SettingsPage() {
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => signOut(auth)}
-            className="px-6 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center justify-center gap-2 shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
+          <Button variant="secondary" icon={LogOut} onClick={() => signOut(auth)} className="shrink-0">
             Sign out
-          </button>
+          </Button>
         </div>
       </SettingsCard>
 
@@ -202,28 +199,28 @@ export default function SettingsPage() {
         <form onSubmit={handleSave}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-ink">4-Digit PIN</label>
+              <label className="block text-body font-bold text-ink">4-Digit PIN</label>
               <input
                 type="text"
                 maxLength={4}
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                 placeholder="4 digits"
-                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition placeholder:font-medium"
+                className={fieldClass("md")}
               />
-              <p className="text-xs text-ink-faint font-medium">Numbers only. Exactly 4 digits.</p>
+              <p className="text-small text-ink-faint font-semibold">Numbers only. Exactly 4 digits.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-ink">PIN Hint</label>
+              <label className="block text-body font-bold text-ink">PIN Hint</label>
               <input
                 type="text"
                 value={hint}
                 onChange={(e) => setHint(e.target.value)}
                 placeholder="Something only you would recognize"
-                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-line transition"
+                className={fieldClass("md")}
               />
-              <p className="text-xs text-ink-faint font-medium">Visible to anyone who tries to log in.</p>
+              <p className="text-small text-ink-faint font-semibold">Visible to anyone who tries to log in.</p>
             </div>
           </div>
 

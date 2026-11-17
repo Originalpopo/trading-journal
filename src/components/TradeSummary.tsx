@@ -44,7 +44,7 @@ export function TradeSummaryLine({ symbol, side, size, entryTime, exitTime, pnl,
     rr !== undefined && rr !== 0 && <span key="rr" className={`tabular-nums ${tone}`}>{formatNumber(rr)} R</span>,
   ].filter(Boolean);
   return (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-bold text-ink-muted normal-case tracking-normal">
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small font-bold text-ink-muted normal-case tracking-normal">
       {parts.map((part, i) => (
         <span key={i} className="flex items-center gap-x-2">
           {i > 0 && <span aria-hidden="true" className="text-ink-disabled">·</span>}
@@ -64,9 +64,9 @@ export function FoldBar({ header, isOpen, onToggle, hasError = false, children }
   children: ReactNode;
 }) {
   return (
-    <div className={`border rounded-xl ${hasError ? "border-loss" : "border-line"}`}>
+    <div className={`border rounded-box ${hasError ? "border-loss" : "border-line"}`}>
       <button type="button" onClick={onToggle} aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left rounded-xl hover:bg-surface transition">
+        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left rounded-box hover:bg-surface transition">
         <span className="min-w-0 flex-1">{header}</span>
         <ChevronDown className={`w-4 h-4 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>

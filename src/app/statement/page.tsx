@@ -9,12 +9,15 @@ import { reconcileBalance, type BalanceCheckRecord } from "@/lib/reconcile";
 import { formatNumber } from "@/lib/utils";
 import { useEscapeToClose } from "@/lib/useEscapeToClose";
 
+import Button from "@/components/Button";
 import PageHeader, { HeaderButton } from "@/components/PageHeader";
 import Pagination from "@/components/Pagination";
+import { cardClass } from "@/components/Card";
+import { fieldClass } from "@/components/Field";
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const TH = "px-3 py-3 font-bold uppercase text-[10px] tracking-widest text-right";
-const TH_LEFT = "px-3 py-3 font-bold uppercase text-[10px] tracking-widest text-left";
+const TH = "px-3 py-3 font-bold uppercase text-label tracking-widest text-right";
+const TH_LEFT = "px-3 py-3 font-bold uppercase text-label tracking-widest text-left";
 // A cell takes exactly one text colour (two would leave the winner to CSS order).
 const TD_BASE = "px-3 py-2.5 text-right font-semibold";
 const TD = `${TD_BASE} text-ink-muted`;
@@ -53,20 +56,20 @@ function StatementDocument({ statement, profile, confirmed, periodPicker, paging
     // Laid out by its own width, not the screen's: the A4 preview keeps its columns on a phone.
     <div className="@container">
       <div className="text-center mb-6">
-        <h3 className="text-xl font-black text-ink tracking-tight">Monthly Account Statement</h3>
+        <h3 className="text-title font-black text-ink tracking-tight">Monthly Account Statement</h3>
         {periodPicker && <div className="mt-3 flex justify-center print:hidden">{periodPicker}</div>}
       </div>
 
-      <div className="grid grid-cols-2 @2xl:grid-cols-5 gap-4 text-xs pb-5 mb-5 border-b border-line">
-        <div><p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Name</p><p className="font-bold text-ink">{profile.name || '-'}</p></div>
-        <div><p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Broker</p><p className="font-bold text-ink">{profile.broker || '-'}</p></div>
-        <div><p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Account</p><p className="font-bold text-ink">{profile.accountNo || '-'}</p></div>
-        <div><p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Currency</p><p className="font-bold text-ink">USD</p></div>
-        <div><p className="text-[10px] font-bold text-ink-faint uppercase tracking-widest">Period</p><p className="font-bold text-ink">{MONTH_NAMES[statement.month - 1]} {statement.year}</p></div>
+      <div className="grid grid-cols-2 @2xl:grid-cols-5 gap-4 text-small pb-5 mb-5 border-b border-line">
+        <div><p className="text-label font-bold text-ink-faint uppercase tracking-widest">Name</p><p className="font-bold text-ink">{profile.name || '-'}</p></div>
+        <div><p className="text-label font-bold text-ink-faint uppercase tracking-widest">Broker</p><p className="font-bold text-ink">{profile.broker || '-'}</p></div>
+        <div><p className="text-label font-bold text-ink-faint uppercase tracking-widest">Account</p><p className="font-bold text-ink">{profile.accountNo || '-'}</p></div>
+        <div><p className="text-label font-bold text-ink-faint uppercase tracking-widest">Currency</p><p className="font-bold text-ink">USD</p></div>
+        <div><p className="text-label font-bold text-ink-faint uppercase tracking-widest">Period</p><p className="font-bold text-ink">{MONTH_NAMES[statement.month - 1]} {statement.year}</p></div>
       </div>
 
-      <h4 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-3">Summary</h4>
-      <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-x-12 gap-y-4 text-xs mb-6">
+      <h4 className="text-small font-black text-ink uppercase tracking-[0.2em] mb-3">Summary</h4>
+      <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-x-12 gap-y-4 text-small mb-6">
         <div className="space-y-1.5">
           <div className="flex justify-between"><span className="font-bold text-ink-faint">Opening balance</span><span className="font-bold text-ink">{formatNumber(statement.openingBalance)}</span></div>
           <div className="flex justify-between"><span className="font-bold text-ink-faint">Deposits</span><span className="font-bold text-ink">{formatNumber(statement.deposits)}</span></div>
@@ -80,15 +83,15 @@ function StatementDocument({ statement, profile, confirmed, periodPicker, paging
             {confirmed ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-accent" /> : <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />}
             {confirmationText(confirmed)}
           </p>
-          <p className="font-medium text-ink-faint">Times are Bangkok time (UTC+7), as exported from the broker&apos;s platform.</p>
+          <p className="font-semibold text-ink-faint">Times are Bangkok time (UTC+7), as exported from the broker&apos;s platform.</p>
         </div>
       </div>
 
-      <h4 className="text-xs font-black text-ink uppercase tracking-[0.2em] mb-3">Transactions</h4>
+      <h4 className="text-small font-black text-ink uppercase tracking-[0.2em] mb-3">Transactions</h4>
       {statement.rows.length === 0 ? (
-        <p className="text-xs text-ink-faint font-medium">No transactions in this period.</p>
+        <p className="text-small text-ink-faint font-semibold">No transactions in this period.</p>
       ) : (
-        <div className="overflow-x-auto print:overflow-visible border border-line-soft rounded-xl print:rounded-none">
+        <div className="overflow-x-auto print:overflow-visible border border-line-soft rounded-box print:rounded-none">
           <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-surface text-ink-faint border-b border-line-soft">
               <tr>
@@ -105,19 +108,19 @@ function StatementDocument({ statement, profile, confirmed, periodPicker, paging
                 <th className={TH}>Balance</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] divide-y divide-line-soft">
+            <tbody className="text-caption divide-y divide-line-soft">
               {rows.map((r, i) => (
                 <tr key={`${r.time}-${firstRow + i}`} className={`break-inside-avoid ${r.kind === 'trade' ? '' : 'bg-surface print:bg-transparent'}`}>
                   <td className={TD_LEFT}>{firstRow + i + 1}</td>
                   <td className={TD_LEFT}>{clock(r.time)}{r.timeIsEstimate && <span title="เวลาปิดเป็นค่าประมาณ: ข้อมูลจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอน"> *</span>}</td>
                   <td className={TD_LEFT}>{clock(r.openTime)}</td>
-                  <td className={`${TD_LEFT_BASE} ${r.kind === 'trade' ? 'text-ink-muted' : 'font-extrabold text-ink'}`}>{r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind}</td>
+                  <td className={`${TD_LEFT_BASE} ${r.kind === 'trade' ? 'text-ink-muted' : 'text-ink'}`}>{r.kind === 'trade' ? (r.side || '').toLowerCase() : r.kind}</td>
                   <td className={TD_LEFT}>{r.reference?.split(':').pop() || ''}</td>
                   <td className={TD_LEFT}>{r.symbol || ''}</td>
                   <td className={TD}>{r.size ?? ''}</td>
                   <td className={TD}>{r.entryPrice !== undefined ? r.entryPrice.toFixed(2) : ''}</td>
                   <td className={TD}>{r.exitPrice !== undefined ? r.exitPrice.toFixed(2) : ''}</td>
-                  <td className={`${TD_BASE} font-extrabold text-ink`}>{signed(r.amount)}</td>
+                  <td className={`${TD_BASE} text-ink`}>{signed(r.amount)}</td>
                   <td className={`${TD_BASE} text-ink`}>{formatNumber(r.balanceAfter)}</td>
                 </tr>
               ))}
@@ -131,7 +134,7 @@ function StatementDocument({ statement, profile, confirmed, periodPicker, paging
         </div>
       )}
       {statement.rows.some(r => r.timeIsEstimate) && (
-        <p className="text-[10px] font-medium text-ink-faint mt-2">* เวลาปิดเป็นค่าประมาณ: ข้อมูลที่ส่งออกจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอนของเทรดนี้</p>
+        <p className="text-caption font-semibold text-ink-faint mt-2">* เวลาปิดเป็นค่าประมาณ: ข้อมูลที่ส่งออกจากโบรกเกอร์ไม่ได้ระบุเวลาปิดที่แน่นอนของเทรดนี้</p>
       )}
     </div>
   );
@@ -226,14 +229,14 @@ export default function StatementPage() {
         </PageHeader>
 
         {!hasProfile && (
-          <p className="text-xs font-bold text-loss flex items-center gap-2">
+          <p className="text-small font-bold text-loss flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             The account holder and account number are not set yet.
             <Link href="/settings" className="underline">Add them in Settings</Link>
           </p>
         )}
 
-        <div className="glass-card p-4 md:p-8">
+        <div className={cardClass("p-4 md:p-8", "none")}>
           {statement
             ? <StatementDocument statement={statement} profile={profile} confirmed={confirmed}
                 paging={{ page: tablePage, onChange: setTablePage }} periodPicker={
@@ -241,14 +244,14 @@ export default function StatementPage() {
                   value={current ? `${current.year}-${current.month}` : ''}
                   onChange={(e) => { setSelected(e.target.value); setTablePage(1); }}
                   aria-label="Month"
-                  className="bg-card border border-line text-ink text-xs font-bold rounded-lg h-8 px-3 py-0 focus:outline-none focus:border-accent cursor-pointer"
+                  className={`${fieldClass("sm")} cursor-pointer`}
                 >
                   {months.map(m => (
                     <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>{MONTH_NAMES[m.month - 1]} {m.year}</option>
                   ))}
                 </select>
               } />
-            : <p className="text-sm text-ink-faint font-medium">No trades or funding yet.</p>}
+            : <p className="text-body text-ink-faint font-semibold">No trades or funding yet.</p>}
         </div>
       </div>
 
@@ -257,28 +260,25 @@ export default function StatementPage() {
           {/* A4 landscape: the transactions table is too wide for a portrait page. */}
           <style>{`@page { size: A4 landscape; margin: 12mm; }`}</style>
           <div className="sticky top-0 left-0 z-10 bg-card border-b border-line px-3 md:px-6 py-3 flex items-center justify-end md:justify-between gap-4 print:hidden">
-            <p className="hidden md:block text-xs font-bold text-ink">
+            <p className="hidden md:block text-small font-bold text-ink">
               Preview · {MONTH_NAMES[statement.month - 1]} {statement.year}
-              <span className="font-medium text-ink-faint ml-2">A4 landscape</span>
+              <span className="font-semibold text-ink-faint ml-2">A4 landscape</span>
             </p>
             <div className="flex items-center gap-2 shrink-0">
-              <button type="button" onClick={handleSavePdf} disabled={isSavingPdf}
-                title="บันทึกเป็นไฟล์ PDF ลงเครื่องทันที ไม่ผ่านหน้าต่างพิมพ์"
-                className="px-3 md:px-5 py-2.5 bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white font-bold rounded-xl transition shadow-lg shadow-accent-line flex items-center gap-2 text-xs">
-                <FileDown className="w-4 h-4" /> {isSavingPdf ? "Saving..." : "Save as PDF"}
-              </button>
-              <button type="button" onClick={() => window.print()}
-                title="เปิดหน้าต่างพิมพ์ของเบราว์เซอร์เพื่อพิมพ์ลงกระดาษ"
-                className="px-4 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center gap-2 text-xs">
-                <Printer className="w-4 h-4" /> Print
-              </button>
-              <button type="button" onClick={() => setIsPreviewOpen(false)}
-                className="px-4 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-xl transition flex items-center gap-2 text-xs">
-                <X className="w-4 h-4" /> Close
-              </button>
+              <Button variant="primary" icon={FileDown} onClick={handleSavePdf} disabled={isSavingPdf}
+                title="บันทึกเป็นไฟล์ PDF ลงเครื่องทันที ไม่ผ่านหน้าต่างพิมพ์">
+                {isSavingPdf ? "Saving..." : "Save as PDF"}
+              </Button>
+              <Button variant="secondary" icon={Printer} onClick={() => window.print()}
+                title="เปิดหน้าต่างพิมพ์ของเบราว์เซอร์เพื่อพิมพ์ลงกระดาษ">
+                Print
+              </Button>
+              <Button variant="secondary" icon={X} onClick={() => setIsPreviewOpen(false)}>
+                Close
+              </Button>
             </div>
           </div>
-          <div className="bg-card w-[297mm] min-h-[210mm] p-[12mm] mx-auto my-8 shadow-xl print:w-auto print:min-h-0 print:p-0 print:m-0 print:shadow-none">
+          <div className="bg-card w-[297mm] min-h-[210mm] p-[12mm] mx-auto my-8 shadow-raised print:w-auto print:min-h-0 print:p-0 print:m-0 print:shadow-none">
             <StatementDocument statement={statement} profile={profile} confirmed={confirmed} />
           </div>
         </div>

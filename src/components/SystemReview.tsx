@@ -7,6 +7,7 @@ import { useDailyTargets } from "./useDailyTargets";
 import { useTradingDay } from "./useTradingDay";
 import { formatNumber } from "@/lib/utils";
 import { REVIEW_PHASES, inReviewOrder, nextPhase, systemReview, systemScore, type ScorePart } from "@/lib/systemReview";
+import { cardClass, CardTitle } from "@/components/Card";
 
 // English, as the rest of the box: "2 Nov 2026".
 const dateOf = (time: string) =>
@@ -110,19 +111,17 @@ export default function SystemReview() {
   const canFold = !!(report && score);
 
   return (
-    <div className="glass-card p-4 md:p-6">
+    <div className={cardClass()}>
       <button
         type="button"
         onClick={toggle}
         disabled={!canFold}
         aria-expanded={canFold ? isOpen : undefined}
-        className="w-full flex items-center justify-between gap-3 text-left -m-2 p-2 box-content rounded-xl enabled:hover:bg-surface transition-colors disabled:cursor-default"
+        className="w-full flex items-center justify-between gap-3 text-left -m-2 p-2 box-content rounded-box enabled:hover:bg-surface transition-colors disabled:cursor-default"
       >
-        <h3 className="text-xs font-black text-ink uppercase tracking-[0.2em] flex items-center gap-2 whitespace-nowrap">
-          <span className="w-2 h-2 bg-accent rounded-full"></span> System Review
-        </h3>
+        <CardTitle className="whitespace-nowrap">System Review</CardTitle>
         <span className="flex items-center gap-2">
-          <span className="text-xs font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `Next report at ${next} trades` : "All 10 reports reached"}>
+          <span className="text-small font-bold text-ink-faint tabular-nums whitespace-nowrap" title={next ? `Next report at ${next} trades` : "All 10 reports reached"}>
             <span className="text-ink">{count}</span>{next ? ` / ${next}` : ""} trades
           </span>
           {canFold && <ChevronDown className={`w-5 h-5 shrink-0 text-ink-faint transition-transform ${isOpen ? "rotate-180" : ""}`} />}
@@ -132,7 +131,7 @@ export default function SystemReview() {
       {report && score && isOpen && (
         <>
           {/* One tab per report; the ones not reached yet are shown faded. */}
-          <div className="mt-4 flex bg-surface-2 p-0.5 rounded-lg overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Report">
+          <div className="mt-4 flex bg-surface-2 p-0.5 rounded-control overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Report">
             {REVIEW_PHASES.map(p => (
               <button
                 key={p}
@@ -142,8 +141,8 @@ export default function SystemReview() {
                 disabled={p > count}
                 onClick={() => setPicked(p)}
                 title={p > count ? `At ${p} trades` : `Report on trades 1–${p}`}
-                className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-[11px] font-bold rounded-md tabular-nums transition ${
-                  p === phase ? "bg-card text-ink shadow-sm" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
+                className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-caption font-bold rounded-tag tabular-nums transition ${
+                  p === phase ? "bg-card text-ink shadow-card" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
                 }`}
               >
                 {p.toLocaleString("en-US")}
@@ -155,15 +154,15 @@ export default function SystemReview() {
           <div className="mt-4 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-10">
             <ScoreRadar parts={score.parts} earlier={earlier} />
             <div className="text-center md:text-left">
-              <p className="text-[11px] font-bold text-ink uppercase tracking-widest">System Score</p>
-              <p className="text-4xl font-black tabular-nums text-accent">
-                {formatNumber(score.total)}<span className="text-base font-bold text-ink-faint"> / 10</span>
+              <p className="text-caption font-bold text-ink uppercase tracking-widest">System Score</p>
+              <p className="text-display font-black tabular-nums text-accent">
+                {formatNumber(score.total)}<span className="text-body font-bold text-ink-faint"> / 10</span>
               </p>
-              <p className="mt-2 text-[11px] font-semibold text-ink-faint">
+              <p className="mt-2 text-caption font-semibold text-ink-faint">
                 Trades 1–{report.trades} · {dateOf(report.firstTime)} – {dateOf(report.lastTime)}
               </p>
               {earlier && (
-                <p className="mt-1 text-[11px] font-semibold text-ink-faint flex items-center gap-1.5 justify-center md:justify-start">
+                <p className="mt-1 text-caption font-semibold text-ink-faint flex items-center gap-1.5 justify-center md:justify-start">
                   <svg width="18" height="6" aria-hidden><line x1="0" y1="3" x2="18" y2="3" className="stroke-ink-disabled" strokeWidth={1.5} strokeDasharray="4 3" /></svg>
                   Trades 1–{earlier.trades}
                 </p>

@@ -5,6 +5,7 @@ import { Trash2, NotebookPen, Eraser } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
 import { clearDatabase, clearNotes } from "@/lib/dbActions";
 import SettingsCard from "./SettingsCard";
+import Button from "@/components/Button";
 
 // Starting over, in two separate parts: the figures (trades and funding) and the notes (day and week notes).
 // Clearing one never touches the other, and settings are never cleared. Each asks twice, the second time for
@@ -29,17 +30,11 @@ export default function ClearDataSetting() {
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="font-bold text-ink">{title}</p>
-        <p className="text-sm font-medium text-ink-muted">{detail}</p>
+        <p className="text-body font-semibold text-ink-muted">{detail}</p>
       </div>
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={busy !== null}
-        className="shrink-0 px-5 py-2.5 bg-loss-soft hover:bg-card text-loss font-bold rounded-xl transition border border-loss-line flex items-center justify-center gap-2 disabled:opacity-50"
-      >
-        <Icon className="w-4 h-4" />
+      <Button variant="danger" icon={Icon} onClick={onClick} disabled={busy !== null} className="shrink-0">
         <span className="whitespace-nowrap">{isBusy ? "Deleting..." : label}</span>
-      </button>
+      </Button>
     </div>
   );
 

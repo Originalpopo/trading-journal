@@ -28,7 +28,7 @@ export default function BackupReminder() {
   if (!age) return null;
   const Icon = age.isDue ? ShieldAlert : ShieldCheck;
   return (
-    <span className={`flex items-center gap-1 text-[10px] font-bold ${age.isDue ? 'text-loss' : 'text-ink-faint'}`}>
+    <span className={`flex items-center gap-1 text-label font-bold ${age.isDue ? 'text-loss' : 'text-ink-faint'}`}>
       <Icon className="w-3 h-3" /> {age.label}
     </span>
   );

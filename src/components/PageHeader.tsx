@@ -13,7 +13,7 @@ export default function PageHeader({ title, shortTitle, children }: {
 }) {
   return (
     <div className="flex items-center justify-between gap-4 h-9">
-      <h2 className="text-3xl font-extrabold text-ink tracking-tight whitespace-nowrap">
+      <h2 className="text-display font-black text-ink tracking-tight whitespace-nowrap">
         {shortTitle ? <><span className="md:hidden">{shortTitle}</span><span className="hidden md:inline">{title}</span></> : title}
       </h2>
       {children && <div className="flex items-center gap-2 md:gap-4 shrink-0">{children}</div>}
@@ -23,13 +23,13 @@ export default function PageHeader({ title, shortTitle, children }: {
 
 const VARIANTS = {
   // The page's main action.
-  primary: 'bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white border border-transparent shadow-sm',
+  primary: 'bg-accent hover:bg-accent-strong disabled:bg-accent-line text-white border border-transparent shadow-card',
   // A second action beside a primary one.
   secondary: 'bg-surface-2 hover:bg-line disabled:opacity-50 text-ink-muted border border-transparent',
   // A lighter action in the orange family.
-  outline: 'bg-card hover:bg-accent-soft disabled:opacity-50 text-accent border border-accent-line shadow-sm',
+  outline: 'bg-card hover:bg-accent-soft disabled:opacity-50 text-accent border border-accent-line shadow-card',
   // A small extra action, such as "+".
-  plain: 'bg-card border border-line hover:border-accent-line hover:text-accent disabled:opacity-50 text-ink-muted shadow-sm',
+  plain: 'bg-card border border-line hover:border-accent-line hover:text-accent disabled:opacity-50 text-ink-muted shadow-card',
 };
 
 // A title-line button: icon and label on a computer, the icon alone (36px square) on a phone.
@@ -55,7 +55,7 @@ export function HeaderButton({ icon: Icon, phoneIcon: PhoneIcon, label, title, v
       disabled={disabled}
       title={title ?? label}
       aria-label={label}
-      className={`relative h-9 w-9 ${iconOnly ? '' : 'md:w-auto md:px-4'} rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
+      className={`relative h-9 w-9 ${iconOnly ? '' : 'md:w-auto md:px-4'} rounded-control text-small font-bold transition flex items-center justify-center gap-2 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
     >
       {PhoneIcon ? <><PhoneIcon className="md:hidden w-4 h-4" /><Icon className="hidden md:block w-4 h-4" /></> : <Icon className="w-4 h-4" />}
       {!iconOnly && <span className="hidden md:inline">{label}</span>}

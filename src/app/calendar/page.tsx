@@ -18,6 +18,9 @@ import { summarizeYear } from "@/lib/calendarYear";
 import { loadBahtRate, formatApproxBaht, formatPnl, toBaht, type BahtRate } from "@/lib/bahtRate";
 
 import PageHeader from "@/components/PageHeader";
+import { cardClass } from "@/components/Card";
+import Button from "@/components/Button";
+import { fieldClass } from "@/components/Field";
 type CalendarView = 'month' | 'year';
 const VIEW_KEY = 'calendarView';
 type CalendarCurrency = 'USD' | 'THB';
@@ -258,8 +261,8 @@ export default function CalendarPage() {
             <div key={stat.label} className="flex items-center gap-4">
               {i > 0 && <div className="w-[1px] bg-line h-8 shrink-0"></div>}
               <div className="flex flex-col justify-center items-center text-center shrink-0 px-2">
-                <span className="text-[9px] leading-none font-black text-ink-faint uppercase tracking-widest mb-1">{stat.label}</span>
-                <span title={stat.title} className={`text-lg leading-none font-black ${stat.tone}`}>{stat.value}</span>
+                <span className="text-label leading-none font-black text-ink-faint uppercase tracking-widest mb-1">{stat.label}</span>
+                <span title={stat.title} className={`text-title leading-none font-black ${stat.tone}`}>{stat.value}</span>
               </div>
             </div>
           ))}
@@ -279,21 +282,21 @@ export default function CalendarPage() {
             <button onClick={() => stepStat(-1)} aria-label="Previous figure" className="p-2 -m-2 text-ink-disabled hover:text-ink-muted transition">
               <ChevronLeft className="w-3 h-3" strokeWidth={3} />
             </button>
-            <span className="text-[9px] leading-none font-black text-ink-faint uppercase tracking-widest min-w-[52px]">{shownStat.label}</span>
+            <span className="text-label leading-none font-black text-ink-faint uppercase tracking-widest min-w-[52px]">{shownStat.label}</span>
             <button onClick={() => stepStat(1)} aria-label="Next figure" className="p-2 -m-2 text-ink-disabled hover:text-ink-muted transition">
               <ChevronRight className="w-3 h-3" strokeWidth={3} />
             </button>
           </div>
-          <span title={shownStat.title} className={`text-lg font-black leading-none ${shownStat.tone}`}>{shownStat.value}</span>
+          <span title={shownStat.title} className={`text-title font-black leading-none ${shownStat.tone}`}>{shownStat.value}</span>
         </div>
       </PageHeader>
-      <div className="glass-card p-3 md:p-8">
+      <div className={cardClass("p-3 md:p-8", "none")}>
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 gap-2 md:gap-4">
           <div className="flex items-center md:-ml-3">
             <button onClick={() => changeMonth(-1)} className="p-2 md:p-3 hover:bg-surface-2 rounded-full text-ink-faint transition">
               <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
             </button>
-            <h2 className="text-xl md:text-3xl font-extrabold text-ink min-w-[100px] md:min-w-[145px] text-center tracking-tight">
+            <h2 className="text-title md:text-display font-black text-ink min-w-[100px] md:min-w-[145px] text-center tracking-tight">
               {headline.label}
             </h2>
             <button onClick={() => changeMonth(1)} className="p-2 md:p-3 hover:bg-surface-2 rounded-full text-ink-faint transition">
@@ -301,33 +304,33 @@ export default function CalendarPage() {
             </button>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
-            <div className="flex bg-surface-2 rounded-lg p-0.5">
+            <div className="flex bg-surface-2 rounded-control p-0.5">
               {(['month', 'year'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => changeView(v)}
-                  className={`h-7 px-2.5 md:px-3 text-xs font-bold rounded-md uppercase md:tracking-wider transition ${view === v ? 'bg-card text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
+                  className={`h-7 px-2.5 md:px-3 text-small font-bold rounded-tag uppercase md:tracking-wider transition ${view === v ? 'bg-card text-accent shadow-card' : 'text-ink-faint hover:text-ink'}`}
                 >
                   {v}
                 </button>
               ))}
             </div>
-            <div className="flex bg-surface-2 rounded-lg p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
+            <div className="flex bg-surface-2 rounded-control p-0.5" title={bahtRate ? bahtRateNote : 'The exchange rate could not be loaded'}>
               {(['USD', 'THB'] as const).map(c => (
                 <button
                   key={c}
                   onClick={() => changeCurrency(c)}
                   disabled={c === 'THB' && !bahtRate}
-                  className={`h-7 min-w-8 px-2.5 text-xs font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-card text-accent shadow-sm' : 'text-ink-faint hover:text-ink'}`}
+                  className={`h-7 min-w-8 px-2.5 text-small font-bold rounded-tag transition disabled:opacity-40 disabled:cursor-not-allowed ${(c === 'THB' ? !!rate : !rate) ? 'bg-card text-accent shadow-card' : 'text-ink-faint hover:text-ink'}`}
                 >
                   {c === 'USD' ? '$' : '฿'}
                 </button>
               ))}
             </div>
-            <button onClick={goToToday} className="h-8 px-3 md:px-4 bg-accent hover:bg-accent-strong text-white text-xs font-bold rounded-lg transition uppercase md:tracking-wider">
+            <Button variant="primary" size="sm" onClick={goToToday} className="md:px-4 uppercase md:tracking-wider">
               Today
-            </button>
-            <select value={data.year} onChange={jumpToYear} className="bg-surface border border-line text-ink text-xs font-bold rounded-lg h-8 px-2 md:px-3 py-0 shadow-sm focus:outline-none focus:border-accent cursor-pointer">
+            </Button>
+            <select value={data.year} onChange={jumpToYear} className={`${fieldClass("sm")} cursor-pointer`}>
               {data.availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
@@ -339,7 +342,7 @@ export default function CalendarPage() {
         <div className="flex flex-col xl:flex-row gap-4">
           <div className="calendar-grid flex-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(dayName => (
-              <div key={dayName} className="bg-surface px-0 py-2 md:p-3 text-center text-[10px] font-black text-ink-faint uppercase tracking-widest">
+              <div key={dayName} className="bg-surface px-0 py-2 md:p-3 text-center text-label font-black text-ink-faint uppercase tracking-widest">
                 {dayName}
               </div>
             ))}
@@ -383,9 +386,9 @@ export default function CalendarPage() {
                   <div className="flex items-start justify-between h-5 md:h-6">
                     <span className="flex items-center gap-1.5">
                       {isToday ? (
-                        <span className="text-xs font-bold bg-accent text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-sm">{day}</span>
+                        <span className="text-small font-bold bg-accent text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-card">{day}</span>
                       ) : (
-                        <span className="text-xs font-bold text-ink-faint">{day}</span>
+                        <span className="text-small font-bold text-ink-faint">{day}</span>
                       )}
                     </span>
                     {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
@@ -432,11 +435,11 @@ export default function CalendarPage() {
                         )}
                       </div>
                       {!isPrivacyMode && (
-                        <div className={`text-[10px] font-bold ${stats.rr > 0 ? 'text-accent' : stats.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight mt-1`}>
+                        <div className={`text-label font-bold ${stats.rr > 0 ? 'text-accent' : stats.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight mt-1`}>
                           {formatNumber(stats.rr)} R
                         </div>
                       )}
-                      <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter mt-0.5">
+                      <div className="text-label font-normal text-ink-faint uppercase tracking-tighter mt-0.5">
                         Trades : {stats.count}
                       </div>
                     </>
@@ -449,8 +452,8 @@ export default function CalendarPage() {
             })}
           </div>
 
-          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-line gap-[1px] border border-line rounded-xl overflow-hidden">
-            <div className="bg-accent-soft p-3 text-center text-[10px] font-black text-accent uppercase tracking-widest shrink-0 flex items-center justify-center xl:min-h-[41px]">
+          <div className="w-full xl:w-[140px] shrink-0 flex flex-col bg-line gap-[1px] border border-line rounded-box overflow-hidden">
+            <div className="bg-accent-soft p-3 text-center text-label font-black text-accent uppercase tracking-widest shrink-0 flex items-center justify-center xl:min-h-[41px]">
               Summary
             </div>
             {data.weeklySummaries.map((cell: any, index: number) => {
@@ -486,7 +489,7 @@ export default function CalendarPage() {
                       <SegmentBar share={weekShare} depth={weekSum.pnl > 0 ? 0 : -weekShare} isShown isHit={false} isPlain heightClass={TARGET_LINE_HEIGHT} trackClass={TARGET_LINE_TRACK} />
                     </span>
                   )}
-                  <span className="mr-auto xl:mr-0 text-[10px] font-black text-ink-faint uppercase tracking-widest xl:h-6">
+                  <span className="mr-auto xl:mr-0 text-label font-black text-ink-faint uppercase tracking-widest xl:h-6">
                     <span className="xl:hidden">Week </span><span className="hidden xl:inline">W</span>{index + 1}
                   </span>
                   <div className="xl:mt-auto flex items-center xl:items-end justify-end xl:justify-between gap-4 xl:gap-1">
@@ -494,14 +497,14 @@ export default function CalendarPage() {
                       {cell.count > 0 && (
                         <>
                           {!isPrivacyMode && (
-                            <div className={`text-sm xl:text-base font-black ${cell.pnl > 0 ? 'text-accent' : cell.pnl < 0 ? 'text-loss' : 'text-ink-faint'}`}>
+                            <div className={`text-body font-black ${cell.pnl > 0 ? 'text-accent' : cell.pnl < 0 ? 'text-loss' : 'text-ink-faint'}`}>
                               {formatPnl(cell.pnl, rate)}
                             </div>
                           )}
-                          <div className={`${isPrivacyMode ? 'text-sm xl:text-base' : 'text-xs xl:text-[10px] xl:mt-1'} font-black xl:font-bold ${cell.rr > 0 ? 'text-accent' : cell.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight`}>
+                          <div className={`${isPrivacyMode ? 'text-body' : 'text-small xl:text-label xl:mt-1'} font-black xl:font-bold ${cell.rr > 0 ? 'text-accent' : cell.rr < 0 ? 'text-loss' : 'text-ink-faint'} tracking-tight`}>
                             {formatNumber(cell.rr)} R
                           </div>
-                          <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter xl:mt-0.5">
+                          <div className="text-label font-normal text-ink-faint uppercase tracking-tighter xl:mt-0.5">
                             Trades : {cell.count}
                           </div>
                         </>
@@ -518,7 +521,7 @@ export default function CalendarPage() {
       </div>
 
       {((view === 'month' && targetPct > 0) || hourNow > 0) && (
-        <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-[10px] font-bold text-ink-faint">
+        <div className="-mt-3 px-1 md:px-2 space-y-1.5 text-label font-bold text-ink-faint">
           {view === 'month' && targetPct > 0 && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1">
               {/* The line along the bottom of a day or a week: a bar while short of the target, full once reached. */}
@@ -575,10 +578,10 @@ interface YearGridProps {
 function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenWeekNote }: YearGridProps) {
   return (
     <div className="flex flex-col xl:flex-row gap-4">
-      <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-line border border-line rounded-xl overflow-hidden">
+      <div className="flex-1 grid grid-cols-[48px_repeat(6,minmax(0,1fr))] md:grid-cols-[64px_repeat(6,minmax(0,1fr))] gap-[1px] bg-line border border-line rounded-box overflow-hidden">
         <div className="bg-surface h-10"></div>
         {[1, 2, 3, 4, 5, 6].map(n => (
-          <div key={n} className="bg-surface h-10 flex items-center justify-center text-[10px] font-black text-ink-faint uppercase tracking-widest">W{n}</div>
+          <div key={n} className="bg-surface h-10 flex items-center justify-center text-label font-black text-ink-faint uppercase tracking-widest">W{n}</div>
         ))}
 
         {year.months.map(m => (
@@ -589,10 +592,10 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
               title="Open this month"
               className="bg-surface hover:bg-surface-2 transition p-1 md:p-3 flex flex-col items-center justify-center text-center"
             >
-              <span className="text-[10px] md:text-xs font-black text-ink uppercase tracking-widest">{MONTH_NAMES[m.month]}</span>
+              <span className="text-label md:text-small font-black text-ink uppercase tracking-widest">{MONTH_NAMES[m.month]}</span>
               {/* Until the month column fits beside the grid, the total sits under the name. */}
               {m.count > 0 && (
-                <span className={`xl:hidden text-[9px] font-bold tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? m.rr : m.pnl)}`}>
+                <span className={`xl:hidden text-label font-bold tracking-tighter tabular-nums ${toneOf(isPrivacyMode ? m.rr : m.pnl)}`}>
                   {isPrivacyMode ? `${formatNumber(m.rr)}R` : cellMoney(m.pnl, rate)}
                 </span>
               )}
@@ -614,7 +617,7 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                   className={`${bgOf(w.pnl, w.count)} @container group cursor-pointer hover:brightness-95 transition min-h-[56px] md:min-h-[92px] p-1 md:p-3 flex flex-col text-left select-none`}
                 >
                   <div className="flex items-start justify-between">
-                    <span className={`text-[9px] md:text-[10px] font-bold tabular-nums ${w.isFuture ? 'text-ink-disabled' : 'text-ink-faint'}`}>
+                    <span className={`text-label font-bold tabular-nums ${w.isFuture ? 'text-ink-disabled' : 'text-ink-faint'}`}>
                       {w.startDay === w.endDay ? w.startDay : `${w.startDay}–${w.endDay}`}
                     </span>
                     {/* On a phone the cell is too small for a bottom row, so the note stays up here. */}
@@ -634,13 +637,13 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
                   {w.count > 0 && (
                     <>
                       <div className="min-w-0">
-                        <div className={`text-sm font-black ${toneOf(isPrivacyMode ? w.rr : w.pnl)}`}>
+                        <div className={`text-body font-black ${toneOf(isPrivacyMode ? w.rr : w.pnl)}`}>
                           {isPrivacyMode ? `${formatNumber(w.rr)} R` : formatPnl(w.pnl, rate)}
                         </div>
                         {!isPrivacyMode && (
-                          <div className={`text-[10px] font-bold tracking-tight ${toneOf(w.rr)}`}>{formatNumber(w.rr)} R</div>
+                          <div className={`text-label font-bold tracking-tight ${toneOf(w.rr)}`}>{formatNumber(w.rr)} R</div>
                         )}
-                        <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter mt-0.5">Trades : {w.count}</div>
+                        <div className="text-label font-normal text-ink-faint uppercase tracking-tighter mt-0.5">Trades : {w.count}</div>
                       </div>
                     </>
                   )}
@@ -653,17 +656,17 @@ function YearGrid({ year, isPrivacyMode, rate, onOpenMonth, notesByWeek, onOpenW
         ))}
       </div>
 
-      <div className="hidden xl:flex w-[140px] shrink-0 flex-col bg-line gap-[1px] border border-line rounded-xl overflow-hidden">
-        <div className="bg-accent-soft h-10 shrink-0 flex items-center justify-center text-[10px] font-black text-accent uppercase tracking-widest">
+      <div className="hidden xl:flex w-[140px] shrink-0 flex-col bg-line gap-[1px] border border-line rounded-box overflow-hidden">
+        <div className="bg-accent-soft h-10 shrink-0 flex items-center justify-center text-label font-black text-accent uppercase tracking-widest">
           Month
         </div>
         {year.months.map(m => (
           <div key={m.month} className={`${bgOf(m.pnl, m.count)} flex-1 p-3 flex flex-col items-center justify-center text-center`}>
             {m.count > 0 && (
               <>
-                {!isPrivacyMode && <div className={`text-base font-black ${toneOf(m.pnl)} mb-1`}>{formatPnl(m.pnl, rate)}</div>}
-                <div className={`${isPrivacyMode ? 'text-base mb-1' : 'text-xs'} font-black tracking-tight ${toneOf(m.rr)}`}>{formatNumber(m.rr)} R</div>
-                <div className="text-[9px] font-normal text-ink-faint uppercase tracking-tighter mt-1">Trades : {m.count}</div>
+                {!isPrivacyMode && <div className={`text-body font-black ${toneOf(m.pnl)} mb-1`}>{formatPnl(m.pnl, rate)}</div>}
+                <div className={`${isPrivacyMode ? 'text-body mb-1' : 'text-small'} font-black tracking-tight ${toneOf(m.rr)}`}>{formatNumber(m.rr)} R</div>
+                <div className="text-label font-normal text-ink-faint uppercase tracking-tighter mt-1">Trades : {m.count}</div>
               </>
             )}
           </div>

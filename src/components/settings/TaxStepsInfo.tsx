@@ -15,12 +15,12 @@ export default function TaxStepsInfo() {
       title="Tax Steps"
       description="อัตราภาษีเงินได้บุคคลธรรมดาแบบขั้นบันได ที่ Tax Report ใช้คำนวณช่อง Est. tax (ประมาณการเพื่อกันเงินไว้ ไม่ใช่ยอดยื่นจริง) ดูได้อย่างเดียว"
     >
-      <div className="overflow-hidden border border-line-soft rounded-xl">
-        <table className="w-full text-sm">
+      <div className="overflow-hidden border border-line-soft rounded-box">
+        <table className="w-full text-body">
           <thead className="bg-surface text-ink-faint">
             <tr>
-              <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Net income (฿)</th>
-              <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Rate</th>
+              <th className="px-4 py-3 text-left text-label font-bold uppercase tracking-widest">Net income (฿)</th>
+              <th className="px-4 py-3 text-right text-label font-bold uppercase tracking-widest">Rate</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line-soft">

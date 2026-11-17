@@ -385,18 +385,18 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
   if (error) {
     return (
       <div className="h-[250px] bg-transparent flex flex-col items-center justify-center text-ink-muted p-4 text-center relative">
-         <div className="absolute top-4 left-4 flex items-center gap-1 bg-card/50 p-1 rounded-lg z-10">
+         <div className="absolute top-4 left-4 flex items-center gap-1 bg-card/50 p-1 rounded-control z-10">
           <button 
             onClick={handleRefresh}
-            className="p-1.5 hover:bg-card rounded-md text-ink-faint hover:text-ink transition"
+            className="p-1.5 hover:bg-card rounded-tag text-ink-faint hover:text-ink transition"
             title="Refetch Chart Data"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           </button>
         </div>
         <AlertCircle className="w-8 h-8 mb-2 text-loss" />
-        <p className="text-sm font-bold text-ink">{error}</p>
-        <p className="text-xs mt-1">Please check your API key, symbol, and dates.</p>
+        <p className="text-body font-bold text-ink">{error}</p>
+        <p className="text-small mt-1">Please check your API key, symbol, and dates.</p>
       </div>
     );
   }
@@ -407,20 +407,20 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
       <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
         <button 
           onClick={handleRefresh}
-          className="bg-surface-2 hover:bg-line backdrop-blur-sm p-1.5 rounded-lg border border-line text-ink-muted hover:text-ink transition flex items-center justify-center"
+          className="bg-surface-2 hover:bg-line backdrop-blur-sm p-1.5 rounded-control border border-line text-ink-muted hover:text-ink transition flex items-center justify-center"
           title="Refetch Chart Data"
         >
            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         </button>
 
-        <div className="flex items-center p-0.5 bg-surface-2 backdrop-blur-sm rounded-lg border border-line">
+        <div className="flex items-center p-0.5 bg-surface-2 backdrop-blur-sm rounded-control border border-line">
           {availableTfs.map(tf => (
             <button
               key={tf}
               onClick={() => setSelectedTf(tf)}
-              className={`px-3 py-1 text-[11px] font-black rounded-md transition ${
+              className={`px-3 py-1 text-caption font-black rounded-tag transition ${
                 selectedTf === tf 
-                  ? 'bg-accent text-white shadow-sm' 
+                  ? 'bg-accent text-white shadow-card' 
                   : 'text-ink-muted hover:text-ink hover:bg-line'
               }`}
             >
@@ -437,7 +437,7 @@ export default function InteractiveChart({ trade }: InteractiveChartProps) {
               : feedsDisagree
                 ? "The chart feed and your broker drifted apart during this trade, so the candles are lined up with your entry; the exit may sit off its candle. Click to see the feed's own prices."
                 : "The chart feed quotes slightly differently from your broker, so the candles are shifted to match your fills. Click to see the feed's own prices."}
-            className={`px-2.5 py-1 text-[10px] font-black rounded-lg border backdrop-blur-sm transition ${
+            className={`px-2.5 py-1 text-label font-black rounded-control border backdrop-blur-sm transition ${
               showRawPrices
                 ? 'bg-surface-2 text-ink-muted border-line hover:text-ink'
                 : 'bg-accent-soft text-accent border-accent-line hover:bg-accent-line'

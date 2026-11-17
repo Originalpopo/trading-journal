@@ -19,6 +19,7 @@ import { formatDurationDetailed, calculateDurationInSeconds } from "@/lib/utils"
 import { classifyTrade, outcomeLabel, parseRisk } from "@/lib/stats";
 
 import PageHeader, { HeaderButton } from "@/components/PageHeader";
+import { cardClass } from "@/components/Card";
 const format2Decimals = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // P&L in the table: exact, but on a phone whole dollars without "$" from 1,000 up so the column still fits. The detail popup has the exact figure.
@@ -174,7 +175,7 @@ export default function HistoryPage() {
     const pages = [];
     pages.push(
       <button key="prev" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">
+        className="px-3 py-1.5 border border-line rounded-control text-caption font-bold text-ink-muted disabled:opacity-50">
         Prev
       </button>
     );
@@ -183,7 +184,7 @@ export default function HistoryPage() {
       if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
         pages.push(
           <button key={i} onClick={() => handlePageChange(i)}
-            className={`px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold ${i === currentPage ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface'}`}>
+            className={`px-3 py-1.5 border border-line rounded-control text-caption font-bold ${i === currentPage ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface'}`}>
             {i}
           </button>
         );
@@ -194,7 +195,7 @@ export default function HistoryPage() {
 
     pages.push(
       <button key="next" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-        className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">
+        className="px-3 py-1.5 border border-line rounded-control text-caption font-bold text-ink-muted disabled:opacity-50">
         Next
       </button>
     );
@@ -209,7 +210,7 @@ export default function HistoryPage() {
         <HeaderButton icon={Plus} label="Add entry" variant="plain" iconOnly onClick={() => { setTradeToEdit(null); setIsModalOpen(true); }} />
       </PageHeader>
 
-      <div className="glass-card p-3 md:p-6 overflow-hidden flex flex-col h-fit">
+      <div className={cardClass("p-3 md:p-6 overflow-hidden flex flex-col h-fit", "none")}>
         <HistoryFilterBar
           filters={filters}
           onChange={setFilters}
@@ -223,7 +224,7 @@ export default function HistoryPage() {
               aria-pressed={isSelecting}
               aria-label="Select trades"
               title={isSelecting ? "Stop selecting" : "Select trades to edit together"}
-              className={`flex items-center justify-center h-8 w-8 border rounded-lg text-[11px] font-bold transition ${
+              className={`flex items-center justify-center h-8 w-8 border rounded-control text-caption font-bold transition ${
                 isSelecting ? 'bg-accent-soft text-accent border-accent-line' : 'bg-card text-ink-muted border-line hover:text-ink'
               }`}
             >
@@ -236,21 +237,21 @@ export default function HistoryPage() {
         {isColumnsOpen && <HistoryColumnsPanel columns={columns} />}
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-2.5 bg-accent-soft border border-accent-line rounded-xl">
-            <span className="text-xs font-bold text-accent">{selectedIds.size} trade{selectedIds.size > 1 ? 's' : ''} selected</span>
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4 px-4 py-2.5 bg-accent-soft border border-accent-line rounded-box">
+            <span className="text-small font-bold text-accent">{selectedIds.size} trade{selectedIds.size > 1 ? 's' : ''} selected</span>
             <div className="flex items-center gap-2">
               <button onClick={() => setSelectedIds(new Set())}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-ink-muted hover:bg-card transition">Clear</button>
+                className="px-3 py-1.5 rounded-control text-caption font-bold text-ink-muted hover:bg-card transition">Clear</button>
               <button onClick={() => setIsBulkEditOpen(true)}
-                className="px-4 py-1.5 rounded-lg text-[11px] font-bold bg-accent text-white hover:bg-accent-strong shadow-sm transition flex items-center gap-1.5">
+                className="px-4 py-1.5 rounded-control text-caption font-bold bg-accent text-white hover:bg-accent-strong shadow-card transition flex items-center gap-1.5">
                 <Edit2 className="w-3.5 h-3.5" /> Edit On Plan / TF
               </button>
             </div>
           </div>
         )}
 
-        <div ref={containerRef} className="overflow-auto rounded-xl">
-          <table className="w-full text-left text-sm whitespace-nowrap relative">
+        <div ref={containerRef} className="overflow-auto rounded-box">
+          <table className="w-full text-left text-body whitespace-nowrap relative">
             <thead className="sticky top-0 z-10">
               <tr className="text-ink-faint border-b border-line-soft bg-surface">
                 {/* The whole cell toggles, so the box is easy to hit with a finger. */}
@@ -266,19 +267,19 @@ export default function HistoryPage() {
                   />
                 </th>
                 )}
-                <th className={`py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest ${firstColClass}`}>Time</th>
-                <th className={`${col("symbol")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest`}>Symbol</th>
-                <th className={`${col("tf")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>TF</th>
-                <th className={`${col("onPlan")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>On Plan</th>
-                <th className={`${col("side")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>Side</th>
-                <th className={`${col("result")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] tracking-widest text-center`}>Result</th>
-                <th className={`${col("risk")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right`}>Risk ($)</th>
-                <th className={`${col("rr")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right`}>RR</th>
-                <th className={`${col("pnl")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-right`}><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
-                <th className={`${col("actions")} py-4 px-1 md:px-4 font-bold uppercase text-[10px] text-center`}>Actions</th>
+                <th className={`py-4 px-1 md:px-4 font-bold uppercase text-label tracking-widest ${firstColClass}`}>Time</th>
+                <th className={`${col("symbol")} py-4 px-1 md:px-4 font-bold uppercase text-label tracking-widest`}>Symbol</th>
+                <th className={`${col("tf")} py-4 px-1 md:px-4 font-bold uppercase text-label tracking-widest text-center`}>TF</th>
+                <th className={`${col("onPlan")} py-4 px-1 md:px-4 font-bold uppercase text-label tracking-widest text-center`}>On Plan</th>
+                <th className={`${col("side")} py-4 px-1 md:px-4 font-bold uppercase text-label tracking-widest text-center`}>Side</th>
+                <th className={`${col("result")} py-4 px-1 md:px-4 font-bold uppercase text-label tracking-widest text-center`}>Result</th>
+                <th className={`${col("risk")} py-4 px-1 md:px-4 font-bold uppercase text-label text-right`}>Risk ($)</th>
+                <th className={`${col("rr")} py-4 px-1 md:px-4 font-bold uppercase text-label text-right`}>RR</th>
+                <th className={`${col("pnl")} py-4 px-1 md:px-4 font-bold uppercase text-label text-right`}><span className="hidden md:inline">Net </span>PNL<span className="hidden md:inline"> ($)</span></th>
+                <th className={`${col("actions")} py-4 px-1 md:px-4 font-bold uppercase text-label text-center`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] divide-y divide-line-soft">
+            <tbody className="text-caption divide-y divide-line-soft">
               {paginatedData.map((t, idx) => {
                 let shortTime = t.time;
                 let phoneTime = t.time;
@@ -297,17 +298,17 @@ export default function HistoryPage() {
                   return (
                     <tr key={`${t.id}-${idx}`} onClick={() => { setSelectedDetailTrade(t); setIsDetailOpen(true); }} className="hover:bg-surface transition duration-150 border-b border-line-soft cursor-pointer">
                       {isSelecting && <td className="py-4 pl-2 md:pl-4 pr-0"></td>}
-                      <td className={`py-4 px-1 md:px-4 text-ink-muted text-[11px] font-semibold leading-tight ${firstColClass}`}><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
-                      <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-ink whitespace-nowrap`}>
+                      <td className={`py-4 px-1 md:px-4 text-ink-muted text-caption font-semibold leading-tight ${firstColClass}`}><span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span></td>
+                      <td className={`${col("symbol")} py-4 px-1 md:px-4 font-black text-ink whitespace-nowrap`}>
                         {badgeText}
                       </td>
                       <td className={`${col("tf")} py-4 px-1 md:px-4 text-center text-ink-muted`}>-</td>
                       <td className={`${col("onPlan")} py-4 px-1 md:px-4 text-center`}>-</td>
                       <td className={`${col("side")} py-4 px-1 md:px-4 text-center text-ink-muted`}>-</td>
-                      <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}><span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span></td>
+                      <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}><span className={`px-2.5 py-1 border rounded-tag text-label font-black uppercase ${badge}`}>{badgeText}</span></td>
                       <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>-</td>
                       <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>-</td>
-                      <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${t.profit > 0 ? 'text-accent' : 'text-loss'}`}>
+                      <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-black ${t.profit > 0 ? 'text-accent' : 'text-loss'}`}>
                         {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                       </td>
                       <td className={`${col("actions")} py-4 px-1 md:px-4`}><div className="flex justify-center gap-3">
@@ -327,7 +328,7 @@ export default function HistoryPage() {
                 const riskText = rawRisk && rawRisk !== 0 ? '$' + format2Decimals(Math.abs(rawRisk)) : '-';
 
                 const sec = calculateDurationInSeconds(t);
-                const durationStr = <><br/><span className="text-[9px] text-ink-faint font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
+                const durationStr = <><br/><span className="text-label text-ink-faint font-normal mt-0.5 inline-flex items-center gap-1.5">Hold: {formatDurationDetailed(sec)} <ExitConfidenceBadge confidence={t.exitTimeConfidence} /></span></>;
 
 
                 const isSelected = selectedIds.has(t.id);
@@ -344,10 +345,10 @@ export default function HistoryPage() {
                       />
                     </td>
                     )}
-                    <td className={`py-4 px-1 md:px-4 text-ink-muted text-[11px] font-semibold leading-tight ${firstColClass}`}>
+                    <td className={`py-4 px-1 md:px-4 text-ink-muted text-caption font-semibold leading-tight ${firstColClass}`}>
                       <span className="md:hidden">{phoneTime}</span><span className="hidden md:inline">{shortTime}</span>{durationStr}
                     </td>
-                    <td className={`${col("symbol")} py-4 px-1 md:px-4 font-extrabold text-ink whitespace-nowrap`}>
+                    <td className={`${col("symbol")} py-4 px-1 md:px-4 font-black text-ink whitespace-nowrap`}>
                       {t.symbol}
                     </td>
                     <td className={`${col("tf")} py-4 px-1 md:px-4 text-center font-bold text-ink-muted`}>
@@ -367,11 +368,11 @@ export default function HistoryPage() {
                         })}
                       </div>
                     </td>
-                    <td className={`${col("side")} py-4 px-1 md:px-4 text-center font-extrabold text-ink-muted uppercase text-[11px]`}>
+                    <td className={`${col("side")} py-4 px-1 md:px-4 text-center font-black text-ink-muted uppercase text-caption`}>
                       {t.side}
                     </td>
                     <td className={`${col("result")} py-4 px-1 md:px-4 text-center`}>
-                      <span className={`px-2.5 py-1 border rounded-md text-[10px] font-black uppercase ${badge}`}>{badgeText}</span>
+                      <span className={`px-2.5 py-1 border rounded-tag text-label font-black uppercase ${badge}`}>{badgeText}</span>
                     </td>
                     <td className={`${col("risk")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>
                       {isPrivacyMode ? '***' : riskText}
@@ -379,7 +380,7 @@ export default function HistoryPage() {
                     <td className={`${col("rr")} py-4 px-1 md:px-4 text-right font-bold text-ink-muted`}>
                       {t.rr ? (t.riskIsEstimate ? '≈' : '') + format2Decimals(t.rr) + ' R' : '-'}
                     </td>
-                    <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-extrabold ${isBE ? 'text-ink-faint' : (outcome === 'win' ? 'text-accent' : 'text-loss')}`}>
+                    <td className={`${col("pnl")} py-4 px-1 md:px-4 text-right font-black ${isBE ? 'text-ink-faint' : (outcome === 'win' ? 'text-accent' : 'text-loss')}`}>
                       {isPrivacyMode ? '***' : <PnlText profit={t.profit} />}
                     </td>
                     <td className={`${col("actions")} py-4 px-1 md:px-4`}><div className="flex justify-center gap-3">
@@ -392,7 +393,7 @@ export default function HistoryPage() {
             </tbody>
           </table>
           {filteredData.length === 0 && (
-            <p className="py-10 text-center text-xs font-semibold text-ink-faint">
+            <p className="py-10 text-center text-small font-semibold text-ink-faint">
               {combinedData.length === 0 ? "No trades yet." : "No entries match these filters."}
             </p>
           )}

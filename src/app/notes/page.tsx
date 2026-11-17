@@ -12,6 +12,7 @@ import { weekKeyOfDay, groupNotesByWeek, summarizeWeek, formatWeekRange } from "
 import { formatNumber } from "@/lib/utils";
 
 import PageHeader, { HeaderButton } from "@/components/PageHeader";
+import { cardClass } from "@/components/Card";
 const WEEKS_PER_PAGE = 5;
 
 // "$12.40 · 3 trades", or "No trades".
@@ -30,24 +31,24 @@ function ResultLine({ summary, isPrivacyMode }: { summary: DaySummary; isPrivacy
 // `brokenCount`: how many of the user's rules the day's note ticks as broken.
 function NoteRow({ mood, title, content, summary, isPrivacyMode, onClick, brokenCount = 0 }: { mood: string; title: string; content: string; summary: DaySummary; isPrivacyMode: boolean; onClick: () => void; brokenCount?: number }) {
   return (
-    <div className="py-3 px-2 rounded-xl hover:bg-surface transition cursor-pointer flex gap-4 items-start" onClick={onClick}>
+    <div className="py-3 px-2 rounded-box hover:bg-surface transition cursor-pointer flex gap-4 items-start" onClick={onClick}>
       <div className={`w-10 h-10 rounded-full ${moodTone(mood).badge} flex items-center justify-center shrink-0 mt-0.5`}>
         <MoodIcon mood={mood} />
       </div>
       {/* The preview keeps to its own column, two lines at most; the whole note opens on click. */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 min-w-0">
-          <h4 className="text-sm font-bold text-ink truncate">{title}</h4>
+          <h4 className="text-body font-bold text-ink truncate">{title}</h4>
           {brokenCount > 0 && (
-            <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-loss bg-loss-soft rounded-full px-2 py-0.5">
+            <span className="shrink-0 flex items-center gap-1 text-label font-bold text-loss bg-loss-soft rounded-full px-2 py-0.5">
               <XCircle className="w-3 h-3" />
               {brokenCount} {brokenCount === 1 ? "rule" : "rules"}
             </span>
           )}
         </div>
-        <p className="text-sm text-ink-muted line-clamp-2 whitespace-pre-line max-w-2xl">{content}</p>
+        <p className="text-body text-ink-muted line-clamp-2 whitespace-pre-line max-w-2xl">{content}</p>
       </div>
-      <span className="text-xs font-bold shrink-0 text-ink-faint mt-0.5">
+      <span className="text-small font-bold shrink-0 text-ink-faint mt-0.5">
         <ResultLine summary={summary} isPrivacyMode={isPrivacyMode} />
       </span>
     </div>
@@ -91,7 +92,7 @@ export default function NotesPage() {
 
       <DisciplineSummary />
 
-      <div className="bg-card rounded-2xl shadow-sm p-4 flex flex-col">
+      <div className={cardClass("flex flex-col", "compact")}>
         <div className="relative mb-2">
           <Search className="w-4 h-4 text-ink-disabled absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -99,7 +100,7 @@ export default function NotesPage() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             placeholder="Search notes"
-            className="w-full bg-surface border border-line rounded-lg pl-9 pr-4 py-2 text-sm font-medium text-ink focus:outline-none focus:border-accent transition placeholder:text-ink-disabled"
+            className="w-full bg-surface border border-line rounded-control pl-9 pr-4 py-2 text-body font-semibold text-ink focus:outline-none focus:border-accent transition placeholder:text-ink-disabled"
           />
         </div>
 
@@ -116,9 +117,9 @@ export default function NotesPage() {
               return (
                 <section key={group.week} className="py-4">
                   <div className="flex items-center gap-2 px-2 mb-1">
-                    <span className="text-[10px] font-black text-accent uppercase tracking-widest">Week</span>
-                    <h3 className="text-sm font-black text-ink truncate">{formatWeekRange(group.week)}</h3>
-                    <span className="ml-auto text-xs font-bold shrink-0 text-ink-faint">
+                    <span className="text-label font-black text-accent uppercase tracking-widest">Week</span>
+                    <h3 className="text-body font-black text-ink truncate">{formatWeekRange(group.week)}</h3>
+                    <span className="ml-auto text-small font-bold shrink-0 text-ink-faint">
                       <ResultLine summary={week} isPrivacyMode={isPrivacyMode} />
                     </span>
                   </div>
@@ -135,7 +136,7 @@ export default function NotesPage() {
                   ) : (
                     <button
                       onClick={() => setOpenWeek({ week: group.week, edit: true })}
-                      className="mx-2 py-2 text-xs font-bold text-ink-faint hover:text-accent transition flex items-center gap-1.5"
+                      className="mx-2 py-2 text-small font-bold text-ink-faint hover:text-accent transition flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Write this week&apos;s note
@@ -167,10 +168,10 @@ export default function NotesPage() {
         {totalPages > 1 && (
           <div className="pt-4 flex justify-center items-center gap-3 border-t border-line-soft mt-2">
             <button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 1}
-              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">Prev</button>
-            <span className="text-[11px] font-bold text-ink-faint">{currentPage} / {totalPages}</span>
+              className="px-3 py-1.5 border border-line rounded-control text-caption font-bold text-ink-muted disabled:opacity-50">Prev</button>
+            <span className="text-caption font-bold text-ink-faint">{currentPage} / {totalPages}</span>
             <button onClick={() => setPage(currentPage + 1)} disabled={currentPage === totalPages}
-              className="px-3 py-1.5 border border-line rounded-lg text-[11px] font-bold text-ink-muted disabled:opacity-50">Next</button>
+              className="px-3 py-1.5 border border-line rounded-control text-caption font-bold text-ink-muted disabled:opacity-50">Next</button>
           </div>
         )}
       </div>
