@@ -1,26 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { DatabaseBackup, Download, Upload } from "lucide-react";
+import { DatabaseBackup, Download } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { downloadDatabase, restoreDatabase, summariseBackup } from "@/lib/dbActions";
-import RestoreModal, { type RestoreState } from "./RestoreModal";
+import { downloadDatabase } from "@/lib/dbActions";
 import { BACKUP_DUE_DAYS } from "@/lib/backupReminder";
 import { useBackupAge } from "@/components/BackupReminder";
 import SettingsCard, { SETTINGS_INPUT } from "./SettingsCard";
 import SaveRow from "@/components/SaveRow";
 import Button from "@/components/Button";
 
-// Download and restore the whole database, and how long before the backup reminder turns red.
-// Clearing the database or the notes is in its own card (ClearDataSetting), at the bottom of this tab.
+// Download the whole database, and how long before the backup reminder turns red. Restoring a file is the next
+// card (RestoreSetting); clearing everything is the last card of this tab (ClearDataSetting).
 export default function BackupSetting() {
   const { trades, funding, dayNotes, weekNotes, preferences, updatePreferences } = useJournalStore();
   const age = useBackupAge();
   const savedDays = preferences.backupDueDays ?? BACKUP_DUE_DAYS;
   const [days, setDays] = useState<string | null>(null); // null = not edited yet
   const [isSaving, setIsSaving] = useState(false);
-  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
-  const [restore, setRestore] = useState<RestoreState | null>(null);
 
   const shownDays = days ?? savedDays.toString();
   const parsedDays = Number(shownDays);
@@ -41,43 +38,6 @@ export default function BackupSetting() {
     }
   };
 
-  // The file is read and summarised first, then the person confirms in a popup inside the app. No browser
-  // confirm()/alert(): a browser can block those silently, and the Restore button then seemed to do nothing.
-  const onRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = (event.target?.result as string) ?? "";
-      try {
-        setRestore({ fileName: file.name, size: file.size, text, summary: summariseBackup(text), phase: "confirm" });
-      } catch {
-        setRestore({ fileName: file.name, size: file.size, text: "", summary: null, phase: "badFile" });
-      }
-    };
-    reader.onerror = () => setRestore({ fileName: file.name, size: file.size, text: "", summary: null, phase: "badFile" });
-    reader.readAsText(file);
-  };
-
-  const runRestore = () => {
-    if (!restore || restore.phase !== "confirm") return;
-    setRestore({ ...restore, phase: "running" });
-    setRestoreStatus("Restoring...");
-    restoreDatabase(
-      restore.text,
-      undefined,
-      () => {
-        setRestoreStatus(null);
-        setRestore(r => (r ? { ...r, phase: "done" } : r));
-      },
-      (err) => {
-        setRestoreStatus(null);
-        setRestore(r => (r ? { ...r, phase: "failed", error: err instanceof Error ? err.message : String(err) } : r));
-      }
-    );
-  };
-
   return (
     <SettingsCard
       icon={DatabaseBackup}
@@ -93,11 +53,6 @@ export default function BackupSetting() {
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
-          <label className={`flex-1 md:flex-none cursor-pointer px-5 py-2.5 bg-surface-2 hover:bg-line text-ink-muted font-bold rounded-box transition flex items-center justify-center gap-2 ${restoreStatus ? "opacity-50 pointer-events-none" : ""}`}>
-            <Upload className="w-4 h-4" />
-            {restoreStatus ?? "Restore"}
-            <input type="file" accept=".json" className="hidden" onChange={onRestore} />
-          </label>
           <Button variant="outline" icon={Download} onClick={() => downloadDatabase(trades, funding, dayNotes, weekNotes, preferences)} className="flex-1 md:flex-none">
             <span className="whitespace-nowrap">Download<span className="hidden md:inline"> Backup</span></span>
           </Button>
@@ -113,15 +68,6 @@ export default function BackupSetting() {
       </div>
 
       <SaveRow isDirty={isDaysDirty} canSave={isDaysValid} isSaving={isSaving} onSave={handleSaveDays} />
-
-      {restore && (
-        <RestoreModal
-          state={restore}
-          now={{ trades: trades.length, funding: funding.length, dayNotes: dayNotes.length, weekNotes: weekNotes.length }}
-          onConfirm={runRestore}
-          onClose={() => { if (restore.phase !== "running") setRestore(null); }}
-        />
-      )}
     </SettingsCard>
   );
 }

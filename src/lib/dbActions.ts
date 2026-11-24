@@ -1,101 +1,56 @@
-import { doc, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, writeBatch, type DocumentReference } from 'firebase/firestore';
 import { db } from './firebase';
-import { clearChartCache } from './chartCache';
+import { clearChartCache, deleteCachedCandles } from './chartCache';
+import { COLLECTIONS, docIdOf, idsToRemove, prefsAfterRestore, type Backup, type Ids } from './restorePlan';
 import type { Trade, Funding, Preferences } from '@/store/useJournalStore';
 import type { DayNote } from './dayNotes';
 import type { WeekNote } from './weekNotes';
 
-// Clears the trades and funding only. Day notes and week notes (the Calendar's notes) are kept on purpose, and so
-// are the settings: a fresh start of the figures should not throw away what was written about each day.
-export const clearDatabase = async (
-  trades: Trade[],
-  funding: Funding[],
-  onProgress?: (status: string) => void,
-  onComplete?: () => void,
-  onError?: (error: unknown) => void
-) => {
-  if (!confirm("Are you SURE you want to clear the database?\nThis will delete all trades and funding data.\nDay and week notes and your settings are kept.")) {
-    return;
+// The IDs in the journal right now, read from Firestore itself (not the screen's copy, which may still be loading).
+const currentIds = async (): Promise<Ids> => {
+  const out = {} as Ids;
+  for (const name of COLLECTIONS) {
+    out[name] = (await getDocs(collection(db, name))).docs.map(d => d.id);
   }
+  return out;
+};
 
-  const answer = prompt("WARNING: This action is permanent and cannot be undone.\nType 'DELETE' to confirm:");
-  if (answer !== "DELETE") {
-    alert("Database reset cancelled.");
-    return;
-  }
+type Write = { ref: DocumentReference; data?: Record<string, unknown> }; // no data = delete
 
-  if (onProgress) onProgress("Clearing DB...");
+// How far a restore or clear has got, for the bar in its popup: steps done out of all steps.
+export type Progress = (done: number, total: number) => void;
 
-  try {
-    let batch = writeBatch(db);
-    let count = 0;
-    const refs = [
-      ...trades.map(t => doc(db, "trades", t.id)),
-      ...funding.map(f => doc(db, "funding", f.id)),
-    ];
-    for (const ref of refs) {
-      batch.delete(ref);
-      count++;
-      if (count === 500) {
-        await batch.commit();
-        batch = writeBatch(db);
-        count = 0;
-      }
+// Counts steps as they finish and passes them on. Batches of 100 (Firestore allows 500) so the bar moves in
+// visible steps on a journal of a few hundred entries.
+const BATCH = 100;
+const progressCounter = (total: number, onProgress?: Progress) => {
+  let done = 0;
+  onProgress?.(0, total);
+  return (n: number) => { done = Math.min(total, done + n); onProgress?.(done, total); };
+};
+
+const commitInBatches = async (writes: Write[], step: (n: number) => void) => {
+  for (let i = 0; i < writes.length; i += BATCH) {
+    const part = writes.slice(i, i + BATCH);
+    const batch = writeBatch(db);
+    for (const w of part) {
+      if (w.data) batch.set(w.ref, w.data);
+      else batch.delete(w.ref);
     }
-    if (count > 0) {
-      await batch.commit();
-    }
-
-    await clearChartCache();
-
-    alert("Database cleared. Your notes were kept.");
-    if (onComplete) onComplete();
-  } catch (e) {
-    console.error("Error clearing DB:", e);
-    alert("An error occurred while clearing the database.");
-    if (onError) onError(e);
+    await batch.commit();
+    step(part.length);
   }
 };
 
-// Deletes every day note and week note (the Calendar's notes), and nothing else. Kept apart from clearDatabase so
-// the figures and the notes can each be started over on their own.
-export const clearNotes = async (
-  dayNotes: DayNote[],
-  weekNotes: WeekNote[],
-  onComplete?: () => void,
-  onError?: (error: unknown) => void
-) => {
-  const total = dayNotes.length + weekNotes.length;
-  if (total === 0) {
-    alert("There are no notes to delete.");
-    return;
-  }
-  if (!confirm(`Are you SURE you want to delete all notes?\nThis will delete ${dayNotes.length} day notes and ${weekNotes.length} week notes.\nTrades, funding and your settings are kept.`)) {
-    return;
-  }
-  const answer = prompt("WARNING: This action is permanent and cannot be undone.\nType 'DELETE' to confirm:");
-  if (answer !== "DELETE") {
-    alert("Deleting notes cancelled.");
-    return;
-  }
-
-  try {
-    const refs = [
-      ...dayNotes.map(n => doc(db, "dayNotes", n.date)),
-      ...weekNotes.map(n => doc(db, "weekNotes", n.week)),
-    ];
-    for (let i = 0; i < refs.length; i += 500) {
-      const batch = writeBatch(db);
-      refs.slice(i, i + 500).forEach(ref => batch.delete(ref));
-      await batch.commit();
-    }
-    alert(`Deleted ${dayNotes.length} day notes and ${weekNotes.length} week notes.`);
-    if (onComplete) onComplete();
-  } catch (e) {
-    console.error("Error deleting notes:", e);
-    alert("An error occurred while deleting the notes.");
-    if (onError) onError(e);
-  }
+// Deletes every trade, funding entry, day note and week note, and the cached chart candles. Settings (risk, BE,
+// balance checks, statement details) and the PIN are kept. Asking first is the caller's job (ClearDataModal).
+export const clearAllData = async (onProgress?: Progress) => {
+  const ids = await currentIds();
+  const deletes = COLLECTIONS.flatMap(name => ids[name].map(id => ({ ref: doc(db, name, id) })));
+  const step = progressCounter(deletes.length + 1, onProgress); // + 1: the chart cache at the end
+  await commitInBatches(deletes, step);
+  await clearChartCache();
+  step(1);
 };
 
 // Preferences are part of the backup: they hold the broker balance-check history and the
@@ -124,133 +79,30 @@ export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: 
     .catch(e => console.error("Error recording the backup time:", e));
 };
 
-// What a backup file holds, read before anything is written, so the person can see it is the right file.
-export type BackupSummary = {
-  trades: number;
-  funding: number;
-  dayNotes: number;
-  weekNotes: number;
-  hasPreferences: boolean;
-  firstTrade: string | null;
-  lastTrade: string | null;
-  madeAt: string | null;
-};
+// Puts the journal back exactly as the backup file had it. Everything in the file is written first, and only then
+// is what the file does not have deleted, so a failure half-way never leaves less than there was. Settings are
+// replaced by the file's, except the last backup time and reminder days (prefsAfterRestore); the PIN lives in
+// settings/auth and is never touched. A file without settings keeps the current ones. Asking first is the caller's job (RestoreModal).
+export const restoreDatabase = async (backup: Backup, onProgress?: Progress) => {
+  const remove = idsToRemove(await currentIds(), backup);
+  const writes = COLLECTIONS.flatMap(name => backup[name].map(d => ({ ref: doc(db, name, docIdOf(name, d)), data: d })));
+  const deletes = COLLECTIONS.flatMap(name => remove[name].map(id => ({ ref: doc(db, name, id) })));
+  // Steps: each entry written, the settings, each entry deleted, and the chart cache of each removed trade.
+  const step = progressCounter(writes.length + (backup.preferences ? 1 : 0) + deletes.length + remove.trades.length, onProgress);
 
-export const summariseBackup = (jsonData: string): BackupSummary => {
-  const data = JSON.parse(jsonData);
-  if (!data || typeof data !== 'object' || (!data.trades && !data.funding && !data.dayNotes && !data.preferences)) {
-    throw new Error("Invalid database format.");
+  await commitInBatches(writes, step);
+  if (backup.preferences) {
+    const prefsRef = doc(db, "settings", "preferences");
+    const current = (await getDoc(prefsRef)).data() ?? {};
+    await setDoc(prefsRef, prefsAfterRestore(backup.preferences, current));
+    step(1);
   }
-  const list = (v: unknown) => (Array.isArray(v) ? v : []);
-  const times = list(data.trades).map((t: Trade) => t?.entryTime).filter(Boolean).sort();
-  return {
-    trades: list(data.trades).length,
-    funding: list(data.funding).length,
-    dayNotes: list(data.dayNotes).filter((n: DayNote) => n?.date).length,
-    weekNotes: list(data.weekNotes).filter((n: WeekNote) => n?.week).length,
-    hasPreferences: !!data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0,
-    firstTrade: times[0] ?? null,
-    lastTrade: times[times.length - 1] ?? null,
-    madeAt: typeof data.preferences?.lastBackupAt === 'string' ? data.preferences.lastBackupAt : null,
-  };
-};
+  await commitInBatches(deletes, step);
 
-export const restoreDatabase = async (
-  jsonData: string,
-  onProgress?: (status: string) => void,
-  onComplete?: (result: { trades: number, funding: number, notes: number, weekNotes: number, preferences: boolean }) => void,
-  onError?: (error: unknown) => void
-) => {
-  try {
-    const data = JSON.parse(jsonData);
-    if (!data.trades && !data.funding && !data.dayNotes && !data.preferences) {
-      throw new Error("Invalid database format.");
-    }
-
-    if (onProgress) onProgress("Restoring DB...");
-
-    let batch = writeBatch(db);
-    let count = 0;
-    let tradesCount = 0;
-    let fundingCount = 0;
-    let notesCount = 0;
-    let weekNotesCount = 0;
-
-    // Restore trades
-    if (data.trades) {
-      for (const t of data.trades) {
-        const docRef = doc(db, "trades", t.id);
-        batch.set(docRef, t);
-        count++;
-        tradesCount++;
-        if (count === 500) {
-          await batch.commit();
-          batch = writeBatch(db);
-          count = 0;
-        }
-      }
-    }
-
-    // Restore funding
-    if (data.funding) {
-      for (const f of data.funding) {
-        const docRef = doc(db, "funding", f.id);
-        batch.set(docRef, f);
-        count++;
-        fundingCount++;
-        if (count === 500) {
-          await batch.commit();
-          batch = writeBatch(db);
-          count = 0;
-        }
-      }
-    }
-
-    // Restore day notes (free-standing notes from older backups are no longer used)
-    if (data.dayNotes) {
-      for (const n of data.dayNotes) {
-        if (!n?.date) continue;
-        const docRef = doc(db, "dayNotes", n.date);
-        batch.set(docRef, n);
-        count++;
-        notesCount++;
-        if (count === 500) {
-          await batch.commit();
-          batch = writeBatch(db);
-          count = 0;
-        }
-      }
-    }
-
-    // Restore week notes (backups made before them have none)
-    if (Array.isArray(data.weekNotes)) {
-      for (const n of data.weekNotes) {
-        if (!n?.week) continue;
-        batch.set(doc(db, "weekNotes", n.week), n);
-        count++;
-        weekNotesCount++;
-        if (count === 500) {
-          await batch.commit();
-          batch = writeBatch(db);
-          count = 0;
-        }
-      }
-    }
-
-    // Restore preferences. Merged, so a backup made before they were included changes nothing.
-    const hasPreferences = !!data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0;
-    if (hasPreferences) {
-      batch.set(doc(db, "settings", "preferences"), data.preferences, { merge: true });
-      count++;
-    }
-
-    if (count > 0) {
-      await batch.commit();
-    }
-
-    if (onComplete) onComplete({ trades: tradesCount, funding: fundingCount, notes: notesCount, weekNotes: weekNotesCount, preferences: hasPreferences });
-  } catch (e) {
-    console.error("Error restoring DB:", e);
-    if (onError) onError(e);
+  // Candles cached for trades that are gone would never be read again.
+  for (const id of remove.trades) {
+    await deleteCachedCandles(id);
+    step(1);
   }
+  return remove;
 };
