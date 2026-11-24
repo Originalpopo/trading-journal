@@ -10,8 +10,9 @@ test('the target is a share of the balance the day started with, to the cent', (
     { time: '2026-10-02T10:00:00', profit: 1 },
   ];
   const days = dailyTargets(trades, funding, 0.25, 0);
-  // Day 1 starts at $0 (the deposit lands that morning): no target.
-  assert.equal(days.get('2026-10-01')!.target, 0);
+  // Day 1 starts at $0 but the deposit lands that morning before its first trade: 0.25% of 1000.
+  assert.equal(days.get('2026-10-01')!.startBalance, 1000);
+  assert.equal(days.get('2026-10-01')!.target, 2.5);
   // Day 2 starts at 1033.33; 0.25% is 2.583325, so $2.58.
   assert.equal(days.get('2026-10-02')!.startBalance, 1033.33);
   assert.equal(days.get('2026-10-02')!.target, 2.58);
@@ -215,4 +216,18 @@ test('a future day in the map carries no target into the week', () => {
   const week = weekdayTargets(days, '2026-10-05');
   assert.equal(week.find(d => d.date === '2026-10-05')!.target, 1);
   assert.equal(week.find(d => d.date === '2026-10-06')!.target, undefined);
+});
+
+test('funding during the day counts only when made before the first trade was entered', () => {
+  const f = [
+    { time: '2026-10-01T08:00:00', deposit: 1000 },
+    { time: '2026-10-02T09:00:00', deposit: 200 }, // before the first trade: counts
+    { time: '2026-10-02T11:00:00', deposit: 500 }, // after it: waits for the next day
+  ];
+  const trades = [{ time: '2026-10-02T10:30:00', entryTime: '2026-10-02T10:00:00', profit: 1 }];
+  const d = dailyTargets(trades, f, 1, 0).get('2026-10-02')!;
+  assert.deepEqual([d.startBalance, d.target], [1200, 12]);
+  // Today before any trade: everything deposited so far.
+  const today = dailyTargets([], [{ time: '2026-10-05T09:00:00', deposit: 300 }], 1, 0, '2026-10-05').get('2026-10-05')!;
+  assert.deepEqual([today.startBalance, today.target], [300, 3]);
 });

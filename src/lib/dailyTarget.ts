@@ -1,4 +1,5 @@
-// The daily profit target: a share of the balance the day started with. Once the day's closed trades
+// The daily profit target: a share of the balance the day started with (with that day's deposits made before
+// its first trade). Once the day's closed trades
 // reach it, trading stops for the day; a trade entered after that is "after target".
 // Kept free of app imports so it can be unit-tested with `node --test`.
 import { toCents, fromCents } from './money.ts';
@@ -47,7 +48,7 @@ interface TargetFunding {
 
 export interface DayTarget {
   date: string; // "YYYY-MM-DD"
-  startBalance: number; // deposits less withdrawals plus every trade closed before the day began
+  startBalance: number; // deposits less withdrawals plus every trade closed before the day began, plus funding that day before its first trade
   target: number; // dollars, to the cent; 0 when the start balance is not positive
   pnl: number; // the day's closed trades
   lowPnl: number; // the lowest the day's running total went, trade by trade, since it was last above 0 (else 0)
@@ -78,6 +79,16 @@ export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pc
     ...funding.map(f => ({ at: msOf(f.time), cents: toCents(f.deposit) - toCents(f.withdraw) })),
   ].filter(m => !Number.isNaN(m.at)).sort((a, b) => a.at - b.at);
 
+  // Deposits and withdrawals of each day, to add the ones made before the day's first trade.
+  const fundingByDay = new Map<string, { at: number; cents: number }[]>();
+  for (const f of funding) {
+    const day = dayKeyOfTime(f.time, startHour);
+    const at = msOf(f.time);
+    if (!day || Number.isNaN(at)) continue;
+    if (!fundingByDay.has(day)) fundingByDay.set(day, []);
+    fundingByDay.get(day)!.push({ at, cents: toCents(f.deposit) - toCents(f.withdraw) });
+  }
+
   const result = new Map<string, DayTarget>();
   for (const day of [...byDay.keys()].sort()) {
     const dayStart = tradingDayStartMs(day, startHour);
@@ -85,6 +96,13 @@ export function dailyTargets(trades: TargetTrade[], funding: TargetFunding[], pc
     for (const m of moves) {
       if (m.at >= dayStart) break;
       startCents += m.cents;
+    }
+    // Money put in (or taken out) during the day before its first trade was entered is part of the balance
+    // the day traded with: a first deposit made that morning still gives the day a target. Today before its
+    // first trade counts everything deposited so far.
+    const firstEntry = Math.min(...byDay.get(day)!.map(t => msOf(t.entryTime || t.time)).filter(ms => !Number.isNaN(ms)));
+    for (const f of fundingByDay.get(day) ?? []) {
+      if (f.at >= dayStart && f.at < firstEntry) startCents += f.cents;
     }
     const dayPct = typeof pct === 'function' ? pct(day) : pct;
     const targetCents = startCents > 0 && dayPct > 0 ? Math.round(startCents * dayPct / 100) : 0;
