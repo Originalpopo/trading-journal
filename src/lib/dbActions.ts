@@ -124,6 +124,37 @@ export const downloadDatabase = (trades: Trade[], funding: Funding[], dayNotes: 
     .catch(e => console.error("Error recording the backup time:", e));
 };
 
+// What a backup file holds, read before anything is written, so the person can see it is the right file.
+export type BackupSummary = {
+  trades: number;
+  funding: number;
+  dayNotes: number;
+  weekNotes: number;
+  hasPreferences: boolean;
+  firstTrade: string | null;
+  lastTrade: string | null;
+  madeAt: string | null;
+};
+
+export const summariseBackup = (jsonData: string): BackupSummary => {
+  const data = JSON.parse(jsonData);
+  if (!data || typeof data !== 'object' || (!data.trades && !data.funding && !data.dayNotes && !data.preferences)) {
+    throw new Error("Invalid database format.");
+  }
+  const list = (v: unknown) => (Array.isArray(v) ? v : []);
+  const times = list(data.trades).map((t: Trade) => t?.entryTime).filter(Boolean).sort();
+  return {
+    trades: list(data.trades).length,
+    funding: list(data.funding).length,
+    dayNotes: list(data.dayNotes).filter((n: DayNote) => n?.date).length,
+    weekNotes: list(data.weekNotes).filter((n: WeekNote) => n?.week).length,
+    hasPreferences: !!data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0,
+    firstTrade: times[0] ?? null,
+    lastTrade: times[times.length - 1] ?? null,
+    madeAt: typeof data.preferences?.lastBackupAt === 'string' ? data.preferences.lastBackupAt : null,
+  };
+};
+
 export const restoreDatabase = async (
   jsonData: string,
   onProgress?: (status: string) => void,
@@ -220,7 +251,6 @@ export const restoreDatabase = async (
     if (onComplete) onComplete({ trades: tradesCount, funding: fundingCount, notes: notesCount, weekNotes: weekNotesCount, preferences: hasPreferences });
   } catch (e) {
     console.error("Error restoring DB:", e);
-    alert("An error occurred while restoring the database. Ensure the file is a valid JSON database backup.");
     if (onError) onError(e);
   }
 };

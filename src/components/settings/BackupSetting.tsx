@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { DatabaseBackup, Download, Upload } from "lucide-react";
 import { useJournalStore } from "@/store/useJournalStore";
-import { downloadDatabase, restoreDatabase } from "@/lib/dbActions";
+import { downloadDatabase, restoreDatabase, summariseBackup } from "@/lib/dbActions";
+import RestoreModal, { type RestoreState } from "./RestoreModal";
 import { BACKUP_DUE_DAYS } from "@/lib/backupReminder";
 import { useBackupAge } from "@/components/BackupReminder";
 import SettingsCard, { SETTINGS_INPUT } from "./SettingsCard";
@@ -19,6 +20,7 @@ export default function BackupSetting() {
   const [days, setDays] = useState<string | null>(null); // null = not edited yet
   const [isSaving, setIsSaving] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+  const [restore, setRestore] = useState<RestoreState | null>(null);
 
   const shownDays = days ?? savedDays.toString();
   const parsedDays = Number(shownDays);
@@ -39,30 +41,41 @@ export default function BackupSetting() {
     }
   };
 
+  // The file is read and summarised first, then the person confirms in a popup inside the app. No browser
+  // confirm()/alert(): a browser can block those silently, and the Restore button then seemed to do nothing.
   const onRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!window.confirm(`Restore from "${file.name}"? Entries in the file replace the ones with the same ID in the journal.`)) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-      restoreDatabase(
-        text,
-        (status) => setRestoreStatus(status),
-        (result) => {
-          setRestoreStatus(null);
-          alert(`Successfully restored ${result.trades} trades, ${result.funding} funding entries, ${result.notes} day notes, ${result.weekNotes} week notes${result.preferences ? ', and your settings (balance checks, statement details)' : ''}.`);
-        },
-        () => {
-          setRestoreStatus(null);
-          alert("Failed to restore the backup.");
-        }
-      );
+      const text = (event.target?.result as string) ?? "";
+      try {
+        setRestore({ fileName: file.name, size: file.size, text, summary: summariseBackup(text), phase: "confirm" });
+      } catch {
+        setRestore({ fileName: file.name, size: file.size, text: "", summary: null, phase: "badFile" });
+      }
     };
+    reader.onerror = () => setRestore({ fileName: file.name, size: file.size, text: "", summary: null, phase: "badFile" });
     reader.readAsText(file);
+  };
+
+  const runRestore = () => {
+    if (!restore || restore.phase !== "confirm") return;
+    setRestore({ ...restore, phase: "running" });
+    setRestoreStatus("Restoring...");
+    restoreDatabase(
+      restore.text,
+      undefined,
+      () => {
+        setRestoreStatus(null);
+        setRestore(r => (r ? { ...r, phase: "done" } : r));
+      },
+      (err) => {
+        setRestoreStatus(null);
+        setRestore(r => (r ? { ...r, phase: "failed", error: err instanceof Error ? err.message : String(err) } : r));
+      }
+    );
   };
 
   return (
@@ -100,6 +113,15 @@ export default function BackupSetting() {
       </div>
 
       <SaveRow isDirty={isDaysDirty} canSave={isDaysValid} isSaving={isSaving} onSave={handleSaveDays} />
+
+      {restore && (
+        <RestoreModal
+          state={restore}
+          now={{ trades: trades.length, funding: funding.length, dayNotes: dayNotes.length, weekNotes: weekNotes.length }}
+          onConfirm={runRestore}
+          onClose={() => { if (restore.phase !== "running") setRestore(null); }}
+        />
+      )}
     </SettingsCard>
   );
 }
