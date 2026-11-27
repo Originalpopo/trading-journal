@@ -8,6 +8,7 @@ import { useTradingDay } from "./useTradingDay";
 import { formatNumber } from "@/lib/utils";
 import { REVIEW_PHASES, inReviewOrder, nextPhase, systemReview, systemScore, type ScorePart } from "@/lib/systemReview";
 import { cardClass, CardTitle } from "@/components/Card";
+import { Select } from "@/components/Field";
 
 // English, as the rest of the box: "2 Nov 2026".
 const dateOf = (time: string) =>
@@ -56,6 +57,11 @@ function ScoreRadar({ parts, earlier }: { parts: ScorePart[]; earlier: { trades:
       {earlier && (
         <polygon points={ring(earlier.parts.map(p => Math.min(1, Math.max(0, p.value))))} className="fill-none stroke-ink-disabled" strokeWidth={1.5} strokeDasharray="4 3" strokeLinejoin="round" />
       )}
+      {/* Its points as the chosen report's circles, in light grey; drawn first so an orange one on the same spot covers it. */}
+      {earlier?.parts.map((p, i) => {
+        const [x, y] = spoke(i, Math.min(1, Math.max(0, p.value)));
+        return <circle key={p.key} cx={x} cy={y} r={5} className="fill-card stroke-ink-disabled" strokeWidth={2.5} />;
+      })}
       <polygon points={ring(shares)} className="fill-none stroke-accent" strokeWidth={2} strokeLinejoin="round" />
       {shares.map((v, i) => {
         const [x, y] = spoke(i, v);
@@ -73,8 +79,8 @@ function ScoreRadar({ parts, earlier }: { parts: ScorePart[]; earlier: { trades:
 
 const FOLD_KEY = "systemReview.folded";
 
-// The last box of the Performance page: a report on trades 1–100, 1–200, … 1–1,000, over every trade
-// (the Results filters do not apply). Until 100 trades it is folded to its title and the count.
+// The last box of the Performance page: a report on trades 1–100, 1–200, … 1–1,000, or on all trades so far,
+// over every trade (the Results filters do not apply). Until 100 trades it is folded to its title and the count.
 export default function SystemReview() {
   const { trades } = useJournalStore();
   const { days } = useDailyTargets();
@@ -84,19 +90,25 @@ export default function SystemReview() {
   const reached = REVIEW_PHASES.filter(p => p <= count);
   const next = nextPhase(count);
 
-  const [picked, setPicked] = useState<number | null>(null);
-  const phase = picked && picked <= count ? picked : reached[reached.length - 1];
-  const report = useMemo(() => (phase ? systemReview(ordered, phase, days, startHour) : null), [ordered, phase, days, startHour]);
-  const score = report ? systemScore(report) : null;
-  // Once two reports exist, a second one is drawn faded beneath the chosen one to compare against: the latest
-  // report when an older one is chosen (picking 1–100 brings it to the top, 1–200 goes beneath), and the one
-  // before it when the latest is chosen.
+  // A phase (trades 1–N) or "all", every trade so far. Until the first phase is reached nothing is shown.
+  const [picked, setPicked] = useState<number | "all" | null>(null);
   const latest = reached[reached.length - 1];
-  const other = !phase || reached.length < 2 ? null : phase === latest ? reached[reached.length - 2] : latest;
+  const phase = picked === "all" ? (latest ? "all" : undefined) : picked && picked <= count ? picked : latest;
+  const reportSize = phase === "all" ? count : phase;
+  const report = useMemo(() => (reportSize ? systemReview(ordered, reportSize, days, startHour) : null), [ordered, reportSize, days, startHour]);
+  const score = report ? systemScore(report) : null;
+  // A second report is drawn faded beneath the chosen one to compare against. With a phase chosen it is always
+  // All (every trade so far); when the count sits exactly on that phase All would be the same report, so the
+  // phase before it is used. With All chosen it is the latest phase (or the one before, as above).
+  const other = !phase
+    ? null
+    : phase === "all"
+      ? (latest < count ? latest : reached[reached.length - 2] ?? null)
+      : phase < count ? count : reached[reached.findIndex(p => p === phase) - 1] ?? null;
   const earlier = useMemo(() => {
     const rep = other ? systemReview(ordered, other, days, startHour) : null;
-    return other && rep ? { trades: other, parts: systemScore(rep).parts } : null;
-  }, [ordered, other, days, startHour]);
+    return other && rep ? { trades: other, isAll: other === count, parts: systemScore(rep).parts } : null;
+  }, [ordered, other, count, days, startHour]);
 
   // Folds to its title with a click on it, as a Settings card. Remembered on this device only, so it stays folded
   // on the next visit; read after the first paint, since the page is built ahead without it.
@@ -130,24 +142,20 @@ export default function SystemReview() {
 
       {report && score && isOpen && (
         <>
-          {/* One tab per report; the ones not reached yet are shown faded. */}
-          <div className="mt-4 flex bg-surface-2 p-0.5 rounded-control overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Report">
-            {REVIEW_PHASES.map(p => (
-              <button
-                key={p}
-                type="button"
-                role="tab"
-                aria-selected={p === phase}
-                disabled={p > count}
-                onClick={() => setPicked(p)}
-                title={p > count ? `At ${p} trades` : `Report on trades 1–${p}`}
-                className={`flex-1 shrink-0 h-7 min-w-12 px-2 text-caption font-bold rounded-tag tabular-nums transition ${
-                  p === phase ? "bg-card text-ink shadow-card" : p > count ? "text-ink-disabled cursor-default" : "text-ink-faint hover:text-ink"
-                }`}
-              >
-                {p.toLocaleString("en-US")}
-              </button>
-            ))}
+          {/* Which report: the phases reached so far, then All. */}
+          <div className="mt-4">
+            <Select
+              size="sm"
+              aria-label="Report"
+              value={String(phase)}
+              onChange={e => setPicked(e.target.value === "all" ? "all" : Number(e.target.value))}
+              className="tabular-nums"
+            >
+              {reached.map(p => (
+                <option key={p} value={p}>Trades 1–{p.toLocaleString("en-US")}</option>
+              ))}
+              <option value="all">All (1–{count.toLocaleString("en-US")})</option>
+            </Select>
           </div>
 
           {/* The score's five parts as a radar, the total beside it (below it on a phone). */}
@@ -164,7 +172,7 @@ export default function SystemReview() {
               {earlier && (
                 <p className="mt-1 text-caption font-semibold text-ink-faint flex items-center gap-1.5 justify-center md:justify-start">
                   <svg width="18" height="6" aria-hidden><line x1="0" y1="3" x2="18" y2="3" className="stroke-ink-disabled" strokeWidth={1.5} strokeDasharray="4 3" /></svg>
-                  Trades 1–{earlier.trades}
+                  {earlier.isAll ? `All (1–${earlier.trades})` : `Trades 1–${earlier.trades}`}
                 </p>
               )}
             </div>
